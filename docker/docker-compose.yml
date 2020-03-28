@@ -9,12 +9,16 @@ services:
     ports: [80:80]
     volumes:
       - type: bind
-        source: ./
+        source: .
         target: /home/gradle/omni-chat
         consistency: cached # Prevents Docker for Mac bind mounts from being unusably slow.
       - type: volume
         source: gradle-cache-chat
         target: /home/gradle/.gradle
+      # Required for Docker-in-Docker (e.g., when running Docker Compose in a CI pipeline which itself runs in Docker).
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
     networks: [backend]
   test:
     image: gradle:6.3-jdk8
@@ -22,7 +26,7 @@ services:
     command: bash
     volumes:
       - type: bind
-        source: ./
+        source: .
         target: /home/gradle
       - type: volume
         source: gradle-cache-test
