@@ -2,28 +2,28 @@ on: push
 jobs:
   test-server:
     runs-on: ubuntu-latest
+    container: docker/compose
     steps:
       - uses: actions/checkout@v2
-      - uses: docker://docker/compose
-        run: docker-compose -f docker/docker-compose.yml --project-directory . run --rm test gradle --no-daemon test
+      - run: docker-compose -f docker/docker-compose.yml --project-directory . run --rm test gradle --no-daemon test
       - uses: actions/upload-artifact@v1
         with:
           name: server-test-results
           path: build/reports/tests/test/
   test-spec:
     runs-on: ubuntu-latest
+    container: node:lts
     steps:
       - uses: actions/checkout@v2
-      - uses: docker://node:lts
-        run: npx @stoplight/spectral lint docs/openapi.yaml
+      - run: npx @stoplight/spectral lint docs/openapi.yaml
   build-docs:
     if: github.ref == master
     needs: [test-server, test-spec]
     runs-on: ubuntu-latest
+    container: node:lts
     steps:
       - uses: actions/checkout@v2
-      - uses: docker://node:lts
-        run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
+      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
           name: docs
@@ -31,14 +31,15 @@ jobs:
   github-release:
     needs: build-docs
     runs-on: ubuntu-latest
+    container: openjdk:8
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/download-artifact@v1
         with:
           name: docs
-      - uses: docker://openjdk:8
+      - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=$GITHUB_PAT
         env:
           GITHUB_PAT: ${{ GITHUB_PAT }}
-        run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=$GITHUB_PAT
   host-docs:
     needs: build-docs
     runs-on: ubuntu-latest
