@@ -17,10 +17,6 @@ Branding assets are stored in the [`branding`](branding) directory.
 
 ## [Contributing](docs/CONTRIBUTING.md)
 
-## Credits
-
-The [`wait-for-it.sh`](docker/wait-for-it.sh) script was taken from [vishnubob](https://github.com/vishnubob/wait-for-it).
-
 ## License
 
 This project is under the [MIT License](LICENSE).

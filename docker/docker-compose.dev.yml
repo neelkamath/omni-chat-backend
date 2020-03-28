@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+  chat:
+    image: gradle:6.3-jdk8
+    command: sh -c 'gradle --no-daemon -t installDist & gradle --no-daemon run'
+    # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name. The directory
+    # must be nested (i.e., "/omni-chat" will not work).
+    working_dir: /home/gradle/omni-chat
+    ports: [80:8080]
+    volumes:
+      - type: bind
+        source: .
+        target: /home/gradle/omni-chat
+        consistency: cached # Prevents Docker for Mac bind mounts from being unusably slow.
+      - type: volume
+        source: gradle-cache
+        target: /home/gradle/.gradle
+volumes:
+  gradle-cache:

@@ -18,9 +18,11 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-gson:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:1.2.1")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.1")
 }
 
 tasks {
+    withType<Test> { useJUnitPlatform() }
     withType<Jar> {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }

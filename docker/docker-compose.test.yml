@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  test:
+    image: gradle:6.3-jdk8
+    command: bash
+    volumes:
+      - type: bind
+        source: .
+        target: /home/gradle
+      - type: volume
+        source: gradle-cache
+        target: /home/gradle/.gradle
+volumes:
+  gradle-cache:

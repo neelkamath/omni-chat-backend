@@ -19,10 +19,18 @@ Here's how a standard project iteration looks like.
 ### Development
 
 ```
-docker-compose -f docker/docker-compose.yml --project-directory . run --rm test
+docker-compose -f docker/docker-compose.yml -p dev --project-directory . run --rm test
 ```
 
-The server will be running on http://localhost:80 with autoreload enabled. A bind mount connects the project directory to the container so that you can run commands like `gradle test`. Test reports save to `build/reports/tests/test/`.
+The server will be running on http://localhost:8080 with autoreload enabled.
+
+### Testing
+
+```
+docker-compose -f docker/docker-compose.test.yml -p test --project-directory . run --rm test
+```
+
+Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
 
 ### [Production](production.md)
 
