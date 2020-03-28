@@ -17,6 +17,7 @@ dependencies {
     val ktorVersion = "1.3.2"
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-gson:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:1.2.1")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.1")
 }

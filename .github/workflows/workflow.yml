@@ -3,6 +3,7 @@ jobs:
   test-server:
     runs-on: ubuntu-latest
     steps:
+      - run: echo ${{ github.ref }}
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
         with:

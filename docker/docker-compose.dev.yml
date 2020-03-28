@@ -6,7 +6,7 @@ services:
     # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name. The directory
     # must be nested (i.e., "/omni-chat" will not work).
     working_dir: /home/gradle/omni-chat
-    ports: [80:8080]
+    ports: [80:5000]
     volumes:
       - type: bind
         source: .
