@@ -1,1 +1,1 @@
-rootProject.name = "omnichat"
+rootProject.name = "omni-chat"

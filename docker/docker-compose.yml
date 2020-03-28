@@ -1,0 +1,39 @@
+version: '3.7'
+services:
+  chat:
+    image: gradle:6.3-jdk8
+    command: sh -c 'gradle --no-daemon -t installDist & gradle --no-daemon run'
+    # The directory must be named "omni-chat" because automatic reload watches a directory by that name. The directory
+    # must be nested (i.e., "/omni-chat" will not work).
+    working_dir: /home/gradle/omni-chat
+    ports: [80:80]
+    volumes:
+      - type: bind
+        source: .
+        target: /home/gradle/omni-chat
+        consistency: cached # Prevents Docker for Mac bind mounts from being unusably slow.
+      - type: volume
+        source: gradle-cache-chat
+        target: /home/gradle/.gradle
+    networks: [backend]
+  test:
+    image: gradle:6.3-jdk8
+    entrypoint: bash docker/wait-for-it.sh -t 0 chat:80 --
+    command: bash
+    volumes:
+      - type: bind
+        source: .
+        target: /home/gradle
+      - type: volume
+        source: gradle-cache-test
+        target: /home/gradle/.gradle
+    depends_on: [chat]
+    networks: [backend]
+volumes:
+  # The <chat> and <test> services use the same Gradle dependencies. Since both services need to write to the Gradle
+  # cache directory, separate volumes must be used in order to prevent file lock exceptions.
+  gradle-cache-chat:
+  gradle-cache-test:
+networks:
+  backend:
+    driver: bridge

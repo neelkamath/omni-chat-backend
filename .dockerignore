@@ -1,0 +1,6 @@
+*
+!docker/wait-for-it.sh
+!src/main/
+!build.gradle.kts
+!gradle.properties
+!settings.gradle.kts
