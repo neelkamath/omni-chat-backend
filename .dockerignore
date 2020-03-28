@@ -1,0 +1,5 @@
+*
+!src/main/
+!build.gradle.kts
+!gradle.properties
+!settings.gradle.kts
