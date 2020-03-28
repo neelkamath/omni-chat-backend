@@ -7,12 +7,12 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: 1.8
+      - run: ./gradlew --no-daemon test
       - uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - run: ./gradlew --no-daemon test
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -48,14 +48,14 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
-      - uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
       - uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=$GITHUB_PAT
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
