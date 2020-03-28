@@ -39,7 +39,7 @@ jobs:
           name: docs
       - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=$GITHUB_PAT
         env:
-          GITHUB_PAT: ${{ GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
   host-docs:
     needs: build-docs
     runs-on: ubuntu-latest
