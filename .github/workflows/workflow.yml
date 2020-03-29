@@ -26,11 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
+      - run: npx redoc-cli bundle -o README.html docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
           name: docs
-          path: redoc-static.html
+          path: README.html
   github-release:
     needs: build-docs
     runs-on: ubuntu-latest
@@ -39,12 +39,11 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
+          path: .
       - uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=$GITHUB_PAT
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+      - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=${{ secrets.GITHUB_PAT }}
   host-docs:
     needs: build-docs
     runs-on: ubuntu-latest
@@ -52,9 +51,9 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
-          path: public/index.html
+          path: .
       - uses: crazy-max/ghaction-github-pages@v1
         with:
-          build_dir: public
+          build_dir: .
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_PAT }}

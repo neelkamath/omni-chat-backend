@@ -2,7 +2,10 @@ openapi: 3.0.3
 info:
   title: Omni Chat
   version: '0.0.1'
-  description: Free, open core, federated chat system, to replace every existing chat app.
+  description: |
+    Free, open core, federated chat system, to replace every existing chat app.
+
+    View docs for older releases [here](https://github.com/neelkamath/omni-chat/releases).
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com

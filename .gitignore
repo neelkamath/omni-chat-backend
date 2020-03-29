@@ -2,5 +2,5 @@
 .idea/
 build/
 out/
-public/
 .DS_Store
+*.html

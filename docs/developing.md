@@ -67,7 +67,7 @@ npx @stoplight/spectral lint docs/openapi.yaml
 ### Production
 
 ```
-npx redoc-cli bundle docs/openapi.yaml -o public/index.html --title 'Omni Chat'
+npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
 ```
 
-The documentation will be saved to `public/index.html`.
+The documentation will be saved to `redoc-static.html`.
