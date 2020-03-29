@@ -19,15 +19,25 @@ Here's how a standard project iteration looks like.
 ### Development
 
 ```
-docker-compose -f docker/docker-compose.yml -p dev --project-directory . run --rm test
+docker-compose \
+    -f docker/docker-compose.yml \
+    -f docker/docker-compose.override.yml \
+    -p dev \
+    --project-directory . \
+    up
 ```
 
-The server will be running on http://localhost:8080 with autoreload enabled.
+The server will be running on http://localhost:5000 with autoreload enabled.
 
 ### Testing
 
 ```
-docker-compose -f docker/docker-compose.test.yml -p test --project-directory . run --rm test
+docker-compose \
+    -f docker/docker-compose.yml \
+    -f docker/docker-compose.test.yml \
+    -p test \
+    --project-directory . \
+    run --rm chat
 ```
 
 Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
@@ -46,7 +56,7 @@ Run `gradle test` whenever you want. Build reports save to `build/reports/tests/
 npx redoc-cli serve docs/openapi.yaml -w
 ```
 
-The documentation will be served on http://localhost:80. It will automatically rebuild when the spec is updated. Refresh the page to view the updated version.
+The documentation will be served on http://127.0.0.1:8080. It will automatically rebuild when the spec is updated. Refresh the page to view the updated version.
 
 ### Testing
 

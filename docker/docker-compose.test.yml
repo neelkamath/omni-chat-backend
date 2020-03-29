@@ -1,6 +1,6 @@
 version: '3.7'
 services:
-  test:
+  chat:
     image: gradle:6.3-jdk8
     command: bash
     volumes:

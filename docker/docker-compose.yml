@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  chat:
+    restart: always
+    environment:
+      POSTGRES_URL: db:5432
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  db:
+    image: postgres:12
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
