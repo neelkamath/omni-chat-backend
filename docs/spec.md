@@ -4,7 +4,7 @@ Free, open core, federated chat system, to replace every existing chat app.
 
 ## Product Vision
 
-For people who need to communicate via chat, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product has the useful features of every existing chat app, without the annoying ones.
+For people who need to communicate via chat, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services while leaving out their annoying parts.
 
 ## Mantra/Slogan
 

@@ -4,3 +4,4 @@ build/
 out/
 public/
 .DS_Store
+redoc-static.html
