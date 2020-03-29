@@ -2,15 +2,12 @@ on: push
 jobs:
   test-server:
     runs-on: ubuntu-latest
-    container: docker/compose
     steps:
       - uses: actions/checkout@v2
-      - run: |
-          docker-compose \
-            -f docker/docker-compose.yml \
-            -f docker/docker-compose.test.yml \
-            --project-directory . \
-            run --rm chat gradle test
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: ./gradlew --no-daemon test
       - if: always()
         uses: actions/upload-artifact@v1
         with:
