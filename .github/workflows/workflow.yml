@@ -4,7 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: docker/compose
-      volumes: [$PWD:/home/gradle]
+      volumes: ['$PWD:/home/gradle']
     steps:
       - uses: actions/checkout@v2
       - run: |
