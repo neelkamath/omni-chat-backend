@@ -19,7 +19,12 @@ Here's how a standard project iteration looks like.
 ### Development
 
 ```
-docker-compose -f docker/docker-compose.yml -p dev --project-directory . run --rm test
+docker-compose \
+    -f docker/docker-compose.yml \
+    -f docker/docker-compose.override.yml \
+    -p dev \
+    --project-directory . \
+    up
 ```
 
 The server will be running on http://localhost:5000 with autoreload enabled.
@@ -27,7 +32,12 @@ The server will be running on http://localhost:5000 with autoreload enabled.
 ### Testing
 
 ```
-docker-compose -f docker/docker-compose.test.yml -p test --project-directory . run --rm test
+docker-compose \
+    -f docker/docker-compose.yml \
+    -f docker/docker-compose.test.yml \
+    -p test \
+    --project-directory . \
+    run --rm chat
 ```
 
 Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.

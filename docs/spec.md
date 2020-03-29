@@ -153,7 +153,7 @@ It could use the following technologies.
 - Framework: ktor
 - Deployment: Docker
 - Schema: OpenAPI
-- Server: We'll use netty until we need the performance of something like Traefik.
+- Reverse proxy: Traefik
 
 ### Frontend Web App
 

@@ -2,13 +2,15 @@ on: push
 jobs:
   test-server:
     runs-on: ubuntu-latest
+    container: docker/compose
     steps:
-      - run: echo ${{ github.ref }}
       - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: ./gradlew --no-daemon test
+      - run: |
+          docker-compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.test.yml \
+            --project-directory . \
+            run --rm chat gradle test
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -23,7 +25,7 @@ jobs:
           node-version: 12
       - run: npx @stoplight/spectral lint docs/openapi.yaml
   build-docs:
-    if: github.ref == 'master'
+    if: github.ref == refs/heads/master
     needs: [test-server, test-spec]
     runs-on: ubuntu-latest
     steps:
