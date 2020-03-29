@@ -2,10 +2,9 @@ on: push
 jobs:
   test-server:
     runs-on: ubuntu-latest
-    container:
-      image: docker/compose
-      volumes: ['$PWD:/home/gradle']
+    container: docker/compose
     steps:
+      - run: ls
       - uses: actions/checkout@v2
       - run: |
           docker-compose \
