@@ -10,11 +10,6 @@ jobs:
             -f docker/docker-compose.test.yml \
             --project-directory . \
             run --rm chat gradle test
-      - uses: actions/cache@v1
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('*gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -26,7 +21,7 @@ jobs:
       - uses: actions/checkout@v2
       - run: npx @stoplight/spectral lint docs/openapi.yaml
   build-docs:
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     needs: [test-server, test-spec]
     runs-on: ubuntu-latest
     steps:
@@ -49,11 +44,6 @@ jobs:
         with:
           java-version: 1.8
       - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=${{ secrets.GITHUB_PAT }}
-      - uses: actions/cache@v1
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('*gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
   host-docs:
     needs: build-docs
     runs-on: ubuntu-latest
