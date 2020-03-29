@@ -4,18 +4,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: |
-          docker-compose \
-            -f docker/docker-compose.yml \
-            -f docker/docker-compose.test.yml \
-            --project-directory . \
-            run --rm chat gradle test
       - uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+      - run: |
+          docker-compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.test.yml \
+            --project-directory . \
+            run --rm chat gradle test
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -32,11 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle -o index.html docs/openapi.yaml --title 'Omni Chat'
+      - run: npx redoc-cli bundle -o README.html docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
           name: docs
-          path: index.html
+          path: README.html
   github-release:
     needs: build-docs
     runs-on: ubuntu-latest

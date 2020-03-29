@@ -2,7 +2,5 @@
 .idea/
 build/
 out/
-public/
 .DS_Store
-index.html
-redoc-static.html
+*.html
