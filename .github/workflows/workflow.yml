@@ -25,7 +25,7 @@ jobs:
           node-version: 12
       - run: npx @stoplight/spectral lint docs/openapi.yaml
   build-docs:
-    if: github.ref == refs/heads/master
+    if: github.ref == 'refs/heads/master'
     needs: [test-server, test-spec]
     runs-on: ubuntu-latest
     steps:
