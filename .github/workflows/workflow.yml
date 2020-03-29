@@ -39,6 +39,7 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
+          path: .
       - uses: actions/setup-java@v1
         with:
           java-version: 1.8
@@ -53,5 +54,6 @@ jobs:
       - uses: crazy-max/ghaction-github-pages@v1
         with:
           build_dir: .
+          path: .
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
