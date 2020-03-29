@@ -1,1 +1,1 @@
-Open the release asset, `redoc-static.html`, in your browser to view the HTTP API documentation. View this release's corresponding [changelog](docs/CHANGELOG.md) entry to view what's new.
+Open the asset, `index.html`, attached to this release in your browser to view the HTTP API docs. You can see what's changed in this release's corresponding [changelog](docs/CHANGELOG.md) entry.

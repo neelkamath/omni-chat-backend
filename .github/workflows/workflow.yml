@@ -10,6 +10,12 @@ jobs:
             -f docker/docker-compose.test.yml \
             --project-directory . \
             run --rm chat gradle test
+      - uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -51,9 +57,9 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: docs
+          path: .
       - uses: crazy-max/ghaction-github-pages@v1
         with:
           build_dir: .
-          path: .
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
