@@ -19,9 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
       - run: npx @stoplight/spectral lint docs/openapi.yaml
   build-docs:
     if: github.ref == 'refs/heads/master'
@@ -29,9 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
       - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
