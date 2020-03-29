@@ -41,5 +41,5 @@ if (gradle.startParameter.taskNames.contains("githubRelease"))
         body(File("docs/release.md").readText())
         overwrite(true)
         prerelease((project.version as String).startsWith("0"))
-        releaseAssets("redoc-static.html")
+        releaseAssets("index.html")
     }
