@@ -4,9 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     container: docker/compose
     steps:
-      - run: ls
       - uses: actions/checkout@v2
-      - run: ls
       - run: |
           docker-compose \
             -f docker/docker-compose.yml \
