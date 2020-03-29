@@ -8,7 +8,7 @@ jobs:
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('*gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          restore-keys: ${{ runner.os }}-gradle
       - run: |
           docker-compose \
             -f docker/docker-compose.yml \
@@ -52,7 +52,7 @@ jobs:
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('*gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          restore-keys: ${{ runner.os }}-gradle
       - run: ./gradlew --no-daemon githubRelease -PGITHUB_PAT=${{ secrets.GITHUB_PAT }}
   host-docs:
     needs: build-docs
