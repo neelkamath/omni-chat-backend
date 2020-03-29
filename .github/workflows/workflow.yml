@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
+      - run: npx redoc-cli bundle -o index.html docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
           name: docs
