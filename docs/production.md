@@ -1,5 +1,7 @@
 # Production
 
+Start the server on http://localhost:80:
+
 ```
 docker-compose \
     -f docker/docker-compose.yml \
@@ -8,4 +10,4 @@ docker-compose \
     up --build
 ```
 
-The server will be running on http://localhost:80. DB data is stored in `/var/lib/postgresql/data`.
+## [Authentication](authentication.md)

@@ -1,4 +1,5 @@
 *
+!docker/dockerize
 !src/main/
 !build.gradle.kts
 !gradle.properties

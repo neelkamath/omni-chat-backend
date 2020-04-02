@@ -146,18 +146,17 @@ With these features, we might even be able to replace social media sites, and so
 ### Backend
 
 It could use the following technologies.
-- Build tool: Gradle (great if we need a monorepo)
+- Build tool: Gradle
 - Language: Kotlin
 - DB: PostgreSQL
 - Account management: [Fast](https://www.fast.co/)
 - Framework: ktor
 - Deployment: Docker
 - Schema: OpenAPI
-- Reverse proxy: Traefik
 
 ### Frontend Web App
 
-It could be built with Parcel, TypeScript, React, antd, PWA, and styled components.
+It could be built with Parcel, HTML, CSS, TypeScript, React, antd, PWA, and styled components.
 
 ### Mobile Apps
 

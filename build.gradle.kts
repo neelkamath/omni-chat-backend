@@ -23,6 +23,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.postgresql:postgresql:42.2.2")
+    implementation("org.keycloak:keycloak-admin-client:9.0.2")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.1")
 }
 
@@ -41,5 +42,5 @@ if (gradle.startParameter.taskNames.contains("githubRelease"))
         body(File("docs/release.md").readText())
         overwrite(true)
         prerelease((project.version as String).startsWith("0"))
-        releaseAssets("README.html")
+        releaseAssets("redoc-static.html")
     }

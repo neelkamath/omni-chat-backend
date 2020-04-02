@@ -9,7 +9,7 @@ Here's how a standard project iteration looks like.
 1. Plan the feature in the [OpenAPI spec](openapi.yaml).
 1. Implement the feature.
 1. Mark the feature you built as completed in the [spec](spec.md).
-1. If you have updated the functionality or the OpenAPI spec, follow these steps to create a new release.
+1. If you have updated the server or OpenAPI spec, follow these steps to create a new release.
     1. Update the version in the [OpenAPI spec](openapi.yaml) and the [build file](../build.gradle.kts).
     1. Add an entry to the [changelog](CHANGELOG.md).
     1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created, and the new documentation will be hosted.
@@ -41,6 +41,8 @@ docker-compose \
 ```
 
 Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+
+## [Authentication](authentication.md)
 
 ### [Production](production.md)
 
