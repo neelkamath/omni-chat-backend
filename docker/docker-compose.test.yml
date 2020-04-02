@@ -2,7 +2,7 @@ version: '3.7'
 services:
   chat:
     image: gradle:6.3-jdk8
-    command: gradle test
+    command: gradle --no-daemon test
     volumes:
       - type: bind
         source: .
