@@ -31,7 +31,7 @@ The server will be running on http://localhost:5000 with autoreload enabled.
 
 ### Testing
 
-1. Start the app.
+1. Spin up the services.
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -40,7 +40,7 @@ The server will be running on http://localhost:5000 with autoreload enabled.
         --project-directory . \
         up -d
     ```
-1. Create the shell.
+1. Enter into the shell.
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -49,7 +49,7 @@ The server will be running on http://localhost:5000 with autoreload enabled.
         --project-directory . \
         run --rm chat bash
     ```
-1. Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+1. Test using `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
 1. Run `exit` once you're done.
 
 ## [Authentication](authentication.md)
