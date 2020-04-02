@@ -47,7 +47,7 @@ The server will be running on http://localhost:5000 with autoreload enabled.
         -f docker/docker-compose.test.yml \
         -p test \
         --project-directory . \
-        run --rm chat
+        run --rm chat bash
     ```
 1. Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
 1. Run `exit` once you're done.
