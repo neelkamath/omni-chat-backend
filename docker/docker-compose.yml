@@ -2,7 +2,6 @@ version: '3.7'
 services:
   auth:
     image: jboss/keycloak:9.0.2
-    entrypoint: docker/dockerize -wait tcp://auth-db:5432 -- /opt/jboss/tools/docker-entrypoint.sh
     networks: [auth, auth-db]
     ports: [8080:8080]
     volumes:
@@ -21,10 +20,9 @@ services:
     image: postgres
     networks: [auth-db]
     environment:
-      PGDATA: /var/lib/postgresql/data/auth
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
   chat:
-    entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 90s --
+    entrypoint: docker/dockerize -wait http://auth:8080 -timeout 180s
     networks: [auth, chat-db]
     restart: always
     environment:
@@ -39,7 +37,6 @@ services:
     image: postgres:12
     networks: [chat-db]
     environment:
-      PGDATA: /var/lib/postgresql/data/chat
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
 networks:
   auth:

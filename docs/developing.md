@@ -31,16 +31,26 @@ The server will be running on http://localhost:5000 with autoreload enabled.
 
 ### Testing
 
-```
-docker-compose \
-    -f docker/docker-compose.yml \
-    -f docker/docker-compose.test.yml \
-    -p test \
-    --project-directory . \
-    run --rm chat
-```
-
-Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+1. Start the app.
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.test.yml \
+        -p test \
+        --project-directory . \
+        up -d
+    ```
+1. Create the shell.
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.test.yml \
+        -p test \
+        --project-directory . \
+        run --rm chat
+    ```
+1. Run `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+1. Run `exit` once you're done.
 
 ## [Authentication](authentication.md)
 

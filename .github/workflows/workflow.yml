@@ -4,16 +4,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: |
+      - name: Create dummy .env file
+        run: |
           echo CHAT_DB_PASSWORD=DD7fTll66QzampGKtt1imUtHNhjju5MH6eQaK >> .env
           echo KEYCLOAK_DB_PASSWORD=enLZNDz5gGseTS2GFY3BEWuWivRGDXQH7f5i5 >> .env
           echo KEYCLOAK_PASSWORD=UCGwnA2Vwp2uLHavwDmeARqUgn4HNG4iLe4Ai >> .env
-      - run: |
+      - name: test
+        run: |
           docker-compose \
             -f docker/docker-compose.yml \
             -f docker/docker-compose.test.yml \
             --project-directory . \
-            run --rm chat gradle test
+            up --abort-on-container-exit --exit-code-from chat
       - if: always()
         uses: actions/upload-artifact@v1
         with:
