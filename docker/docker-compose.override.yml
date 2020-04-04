@@ -1,8 +1,10 @@
 version: '3.7'
 services:
+  auth:
+    ports: [8080:8080]
   chat:
     image: gradle:6.3-jdk8
-    command: sh -c 'gradle --no-daemon -t installDist & gradle --no-daemon run'
+    command: sh -c 'gradle --no-daemon --stacktrace -t installDist & gradle --no-daemon run'
     # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name. The directory
     # must be nested (i.e., "/omni-chat" will not work).
     working_dir: /home/gradle/omni-chat

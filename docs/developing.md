@@ -18,16 +18,16 @@ Here's how a standard project iteration looks like.
 
 ### Development
 
-```
-docker-compose \
-    -f docker/docker-compose.yml \
-    -f docker/docker-compose.override.yml \
-    -p dev \
-    --project-directory . \
-    up
-```
-
-The server will be running on http://localhost:5000 with autoreload enabled.
+1. Run the server on http://localhost:5000 with autoreload enabled.
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
+        -p dev \
+        --project-directory . \
+        up
+    ```
+1. [Set up authentication](auth_setup.md).
 
 ### Testing
 
@@ -38,7 +38,7 @@ The server will be running on http://localhost:5000 with autoreload enabled.
         -f docker/docker-compose.test.yml \
         -p test \
         --project-directory . \
-        up -d
+        up --scale chat=0 -d
     ```
 1. Enter into the shell.
     ```
@@ -65,10 +65,10 @@ The server will be running on http://localhost:5000 with autoreload enabled.
 ### Development
 
 ```
-npx redoc-cli serve docs/openapi.yaml -w
+npx redoc-cli serve docs/openapi.yaml -wp 8081
 ```
 
-The documentation will be served on http://127.0.0.1:8080. It will automatically rebuild when the spec is updated. Refresh the page to view the updated version.
+The documentation will be served on http://127.0.0.1:8081. It will automatically rebuild when the spec is updated. Refresh the page to view the updated version.
 
 ### Testing
 

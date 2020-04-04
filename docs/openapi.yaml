@@ -17,6 +17,18 @@ servers:
   - url: http://localhost:80
     description: You'll have to run the server yourself.
 paths:
+  /user:
+    post:
+      tags: [account]
+      description: Create an account
+      operationId: createAccount
+      requestBody:
+        $ref: '#/components/requestBodies/NewAccount'
+      responses:
+        '204':
+          description: Account created
+        '400':
+          description: Username already exists
   /health_check:
     get:
       tags: [status]
@@ -25,3 +37,26 @@ paths:
       responses:
         '204':
           description: All systems are operational.
+components:
+  schemas:
+    NewAccount:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [username, password, email]
+  requestBodies:
+    NewAccount:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewAccount'

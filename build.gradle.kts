@@ -15,6 +15,7 @@ repositories { jcenter() }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     val ktorVersion = "1.3.2"
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-gson:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
@@ -24,7 +25,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.postgresql:postgresql:42.2.2")
     implementation("org.keycloak:keycloak-admin-client:9.0.2")
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.0.1")
+    val kotestVersion = "4.0.2"
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
 }
 
 tasks {

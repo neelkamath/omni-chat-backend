@@ -5,7 +5,6 @@ services:
     entrypoint: docker/dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [auth, auth-db]
-    ports: [8080:8080]
     volumes:
       - type: bind
         source: ./docker/dockerize
@@ -27,13 +26,17 @@ services:
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
     networks: [auth, chat-db]
     environment:
+      KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_URL: http://auth:8080/auth
-      KEYCLOAK_USER: admin
+      KEYCLOAK_SMTP_HOST: ${KEYCLOAK_SMTP_HOST}
+      KEYCLOAK_SMTP_SSL_PORT: ${KEYCLOAK_SMTP_SSL_PORT}
+      KEYCLOAK_SMTP_USER: ${KEYCLOAK_SMTP_USER}
+      KEYCLOAK_SMTP_PASSWORD: ${KEYCLOAK_SMTP_PASSWORD}
       POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
       POSTGRES_URL: chat-db:5432
-      POSTGRES_USER: postgres
   chat-db:
     image: postgres:12
     networks: [chat-db]

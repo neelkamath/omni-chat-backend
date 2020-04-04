@@ -1,5 +1,7 @@
 version: '3.7'
 services:
+  auth:
+    ports: [8080:8080]
   chat:
     build:
       dockerfile: docker/Dockerfile
