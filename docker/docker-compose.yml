@@ -1,14 +1,50 @@
 version: '3.7'
 services:
-  chat:
-    restart: always
+  auth:
+    image: jboss/keycloak:9.0.2
+    entrypoint: docker/dockerize -wait tcp://auth-db:5432
+    command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
+    networks: [auth, auth-db]
+    volumes:
+      - type: bind
+        source: ./docker/dockerize
+        target: /docker/dockerize
     environment:
-      POSTGRES_URL: db:5432
+      DB_ADDR: auth-db
+      DB_DATABASE: postgres
+      DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      DB_USER: postgres
+      DB_VENDOR: postgres
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KEYCLOAK_USER: admin
+  auth-db:
+    image: postgres
+    networks: [auth-db]
+    environment:
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+  chat:
+    entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
+    networks: [auth, chat-db]
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      KEYCLOAK_URL: http://auth:8080
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_SMTP_HOST: ${KEYCLOAK_SMTP_HOST}
+      KEYCLOAK_SMTP_TLS_PORT: ${KEYCLOAK_SMTP_TLS_PORT}
+      KEYCLOAK_SMTP_USER: ${KEYCLOAK_SMTP_USER}
+      KEYCLOAK_SMTP_PASSWORD: ${KEYCLOAK_SMTP_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-  db:
+      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
+      POSTGRES_URL: chat-db:5432
+  chat-db:
     image: postgres:12
-    restart: always
+    networks: [chat-db]
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
+networks:
+  auth:
+  auth-db:
+  chat-db:

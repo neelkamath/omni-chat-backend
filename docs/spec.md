@@ -111,6 +111,10 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### Security
 
+- [ ] Allow instances to pick one of the following access types.
+    - [ ] Only clients an admin creates are allowed to access the HTTP API.
+    - [x] Anyone can access the HTTP API without registering.
+    - [ ] Anyone can access the HTTP API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
 - [ ] Allow people you don't know to not directly contact you (i.e., they will go to an "Invites" tab where you'll have to go to allow, ignore, or block them).
 - [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.
@@ -146,18 +150,17 @@ With these features, we might even be able to replace social media sites, and so
 ### Backend
 
 It could use the following technologies.
-- Build tool: Gradle (great if we need a monorepo)
+- Build tool: Gradle
 - Language: Kotlin
 - DB: PostgreSQL
 - Account management: [Fast](https://www.fast.co/)
 - Framework: ktor
 - Deployment: Docker
 - Schema: OpenAPI
-- Reverse proxy: Traefik
 
 ### Frontend Web App
 
-It could be built with Parcel, TypeScript, React, antd, PWA, and styled components.
+It could be built with Parcel, HTML, CSS, TypeScript, React, antd, PWA, and styled components.
 
 ### Mobile Apps
 

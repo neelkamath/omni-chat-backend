@@ -1,9 +1,12 @@
 version: '3.7'
 services:
+  auth:
+    ports: [8080:8080]
   chat:
     build:
       dockerfile: docker/Dockerfile
       context: .
+    restart: always
     ports: [80:80]
     # JDK 8 doesn't know how to manage its memory when it's in a container. JDK 9 fixed this, but Kotlin only supports
     # JDK 8. Hence, we have to use the relevant compiler options.

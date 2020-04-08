@@ -3,4 +3,5 @@
 build/
 out/
 .DS_Store
-*.html
+.env
+redoc-static.html

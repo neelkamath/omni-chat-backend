@@ -4,12 +4,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: |
+      - run: cp docs/.env.example .env
+      - name: test
+        run: |
           docker-compose \
             -f docker/docker-compose.yml \
             -f docker/docker-compose.test.yml \
             --project-directory . \
-            run --rm chat gradle test
+            up --abort-on-container-exit --exit-code-from chat
       - if: always()
         uses: actions/upload-artifact@v1
         with:
@@ -26,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle -o README.html docs/openapi.yaml --title 'Omni Chat'
+      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
       - uses: actions/upload-artifact@v1
         with:
           name: docs
