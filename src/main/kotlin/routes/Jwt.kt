@@ -12,15 +12,18 @@ fun Routing.routeJwt() {
     post("jwt") {
         val login = call.receive<Login>()
         when {
-            !Auth.userExists(login.username!!) ->
+            !Auth.usernameExists(login.username!!) ->
                 call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.NONEXISTENT_USER))
-            !Auth.findUser(login.username).isEmailVerified ->
+            !Auth.findUserByUsername(login.username).isEmailVerified ->
                 call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.EMAIL_NOT_VERIFIED))
             else -> {
                 val token = Auth.getToken(login)
                 if (token == null)
                     call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.INCORRECT_PASSWORD))
-                else call.respond(Jwt.buildAuthToken(Auth.getUserId(login.username), token))
+                else {
+                    val userId = Auth.findUserByUsername(login.username).id
+                    call.respond(Jwt.buildAuthToken(userId, token))
+                }
             }
         }
     }

@@ -11,6 +11,7 @@ import io.ktor.routing.*
 fun Routing.routeUser() {
     route("user") {
         authenticate {
+            delete()
             get()
             patch()
         }
@@ -18,10 +19,18 @@ fun Routing.routeUser() {
     }
 }
 
+private fun Route.delete() {
+    delete {
+        Auth.deleteUser(call.userId)
+        call.respond(HttpStatusCode.NoContent)
+    }
+}
+
 private fun Route.get() {
     get {
-        val authorizedUsername = Auth.getUsername(call.userId)
-        val details = with(Auth.findUser(authorizedUsername)) { UserDetails(username, email, firstName, lastName) }
+        val authorizedUsername = Auth.findUserById(call.userId).username
+        val details =
+            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(username, email, firstName, lastName) }
         call.respond(details)
     }
 }
@@ -30,7 +39,7 @@ private fun Route.patch() {
     patch {
         val user = call.receive<User>()
         if (user.login?.username != null &&
-            Auth.getUsername(call.userId) != user.login.username &&
+            Auth.findUserById(call.userId).username != user.login.username &&
             Auth.isUsernameTaken(user.login.username)
         ) {
             call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
@@ -44,7 +53,7 @@ private fun Route.patch() {
 private fun Route.post() {
     post {
         val user = call.receive<User>()
-        if (Auth.userExists(user.login!!.username!!))
+        if (Auth.usernameExists(user.login!!.username!!))
             call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
         else {
             Auth.createUser(user)

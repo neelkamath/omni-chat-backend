@@ -50,4 +50,8 @@ object Server {
     fun readAccount(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
         handleRequest(HttpMethod.Get, "/user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
     }.response
+
+    fun deleteAccount(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
+        handleRequest(HttpMethod.Delete, "/user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+    }.response
 }

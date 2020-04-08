@@ -57,9 +57,18 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Jwt'
-        '500':
-          description: Invalid token
   /user:
+    delete:
+      tags: [account]
+      description: Delete account.
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Account deleted.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     get:
       tags: [account]
       description: Get account details.

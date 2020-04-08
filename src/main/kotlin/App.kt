@@ -39,7 +39,11 @@ fun Application.main() {
         jwt {
             realm = Auth.realmName
             verifier(Jwt.buildVerifier())
-            validate { if (it.payload.audience.contains(Jwt.audience)) JWTPrincipal(it.payload) else null }
+            validate {
+                if (it.payload.audience.contains(Jwt.audience) && Auth.userIdExists(it.payload.subject))
+                    JWTPrincipal(it.payload)
+                else null
+            }
         }
     }
     routing {

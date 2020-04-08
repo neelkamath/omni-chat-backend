@@ -13,7 +13,8 @@ class GetUserTest : StringSpec({
         val user = User(Login("john", "password"), "john@gmail.com", firstName = "John")
         Server.createAccount(user)
         Auth.verifyEmail(user.login!!.username!!)
-        val jwt = gson.fromJson(Server.requestJwt(user.login!!).content, AuthToken::class.java).jwt
+        val jwtBody = Server.requestJwt(user.login!!).content
+        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
         val response = Server.readAccount(jwt)
         response.status() shouldBe HttpStatusCode.OK
         with(gson.fromJson(response.content, UserDetails::class.java)) {
@@ -29,8 +30,8 @@ class PatchUserTest : StringSpec({
     listener(AuthListener())
 
     fun testAccountUpdate(user: User, updatedUser: User) {
-        Auth.userExists(user.login!!.username!!).shouldBeFalse()
-        with(Auth.findUser(updatedUser.login!!.username!!)) {
+        Auth.usernameExists(user.login!!.username!!).shouldBeFalse()
+        with(Auth.findUserByUsername(updatedUser.login!!.username!!)) {
             username shouldBe updatedUser.login!!.username
             email shouldBe updatedUser.email
             isEmailVerified.shouldBeFalse()
@@ -57,7 +58,8 @@ class PatchUserTest : StringSpec({
         val user2Username = "username2"
         val user2 = User(Login(user2Username, "password"), "username2@gmail.com")
         Server.createAccount(user2)
-        val jwt = gson.fromJson(Server.requestJwt(user1Login).content, AuthToken::class.java).jwt
+        val jwtBody = Server.requestJwt(user1Login).content
+        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
         val updatedUser = user1.copy(user1Login.copy(user2Username))
         val response = Server.updateAccount(updatedUser, jwt)
         response.status() shouldBe HttpStatusCode.BadRequest
@@ -72,7 +74,7 @@ class PostUserTest : StringSpec({
     "An account should be created" {
         val user = User(Login("username", "password"), "username@gmail.com")
         Server.createAccount(user).status() shouldBe HttpStatusCode.Created
-        with(Auth.findUser(user.login!!.username!!)) {
+        with(Auth.findUserByUsername(user.login!!.username!!)) {
             username shouldBe user.login!!.username
             email shouldBe user.email
         }
@@ -84,5 +86,19 @@ class PostUserTest : StringSpec({
         val response = Server.createAccount(user)
         response.status() shouldBe HttpStatusCode.BadRequest
         gson.fromJson(response.content, InvalidUser::class.java) shouldBe InvalidUser(InvalidUserReason.USERNAME_TAKEN)
+    }
+})
+
+class DeleteUserTest : StringSpec({
+    listener(AuthListener())
+
+    "An account should be deleted" {
+        val login = Login("username", "password")
+        Server.createAccount(User(login, "username@gmail.com"))
+        Auth.verifyEmail(login.username!!)
+        val jwtBody = Server.requestJwt(login).content
+        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
+        Server.deleteAccount(jwt).status() shouldBe HttpStatusCode.NoContent
+        Auth.usernameExists(login.username!!).shouldBeFalse()
     }
 })

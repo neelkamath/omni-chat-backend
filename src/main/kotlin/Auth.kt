@@ -98,27 +98,29 @@ object Auth {
         .json(AccessTokenResponse::class.java)
         .execute()
 
-    fun userExists(username: String): Boolean = realm.users().search(username).size == 1
+    fun usernameExists(username: String): Boolean = realm.users().search(username).size == 1
+
+    fun userIdExists(id: String): Boolean = realm.users().list().map { it.id }.contains(id)
 
     fun createUser(user: User) {
         realm.users().create(UserRepresentation().apply { merge(user) })
     }
 
-    fun findUser(username: String): UserRepresentation = realm.users().search(username)[0]
+    fun findUserByUsername(username: String): UserRepresentation = realm.users().search(username)[0]
+
+    fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
     fun updateUser(id: String, user: User) {
-        val representation = realm.users().list().first { it.id == id }
+        val representation = findUserById(id)
         if (user.email != null && representation.email != user.email) representation.isEmailVerified = false
         realm.users().get(id).update(representation.apply { merge(user) })
     }
 
-    /** Returns the [UserRepresentation.id] for the [UserRepresentation.username]. */
-    fun getUserId(username: String): String = realm.users().search(username)[0].id
-
-    /** Returns the [UserRepresentation.username] for the [UserRepresentation.id]. */
-    fun getUsername(userId: String): String = realm.users().list().first { it.id == userId }.username
-
     fun isUsernameTaken(username: String): Boolean = realm.users().search(username).isNotEmpty()
+
+    fun deleteUser(id: String) {
+        realm.users().delete(id)
+    }
 
     private fun UserRepresentation.merge(user: User) {
         user.login?.let { login ->
