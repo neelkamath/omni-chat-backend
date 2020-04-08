@@ -111,6 +111,10 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### Security
 
+- [ ] Allow instances to pick one of the following access types.
+    - [ ] Only clients an admin creates are allowed to access the HTTP API.
+    - [x] Anyone can access the HTTP API without registering.
+    - [ ] Anyone can access the HTTP API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
 - [ ] Allow people you don't know to not directly contact you (i.e., they will go to an "Invites" tab where you'll have to go to allow, ignore, or block them).
 - [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.

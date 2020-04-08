@@ -6,9 +6,9 @@ _Trusted, Extensible, Better Chat_
 
 For people who need to communicate via chat, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services while leaving out their annoying parts.
 
-Branding assets are stored in the [`branding`](branding) directory.
+Branding assets are stored in [`branding/`](branding).
 
-If you want to use a previous version, download and use the `Source code` asset of that particular [release](https://github.com/neelkamath/omni-chat/releases).
+Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
 
 ## Installation
 

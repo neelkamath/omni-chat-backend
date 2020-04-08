@@ -6,4 +6,4 @@
     - SSH: `git clone git@github.com:neelkamath/omni-chat.git`
     - HTTPS: `git clone https://github.com/neelkamath/omni-chat.git`
 1. `cd omni-chat`
-1. Create a file named `.env`. Copy-paste the contents of [`.env.example`](../.env.example) into it, and personalize the values.
+1. Create a file named `.env`. Copy-paste the contents of [`.env.example`](.env.example) into it, and personalize the values.

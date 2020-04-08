@@ -5,7 +5,19 @@ info:
   description: |
     Free, open core, federated chat system, to replace every existing chat app.
 
-    View docs for older releases [here](https://github.com/neelkamath/omni-chat/releases).
+    To view the documentation for previos versions, see the
+    [older releases](https://github.com/neelkamath/omni-chat/releases).
+
+    Dates conform to ISO 8601.
+
+    Here is the usual flow for using this service.
+    1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
+      POST /user endpoint.
+    1. Have the user verify their email.
+    1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
+      future actions by using the HTTP POST /jwt endpoint.
+    1. Use the JWT to authorize requests on behalf of the user (e.g., to use an endpoint such as HTTP PATCH /user).
+    1. Whenever required, refresh the JWT using the HTTP POST /jwt_refresh endpoint.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -17,30 +29,140 @@ servers:
   - url: http://localhost:80
     description: You'll have to run the server yourself.
 paths:
+  /jwt:
+    post:
+      tags: [jwt]
+      description: Endpoints such as HTTP PATCH /user require authentication via a JWT. You can acquire a JWT to
+        authenticate a user by calling this endpoint with their credentials.
+      operationId: requestJwt
+      requestBody:
+        $ref: '#/components/requestBodies/JwtRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Jwt'
+        '400':
+          description: A JWT couldn't be created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtRequestError'
+  /jwt_refresh:
+    post:
+      tags: [jwt]
+      description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
+        set of tokens using the refresh token you received with the JWT.
+      operationId: refreshJwt
+      requestBody:
+        $ref: '#/components/requestBodies/RefreshJwt'
+      responses:
+        '200':
+          $ref: '#/components/responses/Jwt'
+        '500':
+          description: Invalid token
   /user:
+    get:
+      tags: [account]
+      description: Get account details.
+      operationId: readAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/AccountDetails'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    patch:
+      tags: [account]
+      description: Update account.
+      operationId: updateAccount
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/AccountUpdate'
+      responses:
+        '204':
+          description: Account updated
+        '400':
+          description: Account couldn't be updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameTakenError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     post:
       tags: [account]
       description: Create an account
       operationId: createAccount
+      security:
+        - bearerAuth: []
       requestBody:
-        $ref: '#/components/requestBodies/NewAccount'
+        $ref: '#/components/requestBodies/Account'
       responses:
-        '204':
+        '201':
           description: Account created
         '400':
-          description: Username already exists
+          $ref: '#/components/responses/UsernameTakenError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
   /health_check:
     get:
       tags: [status]
       description: Checks if all systems are operational.
-      operationId: healthCheck
+      operationId: checkHealth
       responses:
         '204':
           description: All systems are operational.
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
-    NewAccount:
+    AccountDetails:
       type: object
+      example:
+        username: john_doe
+        email: john.doe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [username, email]
+    UsernameTakenError:
+      type: object
+      example:
+        reason: USERNAME_TAKEN
+      properties:
+        reason:
+          type: string
+          enum: [USERNAME_TAKEN]
+      required: [reason]
+    JwtRequestError:
+      type: object
+      example:
+        reason: NONEXISTENT_USER
+      properties:
+        reason:
+          type: string
+          enum: [NONEXISTENT_USER, EMAIL_NOT_VERIFIED, INCORRECT_PASSWORD]
+      required: [reason]
+    Account:
+      type: object
+      example:
+        username: johndoe
+        password: pass
+        email: johndoe@example.com
+        first_name: John
+        last_name: Doe
       properties:
         username:
           type: string
@@ -53,10 +175,110 @@ components:
         last_name:
           type: string
       required: [username, password, email]
+    AccountUpdate:
+      type: object
+      example:
+        email: john.rogers@example.com
+        last_name: Rogers
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+          description: Changing the email address will require the user to verify their new address. If the user
+            requested that their address be updated, and the server successfully updates it, then you should log the
+            user out. This is because your current refresh token won't work since the user's account is disabled until
+            they verify their address. This means that they will have to contact an admin to reset their address in
+            case they entered an incorrect address.
+        first_name:
+          type: string
+        last_name:
+          type: string
+    Jwt:
+      type: object
+      example:
+        jwt: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjNDExNGUyOC1kN2M4LTQ5NjMtYTk4Yy01NThlMDgyNjljY2IiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg2MjM1ODkxfQ.7OpaHSmMsAe4TDWLr--ajFEHe9Ar1d9o4R7sygX3wTY
+        expiry: 2020-04-07T05:04:51.830Z
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI3MmM2NTE2ZS0zMGE1LTRkNTEtYmI1MS04NGU1NzFkM2Y0N2YifQ.eyJleHAiOjE1ODYyMzczOTEsImlhdCI6MTU4NjIzNTU5MSwianRpIjoiYTBlNmIwZDUtMjdlOC00YTljLWFjNDgtOTdjMDczMjE2ZDIwIiwiaXNzIjoiaHR0cDovL2F1dGg6ODA4MC9hdXRoL3JlYWxtcy9vbW5pLWNoYXQiLCJhdWQiOiJodHRwOi8vYXV0aDo4MDgwL2F1dGgvcmVhbG1zL29tbmktY2hhdCIsInN1YiI6ImM0MTE0ZTI4LWQ3YzgtNDk2My1hOThjLTU1OGUwODI2OWNjYiIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJzZXJ2ZXIiLCJzZXNzaW9uX3N0YXRlIjoiNDBlNzhlYjAtOGZjOS00YzA1LWE2MjQtMDBiNDUwNGM5ODY1Iiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIn0.kOJHHOAckmxJ9ymDNTan92HX8HmMkZJ28s6VdTjfe88
+        refresh_token_expiry: 2020-04-07T05:29:51.852Z
+      properties:
+        jwt:
+          type: string
+          description: The JWT to send with requests requiring authentication
+        expiry:
+          type: string
+          description: When the JWT expires
+        refresh_token:
+          type: string
+          description: The JWT is short-lived. Once it expires, the user would have to log in again. This can be avoided
+            by passing the refresh token to the HTTP POST /jwt_refresh endpoint to request a new set of tokens.
+        refresh_token_expiry:
+          type: string
+          description: When the refresh token expires
+      required: [jwt, expiry, refresh_token, refresh_token_expiry]
+    RefreshJwt:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: The refresh token you got with the JWT
+      required: [refresh_token]
+    Login:
+      type: object
+      example:
+        username: johndoe@example.com
+        password: pass
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
   requestBodies:
-    NewAccount:
+    Account:
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/NewAccount'
+            $ref: '#/components/schemas/Account'
+    AccountUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountUpdate'
+    RefreshJwt:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/RefreshJwt'
+    JwtRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Login'
+  responses:
+    AccountDetails:
+      description: Account details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountDetails'
+    UsernameTakenError:
+      description: The user couldn't be created.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UsernameTakenError'
+    Jwt:
+      description: Token set
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Jwt'
+    AuthorizationError:
+      description: Access token is missing or invalid
