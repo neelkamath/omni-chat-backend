@@ -4,7 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cp ../../docs/.env.example ../../.env
+      - run: cp docs/.env.example .env
       - name: test
         run: |
           docker-compose \
