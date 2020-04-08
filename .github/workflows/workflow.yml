@@ -5,10 +5,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Create dummy .env file
-        run: |
-          echo CHAT_DB_PASSWORD=DD7fTll66QzampGKtt1imUtHNhjju5MH6eQaK > .env
-          echo KEYCLOAK_DB_PASSWORD=enLZNDz5gGseTS2GFY3BEWuWivRGDXQH7f5i5 >> .env
-          echo KEYCLOAK_PASSWORD=UCGwnA2Vwp2uLHavwDmeARqUgn4HNG4iLe4Ai >> .env
+        run: cp .env.example .env
       - name: test
         run: |
           docker-compose \
