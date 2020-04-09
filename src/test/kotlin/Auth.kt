@@ -1,4 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChat.test
+
+import com.neelkamath.omniChat.Auth
 
 fun Auth.tearDown(): Unit = realm.remove()
 

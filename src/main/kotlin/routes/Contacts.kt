@@ -27,7 +27,7 @@ private fun Route.get() {
         val contacts = DB.dbTransaction {
             DB.Contacts.select { DB.Contacts.contactOwner eq call.userId }.map { it[DB.Contacts.contact] }
         }
-        call.respond(contacts)
+        call.respond(Contacts(contacts.toSet()))
     }
 }
 

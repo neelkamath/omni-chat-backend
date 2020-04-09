@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
 import io.ktor.application.Application

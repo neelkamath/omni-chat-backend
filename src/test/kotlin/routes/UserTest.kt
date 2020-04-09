@@ -1,6 +1,7 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.test.verifyEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
@@ -39,10 +40,10 @@ class PatchUserTest : StringSpec({
     }
 
     "An account should update" {
-        val user = User(Login(username = "john_doe", password = "pass"), email = "john.doe@example.com")
+        val user = User(Login(username = "john_doe", password = "pass"), "john.doe@gmail.com")
         Server.createAccount(user)
         Auth.verifyEmail(user.login!!.username!!)
-        val updatedUser = User(Login(username = "john_rogers"), email = "john.rogers@example.com", lastName = "Rogers")
+        val updatedUser = User(Login(username = "john_rogers"), "john.rogers@gmail.com", lastName = "Rogers")
         Server.updateAccount(updatedUser, getJwt(user.login!!)).status() shouldBe HttpStatusCode.NoContent
         testAccountUpdate(user, updatedUser)
     }

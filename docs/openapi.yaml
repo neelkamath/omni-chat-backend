@@ -43,8 +43,8 @@ paths:
           $ref: '#/components/responses/AuthorizationError'
     post:
       tags: [contacts]
-      description: Saves contacts. Contacts already saved will be ignored. If the user's own contact is present, it will
-        be ignored.
+      description: Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it
+        will be ignored.
       operationId: createContacts
       requestBody:
         $ref: '#/components/requestBodies/Contacts'

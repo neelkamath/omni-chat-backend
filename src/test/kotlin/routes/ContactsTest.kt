@@ -1,6 +1,7 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.test.verifyEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
