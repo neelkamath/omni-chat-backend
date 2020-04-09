@@ -4,7 +4,6 @@
 
 Here's how a standard project iteration looks like.
 
-1. If you're updating the version of Gradle used, update the Gradle image tags used in [`docker/`](../docker) too.
 1. Pick a feature from the [spec](spec.md) to work on.
 1. Plan the feature in the [OpenAPI spec](openapi.yaml).
 1. Write tests (i.e., TDD). If you're writing tests for an HTTP API endpoint, perform the following sub-steps.
@@ -12,15 +11,16 @@ Here's how a standard project iteration looks like.
     1. In the relevant file, create classes for the endpoint using the format `<HTTP_VERB><ENDPOINT>Test`. For example, if the endpoint `/chat_message` accepts the POST and PATCH verbs, then two classes named `PostChatMessageTest` and `PatchChatMessageTest` would be created.
 1. Implement the feature.
 1. Update the spec and tests for deviations from the implementation you had planned.
-1. Mark the feature complete in the [spec](spec.md).
+1. Mark the feature as completed in the [spec](spec.md).
 1. If you have updated the server or OpenAPI spec, follow these steps to create a new release.
-    1. Update the version in the [OpenAPI spec](openapi.yaml) and the [build file](../build.gradle.kts).
+    1. Update the version in the [OpenAPI spec](openapi.yaml) and the [build file](../build.gradle.kts). Even if the server is still backwards compatible, you must bump the major version if you've renamed an entity in the OpenAPI spec (e.g., a key under `schemas/components/`). This is because [OpenAPI Generator](https://openapi-generator.tech/) uses key names when creating client SDKs, which would have otherwise become backwards-incompatible.
     1. Add an entry to the [changelog](CHANGELOG.md).
     1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created, and the new documentation will be hosted.
 
 ## Server
 
-Use `com.neelkamath.omniChat.DB.dbTransaction` instead of `org.jetbrains.exposed.sql.transactions.transaction`.
+- Use `com.neelkamath.omniChat.DB.dbTransaction` instead of `org.jetbrains.exposed.sql.transactions.transaction`.
+- If you're updating the version of Gradle used, update the Gradle image tags used in [`docker/`](../docker) too.
 
 ### Development
 
@@ -66,7 +66,7 @@ Use `com.neelkamath.omniChat.DB.dbTransaction` instead of `org.jetbrains.exposed
 
 ## OpenAPI Spec
 
-[`openapi.yaml`](openapi.yaml) is the OpenAPI spec.
+[`openapi.yaml`](openapi.yaml) is the OpenAPI spec. Top-level keys under `paths` must be alphabetically ordered. Top-level sub-keys under `components` (e.g., keys under `components/schemas`) must be alphabetically ordered.
 
 ### Development
 

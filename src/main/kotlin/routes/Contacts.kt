@@ -9,12 +9,30 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.Route
+import io.ktor.routing.get
 import io.ktor.routing.post
+import io.ktor.routing.route
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.select
 
 fun Route.routeContacts() {
-    post("contacts") {
+    route("contacts") {
+        get()
+        post()
+    }
+}
+
+private fun Route.get() {
+    get {
+        val contacts = DB.dbTransaction {
+            DB.Contacts.select { DB.Contacts.contactOwner eq call.userId }.map { it[DB.Contacts.contact] }
+        }
+        call.respond(contacts)
+    }
+}
+
+private fun Route.post() {
+    post {
         val saved = DB.dbTransaction {
             DB.Contacts.select { DB.Contacts.contactOwner eq call.userId }.map { it[DB.Contacts.contact] }
         }

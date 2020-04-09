@@ -31,6 +31,40 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /contacts:
+    get:
+      tags: [contacts]
+      description: Retrieve saved contacts.
+      operationId: readContacts
+      responses:
+        '200':
+          $ref: '#/components/responses/Contacts'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [contacts]
+      description: Saves contacts. Contacts already saved will be ignored. If the user's own contact is present, it will
+        be ignored.
+      operationId: createContacts
+      requestBody:
+        $ref: '#/components/requestBodies/Contacts'
+      responses:
+        '204':
+          description: Contacts saved.
+        '400':
+          description: At least one of the contacts were invalid, and so none of the users were saved. This might happen
+            because a user whose contact was to be saved deleted their account just before the contacts were saved.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /health_check:
+    get:
+      tags: [status]
+      security: []
+      description: Checks if all systems are operational.
+      operationId: checkHealth
+      responses:
+        '204':
+          description: All systems are operational.
   /jwt:
     post:
       tags: [jwt]
@@ -110,29 +144,6 @@ paths:
           $ref: '#/components/responses/UsernameTakenError'
         '401':
           $ref: '#/components/responses/AuthorizationError'
-  /contacts:
-    post:
-      tags: [contacts]
-      description: Saves contacts. Contacts already saved will be ignored. If the user's own contact is present, it will
-        be ignored.
-      operationId: saveContacts
-      requestBody:
-        $ref: '#/components/requestBodies/Contacts'
-      responses:
-        '204':
-          description: Contacts saved.
-        '400':
-          description: At least one of the contacts were invalid, and so none of the users were saved. This might happen
-            because a user whose contact was to be saved deleted their account just before the contacts were saved.
-  /health_check:
-    get:
-      tags: [status]
-      security: []
-      description: Checks if all systems are operational.
-      operationId: checkHealth
-      responses:
-        '204':
-          description: All systems are operational.
 components:
   securitySchemes:
     bearerAuth:
@@ -140,54 +151,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    Contacts:
-      type: object
-      example:
-        contacts: [44778d05-0304-47cf-be61-50225e04a1c7, 524a6b24-1ab2-48a1-9c0e-26bd19662ad3]
-      properties:
-        contacts:
-          type: array
-          items:
-            type: string
-      required: [contacts]
-    AccountDetails:
-      type: object
-      example:
-        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
-        username: john_doe
-        email: john.doe@example.com
-        first_name: John
-        last_name: Doe
-      properties:
-        user_id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        first_name:
-          type: string
-        last_name:
-          type: string
-      required: [user_id, username, email]
-    UsernameTakenError:
-      type: object
-      example:
-        reason: USERNAME_TAKEN
-      properties:
-        reason:
-          type: string
-          enum: [USERNAME_TAKEN]
-      required: [reason]
-    JwtRequestError:
-      type: object
-      example:
-        reason: NONEXISTENT_USER
-      properties:
-        reason:
-          type: string
-          enum: [NONEXISTENT_USER, EMAIL_NOT_VERIFIED, INCORRECT_PASSWORD]
-      required: [reason]
     Account:
       type: object
       example:
@@ -208,6 +171,26 @@ components:
         last_name:
           type: string
       required: [username, password, email]
+    AccountDetails:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        username: john_doe
+        email: john.doe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [user_id, username, email]
     AccountUpdate:
       type: object
       example:
@@ -229,6 +212,16 @@ components:
           type: string
         last_name:
           type: string
+    Contacts:
+      type: object
+      example:
+        contacts: [44778d05-0304-47cf-be61-50225e04a1c7, 524a6b24-1ab2-48a1-9c0e-26bd19662ad3]
+      properties:
+        contacts:
+          type: array
+          items:
+            type: string
+      required: [contacts]
     Jwt:
       type: object
       example:
@@ -251,13 +244,15 @@ components:
           type: string
           description: When the refresh token expires
       required: [jwt, expiry, refresh_token, refresh_token_expiry]
-    RefreshJwt:
+    JwtRequestError:
       type: object
+      example:
+        reason: NONEXISTENT_USER
       properties:
-        refresh_token:
+        reason:
           type: string
-          description: The refresh token you got with the JWT
-      required: [refresh_token]
+          enum: [NONEXISTENT_USER, EMAIL_NOT_VERIFIED, INCORRECT_PASSWORD]
+      required: [reason]
     Login:
       type: object
       example:
@@ -269,13 +264,23 @@ components:
         password:
           type: string
       required: [username, password]
+    RefreshJwt:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: The refresh token you got with the JWT
+      required: [refresh_token]
+    UsernameTakenError:
+      type: object
+      example:
+        reason: USERNAME_TAKEN
+      properties:
+        reason:
+          type: string
+          enum: [USERNAME_TAKEN]
+      required: [reason]
   requestBodies:
-    Contacts:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Contacts'
     Account:
       required: true
       content:
@@ -288,18 +293,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AccountUpdate'
-    RefreshJwt:
+    Contacts:
       required: true
       content:
-        application/x-www-form-urlencoded:
+        application/json:
           schema:
-            $ref: '#/components/schemas/RefreshJwt'
+            $ref: '#/components/schemas/Contacts'
     JwtRequest:
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Login'
+    RefreshJwt:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '#/components/schemas/RefreshJwt'
   responses:
     AccountDetails:
       description: Account details.
@@ -307,17 +318,23 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AccountDetails'
-    UsernameTakenError:
-      description: The user couldn't be created.
+    AuthorizationError:
+      description: Access token is missing or invalid
+    Contacts:
+      description: Saved contacts.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/UsernameTakenError'
+            $ref: '#/components/schemas/Contacts'
     Jwt:
       description: Token set
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Jwt'
-    AuthorizationError:
-      description: Access token is missing or invalid
+    UsernameTakenError:
+      description: The user couldn't be created.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UsernameTakenError'
