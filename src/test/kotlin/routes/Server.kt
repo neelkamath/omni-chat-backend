@@ -1,9 +1,6 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
-import com.neelkamath.omniChat.Login
-import com.neelkamath.omniChat.User
-import com.neelkamath.omniChat.gson
-import com.neelkamath.omniChat.main
+import com.neelkamath.omniChat.*
 import io.ktor.application.Application
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -54,4 +51,26 @@ object Server {
     fun deleteAccount(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
         handleRequest(HttpMethod.Delete, "/user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
     }.response
+
+    fun createContacts(contacts: Contacts, jwt: String): TestApplicationResponse =
+        withTestApplication(Application::main) {
+            handleRequest(HttpMethod.Post, "/contacts") {
+                addHeader(HttpHeaders.Authorization, "Bearer $jwt")
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody(gson.toJson(contacts))
+            }
+        }.response
+
+    fun readContacts(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
+        handleRequest(HttpMethod.Get, "/contacts") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+    }.response
+
+    fun deleteContacts(contacts: Contacts, jwt: String): TestApplicationResponse =
+        withTestApplication(Application::main) {
+            handleRequest(HttpMethod.Delete, "/contacts") {
+                addHeader(HttpHeaders.Authorization, "Bearer $jwt")
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody(gson.toJson(contacts))
+            }
+        }.response
 }

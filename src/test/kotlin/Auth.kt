@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChat.test
 
-// This file contains extensions for the <Auth> object which are only required by the test source set.
+import com.neelkamath.omniChat.Auth
 
 fun Auth.tearDown(): Unit = realm.remove()
 

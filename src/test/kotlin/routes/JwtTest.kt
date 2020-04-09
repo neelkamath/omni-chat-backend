@@ -1,12 +1,13 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.test.verifyEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
 
 class PostJwtTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "A token set should be sent" {
         val login = Login("username", "password")

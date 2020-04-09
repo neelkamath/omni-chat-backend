@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.ContactsData
 import io.ktor.application.call
 import io.ktor.auth.authenticate
 import io.ktor.http.HttpStatusCode
@@ -22,6 +23,7 @@ fun Routing.routeUser() {
 private fun Route.delete() {
     delete {
         Auth.deleteUser(call.userId)
+        ContactsData.deleteUserEntries(call.userId)
         call.respond(HttpStatusCode.NoContent)
     }
 }
@@ -30,7 +32,7 @@ private fun Route.get() {
     get {
         val authorizedUsername = Auth.findUserById(call.userId).username
         val details =
-            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(username, email, firstName, lastName) }
+            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(id, username, email, firstName, lastName) }
         call.respond(details)
     }
 }

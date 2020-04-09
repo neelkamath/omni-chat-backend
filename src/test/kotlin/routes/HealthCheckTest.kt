@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe

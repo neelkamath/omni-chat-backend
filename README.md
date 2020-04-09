@@ -6,9 +6,13 @@ _Trusted, Extensible, Better Chat_
 
 For people who need to communicate via chat, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services while leaving out their annoying parts.
 
+You can read the [spec](docs/spec.md) to see how Omni Chat differentiates itself from competitors.
+
 Branding assets are stored in [`branding/`](branding).
 
 Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
+
+This project is not yet usable, and hence DB migrations don't exist for upgrading versions.
 
 ## Installation
 

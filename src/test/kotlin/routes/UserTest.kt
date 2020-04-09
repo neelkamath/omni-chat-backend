@@ -1,21 +1,20 @@
-package com.neelkamath.omniChat.routes
+package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.test.verifyEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
 
 class GetUserTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "An account's details should be received" {
         val user = User(Login("john", "password"), "john@gmail.com", firstName = "John")
         Server.createAccount(user)
         Auth.verifyEmail(user.login!!.username!!)
-        val jwtBody = Server.requestJwt(user.login!!).content
-        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
-        val response = Server.readAccount(jwt)
+        val response = Server.readAccount(getJwt(user.login!!))
         response.status() shouldBe HttpStatusCode.OK
         with(gson.fromJson(response.content, UserDetails::class.java)) {
             username shouldBe user.login!!.username
@@ -27,7 +26,7 @@ class GetUserTest : StringSpec({
 })
 
 class PatchUserTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     fun testAccountUpdate(user: User, updatedUser: User) {
         Auth.usernameExists(user.login!!.username!!).shouldBeFalse()
@@ -41,12 +40,11 @@ class PatchUserTest : StringSpec({
     }
 
     "An account should update" {
-        val user = User(Login(username = "john_doe", password = "pass"), email = "john.doe@example.com")
+        val user = User(Login(username = "john_doe", password = "pass"), "john.doe@gmail.com")
         Server.createAccount(user)
         Auth.verifyEmail(user.login!!.username!!)
-        val updatedUser = User(Login(username = "john_rogers"), email = "john.rogers@example.com", lastName = "Rogers")
-        val jwt = gson.fromJson(Server.requestJwt(user.login!!).content, AuthToken::class.java).jwt
-        Server.updateAccount(updatedUser, jwt).status() shouldBe HttpStatusCode.NoContent
+        val updatedUser = User(Login(username = "john_rogers"), "john.rogers@gmail.com", lastName = "Rogers")
+        Server.updateAccount(updatedUser, getJwt(user.login!!)).status() shouldBe HttpStatusCode.NoContent
         testAccountUpdate(user, updatedUser)
     }
 
@@ -58,10 +56,8 @@ class PatchUserTest : StringSpec({
         val user2Username = "username2"
         val user2 = User(Login(user2Username, "password"), "username2@gmail.com")
         Server.createAccount(user2)
-        val jwtBody = Server.requestJwt(user1Login).content
-        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
         val updatedUser = user1.copy(user1Login.copy(user2Username))
-        val response = Server.updateAccount(updatedUser, jwt)
+        val response = Server.updateAccount(updatedUser, getJwt(user1Login))
         response.status() shouldBe HttpStatusCode.BadRequest
         val body = gson.fromJson(response.content, InvalidUser::class.java)
         body shouldBe InvalidUser(InvalidUserReason.USERNAME_TAKEN)
@@ -69,7 +65,7 @@ class PatchUserTest : StringSpec({
 })
 
 class PostUserTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "An account should be created" {
         val user = User(Login("username", "password"), "username@gmail.com")
@@ -90,15 +86,13 @@ class PostUserTest : StringSpec({
 })
 
 class DeleteUserTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "An account should be deleted" {
         val login = Login("username", "password")
         Server.createAccount(User(login, "username@gmail.com"))
         Auth.verifyEmail(login.username!!)
-        val jwtBody = Server.requestJwt(login).content
-        val jwt = gson.fromJson(jwtBody, AuthToken::class.java).jwt
-        Server.deleteAccount(jwt).status() shouldBe HttpStatusCode.NoContent
+        Server.deleteAccount(getJwt(login)).status() shouldBe HttpStatusCode.NoContent
         Auth.usernameExists(login.username!!).shouldBeFalse()
     }
 })
