@@ -1,8 +1,5 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.DB.Contacts.contact
-import com.neelkamath.omniChat.DB.Contacts.contactOwner
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.StdOutSqlLogger
@@ -10,8 +7,7 @@ import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DB {
-    val tables = arrayOf(Contacts)
-    private const val userIdLength = 36
+    val tables = arrayOf(ContactsData.Table)
 
     /**
      * Opens the DB connection, and creates the tables.
@@ -35,19 +31,12 @@ object DB {
         )
     }
 
-    private fun createTables(): Unit = dbTransaction { SchemaUtils.create(*tables) }
+    private fun createTables(): Unit =
+        transact { SchemaUtils.create(*tables) }
 
-    fun <T> dbTransaction(function: () -> T): T = transaction {
+    /** Always use this in place of [transaction]. */
+    fun <T> transact(function: () -> T): T = transaction {
         addLogger(StdOutSqlLogger)
         return@transaction function()
-    }
-
-    /** Each user's ([contactOwner]'s) saved [contact]s. */
-    object Contacts : IntIdTable() {
-        /** User ID. */
-        val contactOwner = varchar("contact_owner", userIdLength)
-
-        /** User ID. */
-        val contact = varchar("contact", userIdLength)
     }
 }

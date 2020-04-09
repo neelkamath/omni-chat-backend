@@ -2,49 +2,42 @@ package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.Auth
 import com.neelkamath.omniChat.Contacts
-import com.neelkamath.omniChat.DB
+import com.neelkamath.omniChat.db.ContactsData
 import com.neelkamath.omniChat.userId
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
-import io.ktor.routing.Route
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.routing.route
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.select
+import io.ktor.routing.*
 
 fun Route.routeContacts() {
     route("contacts") {
+        delete()
         get()
         post()
     }
 }
 
-private fun Route.get() {
-    get {
-        val contacts = DB.dbTransaction {
-            DB.Contacts.select { DB.Contacts.contactOwner eq call.userId }.map { it[DB.Contacts.contact] }
-        }
-        call.respond(Contacts(contacts.toSet()))
+private fun Route.delete() {
+    delete {
+        val saved = ContactsData.read(call.userId).userIdList
+        val userIdList = call.receive<Contacts>().userIdList.filter { it in saved }.toSet()
+        ContactsData.delete(call.userId, Contacts(userIdList))
+        call.respond(HttpStatusCode.NoContent)
     }
+}
+
+private fun Route.get() {
+    get { call.respond(ContactsData.read(call.userId)) }
 }
 
 private fun Route.post() {
     post {
-        val saved = DB.dbTransaction {
-            DB.Contacts.select { DB.Contacts.contactOwner eq call.userId }.map { it[DB.Contacts.contact] }
-        }
-        val contacts = call.receive<Contacts>().contacts.filter { it !in saved && it != call.userId }
-        if (!contacts.all { it in Auth.getUserIdList() }) call.respond(HttpStatusCode.BadRequest)
+        val saved = ContactsData.read(call.userId).userIdList
+        val userIdList = call.receive<Contacts>().userIdList.filter { it !in saved && it != call.userId }.toSet()
+        if (!userIdList.all { it in Auth.getUserIdList() }) call.respond(HttpStatusCode.BadRequest)
         else {
-            DB.dbTransaction {
-                DB.Contacts.batchInsert(contacts) {
-                    this[DB.Contacts.contactOwner] = call.userId
-                    this[DB.Contacts.contact] = it
-                }
-            }
+            ContactsData.create(call.userId, Contacts(userIdList))
             call.respond(HttpStatusCode.NoContent)
         }
     }

@@ -30,4 +30,4 @@ data class UserDetails(
     val lastName: String? = null
 )
 
-data class Contacts(val contacts: Set<String>)
+data class Contacts(val userIdList: Set<String>)

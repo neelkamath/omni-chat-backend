@@ -1,12 +1,12 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.Auth
-import com.neelkamath.omniChat.DB
+import com.neelkamath.omniChat.db.DB
+import com.neelkamath.omniChat.test.db.tearDown
 import com.neelkamath.omniChat.test.tearDown
 import io.kotest.core.listeners.TestListener
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
-import org.jetbrains.exposed.sql.SchemaUtils
 
 class AppListener : TestListener {
     override suspend fun beforeTest(testCase: TestCase) {
@@ -21,5 +21,3 @@ class AppListener : TestListener {
         DB.tearDown()
     }
 }
-
-private fun DB.tearDown(): Unit = dbTransaction { SchemaUtils.drop(*tables) }

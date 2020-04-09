@@ -15,6 +15,7 @@ import org.keycloak.representations.idm.RealmRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 
 object Auth {
+    /** This is only exposed for extensions to this object needing it in the test source set. Never use it directly. */
     lateinit var realm: RealmResource
     const val realmName = "omni-chat"
     private const val clientId = "server"

@@ -32,6 +32,17 @@ security:
   - bearerAuth: []
 paths:
   /contacts:
+    delete:
+      tags: [contacts]
+      description: Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
+      operationId: deleteContacts
+      requestBody:
+        $ref: '#/components/requestBodies/Contacts'
+      responses:
+        '204':
+          description: Contacts deleted.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     get:
       tags: [contacts]
       description: Retrieve saved contacts.

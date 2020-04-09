@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.neelkamath.omniChat.db.DB
 import com.neelkamath.omniChat.routes.*
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -16,6 +17,7 @@ import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
 import io.ktor.gson.GsonConverter
 import io.ktor.http.ContentType
+import io.ktor.routing.Routing
 import io.ktor.routing.routing
 import org.keycloak.representations.idm.UserRepresentation
 
@@ -29,26 +31,32 @@ val gson: Gson = GsonBuilder()
 val ApplicationCall.userId get(): String = authentication.principal<JWTPrincipal>()!!.payload.subject
 
 fun Application.main() {
-    Auth.setUp()
-    DB.setUp()
+    setUp()
     install(CallLogging)
     install(ContentNegotiation) { register(ContentType.Application.Json, GsonConverter(gson)) }
-    install(Authentication) {
-        jwt {
-            realm = Auth.realmName
-            verifier(Jwt.buildVerifier())
-            validate {
-                if (it.payload.audience.contains(Jwt.audience) && Auth.userIdExists(it.payload.subject))
-                    JWTPrincipal(it.payload)
-                else null
-            }
-        }
+    install(Authentication) { jwt() }
+    routing { route() }
+}
+
+private fun setUp() {
+    Auth.setUp()
+    DB.setUp()
+}
+
+private fun Authentication.Configuration.jwt(): Unit = jwt {
+    realm = Auth.realmName
+    verifier(Jwt.buildVerifier())
+    validate {
+        if (it.payload.audience.contains(Jwt.audience) && Auth.userIdExists(it.payload.subject))
+            JWTPrincipal(it.payload)
+        else null
     }
-    routing {
-        routeHealthCheck()
-        routeJwt()
-        routeUser()
-        routeRefreshJwt()
-        authenticate { routeContacts() }
-    }
+}
+
+private fun Routing.route() {
+    routeHealthCheck()
+    routeJwt()
+    routeUser()
+    routeRefreshJwt()
+    authenticate { routeContacts() }
 }

@@ -64,4 +64,13 @@ object Server {
     fun readContacts(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
         handleRequest(HttpMethod.Get, "/contacts") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
     }.response
+
+    fun deleteContacts(contacts: Contacts, jwt: String): TestApplicationResponse =
+        withTestApplication(Application::main) {
+            handleRequest(HttpMethod.Delete, "/contacts") {
+                addHeader(HttpHeaders.Authorization, "Bearer $jwt")
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody(gson.toJson(contacts))
+            }
+        }.response
 }
