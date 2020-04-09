@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
 
 class PostJwtTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "A token set should be sent" {
         val login = Login("username", "password")

@@ -23,8 +23,11 @@ enum class InvalidUserReason {
 data class AuthToken(val jwt: String, val expiry: Date, val refreshToken: String, val refreshTokenExpiry: Date)
 
 data class UserDetails(
+    val userId: String,
     val username: String,
     val email: String,
     val firstName: String? = null,
     val lastName: String? = null
 )
+
+data class Contacts(val contacts: Set<String>)

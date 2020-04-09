@@ -20,6 +20,8 @@ Here's how a standard project iteration looks like.
 
 ## Server
 
+Use `com.neelkamath.omniChat.DB.dbTransaction` instead of `org.jetbrains.exposed.sql.transactions.transaction`.
+
 ### Development
 
 1. Run the server on http://localhost:5000 with autoreload enabled.

@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
 
 class PostRefreshJwtTest : StringSpec({
-    listener(AuthListener())
+    listener(AppListener())
 
     "A refresh token should issue a new token set" {
         val login = Login("username", "password")

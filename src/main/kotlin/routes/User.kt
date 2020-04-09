@@ -30,7 +30,7 @@ private fun Route.get() {
     get {
         val authorizedUsername = Auth.findUserById(call.userId).username
         val details =
-            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(username, email, firstName, lastName) }
+            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(id, username, email, firstName, lastName) }
         call.respond(details)
     }
 }

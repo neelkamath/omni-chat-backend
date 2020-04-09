@@ -110,6 +110,8 @@ object Auth {
 
     fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
+    fun getUserIdList(): List<String> = realm.users().list().map { it.id }
+
     fun updateUser(id: String, user: User) {
         val representation = findUserById(id)
         if (user.email != null && representation.email != user.email) representation.isEmailVerified = false
