@@ -181,7 +181,8 @@ paths:
     post:
       tags: [user]
       security: []
-      description: Create an account.
+      description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
+        they verify their email address.
       operationId: createUser
       requestBody:
         $ref: '#/components/requestBodies/NewUser'

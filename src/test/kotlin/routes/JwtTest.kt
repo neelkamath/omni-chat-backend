@@ -30,7 +30,7 @@ class PostJwtTest : StringSpec({
 
     "A token set should be sent" {
         val login = Login("username", "password")
-        createUser(NewUser(login.username, login.password, "username@gmail.com"))
+        createUser(NewUser(login.username, login.password, "username@example.com"))
         Auth.verifyEmail(login.username)
         val response = requestJwt(login)
         response.status() shouldBe HttpStatusCode.OK
@@ -46,7 +46,7 @@ class PostJwtTest : StringSpec({
 
     "A token set shouldn't be created for a user who hasn't verified their email" {
         val login = Login("username", "password")
-        createUser(NewUser(login.username, login.password, "username@gmail.com"))
+        createUser(NewUser(login.username, login.password, "username@example.com"))
         val response = requestJwt(login)
         response.status() shouldBe HttpStatusCode.BadRequest
         val body = gson.fromJson(response.content, InvalidUser::class.java)
@@ -55,7 +55,7 @@ class PostJwtTest : StringSpec({
 
     "A token set shouldn't be created for an incorrect password" {
         val username = "username"
-        createUser(NewUser(username, "correct_password", "username@gmail.com"))
+        createUser(NewUser(username, "correct_password", "username@example.com"))
         Auth.verifyEmail(username)
         val response = requestJwt(Login(username, "incorrect_password"))
         response.status() shouldBe HttpStatusCode.BadRequest
@@ -69,7 +69,7 @@ class PostRefreshJwtTest : StringSpec({
 
     "A refresh token should issue a new token set" {
         val login = Login("username", "password")
-        createUser(NewUser(login.username, login.password, "username@gmail.com"))
+        createUser(NewUser(login.username, login.password, "username@example.com"))
         Auth.verifyEmail(login.username)
         val token = gson.fromJson(requestJwt(login).content, AuthToken::class.java).refreshToken
         val response = refreshJwt(token)

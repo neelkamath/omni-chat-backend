@@ -29,9 +29,9 @@ class GetSearchUsersTest : StringSpec({
 
     fun createUsers(): UserPublicInfoList = UserPublicInfoList(
         listOf(
-            NewUser(username = "neel", password = "p", email = "neelkamathonline@gmail.com", firstName = "Neel"),
-            NewUser(username = "johndoe", password = "j", email = "john@gmail.com", firstName = "John"),
-            NewUser(username = "john.rogers", password = "r", email = "rogers@gmail.com"),
+            NewUser(username = "tony", password = "p", email = "tony@example.com", firstName = "Tony"),
+            NewUser(username = "johndoe", password = "j", email = "john@example.com", firstName = "John"),
+            NewUser(username = "john.rogers", password = "r", email = "rogers@example.com"),
             NewUser(username = "anonymous", password = "a", email = "anon@example.com", firstName = "John")
         ).map {
             createUser(it)

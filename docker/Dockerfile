@@ -1,5 +1,3 @@
-# Gradle use carriage returns when logging by default, which aren't visible during Docker builds. Since gradle
-# invocations take several minutes, it looks like it froze. Hence, we set the log level to info to see the progress.
 FROM gradle:6.3-jdk8 AS builder
 WORKDIR /app
 # Without this environment variable, Gradle will not cache dependencies. When building this image without cached layers,
@@ -9,9 +7,9 @@ WORKDIR /app
 ENV GRADLE_USER_HOME /cache
 COPY build.gradle.kts gradle.properties settings.gradle.kts ./
 # The shadowJar task maximizes cacheable outputs when compared to the build task, or the --refresh-dependencies flag.
-RUN gradle --no-daemon -i shadowJar
+RUN gradle --no-daemon shadowJar
 COPY src/main/ src/main/
-RUN gradle --no-daemon -i shadowJar
+RUN gradle --no-daemon shadowJar
 
 FROM openjdk:8-jre-alpine
 WORKDIR /app

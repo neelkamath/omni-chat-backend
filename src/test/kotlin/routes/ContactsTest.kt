@@ -116,7 +116,7 @@ class PostContactsTest : StringSpec({
 /** Creates 3 users, verifies their emails, and returns them. */
 private fun createUsers(): List<CreatedUser> = (0..2).map {
     val login = Login("username$it", "password")
-    createUser(NewUser(login.username, login.password, "username$it@gmail.com"))
+    createUser(NewUser(login.username, login.password, "username$it@example.com"))
     Auth.verifyEmail(login.username)
     val userId = Auth.findUserByUsername(login.username).id
     CreatedUser(login, userId)

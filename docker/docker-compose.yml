@@ -15,6 +15,7 @@ services:
       DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
       DB_USER: postgres
       DB_VENDOR: postgres
+      KEYCLOAK_FRONTEND_URL: http://localhost:8080/auth
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_USER: admin
   auth-db:
@@ -26,6 +27,7 @@ services:
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
     networks: [auth, chat-db]
     environment:
+      IS_TEST_ENVIRONMENT: 0
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_URL: http://auth:8080

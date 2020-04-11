@@ -11,10 +11,9 @@ The following topics discuss, in part, how to create [extensions](https://kotlin
 
 ### DB
 
-- Always use `com.neelkamath.omniChat.db.DB.transact` instead of `import org.jetbrains.exposed.sql.transactions.transaction`.
 - Never operate on the DB tables directly. Always use the abstraction layers in `com.neelkamath.omniChat.db` instead.
-- The abstraction layer for the database (excluding the tables) is [`src/main/kotlin/db/DB.kt`](../src/main/kotlin/db/DB.kt). For the test source set, use the extensions housed in [`src/test/kotlin/db/DB.kt`](../src/test/kotlin/db/DB.kt).
-- Every table and its related functions have their own file. This file has the same name as the `object` it contains, which is named using the format `<TABLE>Data`. The table `object` is named `Table`, and its SQL table name is overridden to provide the actual name. For the test source set, use the extensions housed in its mirror file (e.g., [`src/main/kotlin/db/ContactsData.kt`](../src/main/kotlin/db/ContactsData.kt)'s mirrored file is [`src/test/kotlin/db/ContactsData.kt`](../src/test/kotlin/db/ContactsData.kt)).
+- The abstraction layer for the database (excluding the tables) is [`src/main/kotlin/db/DB.kt`](../src/main/kotlin/db/DB.kt). For the test source set, use the extensions in [`src/test/kotlin/db/DB.kt`](../src/test/kotlin/db/DB.kt).
+- Every table and its related functions have their own file. This file has the same name as the `object` it contains, which is named using the format `<TABLE>Data`. The table `object` is named `Table`, and its SQL table name is overridden to provide the actual name. For the test source set, use the extensions in the mirror file (e.g., [`src/main/kotlin/db/ContactsData.kt`](../src/main/kotlin/db/ContactsData.kt)'s mirrored file is [`src/test/kotlin/db/ContactsData.kt`](../src/test/kotlin/db/ContactsData.kt)).
 
 ## Development
 
@@ -40,7 +39,7 @@ The following topics discuss, in part, how to create [extensions](https://kotlin
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Enter into the shell. The connection will be refused continuously for approximately one minute until the required services are up and running.
+1. Enter into the shell. The connection will be refused continuously for approximately one minute until the required services are up and running. You do not need to worry about having valid email credentials in `.env` because the tests do not fail if emails aren't actually sent.
     ```
     docker-compose \
         -f docker/docker-compose.yml \

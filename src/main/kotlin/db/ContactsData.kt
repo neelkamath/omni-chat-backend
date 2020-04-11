@@ -11,7 +11,7 @@ object ContactsData {
 
     /** Each user's ([contactOwner]'s) saved [contact]s. */
     object Table : IntIdTable() {
-        override val tableName get() = "Contacts"
+        override val tableName get() = "contacts"
 
         /** User ID. */
         val contactOwner = varchar("contact_owner", userIdLength)

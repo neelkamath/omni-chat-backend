@@ -38,6 +38,13 @@ fun Application.main() {
     routing { route() }
 }
 
+/**
+ * Whether the app is running in a testing environment.
+ *
+ * An example use case is to enable code which sends emails only in the development and production environments.
+ */
+fun isTestEnvironment(): Boolean = System.getenv("IS_TEST_ENVIRONMENT") == "1"
+
 private fun setUp() {
     Auth.setUp()
     DB.setUp()

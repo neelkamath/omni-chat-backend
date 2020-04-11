@@ -80,8 +80,8 @@ object Auth {
     /** Returns `null` if the [Login.password] is incorrect. */
     fun getToken(login: Login): AccessTokenResponse? = try {
         AuthzClient.create(configuration).obtainAccessToken(login.username, login.password)
-    } catch (_: HttpResponseException) {
-        null
+    } catch (exception: HttpResponseException) {
+        if (exception.reasonPhrase == "Unauthorized") null else throw exception
     }
 
     fun refreshToken(refreshToken: String): AccessTokenResponse = Http(configuration, ClientAuthenticator { _, _ -> })
@@ -103,21 +103,22 @@ object Auth {
 
     fun userIdExists(id: String): Boolean = realm.users().list().map { it.id }.contains(id)
 
+    /** Creates a new account, and sends the user a verification email. */
     fun createUser(user: NewUser) {
-        val representation = UserRepresentation().apply {
-            username = user.username
-            credentials = listOf(
-                CredentialRepresentation().apply {
-                    type = CredentialRepresentation.PASSWORD
-                    value = user.password
-                }
-            )
-            email = user.email
-            firstName = user.firstName
-            lastName = user.lastName
-            isEnabled = true
+        realm.users().create(createUserRepresentation(user))
+        if (!isTestEnvironment()) {
+            val userId = findUserByUsername(user.username).id
+            realm.users().get(userId).sendVerifyEmail()
         }
-        realm.users().create(representation)
+    }
+
+    private fun createUserRepresentation(user: NewUser): UserRepresentation = UserRepresentation().apply {
+        username = user.username
+        credentials = createCredentials(user.password)
+        email = user.email
+        firstName = user.firstName
+        lastName = user.lastName
+        isEnabled = true
     }
 
     fun findUserByUsername(username: String): UserRepresentation = realm.users().search(username)[0]
@@ -146,17 +147,17 @@ object Auth {
     private fun updateUserRepresentation(user: UserRepresentation, update: UserUpdate) {
         user.apply {
             update.username?.let { username = it }
-            update.password?.let {
-                credentials = listOf(
-                    CredentialRepresentation().apply {
-                        type = CredentialRepresentation.PASSWORD
-                        value = it
-                    }
-                )
-            }
+            update.password?.let { credentials = createCredentials(update.password) }
             update.email?.let { email = it }
             update.firstName?.let { firstName = it }
             update.lastName?.let { lastName = it }
         }
     }
+
+    private fun createCredentials(password: String): List<CredentialRepresentation> = listOf(
+        CredentialRepresentation().apply {
+            type = CredentialRepresentation.PASSWORD
+            value = password
+        }
+    )
 }
