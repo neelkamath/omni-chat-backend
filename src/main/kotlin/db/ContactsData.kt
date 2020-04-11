@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.Contacts
+import com.neelkamath.omniChat.UserIdList
 import com.neelkamath.omniChat.db.ContactsData.Table.contact
 import com.neelkamath.omniChat.db.ContactsData.Table.contactOwner
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -20,19 +20,19 @@ object ContactsData {
         val contact = varchar("contact", userIdLength)
     }
 
-    fun read(userId: String): Contacts = DB.transact {
-        Contacts(Table.select { contactOwner eq userId }.map { it[contact] }.toSet())
+    fun read(userId: String): UserIdList = DB.transact {
+        UserIdList(Table.select { contactOwner eq userId }.map { it[contact] }.toSet())
     }
 
-    fun create(userId: String, contacts: Contacts): Unit = DB.transact {
-        Table.batchInsert(contacts.userIdList) {
+    fun create(userId: String, userIdList: UserIdList): Unit = DB.transact {
+        Table.batchInsert(userIdList.userIdList) {
             this[contactOwner] = userId
             this[contact] = it
         }
     }
 
-    fun delete(userId: String, contacts: Contacts): Unit = DB.transact {
-        Table.deleteWhere { (contactOwner eq userId) and (contact inList contacts.userIdList) }
+    fun delete(userId: String, userIdList: UserIdList): Unit = DB.transact {
+        Table.deleteWhere { (contactOwner eq userId) and (contact inList userIdList.userIdList) }
     }
 
     /** Deletes any row containing a column with the [userId]. */

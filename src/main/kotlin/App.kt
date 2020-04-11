@@ -54,9 +54,10 @@ private fun Authentication.Configuration.jwt(): Unit = jwt {
 }
 
 private fun Routing.route() {
-    routeHealthCheck()
+    routeCheckHealth()
     routeJwt()
-    routeUser()
     routeRefreshJwt()
+    routeUser()
+    routeSearchUsers()
     authenticate { routeContacts() }
 }

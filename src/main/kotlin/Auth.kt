@@ -103,20 +103,37 @@ object Auth {
 
     fun userIdExists(id: String): Boolean = realm.users().list().map { it.id }.contains(id)
 
-    fun createUser(user: User) {
-        realm.users().create(UserRepresentation().apply { merge(user) })
+    fun createUser(user: NewUser) {
+        val representation = UserRepresentation().apply {
+            username = user.username
+            credentials = listOf(
+                CredentialRepresentation().apply {
+                    type = CredentialRepresentation.PASSWORD
+                    value = user.password
+                }
+            )
+            email = user.email
+            firstName = user.firstName
+            lastName = user.lastName
+            isEnabled = true
+        }
+        realm.users().create(representation)
     }
 
     fun findUserByUsername(username: String): UserRepresentation = realm.users().search(username)[0]
 
     fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
+    fun searchUsers(query: UserSearchQuery): List<UserRepresentation> =
+        realm.users().search(query.username, query.firstName, query.lastName, query.email, null, null)
+
     fun getUserIdList(): List<String> = realm.users().list().map { it.id }
 
-    fun updateUser(id: String, user: User) {
-        val representation = findUserById(id)
-        if (user.email != null && representation.email != user.email) representation.isEmailVerified = false
-        realm.users().get(id).update(representation.apply { merge(user) })
+    fun updateUser(id: String, update: UserUpdate) {
+        val user = findUserById(id)
+        if (update.email != null && user.email != update.email) user.isEmailVerified = false
+        updateUserRepresentation(user, update)
+        realm.users().get(id).update(user)
     }
 
     fun isUsernameTaken(username: String): Boolean = realm.users().search(username).isNotEmpty()
@@ -125,10 +142,11 @@ object Auth {
         realm.users().delete(id)
     }
 
-    private fun UserRepresentation.merge(user: User) {
-        user.login?.let { login ->
-            login.username?.let { username = it }
-            login.password?.let {
+    /** [update]s the [user] in-place. */
+    private fun updateUserRepresentation(user: UserRepresentation, update: UserUpdate) {
+        user.apply {
+            update.username?.let { username = it }
+            update.password?.let {
                 credentials = listOf(
                     CredentialRepresentation().apply {
                         type = CredentialRepresentation.PASSWORD
@@ -136,10 +154,9 @@ object Auth {
                     }
                 )
             }
+            update.email?.let { email = it }
+            update.firstName?.let { firstName = it }
+            update.lastName?.let { lastName = it }
         }
-        user.email?.let { email = it }
-        user.firstName?.let { firstName = it }
-        user.lastName?.let { lastName = it }
-        isEnabled = true
     }
 }

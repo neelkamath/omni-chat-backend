@@ -5,6 +5,6 @@ import com.neelkamath.omniChat.Login
 import com.neelkamath.omniChat.gson
 
 fun getJwt(login: Login): String {
-    val tokenSet = Server.requestJwt(login).content
+    val tokenSet = requestJwt(login).content
     return gson.fromJson(tokenSet, AuthToken::class.java).jwt
 }

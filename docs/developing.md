@@ -1,21 +1,26 @@
 # Developing
 
+- [HTTP API naming conventions](https://restfulapi.net/resource-naming/)
+
 ## Flow
 
 Here's how a standard project iteration looks like.
 
-1. Pick a feature from the [spec](spec.md) to work on.
-1. Plan the feature in the [OpenAPI spec](openapi.yaml).
+1. Pick a feature to work on using the [spec](spec.md). If the feature isn't present in the spec, but is relevant to a technical (e.g., a programmer who will make bots for the service) or nontechnical end-user, add it to the spec. 
+1. If the feature is an HTTP API endpoint, plan it in the [OpenAPI spec](openapi.yaml).
+1. Create any required [models](../src/main/kotlin/Models.kt).
 1. Write tests (i.e., TDD). If you're writing tests for an HTTP API endpoint, perform the following sub-steps.
-    1. Create a function in [`Server.kt`](../src/test/kotlin/routes/Server.kt) which returns a `TestApplicationResponse`. It's name should be the operation ID used by the endpoint in the [OpenAPI spec](openapi.yaml).
-    1. In the relevant file, create classes for the endpoint using the format `<HTTP_VERB><ENDPOINT>Test`. For example, if the endpoint `/chat_message` accepts the POST and PATCH verbs, then two classes named `PostChatMessageTest` and `PatchChatMessageTest` would be created.
+    1. Create a file in [`src/test/kotlin/routes`](../src/test/kotlin/routes) named using the format `<TAG>Test.kt`, where `<TAG>` is the feature's tag in the OpenAPI spec. For example, the JWT feature's HTTP POST `/jwt` and HTTP POST `/refresh-jwt` endpoints are tagged `jwt` in the OpenAPI spec, and are therefore have their tests in [`src/test/kotlin/routes/JwtTest.kt`](../src/test/kotlin/routes/JwtTest.kt).
+    1. Create functions for each endpoint in the newly created file, each of which return a `io.ktor.server.testing.TestApplicationResponse`. The functions should be named the operation ID used by the endpoint in the OpenAPI spec. These functions should always be used instead of directly dealing with the HTTP API, both in the file they are created in, as well as the other files in the test source set.
+    1. Create classes for the endpoints using the format `<HTTP_VERB><ENDPOINT>Test`. For example, if the endpoint `/chat-message` accepts the POST and PATCH verbs, then two classes named `PostChatMessageTest` and `PatchChatMessageTest` would be created.
 1. Implement the feature.
-1. Update the spec and tests for deviations from the implementation you had planned.
-1. Mark the feature as completed in the [spec](spec.md).
-1. If you have updated the server or OpenAPI spec, follow these steps to create a new release.
+
+    If the feature is an HTTP API endpoint, implement it in files created mirroring the test source set's structure. For example, the JWT feature's tests are in [`src/test/kotlin/routes/JWTTest.kt`](../src/test/kotlin/routes/JwtTest.kt), and therefore its implementation is in [`src/main/kotlin/routes/JWT.kt`](../src/main/kotlin/routes/Jwt.kt).
+1. If the feature was from the [spec](spec.md), mark it complete.
+1. If you have updated the server's functionality, or the OpenAPI spec, follow these sub-steps to create a new release.
     1. Update the version in the [OpenAPI spec](openapi.yaml) and the [build file](../build.gradle.kts). Even if the server is still backwards compatible, you must bump the major version if you've renamed an entity in the OpenAPI spec (e.g., a key under `schemas/components/`). This is because [OpenAPI Generator](https://openapi-generator.tech/) uses key names when creating client SDKs, which would have otherwise become backwards-incompatible.
-    1. Add an entry to the [changelog](CHANGELOG.md).
-    1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created, and the new documentation will be hosted.
+    1. Add a [changelog](CHANGELOG.md) entry.
+    1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created, and the new docs will be hosted.
 
 ## [Server](server.md)
 

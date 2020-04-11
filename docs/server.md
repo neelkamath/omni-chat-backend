@@ -40,7 +40,7 @@ The following topics discuss, in part, how to create [extensions](https://kotlin
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Enter into the shell.
+1. Enter into the shell. The connection will be refused continuously for approximately one minute until the required services are up and running.
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -49,7 +49,7 @@ The following topics discuss, in part, how to create [extensions](https://kotlin
         --project-directory . \
         run --rm chat bash
     ```
-1. Test using `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+1. Test by running `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
 1. Run `exit` once you're done.
 
 ## [Production](production.md)

@@ -31,8 +31,7 @@ object DB {
         )
     }
 
-    private fun createTables(): Unit =
-        transact { SchemaUtils.create(*tables) }
+    private fun createTables(): Unit = transact { SchemaUtils.create(*tables) }
 
     /** Always use this in place of [transaction]. */
     fun <T> transact(function: () -> T): T = transaction {

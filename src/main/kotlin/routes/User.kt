@@ -30,32 +30,33 @@ private fun Route.delete() {
 
 private fun Route.get() {
     get {
-        val authorizedUsername = Auth.findUserById(call.userId).username
-        val details =
-            with(Auth.findUserByUsername(authorizedUsername)) { UserDetails(id, username, email, firstName, lastName) }
-        call.respond(details)
+        val username = Auth.findUserById(call.userId).username
+        val user = Auth.findUserByUsername(username)
+        call.respond(with(user) { UserInfo(id, username, email, firstName, lastName) })
     }
 }
 
 private fun Route.patch() {
     patch {
-        val user = call.receive<User>()
-        if (user.login?.username != null &&
-            Auth.findUserById(call.userId).username != user.login.username &&
-            Auth.isUsernameTaken(user.login.username)
-        ) {
+        val user = call.receive<UserUpdate>()
+        if (wantsTakenUsername(call.userId, user.username))
             call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
-        } else {
+        else {
             Auth.updateUser(call.userId, user)
             call.respond(HttpStatusCode.NoContent)
         }
     }
 }
 
+private fun wantsTakenUsername(userId: String, wantedUsername: String? = null): Boolean =
+    wantedUsername != null &&
+            Auth.findUserById(userId).username != wantedUsername &&
+            Auth.isUsernameTaken(wantedUsername)
+
 private fun Route.post() {
     post {
-        val user = call.receive<User>()
-        if (Auth.usernameExists(user.login!!.username!!))
+        val user = call.receive<NewUser>()
+        if (Auth.usernameExists(user.username))
             call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
         else {
             Auth.createUser(user)

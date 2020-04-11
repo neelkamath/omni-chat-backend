@@ -1,3 +1,12 @@
+# Use <$ref>s as much as practically possible to make smaller (and hence more readable) objects, and to allow OpenAPI
+# Generator to give readable model names in the generated client SDKs.
+
+# We only use a single OpenAPI file because the bulk of the code is in the <components> object, which cannot be split
+# into multiple files because it'd be impractical to find the components to reuse.
+
+# In the <components> object, name the schema the same as the request body or response it is for. The only exception is
+# when a schema is reused in different request bodies or responses.
+
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -17,7 +26,7 @@ info:
     1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
       future actions by using the HTTP POST /jwt endpoint.
     1. Use the JWT to authorize requests on behalf of the user (e.g., to use an endpoint such as HTTP PATCH /user).
-    1. Whenever required, refresh the JWT using the HTTP POST /jwt_refresh endpoint.
+    1. Whenever required, refresh the JWT using the HTTP POST /refresh-jwt endpoint.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -31,13 +40,22 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /check-health:
+    get:
+      tags: [status]
+      security: []
+      description: Checks if all systems are operational.
+      operationId: checkHealth
+      responses:
+        '204':
+          description: All systems are operational.
   /contacts:
     delete:
       tags: [contacts]
       description: Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
       operationId: deleteContacts
       requestBody:
-        $ref: '#/components/requestBodies/Contacts'
+        $ref: '#/components/requestBodies/UserIdList'
       responses:
         '204':
           description: Contacts deleted.
@@ -49,7 +67,7 @@ paths:
       operationId: readContacts
       responses:
         '200':
-          $ref: '#/components/responses/Contacts'
+          $ref: '#/components/responses/User'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
@@ -58,7 +76,7 @@ paths:
         will be ignored.
       operationId: createContacts
       requestBody:
-        $ref: '#/components/requestBodies/Contacts'
+        $ref: '#/components/requestBodies/UserIdList'
       responses:
         '204':
           description: Contacts saved.
@@ -67,15 +85,6 @@ paths:
             because a user whose contact was to be saved deleted their account just before the contacts were saved.
         '401':
           $ref: '#/components/responses/AuthorizationError'
-  /health_check:
-    get:
-      tags: [status]
-      security: []
-      description: Checks if all systems are operational.
-      operationId: checkHealth
-      responses:
-        '204':
-          description: All systems are operational.
   /jwt:
     post:
       tags: [jwt]
@@ -94,7 +103,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwtRequestError'
-  /jwt_refresh:
+  /refresh-jwt:
     post:
       tags: [jwt]
       description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
@@ -105,31 +114,59 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Jwt'
+  /search-users:
+    get:
+      tags: [search]
+      description: Search users. You must send at least one of the query parameters.
+      security: []
+      operationId: searchUsers
+      parameters:
+        - in: query
+          name: username
+          schema:
+            type: string
+        - in: query
+          name: first_name
+          schema:
+            type: string
+        - in: query
+          name: last_name
+          schema:
+            type: string
+        - in: query
+          name: email
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/User'
+        '400':
+          description: At least one search filter must be used.
   /user:
     delete:
-      tags: [account]
+      tags: [user]
       description: Delete account.
-      operationId: deleteAccount
+      operationId: deleteUser
       responses:
         '204':
           description: Account deleted.
         '401':
           $ref: '#/components/responses/AuthorizationError'
     get:
-      tags: [account]
+      tags: [user]
       description: Get account details.
-      operationId: readAccount
+      operationId: readUser
       responses:
         '200':
-          $ref: '#/components/responses/AccountDetails'
+          $ref: '#/components/responses/UserDetails'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     patch:
-      tags: [account]
+      tags: [user]
       description: Update account.
-      operationId: updateAccount
+      operationId: updateUser
       requestBody:
-        $ref: '#/components/requestBodies/AccountUpdate'
+        $ref: '#/components/requestBodies/UserUpdate'
       responses:
         '204':
           description: Account updated
@@ -142,12 +179,12 @@ paths:
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
-      tags: [account]
+      tags: [user]
       security: []
-      description: Create an account
-      operationId: createAccount
+      description: Create an account.
+      operationId: createUser
       requestBody:
-        $ref: '#/components/requestBodies/Account'
+        $ref: '#/components/requestBodies/NewUser'
       responses:
         '201':
           description: Account created
@@ -162,77 +199,6 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    Account:
-      type: object
-      example:
-        username: johndoe
-        password: pass
-        email: johndoe@example.com
-        first_name: John
-        last_name: Doe
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        email:
-          type: string
-        first_name:
-          type: string
-        last_name:
-          type: string
-      required: [username, password, email]
-    AccountDetails:
-      type: object
-      example:
-        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
-        username: john_doe
-        email: john.doe@example.com
-        first_name: John
-        last_name: Doe
-      properties:
-        user_id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        first_name:
-          type: string
-        last_name:
-          type: string
-      required: [user_id, username, email]
-    AccountUpdate:
-      type: object
-      example:
-        email: john.rogers@example.com
-        last_name: Rogers
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        email:
-          type: string
-          description: Changing the email address will require the user to verify their new address. If the user
-            requested that their address be updated, and the server successfully updates it, then you should log the
-            user out. This is because your current refresh token won't work since the user's account is disabled until
-            they verify their address. This means that they will have to contact an admin to reset their address in
-            case they entered an incorrect address.
-        first_name:
-          type: string
-        last_name:
-          type: string
-    Contacts:
-      type: object
-      example:
-        contacts: [44778d05-0304-47cf-be61-50225e04a1c7, 524a6b24-1ab2-48a1-9c0e-26bd19662ad3]
-      properties:
-        contacts:
-          type: array
-          items:
-            type: string
-      required: [contacts]
     Jwt:
       type: object
       example:
@@ -275,6 +241,26 @@ components:
         password:
           type: string
       required: [username, password]
+    NewUser:
+      type: object
+      example:
+        username: johndoe
+        password: pass
+        email: johndoe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [username, password, email]
     RefreshJwt:
       type: object
       properties:
@@ -282,6 +268,63 @@ components:
           type: string
           description: The refresh token you got with the JWT
       required: [refresh_token]
+    User:
+      type: object
+      example:
+        users:
+          - user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+            username: john_doe
+            email: john.doe@example.com
+            first_name: John
+            last_name: Doe
+      properties:
+        users:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              username:
+                type: string
+              email:
+                type: string
+              first_name:
+                type: string
+              last_name:
+                type: string
+            required: [user_id, username]
+      required: [users]
+    UserDetails:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        username: john_doe
+        email: john.doe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [user_id, username, email]
+    UserIdList:
+      type: object
+      example:
+        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 524a6b24-1ab2-48a1-9c0e-26bd19662ad3]
+      properties:
+        user_id_list:
+          type: array
+          items:
+            type: string
+      required: [user_id_list]
     UsernameTakenError:
       type: object
       example:
@@ -291,58 +334,79 @@ components:
           type: string
           enum: [USERNAME_TAKEN]
       required: [reason]
+    UserUpdate:
+      type: object
+      example:
+        email: john.rogers@example.com
+        last_name: Rogers
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+          description: Changing the email address will require the user to verify their new address. If the user
+            requested that their address be updated, and the server successfully updates it, then you should log the
+            user out. This is because your current refresh token won't work since the user's account is disabled until
+            they verify their address. This means that they will have to contact an admin to reset their address in
+            case they entered an incorrect address.
+        first_name:
+          type: string
+        last_name:
+          type: string
   requestBodies:
-    Account:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Account'
-    AccountUpdate:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/AccountUpdate'
-    Contacts:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Contacts'
     JwtRequest:
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Login'
+    NewUser:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewUser'
     RefreshJwt:
       required: true
       content:
         application/x-www-form-urlencoded:
           schema:
             $ref: '#/components/schemas/RefreshJwt'
-  responses:
-    AccountDetails:
-      description: Account details.
+    UserIdList:
+      required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AccountDetails'
+            $ref: '#/components/schemas/UserIdList'
+    UserUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserUpdate'
+  responses:
     AuthorizationError:
       description: Access token is missing or invalid
-    Contacts:
-      description: Saved contacts.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Contacts'
     Jwt:
       description: Token set
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Jwt'
+    User:
+      description: Users.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    UserDetails:
+      description: Account details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserDetails'
     UsernameTakenError:
       description: The user couldn't be created.
       content:

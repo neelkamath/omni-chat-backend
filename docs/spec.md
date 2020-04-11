@@ -56,7 +56,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 ### General
 
 - [ ] See saved contacts from both people you've chatted with, and people you've saved but haven't yet chatted with. For example, your phone book or mail book might automatically find contacts which are on the service by searching and saving them for you via searching their phone numbers or emails if they're listed publicly. 
-- [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username.
+- [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username. Useful information can be displayed publicly, such as an organization they went to (e.g., you can search users using Google or Stanford as an organization filter if they went/go there).
 - [ ] Automatic online status. You don't manually set whether you're "away" or some other error-prone status that no one takes seriously.
 - [ ] Public and private DMs and group chats.
 - [ ] See who else is in the group.
