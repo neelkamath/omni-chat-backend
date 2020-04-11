@@ -16,7 +16,7 @@ import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 
 fun createUser(user: NewUser): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Post, "/user") {
+    handleRequest(HttpMethod.Post, "user") {
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         setBody(gson.toJson(user))
     }
@@ -24,7 +24,7 @@ fun createUser(user: NewUser): TestApplicationResponse = withTestApplication(App
 
 fun updateUser(update: UserUpdate, jwt: String): TestApplicationResponse =
     withTestApplication(Application::main) {
-        handleRequest(HttpMethod.Patch, "/user") {
+        handleRequest(HttpMethod.Patch, "user") {
             addHeader(HttpHeaders.Authorization, "Bearer $jwt")
             addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(update))
@@ -32,11 +32,15 @@ fun updateUser(update: UserUpdate, jwt: String): TestApplicationResponse =
     }.response
 
 fun readUser(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Get, "/user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+    handleRequest(HttpMethod.Get, "user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
 fun deleteUser(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Delete, "/user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+    handleRequest(HttpMethod.Delete, "user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+}.response
+
+fun verifyEmail(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
+    handleRequest(HttpMethod.Get, "email-verification") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
 class GetUserTest : StringSpec({
@@ -136,5 +140,16 @@ class DeleteUserTest : StringSpec({
         Auth.verifyEmail(login.username)
         deleteUser(getJwt(login)).status() shouldBe HttpStatusCode.NoContent
         Auth.usernameExists(login.username).shouldBeFalse()
+    }
+})
+
+class GetEmailVerificationTest : StringSpec({
+    listener(AppListener())
+
+    "An email verification should be sent" {
+        val user = NewUser("username", "password", "username@example.com")
+        createUser(user)
+        Auth.verifyEmail(user.username)
+        verifyEmail(getJwt(Login(user.username, user.password))).status() shouldBe HttpStatusCode.NoContent
     }
 })

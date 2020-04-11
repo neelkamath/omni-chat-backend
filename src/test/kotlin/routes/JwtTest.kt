@@ -12,20 +12,20 @@ import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 
 fun requestJwt(login: Login): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Post, "/jwt") {
+    handleRequest(HttpMethod.Post, "jwt-request") {
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         setBody(gson.toJson(login))
     }
 }.response
 
 fun refreshJwt(refreshToken: String): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Post, "/refresh-jwt") {
+    handleRequest(HttpMethod.Post, "jwt-refresh") {
         addHeader(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
         setBody(listOf("refresh_token" to refreshToken).formUrlEncode())
     }
 }.response
 
-class PostJwtTest : StringSpec({
+class PostJwtRequestTest : StringSpec({
     listener(AppListener())
 
     "A token set should be sent" {
@@ -64,7 +64,7 @@ class PostJwtTest : StringSpec({
     }
 })
 
-class PostRefreshJwtTest : StringSpec({
+class PostJwtRefreshTest : StringSpec({
     listener(AppListener())
 
     "A refresh token should issue a new token set" {

@@ -21,10 +21,10 @@ fun searchUsers(query: UserSearchQuery): TestApplicationResponse = withTestAppli
         if (lastName != null) map["last_name"] = lastName!!
     }
     val parameters = map.toList().formUrlEncode()
-    handleRequest(HttpMethod.Get, "/search-users?$parameters")
+    handleRequest(HttpMethod.Get, "user-search?$parameters")
 }.response
 
-class GetSearchUsersTest : StringSpec({
+class GetUserSearchTest : StringSpec({
     listener(AppListener())
 
     fun createUsers(): UserPublicInfoList = UserPublicInfoList(

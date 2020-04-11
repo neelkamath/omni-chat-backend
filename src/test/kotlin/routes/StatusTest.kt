@@ -11,9 +11,9 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 
 fun checkHealth(): TestApplicationResponse =
-    withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "/check-health") }.response
+    withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }.response
 
-class GetCheckHealthTest : StringSpec({
+class GetHealthCheckTest : StringSpec({
     "A health check should respond with an HTTP status code of 204" {
         checkHealth().status() shouldBe HttpStatusCode.NoContent
     }

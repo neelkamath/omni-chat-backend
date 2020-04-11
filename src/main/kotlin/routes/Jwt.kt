@@ -10,8 +10,8 @@ import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.post
 
-fun Routing.routeJwt() {
-    post("jwt") {
+fun Routing.routeJwtRequest() {
+    post("jwt-request") {
         val login = call.receive<Login>()
         when {
             !Auth.usernameExists(login.username) ->
@@ -31,8 +31,8 @@ fun Routing.routeJwt() {
     }
 }
 
-fun Routing.routeRefreshJwt() {
-    post("refresh-jwt") {
+fun Routing.routeJwtRefresh() {
+    post("jwt-refresh") {
         val token = call.receiveParameters()["refresh_token"]!!
         val userId = JWT.decode(token).subject
         call.respond(Jwt.buildAuthToken(userId, Auth.refreshToken(token)))

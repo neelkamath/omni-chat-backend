@@ -1,3 +1,5 @@
+# Use nouns for <paths>, and verbs for <operationId>s.
+
 # Use <$ref>s as much as practically possible to make smaller (and hence more readable) objects, and to allow OpenAPI
 # Generator to give readable model names in the generated client SDKs.
 
@@ -24,9 +26,9 @@ info:
       POST /user endpoint.
     1. Have the user verify their email.
     1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
-      future actions by using the HTTP POST /jwt endpoint.
-    1. Use the JWT to authorize requests on behalf of the user (e.g., to use an endpoint such as HTTP PATCH /user).
-    1. Whenever required, refresh the JWT using the HTTP POST /refresh-jwt endpoint.
+      future actions by using the HTTP POST /jwt-request endpoint.
+    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /user endpoint).
+    1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -40,7 +42,17 @@ servers:
 security:
   - bearerAuth: []
 paths:
-  /check-health:
+  /email-verification:
+    get:
+      tags: [user]
+      operationId: verifyEmail
+      description: Sends the user an email to verify their email address.
+      responses:
+        '204':
+          description: Verification email sent.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /health-check:
     get:
       tags: [status]
       security: []
@@ -85,7 +97,7 @@ paths:
             because a user whose contact was to be saved deleted their account just before the contacts were saved.
         '401':
           $ref: '#/components/responses/AuthorizationError'
-  /jwt:
+  /jwt-request:
     post:
       tags: [jwt]
       security: []
@@ -103,7 +115,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwtRequestError'
-  /refresh-jwt:
+  /jwt-refresh:
     post:
       tags: [jwt]
       description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
@@ -114,7 +126,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Jwt'
-  /search-users:
+  /user-search:
     get:
       tags: [search]
       description: Search users. You must send at least one of the query parameters.

@@ -106,10 +106,12 @@ object Auth {
     /** Creates a new account, and sends the user a verification email. */
     fun createUser(user: NewUser) {
         realm.users().create(createUserRepresentation(user))
-        if (!isTestEnvironment()) {
-            val userId = findUserByUsername(user.username).id
-            realm.users().get(userId).sendVerifyEmail()
-        }
+        sendEmailVerification(findUserByUsername(user.username).id)
+    }
+
+    /** Sends an email to the user to verify their email address. This does nothing if [isTestEnvironment] is `true`. */
+    fun sendEmailVerification(userId: String) {
+        if (!isTestEnvironment()) realm.users().get(userId).sendVerifyEmail()
     }
 
     private fun createUserRepresentation(user: NewUser): UserRepresentation = UserRepresentation().apply {

@@ -64,3 +64,10 @@ private fun Route.post() {
         }
     }
 }
+
+fun Route.routeEmailVerification() {
+    get("email-verification") {
+        Auth.sendEmailVerification(call.userId)
+        call.respond(HttpStatusCode.NoContent)
+    }
+}

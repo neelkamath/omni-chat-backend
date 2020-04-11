@@ -1,7 +1,5 @@
 # Developing
 
-- [HTTP API naming conventions](https://restfulapi.net/resource-naming/)
-
 ## Flow
 
 Here's how a standard project iteration looks like.

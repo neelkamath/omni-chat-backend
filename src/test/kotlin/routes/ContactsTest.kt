@@ -22,7 +22,7 @@ private data class CreatedUser(val login: Login, val userId: String)
 
 fun createContacts(userIdList: UserIdList, jwt: String): TestApplicationResponse =
     withTestApplication(Application::main) {
-        handleRequest(HttpMethod.Post, "/contacts") {
+        handleRequest(HttpMethod.Post, "contacts") {
             addHeader(HttpHeaders.Authorization, "Bearer $jwt")
             addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(userIdList))
@@ -30,12 +30,12 @@ fun createContacts(userIdList: UserIdList, jwt: String): TestApplicationResponse
     }.response
 
 fun readContacts(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Get, "/contacts") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+    handleRequest(HttpMethod.Get, "contacts") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
 fun deleteContacts(userIdList: UserIdList, jwt: String): TestApplicationResponse =
     withTestApplication(Application::main) {
-        handleRequest(HttpMethod.Delete, "/contacts") {
+        handleRequest(HttpMethod.Delete, "contacts") {
             addHeader(HttpHeaders.Authorization, "Bearer $jwt")
             addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(userIdList))

@@ -11,8 +11,8 @@ import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 
-fun Routing.routeSearchUsers() {
-    get("search-users") {
+fun Routing.routeUserSearch() {
+    get("user-search") {
         val query = parseQuery(call.parameters)
         call.respond(if (query.hasNoFilters()) HttpStatusCode.BadRequest else queryUsers(query))
     }
