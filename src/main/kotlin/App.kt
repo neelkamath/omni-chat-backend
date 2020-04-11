@@ -66,8 +66,7 @@ private fun Routing.route() {
     routeJwtRefresh()
     routeUser()
     routeUserSearch()
-    authenticate {
-        routeEmailVerification()
-        routeContacts()
-    }
+    routeEmailVerification()
+    routePasswordReset()
+    authenticate { routeContacts() }
 }

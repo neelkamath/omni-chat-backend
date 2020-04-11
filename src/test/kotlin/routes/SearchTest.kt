@@ -7,20 +7,21 @@ import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Parameters
 import io.ktor.http.formUrlEncode
 import io.ktor.server.testing.TestApplicationResponse
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 
 fun searchUsers(query: UserSearchQuery): TestApplicationResponse = withTestApplication(Application::main) {
-    val map = mutableMapOf<String, String>()
-    with(query) {
-        if (username != null) map["username"] = username!!
-        if (email != null) map["email"] = email!!
-        if (firstName != null) map["first_name"] = firstName!!
-        if (lastName != null) map["last_name"] = lastName!!
+    val parameters = with(query) {
+        Parameters.build {
+            if (username != null) append("username", username!!)
+            if (email != null) append("email", email!!)
+            if (firstName != null) append("first_name", firstName!!)
+            if (lastName != null) append("last_name", lastName!!)
+        }.formUrlEncode()
     }
-    val parameters = map.toList().formUrlEncode()
     handleRequest(HttpMethod.Get, "user-search?$parameters")
 }.response
 

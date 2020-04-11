@@ -6,10 +6,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import io.ktor.server.testing.TestApplicationResponse
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
@@ -39,8 +36,14 @@ fun deleteUser(jwt: String): TestApplicationResponse = withTestApplication(Appli
     handleRequest(HttpMethod.Delete, "user") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
-fun verifyEmail(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Get, "email-verification") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+fun verifyEmail(email: String): TestApplicationResponse = withTestApplication(Application::main) {
+    val parameters = Parameters.build { append("email", email) }.formUrlEncode()
+    handleRequest(HttpMethod.Get, "email-verification?$parameters")
+}.response
+
+fun resetPassword(email: String): TestApplicationResponse = withTestApplication(Application::main) {
+    val parameters = Parameters.build { append("email", email) }.formUrlEncode()
+    handleRequest(HttpMethod.Get, "password-reset?$parameters")
 }.response
 
 class GetUserTest : StringSpec({
@@ -108,6 +111,19 @@ class PatchUserTest : StringSpec({
         val body = gson.fromJson(response.content, InvalidUser::class.java)
         body shouldBe InvalidUser(InvalidUserReason.USERNAME_TAKEN)
     }
+
+    "Updating an email to one already taken shouldn't allow the account to be updated" {
+        val email = "username1@example.com"
+        createUser(NewUser("username1", "password", email))
+        val user = NewUser("username2", "password", "username2@example.com")
+        createUser(user)
+        Auth.verifyEmail(user.username)
+        val jwt = getJwt(Login(user.username, user.password))
+        val response = updateUser(UserUpdate(email = email), jwt)
+        response.status() shouldBe HttpStatusCode.BadRequest
+        val body = gson.fromJson(response.content, InvalidUser::class.java)
+        body shouldBe InvalidUser(InvalidUserReason.EMAIL_TAKEN)
+    }
 })
 
 class PostUserTest : StringSpec({
@@ -127,7 +143,17 @@ class PostUserTest : StringSpec({
         createUser(user)
         val response = createUser(user)
         response.status() shouldBe HttpStatusCode.BadRequest
-        gson.fromJson(response.content, InvalidUser::class.java) shouldBe InvalidUser(InvalidUserReason.USERNAME_TAKEN)
+        val body = gson.fromJson(response.content, InvalidUser::class.java)
+        body shouldBe InvalidUser(InvalidUserReason.USERNAME_TAKEN)
+    }
+
+    "An account with an already taken email shouldn't be created" {
+        val email = "username@example.com"
+        createUser(NewUser("username1", "password", email))
+        val response = createUser(NewUser("username2", "password", email))
+        response.status() shouldBe HttpStatusCode.BadRequest
+        val body = gson.fromJson(response.content, InvalidUser::class.java)
+        body shouldBe InvalidUser(InvalidUserReason.EMAIL_TAKEN)
     }
 })
 
@@ -146,10 +172,27 @@ class DeleteUserTest : StringSpec({
 class GetEmailVerificationTest : StringSpec({
     listener(AppListener())
 
-    "An email verification should be sent" {
-        val user = NewUser("username", "password", "username@example.com")
-        createUser(user)
-        Auth.verifyEmail(user.username)
-        verifyEmail(getJwt(Login(user.username, user.password))).status() shouldBe HttpStatusCode.NoContent
+    "Sending a verification email should respond with an HTTP status code of 204" {
+        val email = "username@example.com"
+        createUser(NewUser("username", "password", email))
+        verifyEmail(email).status() shouldBe HttpStatusCode.NoContent
+    }
+
+    "Sending a verification email to an unregistered address should respond with an HTTP status code of 400" {
+        verifyEmail("username@example.com").status() shouldBe HttpStatusCode.BadRequest
+    }
+})
+
+class GetPasswordResetTest : StringSpec({
+    listener(AppListener())
+
+    "Requesting a password reset should respond with an HTTP status code of 204" {
+        val email = "username@example.com"
+        createUser(NewUser("username", "password", email))
+        resetPassword(email).status() shouldBe HttpStatusCode.NoContent
+    }
+
+    "Requesting a password reset for an unregistered address should respond with an HTTP status code of 400" {
+        resetPassword("username@example.com").status() shouldBe HttpStatusCode.BadRequest
     }
 })

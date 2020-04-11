@@ -39,35 +39,59 @@ private fun Route.get() {
 private fun Route.patch() {
     patch {
         val user = call.receive<UserUpdate>()
-        if (wantsTakenUsername(call.userId, user.username))
-            call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
-        else {
-            Auth.updateUser(call.userId, user)
-            call.respond(HttpStatusCode.NoContent)
+        when {
+            wantsTakenUsername(call.userId, user.username) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
+            wantsTakenEmail(call.userId, user.email) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.EMAIL_TAKEN))
+            else -> {
+                Auth.updateUser(call.userId, user)
+                call.respond(HttpStatusCode.NoContent)
+            }
         }
     }
 }
 
-private fun wantsTakenUsername(userId: String, wantedUsername: String? = null): Boolean =
+private fun wantsTakenUsername(userId: String, wantedUsername: String?): Boolean =
     wantedUsername != null &&
             Auth.findUserById(userId).username != wantedUsername &&
             Auth.isUsernameTaken(wantedUsername)
 
+private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
+    wantedEmail != null && Auth.findUserById(userId).email != wantedEmail && Auth.emailExists(wantedEmail)
+
 private fun Route.post() {
     post {
         val user = call.receive<NewUser>()
-        if (Auth.usernameExists(user.username))
-            call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
-        else {
-            Auth.createUser(user)
-            call.respond(HttpStatusCode.Created)
+        when {
+            Auth.usernameExists(user.username) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.USERNAME_TAKEN))
+            Auth.emailExists(user.email) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidUser(InvalidUserReason.EMAIL_TAKEN))
+            else -> {
+                Auth.createUser(user)
+                call.respond(HttpStatusCode.Created)
+            }
         }
     }
 }
 
-fun Route.routeEmailVerification() {
+fun Routing.routeEmailVerification() {
     get("email-verification") {
-        Auth.sendEmailVerification(call.userId)
-        call.respond(HttpStatusCode.NoContent)
+        val email = call.parameters["email"]!!
+        if (Auth.emailExists(email)) {
+            Auth.sendEmailVerification(email)
+            call.respond(HttpStatusCode.NoContent)
+        } else call.respond(HttpStatusCode.BadRequest)
+    }
+}
+
+fun Routing.routePasswordReset() {
+    get("password-reset") {
+        val email = call.parameters["email"]!!
+        if (Auth.emailExists(email)) {
+            Auth.resetPassword(email)
+            call.respond(HttpStatusCode.NoContent)
+        } else call.respond(HttpStatusCode.BadRequest)
     }
 }

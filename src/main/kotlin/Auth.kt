@@ -103,15 +103,23 @@ object Auth {
 
     fun userIdExists(id: String): Boolean = realm.users().list().map { it.id }.contains(id)
 
+    fun emailExists(email: String): Boolean = realm.users().list().map { it.email }.contains(email)
+
     /** Creates a new account, and sends the user a verification email. */
     fun createUser(user: NewUser) {
         realm.users().create(createUserRepresentation(user))
         sendEmailVerification(findUserByUsername(user.username).id)
     }
 
-    /** Sends an email to the user to verify their email address. This does nothing if [isTestEnvironment] is `true`. */
+    /** Sends an email to the user to verify their email address. This does nothing if [isTestEnvironment]. */
     fun sendEmailVerification(userId: String) {
         if (!isTestEnvironment()) realm.users().get(userId).sendVerifyEmail()
+    }
+
+    /** Sends an email for the user to reset their password. This does nothing if [isTestEnvironment]. */
+    fun resetPassword(email: String) {
+        if (!isTestEnvironment())
+            realm.users().get(findUserByEmail(email).id).executeActionsEmail(listOf("UPDATE_PASSWORD"))
     }
 
     private fun createUserRepresentation(user: NewUser): UserRepresentation = UserRepresentation().apply {
@@ -126,6 +134,8 @@ object Auth {
     fun findUserByUsername(username: String): UserRepresentation = realm.users().search(username)[0]
 
     fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
+
+    fun findUserByEmail(email: String): UserRepresentation = realm.users().list().filter { it.email == email }[0]
 
     fun searchUsers(query: UserSearchQuery): List<UserRepresentation> =
         realm.users().search(query.username, query.firstName, query.lastName, query.email, null, null)

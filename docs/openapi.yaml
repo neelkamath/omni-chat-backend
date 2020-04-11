@@ -47,11 +47,17 @@ paths:
       tags: [user]
       operationId: verifyEmail
       description: Sends the user an email to verify their email address.
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+      security: []
       responses:
         '204':
           description: Verification email sent.
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
+        '400':
+          $ref: '#/components/responses/InvalidEmailError'
   /health-check:
     get:
       tags: [status]
@@ -126,6 +132,23 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Jwt'
+  /password-reset:
+    get:
+      tags: [user]
+      operationId: resetPassword
+      description: Sends an password reset email to the specified address. If the user is logged in (i.e., you have a
+        JWT), and wants to update their password, you should use the HTTP PATCH /user endpoint instead.
+      security: []
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Email sent.
+        '400':
+          $ref: '#/components/responses/InvalidEmailError'
   /user-search:
     get:
       tags: [search]
@@ -187,14 +210,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsernameTakenError'
+                $ref: '#/components/schemas/InvalidNewUserError'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
       tags: [user]
       security: []
       description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
-        they verify their email address.
+        they verify their email address. The same email address cannot be registered twice.
       operationId: createUser
       requestBody:
         $ref: '#/components/requestBodies/NewUser'
@@ -202,9 +225,7 @@ paths:
         '201':
           description: Account created
         '400':
-          $ref: '#/components/responses/UsernameTakenError'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
+          $ref: '#/components/responses/InvalidNewUserError'
 components:
   securitySchemes:
     bearerAuth:
@@ -212,6 +233,15 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    InvalidNewUserError:
+      type: object
+      example:
+        reason: USERNAME_TAKEN
+      properties:
+        reason:
+          type: string
+          enum: [USERNAME_TAKEN, EMAIL_TAKEN]
+      required: [reason]
     Jwt:
       type: object
       example:
@@ -338,15 +368,6 @@ components:
           items:
             type: string
       required: [user_id_list]
-    UsernameTakenError:
-      type: object
-      example:
-        reason: USERNAME_TAKEN
-      properties:
-        reason:
-          type: string
-          enum: [USERNAME_TAKEN]
-      required: [reason]
     UserUpdate:
       type: object
       example:
@@ -402,6 +423,14 @@ components:
   responses:
     AuthorizationError:
       description: Access token is missing or invalid
+    InvalidEmailError:
+      description: There is no registered user with the specified email address.
+    InvalidNewUserError:
+      description: The user couldn't be created.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidNewUserError'
     Jwt:
       description: Token set
       content:
@@ -420,9 +449,3 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/UserDetails'
-    UsernameTakenError:
-      description: The user couldn't be created.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UsernameTakenError'

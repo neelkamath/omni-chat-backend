@@ -1,5 +1,7 @@
 # Developing
 
+It is worth noting that two users cannot have the same registered email address.
+
 ## Flow
 
 Here's how a standard project iteration looks like.

@@ -6,7 +6,7 @@ data class Login(val username: String, val password: String)
 
 data class InvalidUser(val reason: InvalidUserReason)
 
-enum class InvalidUserReason { NONEXISTENT_USER, INCORRECT_PASSWORD, EMAIL_NOT_VERIFIED, USERNAME_TAKEN }
+enum class InvalidUserReason { NONEXISTENT_USER, INCORRECT_PASSWORD, EMAIL_NOT_VERIFIED, USERNAME_TAKEN, EMAIL_TAKEN }
 
 data class AuthToken(val jwt: String, val expiry: Date, val refreshToken: String, val refreshTokenExpiry: Date)
 
