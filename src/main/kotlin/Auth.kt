@@ -18,6 +18,7 @@ object Auth {
     /** This is only exposed for extensions to this object needing it in the test source set. Never use it directly. */
     lateinit var realm: RealmResource
     const val realmName = "omni-chat"
+    const val userIdLength = 36
     private const val clientId = "server"
     private val configuration: Configuration = Configuration().apply {
         realm = realmName

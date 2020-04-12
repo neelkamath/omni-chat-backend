@@ -1,9 +1,8 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.ContactsData
-import com.neelkamath.omniChat.test.db.readContacts
-import com.neelkamath.omniChat.test.verifyEmail
+import com.neelkamath.omniChat.db.Contacts
+import com.neelkamath.omniChat.test.db.read
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
@@ -17,8 +16,6 @@ import io.ktor.server.testing.TestApplicationResponse
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
-
-private data class CreatedUser(val login: Login, val userId: String)
 
 fun createContacts(userIdList: UserIdList, jwt: String): TestApplicationResponse =
     withTestApplication(Application::main) {
@@ -46,21 +43,21 @@ class DeleteContactsTest : StringSpec({
     listener(AppListener())
 
     "Contacts should be deleted ignoring invalid ones" {
-        val users = createUsers()
+        val users = createVerifiedUsers(3)
         val userIdList = setOf(users[0].userId, users[1].userId)
         val jwt = getJwt(users[2].login)
         createContacts(UserIdList(userIdList), jwt)
         deleteContacts(UserIdList(userIdList + "invalid-user-id"), jwt).status() shouldBe HttpStatusCode.NoContent
-        readContacts().userIdList.shouldBeEmpty()
+        Contacts.read().userIdList.shouldBeEmpty()
     }
 
     "Deleting a user should delete it from everyone's contacts" {
-        val users = createUsers()
+        val users = createVerifiedUsers(3)
         val uploadedContacts = UserIdList(setOf(users[1].userId, users[2].userId))
         val jwt = getJwt(users[0].login)
         createContacts(uploadedContacts, jwt)
         deleteUser(getJwt(users[1].login))
-        readContacts().userIdList shouldContainExactly setOf(users[2].userId)
+        Contacts.read().userIdList shouldContainExactly setOf(users[2].userId)
     }
 })
 
@@ -68,7 +65,7 @@ class GetContactsTest : StringSpec({
     listener(AppListener())
 
     "Contacts should be read" {
-        val users = createUsers()
+        val users = createVerifiedUsers(3)
         val userIdList = UserIdList(setOf(users[1].userId, users[2].userId))
         val jwt = getJwt(users[0].login)
         createContacts(userIdList, jwt)
@@ -86,38 +83,29 @@ class PostContactsTest : StringSpec({
     listener(AppListener())
 
     "Saving previously saved contacts should be ignored" {
-        val users = createUsers()
+        val users = createVerifiedUsers(3)
         val jwt = getJwt(users[0].login)
         val contacts = UserIdList(setOf(users[1].userId, users[2].userId))
         createContacts(contacts, jwt)
         createContacts(contacts, jwt)
-        readContacts().userIdList shouldContainExactly contacts.userIdList
+        Contacts.read().userIdList shouldContainExactly contacts.userIdList
     }
 
     "Trying to save the user's own contact should be ignored" {
-        val users = createUsers()
+        val users = createVerifiedUsers(2)
         val contacts = UserIdList(setOf(users[0].userId, users[1].userId))
         val jwt = getJwt(users[0].login)
         val response = createContacts(contacts, jwt)
         response.status() shouldBe HttpStatusCode.NoContent
-        ContactsData.read(users[0].userId).userIdList shouldContainExactly setOf(users[1].userId)
+        Contacts.read(users[0].userId).userIdList shouldContainExactly setOf(users[1].userId)
     }
 
     "If one of the contacts to be saved is incorrect, then none of them should be saved" {
-        val users = createUsers()
+        val users = createVerifiedUsers(3)
         Auth.deleteUser(users[0].userId)
         val contacts = UserIdList(setOf(users[0].userId, users[2].userId))
         val jwt = getJwt(users[1].login)
         createContacts(contacts, jwt).status() shouldBe HttpStatusCode.BadRequest
-        readContacts().userIdList.shouldBeEmpty()
+        Contacts.read().userIdList.shouldBeEmpty()
     }
 })
-
-/** Creates 3 users, verifies their emails, and returns them. */
-private fun createUsers(): List<CreatedUser> = (0..2).map {
-    val login = Login("username$it", "password")
-    createUser(NewUser(login.username, login.password, "username$it@example.com"))
-    Auth.verifyEmail(login.username)
-    val userId = Auth.findUserByUsername(login.username).id
-    CreatedUser(login, userId)
-}

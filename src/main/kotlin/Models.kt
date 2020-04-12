@@ -54,3 +54,14 @@ data class UserSearchQuery(
 ) {
     fun hasNoFilters(): Boolean = username == null && firstName == null && lastName == null && email == null
 }
+
+data class GroupChat(val userIdList: Set<String>, val title: String, val description: String? = null)
+
+data class InvalidGroupChat(val reason: InvalidGroupChatReason)
+
+enum class InvalidGroupChatReason {
+    EMPTY_USER_ID_LIST,
+    INVALID_USER_ID,
+    INVALID_TITLE_LENGTH,
+    INVALID_DESCRIPTION_LENGTH,
+}

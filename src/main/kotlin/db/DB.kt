@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DB {
-    val tables = arrayOf(ContactsData.Table)
+    val tables = arrayOf(Contacts, GroupChats, GroupChatUsers)
 
     /**
      * Opens the DB connection, and creates the tables.
@@ -16,11 +16,11 @@ object DB {
      * time.
      */
     fun setUp() {
-        connectDb()
-        createTables()
+        connect()
+        create()
     }
 
-    private fun connectDb() {
+    private fun connect() {
         val url = System.getenv("POSTGRES_URL")
         val db = System.getenv("POSTGRES_DB")
         Database.connect(
@@ -31,9 +31,9 @@ object DB {
         )
     }
 
-    private fun createTables(): Unit = transact { SchemaUtils.create(*tables) }
+    private fun create(): Unit = transact { SchemaUtils.create(*tables) }
 
-    /** Always use this in place of [transaction]. */
+    /** Always use this instead of [transaction]. */
     fun <T> transact(function: () -> T): T = transaction {
         addLogger(StdOutSqlLogger)
         return@transaction function()

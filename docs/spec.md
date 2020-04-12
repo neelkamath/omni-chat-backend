@@ -43,7 +43,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### Customization
 
-- [ ] Only admins can do things like adding bots, or updating the group description. You could also have a button which makes everyone an admin/moderator. The chat's creator can configure who is allowed to do what, so that even non-admins can add bots, etc.
+- [ ] The user who creates the group is the admin. There can only be one admin in a group. If the admin decides to leave the group, they will have to appoint a member to become the admin once they leave (unless they are the only member left). Regular users can only send messages. Moderators can do everything a regular user can do, add/remove users/bots, and update the group's title/description. Admins can do everything a moderator can do in addition to add/remove moderators, and delete the group. The admin can make everyone in the group a moderator if they wish it.
 - [ ] You'll be able to switch on notifications for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
 - [ ] API for integrations (e.g., bots).
 - [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
@@ -56,6 +56,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 ### General
 
 - [ ] See saved contacts from both people you've chatted with, and people you've saved but haven't yet chatted with. For example, your phone book or mail book might automatically find contacts which are on the service by searching and saving them for you via searching their phone numbers or emails if they're listed publicly. 
+- [ ] For privacy purposes, chats with only two people (you and the other person) cannot be converted into group chats by adding other users. You can however start a chat with two people as a group chat so that new users could be added later. This way chats between two people could easily become visible by potential future team members.
 - [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username. Useful information can be displayed publicly, such as an organization they went to (e.g., you can search users using Google or Stanford as an organization filter if they went/go there).
 - [ ] Automatic online status. You don't manually set whether you're "away" or some other error-prone status that no one takes seriously.
 - [ ] Public and private DMs and group chats.

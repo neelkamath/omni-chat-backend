@@ -22,7 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-auth-jwt:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:1.2.1")
-    val exposedVersion = "0.22.1"
+    val exposedVersion = "0.23.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.postgresql:postgresql:42.2.2")

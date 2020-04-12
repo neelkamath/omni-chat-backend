@@ -31,7 +31,8 @@ val gson: Gson = GsonBuilder()
 val ApplicationCall.userId get(): String = authentication.principal<JWTPrincipal>()!!.payload.subject
 
 fun Application.main() {
-    setUp()
+    Auth.setUp()
+    DB.setUp()
     install(CallLogging)
     install(ContentNegotiation) { register(ContentType.Application.Json, GsonConverter(gson)) }
     install(Authentication) { jwt() }
@@ -44,11 +45,6 @@ fun Application.main() {
  * An example use case is to enable code which sends emails only in the development and production environments.
  */
 fun isTestEnvironment(): Boolean = System.getenv("IS_TEST_ENVIRONMENT") == "1"
-
-private fun setUp() {
-    Auth.setUp()
-    DB.setUp()
-}
 
 private fun Authentication.Configuration.jwt(): Unit = jwt {
     realm = Auth.realmName
@@ -68,5 +64,8 @@ private fun Routing.route() {
     routeUserSearch()
     routeEmailVerification()
     routePasswordReset()
-    authenticate { routeContacts() }
+    authenticate {
+        routeContacts()
+        routeGroupChat()
+    }
 }

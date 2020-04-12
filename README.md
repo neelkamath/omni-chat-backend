@@ -12,8 +12,6 @@ Branding assets are stored in [`branding/`](branding).
 
 Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
 
-This project is not yet usable, and hence DB migrations don't exist for upgrading versions.
-
 ## Installation
 
 1. Install the [app](docs/install.md).

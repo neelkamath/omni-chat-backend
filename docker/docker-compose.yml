@@ -21,11 +21,13 @@ services:
   auth-db:
     image: postgres
     networks: [auth-db]
+    restart: always
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
   chat:
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
     networks: [auth, chat-db]
+    restart: unless-stopped
     environment:
       IS_TEST_ENVIRONMENT: 0
       KEYCLOAK_USER: admin
@@ -43,6 +45,7 @@ services:
       POSTGRES_URL: chat-db:5432
   chat-db:
     image: postgres:12
+    restart: always
     networks: [chat-db]
     environment:
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}

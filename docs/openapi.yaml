@@ -1,14 +1,3 @@
-# Use nouns for <paths>, and verbs for <operationId>s.
-
-# Use <$ref>s as much as practically possible to make smaller (and hence more readable) objects, and to allow OpenAPI
-# Generator to give readable model names in the generated client SDKs.
-
-# We only use a single OpenAPI file because the bulk of the code is in the <components> object, which cannot be split
-# into multiple files because it'd be impractical to find the components to reuse.
-
-# In the <components> object, name the schema the same as the request body or response it is for. The only exception is
-# when a schema is reused in different request bodies or responses.
-
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -42,6 +31,20 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /group-chat:
+    post:
+      tags: [chat]
+      operationId: createGroupChat
+      description: Creates a group chat.
+      requestBody:
+        $ref: '#/components/requestBodies/NewGroupChat'
+      responses:
+        '204':
+          description: Chat created.
+        '400':
+          $ref: '#/components/responses/NewGroupChatError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
   /email-verification:
     get:
       tags: [user]
@@ -284,6 +287,36 @@ components:
         password:
           type: string
       required: [username, password]
+    NewGroupChat:
+      type: object
+      example:
+        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 98iuhd73-8734-lo9f--as3-998dje0487uh]
+        title: (Unofficial) MIT CS Department
+        description: Unofficial group for students in the MIT CS department to plan workshops, etc. for it.
+      properties:
+        user_id_list:
+          type: array
+          minimum: 1
+          items:
+            type: string
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+          default: null
+      required: [user_id_list, title]
+    NewGroupChatError:
+      type: object
+      example:
+        reason: INVALID_USER_ID
+      properties:
+        reason:
+          type: string
+          enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
+      required: [reason]
     NewUser:
       type: object
       example:
@@ -396,6 +429,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Login'
+    NewGroupChat:
+      required: true
+      description: If the user's own user ID is supplied, it will be ignored.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewGroupChat'
     NewUser:
       required: true
       content:
@@ -437,6 +477,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Jwt'
+    NewGroupChatError:
+      description: Couldn't create chat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewGroupChatError'
     User:
       description: Users.
       content:
