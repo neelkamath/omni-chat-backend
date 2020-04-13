@@ -40,7 +40,7 @@ Here's how a standard project iteration looks like.
         --project-directory . \
         up
     ```
-1. [Set up authentication](auth_setup.md).
+1. [Set up auth](auth_setup.md).
 
 ### Testing
 
@@ -53,7 +53,7 @@ Here's how a standard project iteration looks like.
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Enter into the shell. The connection will be refused continuously for approximately one minute until the required services are up and running. You do not need to worry about having valid email credentials in `.env` because the tests do not fail if emails aren't actually sent.
+1. Enter into the shell. The connection will be refused continuously for approximately one minute until the required services are up and running. You needn't have a valid email configuration in `.env` (e.g., `KEYCLOAK_SMTP_HOST`, `KEYCLOAK_SMTP_PASSWORD`), because the testing environment disables the sending of emails.
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -67,7 +67,7 @@ Here's how a standard project iteration looks like.
 
 ### [Production](production.md)
 
-## [Authentication](authentication.md)
+## [Auth](auth.md)
 
 ## [Spec](spec.md)
 

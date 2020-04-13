@@ -4,13 +4,19 @@ import java.util.*
 
 data class Login(val username: String, val password: String)
 
-data class InvalidUser(val reason: InvalidUserReason)
+data class InvalidAccount(val reason: InvalidAccountReason)
 
-enum class InvalidUserReason { NONEXISTENT_USER, INCORRECT_PASSWORD, EMAIL_NOT_VERIFIED, USERNAME_TAKEN, EMAIL_TAKEN }
+enum class InvalidAccountReason {
+    NONEXISTENT_USER,
+    INCORRECT_PASSWORD,
+    EMAIL_NOT_VERIFIED,
+    USERNAME_TAKEN,
+    EMAIL_TAKEN,
+}
 
 data class AuthToken(val jwt: String, val expiry: Date, val refreshToken: String, val refreshTokenExpiry: Date)
 
-data class NewUser(
+data class NewAccount(
     val username: String,
     val password: String,
     val email: String,
@@ -18,7 +24,7 @@ data class NewUser(
     val lastName: String? = null
 )
 
-data class UserInfo(
+data class AccountInfo(
     val userId: String,
     val username: String,
     val email: String,
@@ -26,7 +32,7 @@ data class UserInfo(
     val lastName: String? = null
 )
 
-data class UserUpdate(
+data class AccountUpdate(
     val username: String? = null,
     val password: String? = null,
     val email: String? = null,
@@ -35,16 +41,6 @@ data class UserUpdate(
 )
 
 data class UserIdList(val userIdList: Set<String>)
-
-data class UserPublicInfoList(val users: List<UserPublicInfo>)
-
-data class UserPublicInfo(
-    val userId: String,
-    val username: String,
-    val email: String? = null,
-    val firstName: String? = null,
-    val lastName: String? = null
-)
 
 data class UserSearchQuery(
     val username: String? = null,
@@ -65,3 +61,5 @@ enum class InvalidGroupChatReason {
     INVALID_TITLE_LENGTH,
     INVALID_DESCRIPTION_LENGTH,
 }
+
+data class User(val username: String, val email: String, val firstName: String? = null, val lastName: String? = null)

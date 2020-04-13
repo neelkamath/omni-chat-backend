@@ -10,4 +10,4 @@
     ```
 1. [Set up authentication](auth_setup.md).
 
-## [Authentication](authentication.md)
+## [Auth](auth.md)

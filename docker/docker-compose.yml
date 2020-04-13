@@ -27,7 +27,6 @@ services:
   chat:
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
     networks: [auth, chat-db]
-    restart: unless-stopped
     environment:
       IS_TEST_ENVIRONMENT: 0
       KEYCLOAK_USER: admin

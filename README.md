@@ -8,9 +8,7 @@ For people who need to communicate via chat, Omni Chat is a free, open core, fed
 
 You can read the [spec](docs/spec.md) to see how Omni Chat differentiates itself from competitors.
 
-Branding assets are stored in [`branding/`](branding).
-
-Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
+Branding assets are stored in [`branding/`](branding). Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases). We use the term "auth" to refer to "authentication and authorization".
 
 ## Installation
 

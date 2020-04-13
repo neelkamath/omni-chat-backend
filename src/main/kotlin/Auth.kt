@@ -107,9 +107,9 @@ object Auth {
     fun emailExists(email: String): Boolean = realm.users().list().map { it.email }.contains(email)
 
     /** Creates a new account, and sends the user a verification email. */
-    fun createUser(user: NewUser) {
-        realm.users().create(createUserRepresentation(user))
-        sendEmailVerification(findUserByUsername(user.username).id)
+    fun createUser(account: NewAccount) {
+        realm.users().create(createUserRepresentation(account))
+        sendEmailVerification(findUserByUsername(account.username).id)
     }
 
     /** Sends an email to the user to verify their email address. This does nothing if [isTestEnvironment]. */
@@ -123,12 +123,12 @@ object Auth {
             realm.users().get(findUserByEmail(email).id).executeActionsEmail(listOf("UPDATE_PASSWORD"))
     }
 
-    private fun createUserRepresentation(user: NewUser): UserRepresentation = UserRepresentation().apply {
-        username = user.username
-        credentials = createCredentials(user.password)
-        email = user.email
-        firstName = user.firstName
-        lastName = user.lastName
+    private fun createUserRepresentation(account: NewAccount): UserRepresentation = UserRepresentation().apply {
+        username = account.username
+        credentials = createCredentials(account.password)
+        email = account.email
+        firstName = account.firstName
+        lastName = account.lastName
         isEnabled = true
     }
 
@@ -143,7 +143,7 @@ object Auth {
 
     fun getUserIdList(): List<String> = realm.users().list().map { it.id }
 
-    fun updateUser(id: String, update: UserUpdate) {
+    fun updateUser(id: String, update: AccountUpdate) {
         val user = findUserById(id)
         if (update.email != null && user.email != update.email) user.isEmailVerified = false
         updateUserRepresentation(user, update)
@@ -157,7 +157,7 @@ object Auth {
     }
 
     /** [update]s the [user] in-place. */
-    private fun updateUserRepresentation(user: UserRepresentation, update: UserUpdate) {
+    private fun updateUserRepresentation(user: UserRepresentation, update: AccountUpdate) {
         user.apply {
             update.username?.let { username = it }
             update.password?.let { credentials = createCredentials(update.password) }

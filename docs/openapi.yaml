@@ -10,13 +10,16 @@ info:
 
     Dates conform to ISO 8601.
 
+    Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
+    GET /user endpoint with the user ID you have.
+
     Here is the usual flow for using this service.
     1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
-      POST /user endpoint.
+      POST /account endpoint.
     1. Have the user verify their email.
     1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
       future actions by using the HTTP POST /jwt-request endpoint.
-    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /user endpoint).
+    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /account endpoint).
     1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
   contact:
     name: Neel Kamath
@@ -31,6 +34,71 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /account:
+    delete:
+      tags: [account]
+      description: Delete account.
+      operationId: deleteAccount
+      responses:
+        '204':
+          description: Account deleted.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    get:
+      tags: [account]
+      description: Get account details.
+      operationId: readAccount
+      responses:
+        '200':
+          $ref: '#/components/responses/AccountDetails'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    patch:
+      tags: [account]
+      description: Update account.
+      operationId: updateAccount
+      requestBody:
+        $ref: '#/components/requestBodies/AccountUpdate'
+      responses:
+        '204':
+          description: Account updated
+        '400':
+          description: Account couldn't be updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNewAccountError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [account]
+      security: []
+      description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
+        they verify their email address. The same email address cannot be registered twice.
+      operationId: createAccount
+      requestBody:
+        $ref: '#/components/requestBodies/NewAccount'
+      responses:
+        '201':
+          description: Account created
+        '400':
+          $ref: '#/components/responses/InvalidNewAccountError'
+  /email-verification:
+    get:
+      tags: [account]
+      operationId: verifyEmail
+      description: Sends the user an email to verify their email address.
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+      security: []
+      responses:
+        '204':
+          description: Verification email sent.
+        '400':
+          $ref: '#/components/responses/InvalidEmailError'
   /group-chat:
     post:
       tags: [chat]
@@ -45,22 +113,6 @@ paths:
           $ref: '#/components/responses/NewGroupChatError'
         '401':
           $ref: '#/components/responses/AuthorizationError'
-  /email-verification:
-    get:
-      tags: [user]
-      operationId: verifyEmail
-      description: Sends the user an email to verify their email address.
-      parameters:
-        - in: query
-          name: email
-          schema:
-            type: string
-      security: []
-      responses:
-        '204':
-          description: Verification email sent.
-        '400':
-          $ref: '#/components/responses/InvalidEmailError'
   /health-check:
     get:
       tags: [status]
@@ -88,7 +140,7 @@ paths:
       operationId: readContacts
       responses:
         '200':
-          $ref: '#/components/responses/User'
+          $ref: '#/components/responses/UserIdList'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
@@ -106,6 +158,18 @@ paths:
             because a user whose contact was to be saved deleted their account just before the contacts were saved.
         '401':
           $ref: '#/components/responses/AuthorizationError'
+  /jwt-refresh:
+    post:
+      tags: [jwt]
+      security: []
+      description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
+        set of tokens using the refresh token you received with the JWT.
+      operationId: refreshJwt
+      requestBody:
+        $ref: '#/components/requestBodies/RefreshJwt'
+      responses:
+        '200':
+          $ref: '#/components/responses/Jwt'
   /jwt-request:
     post:
       tags: [jwt]
@@ -124,20 +188,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwtRequestError'
-  /jwt-refresh:
-    post:
-      tags: [jwt]
-      description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
-        set of tokens using the refresh token you received with the JWT.
-      operationId: refreshJwt
-      requestBody:
-        $ref: '#/components/requestBodies/RefreshJwt'
-      responses:
-        '200':
-          $ref: '#/components/responses/Jwt'
   /password-reset:
     get:
-      tags: [user]
+      tags: [account]
       operationId: resetPassword
       description: Sends an password reset email to the specified address. If the user is logged in (i.e., you have a
         JWT), and wants to update their password, you should use the HTTP PATCH /user endpoint instead.
@@ -152,6 +205,23 @@ paths:
           description: Email sent.
         '400':
           $ref: '#/components/responses/InvalidEmailError'
+  /user:
+    get:
+      tags: [search]
+      operationId: readUser
+      description: Retrieve the given user's metadata.
+      security: []
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/User'
+        '400':
+          description: There is no user with the specified user ID.
   /user-search:
     get:
       tags: [search]
@@ -177,58 +247,9 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/User'
+          $ref: '#/components/responses/UserIdList'
         '400':
           description: At least one search filter must be used.
-  /user:
-    delete:
-      tags: [user]
-      description: Delete account.
-      operationId: deleteUser
-      responses:
-        '204':
-          description: Account deleted.
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    get:
-      tags: [user]
-      description: Get account details.
-      operationId: readUser
-      responses:
-        '200':
-          $ref: '#/components/responses/UserDetails'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    patch:
-      tags: [user]
-      description: Update account.
-      operationId: updateUser
-      requestBody:
-        $ref: '#/components/requestBodies/UserUpdate'
-      responses:
-        '204':
-          description: Account updated
-        '400':
-          description: Account couldn't be updated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvalidNewUserError'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    post:
-      tags: [user]
-      security: []
-      description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
-        they verify their email address. The same email address cannot be registered twice.
-      operationId: createUser
-      requestBody:
-        $ref: '#/components/requestBodies/NewUser'
-      responses:
-        '201':
-          description: Account created
-        '400':
-          $ref: '#/components/responses/InvalidNewUserError'
 components:
   securitySchemes:
     bearerAuth:
@@ -236,7 +257,48 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    InvalidNewUserError:
+    AccountDetails:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        username: john_doe
+        email: john.doe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [user_id, username, email]
+    AccountUpdate:
+      type: object
+      example:
+        email: john.rogers@example.com
+        last_name: Rogers
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+          description: Changing the email address will require the user to verify their new address. If the user
+            requested that their address be updated, and the server successfully updates it, then you should log the
+            user out. This is because your current refresh token won't work since the user's account is disabled until
+            they verify their address. This means that they will have to contact an admin to reset their address in
+            case they entered an incorrect address.
+        first_name:
+          type: string
+        last_name:
+          type: string
+    InvalidNewAccountError:
       type: object
       example:
         reason: USERNAME_TAKEN
@@ -287,6 +349,26 @@ components:
         password:
           type: string
       required: [username, password]
+    NewAccount:
+      type: object
+      example:
+        username: johndoe
+        password: pass
+        email: johndoe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [username, password, email]
     NewGroupChat:
       type: object
       example:
@@ -317,26 +399,6 @@ components:
           type: string
           enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
       required: [reason]
-    NewUser:
-      type: object
-      example:
-        username: johndoe
-        password: pass
-        email: johndoe@example.com
-        first_name: John
-        last_name: Doe
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        email:
-          type: string
-        first_name:
-          type: string
-        last_name:
-          type: string
-      required: [username, password, email]
     RefreshJwt:
       type: object
       properties:
@@ -347,41 +409,11 @@ components:
     User:
       type: object
       example:
-        users:
-          - user_id: 44778d05-0304-47cf-be61-50225e04a1c7
-            username: john_doe
-            email: john.doe@example.com
-            first_name: John
-            last_name: Doe
-      properties:
-        users:
-          type: array
-          items:
-            type: object
-            properties:
-              user_id:
-                type: string
-              username:
-                type: string
-              email:
-                type: string
-              first_name:
-                type: string
-              last_name:
-                type: string
-            required: [user_id, username]
-      required: [users]
-    UserDetails:
-      type: object
-      example:
-        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
         username: john_doe
         email: john.doe@example.com
         first_name: John
         last_name: Doe
       properties:
-        user_id:
-          type: string
         username:
           type: string
         email:
@@ -390,7 +422,7 @@ components:
           type: string
         last_name:
           type: string
-      required: [user_id, username, email]
+      required: [username, email]
     UserIdList:
       type: object
       example:
@@ -401,34 +433,25 @@ components:
           items:
             type: string
       required: [user_id_list]
-    UserUpdate:
-      type: object
-      example:
-        email: john.rogers@example.com
-        last_name: Rogers
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        email:
-          type: string
-          description: Changing the email address will require the user to verify their new address. If the user
-            requested that their address be updated, and the server successfully updates it, then you should log the
-            user out. This is because your current refresh token won't work since the user's account is disabled until
-            they verify their address. This means that they will have to contact an admin to reset their address in
-            case they entered an incorrect address.
-        first_name:
-          type: string
-        last_name:
-          type: string
   requestBodies:
+    AccountUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountUpdate'
     JwtRequest:
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Login'
+    NewAccount:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewAccount'
     NewGroupChat:
       required: true
       description: If the user's own user ID is supplied, it will be ignored.
@@ -436,12 +459,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChat'
-    NewUser:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/NewUser'
     RefreshJwt:
       required: true
       content:
@@ -454,23 +471,23 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/UserIdList'
-    UserUpdate:
-      required: true
+  responses:
+    AccountDetails:
+      description: Account details.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/UserUpdate'
-  responses:
+            $ref: '#/components/schemas/AccountDetails'
     AuthorizationError:
       description: Access token is missing or invalid
     InvalidEmailError:
       description: There is no registered user with the specified email address.
-    InvalidNewUserError:
+    InvalidNewAccountError:
       description: The user couldn't be created.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidNewUserError'
+            $ref: '#/components/schemas/InvalidNewAccountError'
     Jwt:
       description: Token set
       content:
@@ -484,14 +501,17 @@ components:
           schema:
             $ref: '#/components/schemas/NewGroupChatError'
     User:
-      description: Users.
+      description: User info.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
-    UserDetails:
-      description: Account details.
+    UserIdList:
+      description: User ID list.
+      links:
+        user:
+          operationId: readUser
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/UserDetails'
+            $ref: '#/components/schemas/UserIdList'

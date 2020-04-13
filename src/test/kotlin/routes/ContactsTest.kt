@@ -1,7 +1,10 @@
 package com.neelkamath.omniChat.test.routes
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.Auth
+import com.neelkamath.omniChat.UserIdList
 import com.neelkamath.omniChat.db.Contacts
+import com.neelkamath.omniChat.gson
+import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.test.db.read
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -48,7 +51,7 @@ class DeleteContactsTest : StringSpec({
         val jwt = getJwt(users[2].login)
         createContacts(UserIdList(userIdList), jwt)
         deleteContacts(UserIdList(userIdList + "invalid-user-id"), jwt).status() shouldBe HttpStatusCode.NoContent
-        Contacts.read().userIdList.shouldBeEmpty()
+        Contacts.read().shouldBeEmpty()
     }
 
     "Deleting a user should delete it from everyone's contacts" {
@@ -56,8 +59,8 @@ class DeleteContactsTest : StringSpec({
         val uploadedContacts = UserIdList(setOf(users[1].userId, users[2].userId))
         val jwt = getJwt(users[0].login)
         createContacts(uploadedContacts, jwt)
-        deleteUser(getJwt(users[1].login))
-        Contacts.read().userIdList shouldContainExactly setOf(users[2].userId)
+        deleteAccount(getJwt(users[1].login))
+        Contacts.read() shouldContainExactly setOf(users[2].userId)
     }
 })
 
@@ -71,11 +74,8 @@ class GetContactsTest : StringSpec({
         createContacts(userIdList, jwt)
         val response = readContacts(jwt)
         response.status() shouldBe HttpStatusCode.OK
-        val body = gson.fromJson(response.content, UserPublicInfoList::class.java)
-        val infoList = listOf(users[1], users[2])
-            .map { Auth.findUserById(it.userId) }
-            .map { UserPublicInfo(it.id, it.username, it.email, it.firstName, it.lastName) }
-        body shouldBe UserPublicInfoList(infoList)
+        val body = gson.fromJson(response.content, UserIdList::class.java)
+        body shouldBe UserIdList(setOf(users[1].userId, users[2].userId))
     }
 })
 
@@ -88,7 +88,7 @@ class PostContactsTest : StringSpec({
         val contacts = UserIdList(setOf(users[1].userId, users[2].userId))
         createContacts(contacts, jwt)
         createContacts(contacts, jwt)
-        Contacts.read().userIdList shouldContainExactly contacts.userIdList
+        Contacts.read() shouldContainExactly contacts.userIdList
     }
 
     "Trying to save the user's own contact should be ignored" {
@@ -97,7 +97,7 @@ class PostContactsTest : StringSpec({
         val jwt = getJwt(users[0].login)
         val response = createContacts(contacts, jwt)
         response.status() shouldBe HttpStatusCode.NoContent
-        Contacts.read(users[0].userId).userIdList shouldContainExactly setOf(users[1].userId)
+        Contacts.read(users[0].userId) shouldContainExactly setOf(users[1].userId)
     }
 
     "If one of the contacts to be saved is incorrect, then none of them should be saved" {
@@ -106,6 +106,6 @@ class PostContactsTest : StringSpec({
         val contacts = UserIdList(setOf(users[0].userId, users[2].userId))
         val jwt = getJwt(users[1].login)
         createContacts(contacts, jwt).status() shouldBe HttpStatusCode.BadRequest
-        Contacts.read().userIdList.shouldBeEmpty()
+        Contacts.read().shouldBeEmpty()
     }
 })

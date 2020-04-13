@@ -9,7 +9,7 @@ import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.post
 
-fun Route.routeGroupChat() {
+fun Route.createGroupChat() {
     post("group-chat") {
         val chat = call.receive<GroupChat>()
         val userIdList = chat.userIdList.filter { it != call.userId }

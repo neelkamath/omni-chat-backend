@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.Auth
-import com.neelkamath.omniChat.UserPublicInfo
-import com.neelkamath.omniChat.UserPublicInfoList
+import com.neelkamath.omniChat.User
+import com.neelkamath.omniChat.UserIdList
 import com.neelkamath.omniChat.UserSearchQuery
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
@@ -11,19 +11,25 @@ import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 
-fun Routing.routeUserSearch() {
+fun Routing.searchUsers() {
     get("user-search") {
         val query = parseQuery(call.parameters)
-        call.respond(if (query.hasNoFilters()) HttpStatusCode.BadRequest else queryUsers(query))
+        if (query.hasNoFilters()) call.respond(HttpStatusCode.BadRequest)
+        else {
+            val userIdList = Auth.searchUsers(query).map { it.id }.toSet()
+            call.respond(UserIdList(userIdList))
+        }
     }
 }
 
 private fun parseQuery(parameters: Parameters): UserSearchQuery =
     UserSearchQuery(parameters["username"], parameters["first_name"], parameters["last_name"], parameters["email"])
 
-private fun queryUsers(query: UserSearchQuery): UserPublicInfoList = UserPublicInfoList(
-    Auth.searchUsers(query).map {
-        val userId = Auth.findUserByUsername(it.username).id
-        UserPublicInfo(userId, it.username, it.email, it.firstName, it.lastName)
+fun Routing.readUser() {
+    get("user") {
+        val userId = call.parameters["user_id"]!!
+        if (Auth.userIdExists(userId))
+            with(Auth.findUserById(userId)) { call.respond(User(username, email, firstName, lastName)) }
+        else call.respond(HttpStatusCode.BadRequest)
     }
-)
+}

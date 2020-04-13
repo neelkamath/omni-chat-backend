@@ -1,37 +1,34 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.Auth
-import com.neelkamath.omniChat.UserIdList
-import com.neelkamath.omniChat.db.Contacts.contact
-import com.neelkamath.omniChat.db.Contacts.contactOwner
+import com.neelkamath.omniChat.db.Contacts.contactOwnerUserId
+import com.neelkamath.omniChat.db.Contacts.contactUserId
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
-/** Each user's ([contactOwner]'s) saved [contact]s. */
+/** Each user's (denoted by their [contactOwnerUserId]) saved contacts (denoted by the [contactUserId]s). */
 object Contacts : IntIdTable() {
-    /** User ID. */
-    val contactOwner = varchar("contact_owner", Auth.userIdLength)
+    val contactOwnerUserId = varchar("contact_owner", Auth.userIdLength)
+    val contactUserId = varchar("contact", Auth.userIdLength)
 
-    /** User ID. */
-    val contact = varchar("contact", Auth.userIdLength)
-
-    fun read(userId: String): UserIdList = DB.transact {
-        UserIdList(select { contactOwner eq userId }.map { it[contact] }.toSet())
+    /** Returns the user ID list of the contacts saved by the contact owner (denoted by the [userId]). */
+    fun read(userId: String): Set<String> = DB.transact {
+        select { contactOwnerUserId eq userId }.map { it[contactUserId] }.toSet()
     }
 
-    fun create(userId: String, userIdList: UserIdList): Unit = DB.transact {
-        batchInsert(userIdList.userIdList) {
-            this[contactOwner] = userId
-            this[contact] = it
+    fun create(userId: String, userIdList: Set<String>): Unit = DB.transact {
+        batchInsert(userIdList) {
+            this[contactOwnerUserId] = userId
+            this[contactUserId] = it
         }
     }
 
-    fun delete(userId: String, userIdList: UserIdList): Unit = DB.transact {
-        deleteWhere { (contactOwner eq userId) and (contact inList userIdList.userIdList) }
+    fun delete(userId: String, userIdList: Set<String>): Unit = DB.transact {
+        deleteWhere { (contactOwnerUserId eq userId) and (contactUserId inList userIdList) }
     }
 
     /** Deletes any row containing a column with the [userId]. */
     fun deleteUserEntries(userId: String): Unit = DB.transact {
-        deleteWhere { (contactOwner eq userId) or (contact eq userId) }
+        deleteWhere { (contactOwnerUserId eq userId) or (contactUserId eq userId) }
     }
 }

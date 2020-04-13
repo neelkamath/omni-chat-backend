@@ -56,16 +56,21 @@ private fun Authentication.Configuration.jwt(): Unit = jwt {
     }
 }
 
+/*
+Name the functions the same as their <operationId>s in the OpenAPI spec. If there is a common <io.ktor.routing.route>
+function for the endpoints (e.g., <routeAccount()>), name it according to the format "route<URL>".
+ */
 private fun Routing.route() {
-    routeHealthCheck()
-    routeJwtRequest()
-    routeJwtRefresh()
-    routeUser()
-    routeUserSearch()
-    routeEmailVerification()
-    routePasswordReset()
+    checkHealth()
+    requestJwt()
+    refreshJwt()
+    routeAccount()
+    searchUsers()
+    verifyEmail()
+    resetPassword()
+    readUser()
     authenticate {
         routeContacts()
-        routeGroupChat()
+        createGroupChat()
     }
 }
