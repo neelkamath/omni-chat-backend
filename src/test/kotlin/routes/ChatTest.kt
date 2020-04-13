@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.GroupChatWithId
 import com.neelkamath.omniChat.db.GroupChats
+import com.neelkamath.omniChat.db.PrivateChat
 import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.db.PrivateChat
-import com.neelkamath.omniChat.test.db.read
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -28,18 +28,25 @@ fun createPrivateChat(userId: String, jwt: String): TestApplicationResponse = wi
     handleRequest(HttpMethod.Post, "private-chat?$parameters") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
+fun readChats(jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
+    handleRequest(HttpMethod.Get, "chats") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+}.response
+
 class PostGroupChatTest : StringSpec({
     listener(AppListener())
 
-    "A group chat should be created ignoring the user's own user ID" {
+    "A group chat should be created, ignoring the user's own user ID" {
         val users = createVerifiedUsers(3)
+        val creator = users[0]
         val chat = GroupChat(
-            setOf(users[0].userId, users[1].userId, users[2].userId),
+            setOf(creator.id, users[1].id, users[2].id),
             title = "\uD83D\uDCDA Book Club",
             description = "Books discussion"
         )
-        createGroupChat(chat, getJwt(users[0].login))
-        GroupChats.read() shouldBe listOf(chat)
+        val response = createGroupChat(chat, getJwt(creator.login))
+        response.status() shouldBe HttpStatusCode.OK
+        val body = gson.fromJson(response.content, ChatId::class.java)
+        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(body.id, chat))
     }
 
     fun testInvalidChat(users: List<CreatedUser>, chat: GroupChat, reason: InvalidGroupChatReason) {
@@ -50,7 +57,7 @@ class PostGroupChatTest : StringSpec({
 
     "A group chat should not be created when supplied with an invalid user ID" {
         val users = createVerifiedUsers(2)
-        val chat = GroupChat(setOf(users[1].userId, "invalid user ID"), "Group Chat Title")
+        val chat = GroupChat(setOf(users[1].id, "invalid user ID"), "Group Chat Title")
         testInvalidChat(users, chat, InvalidGroupChatReason.INVALID_USER_ID)
     }
 
@@ -62,21 +69,21 @@ class PostGroupChatTest : StringSpec({
 
     "A group chat should not be created if an empty title is supplied" {
         val users = createVerifiedUsers(2)
-        val chat = GroupChat(setOf(users[1].userId), title = "")
+        val chat = GroupChat(setOf(users[1].id), title = "")
         testInvalidChat(users, chat, InvalidGroupChatReason.INVALID_TITLE_LENGTH)
     }
 
     "A group chat should not be created if the title is too long" {
         val users = createVerifiedUsers(2)
         val title = CharArray(GroupChats.maxTitleLength + 1) { 'a' }.joinToString("")
-        val chat = GroupChat(setOf(users[1].userId), title)
+        val chat = GroupChat(setOf(users[1].id), title)
         testInvalidChat(users, chat, InvalidGroupChatReason.INVALID_TITLE_LENGTH)
     }
 
     "A group chat should not be created if the description has an invalid length" {
         val users = createVerifiedUsers(2)
         val description = CharArray(GroupChats.maxDescriptionLength + 1) { 'a' }.joinToString("")
-        val chat = GroupChat(setOf(users[1].userId), "Group Chat Title", description)
+        val chat = GroupChat(setOf(users[1].id), "Group Chat Title", description)
         testInvalidChat(users, chat, InvalidGroupChatReason.INVALID_DESCRIPTION_LENGTH)
     }
 })
@@ -87,19 +94,38 @@ class PostPrivateChatTest : StringSpec({
     "A chat should be created" {
         val users = createVerifiedUsers(2)
         val creator = users[0]
-        val invitedUser = users[1].userId
-        createPrivateChat(invitedUser, getJwt(creator.login)).status() shouldBe HttpStatusCode.NoContent
-        PrivateChats.read() shouldBe listOf(PrivateChat(creator.userId, invitedUser))
+        val invitedUser = users[1].id
+        val response = createPrivateChat(invitedUser, getJwt(creator.login))
+        response.status() shouldBe HttpStatusCode.OK
+        val body = gson.fromJson(response.content, ChatId::class.java)
+        PrivateChats.read(creator.id) shouldBe listOf(PrivateChat(body.id, creator.id, invitedUser))
     }
 
-    fun testInvalidChat(isValidUserId: Boolean) {
-        val users = createVerifiedUsers(1)
-        val userId = if (isValidUserId) users[0].userId else "a nonexistent user ID"
-        createPrivateChat(userId, getJwt(users[0].login)).status() shouldBe HttpStatusCode.BadRequest
-        PrivateChats.read().shouldBeEmpty()
+    "A chat shouldn't be created with a nonexistent user" {
+        val (login) = createVerifiedUsers(1)[0]
+        createPrivateChat("a nonexistent user ID", getJwt(login)).status() shouldBe HttpStatusCode.BadRequest
     }
 
-    "A chat shouldn't be created with a nonexistent user" { testInvalidChat(true) }
+    "A chat shouldn't be created with the user themselves" {
+        val (login, userId) = createVerifiedUsers(1)[0]
+        createPrivateChat(userId, getJwt(login)).status() shouldBe HttpStatusCode.BadRequest
+        PrivateChats.read(userId).shouldBeEmpty()
+    }
+})
 
-    "A chat shouldn't be created with the user themselves" { testInvalidChat(false) }
+class GetChatsTest : StringSpec({
+    listener(AppListener())
+
+    "Chats should be retrieved" {
+        val users = createVerifiedUsers(2)
+        val jwt = getJwt(users[0].login)
+        val groupChatResponse = createGroupChat(GroupChat(setOf(users[1].id), "Title"), jwt)
+        val groupChatId = gson.fromJson(groupChatResponse.content, ChatId::class.java).id
+        val privateChatResponse = createPrivateChat(users[1].id, jwt)
+        val privateChatId = gson.fromJson(privateChatResponse.content, ChatId::class.java).id
+        val body = gson.fromJson(readChats(jwt).content, Chats::class.java)
+        val groupChat = Chat(ChatType.GROUP, groupChatId)
+        val privateChat = Chat(ChatType.PRIVATE, privateChatId)
+        body shouldBe Chats(listOf(groupChat, privateChat))
+    }
 })

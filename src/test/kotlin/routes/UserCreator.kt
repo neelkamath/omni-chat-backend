@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.Login
 import com.neelkamath.omniChat.NewAccount
 import com.neelkamath.omniChat.test.verifyEmail
 
-data class CreatedUser(val login: Login, val userId: String)
+data class CreatedUser(val login: Login, val id: String)
 
 /** Creates [count] users, verifies their emails, and returns them. */
 fun createVerifiedUsers(count: Int): List<CreatedUser> = (0..count).map {

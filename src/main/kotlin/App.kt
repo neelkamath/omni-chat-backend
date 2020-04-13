@@ -71,6 +71,7 @@ private fun Routing.route() {
     readUser()
     authenticate {
         createPrivateChat()
+        readChats()
         routeContacts()
         createGroupChat()
     }

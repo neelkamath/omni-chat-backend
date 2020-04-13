@@ -85,6 +85,16 @@ paths:
           description: Account created
         '400':
           $ref: '#/components/responses/InvalidNewAccountError'
+  /chats:
+    get:
+      tags: [chat]
+      operationId: readChats
+      description: Get every chat the user partakes in.
+      responses:
+        '200':
+          $ref: '#/components/responses/Chats'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
   /email-verification:
     get:
       tags: [account]
@@ -109,8 +119,8 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/NewGroupChat'
       responses:
-        '204':
-          description: Chat created.
+        '200':
+          $ref: '#/components/responses/ChatId'
         '400':
           $ref: '#/components/responses/NewGroupChatError'
         '401':
@@ -220,8 +230,8 @@ paths:
           name: user_id
           description: The user to chat with.
       responses:
-        '204':
-          description: Chat created.
+        '200':
+          $ref: '#/components/responses/ChatId'
         '400':
           description: The supplied user ID is either nonexistent, or is the user themselves.
         '401':
@@ -319,6 +329,35 @@ components:
           type: string
         last_name:
           type: string
+    ChatId:
+      type: object
+      example:
+        id: 7
+      properties:
+        id:
+          type: number
+      required: [id]
+    Chats:
+      type: object
+      example:
+        chats:
+          - type: PRIVATE
+            id: 3
+          - type: GROUP
+            id: 17
+      properties:
+        chats:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [PRIVATE, GROUP]
+              id:
+                type: number
+            required: [type, id]
+      required: [chats]
     InvalidNewAccountError:
       type: object
       example:
@@ -501,6 +540,18 @@ components:
             $ref: '#/components/schemas/AccountDetails'
     AuthorizationError:
       description: Access token is missing or invalid
+    Chats:
+      description: Metadata on chats.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Chats'
+    ChatId:
+      description: The ID of the chat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ChatId'
     InvalidEmailError:
       description: There is no registered user with the specified email address.
     InvalidNewAccountError:

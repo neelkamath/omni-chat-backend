@@ -2,6 +2,8 @@ package com.neelkamath.omniChat
 
 import java.util.*
 
+// The JSON models used in the HTTP API.
+
 data class Login(val username: String, val password: String)
 
 data class InvalidAccount(val reason: InvalidAccountReason)
@@ -63,3 +65,11 @@ enum class InvalidGroupChatReason {
 }
 
 data class User(val username: String, val email: String, val firstName: String? = null, val lastName: String? = null)
+
+data class Chats(val chats: List<Chat>)
+
+data class Chat(val type: ChatType, val id: Int)
+
+enum class ChatType { PRIVATE, GROUP }
+
+data class ChatId(val id: Int)
