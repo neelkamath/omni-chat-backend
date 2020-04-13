@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.GroupChats
+import com.neelkamath.omniChat.db.PrivateChats
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
@@ -26,5 +27,15 @@ fun Route.createGroupChat() {
             GroupChats.create(call.userId, chat)
             call.respond(HttpStatusCode.NoContent)
         } else call.respond(HttpStatusCode.BadRequest, InvalidGroupChat(reason))
+    }
+}
+
+fun Route.createPrivateChat() {
+    post("private-chat") {
+        val invitedUserId = call.parameters["user_id"]!!
+        if (Auth.userIdExists(invitedUserId) && invitedUserId != call.userId) {
+            PrivateChats.create(call.userId, invitedUserId)
+            call.respond(HttpStatusCode.NoContent)
+        } else call.respond(HttpStatusCode.BadRequest)
     }
 }

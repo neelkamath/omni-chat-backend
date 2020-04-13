@@ -8,9 +8,9 @@ import org.jetbrains.exposed.sql.insertAndGetId
 object GroupChats : IntIdTable() {
     override val tableName get() = "group_chats"
     val adminUserId = varchar("admin_user_id", Auth.userIdLength)
-    val maxTitleLength = 70
+    const val maxTitleLength = 70
     val title = varchar("title", maxTitleLength)
-    val maxDescriptionLength = 1000
+    const val maxDescriptionLength = 1000
     val description = varchar("description", maxDescriptionLength).nullable()
 
     fun create(adminUserId: String, chat: GroupChat): Unit = DB.transact {

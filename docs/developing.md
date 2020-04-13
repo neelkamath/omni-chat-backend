@@ -1,6 +1,7 @@
 # Developing
 
-It is worth noting that two users cannot have the same registered email address.
+- The auth system disallows two users from having the same registered email address.
+- A "private chat" is a chat between two people which cannot be converted into a group chat.
 
 ## Flow
 

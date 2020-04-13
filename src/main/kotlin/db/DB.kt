@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DB {
-    val tables = arrayOf(Contacts, GroupChats, GroupChatUsers)
+    val tables = arrayOf(Contacts, GroupChats, GroupChatUsers, PrivateChats)
 
     /**
      * Opens the DB connection, and creates the tables.

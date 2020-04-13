@@ -70,6 +70,7 @@ private fun Routing.route() {
     resetPassword()
     readUser()
     authenticate {
+        createPrivateChat()
         routeContacts()
         createGroupChat()
     }

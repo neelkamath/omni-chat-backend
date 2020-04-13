@@ -8,6 +8,8 @@ info:
     To view the documentation for previos versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
 
+    A "private chat" is a chat between two users which cannot be converted into a group chat.
+
     Dates conform to ISO 8601.
 
     Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
@@ -205,6 +207,25 @@ paths:
           description: Email sent.
         '400':
           $ref: '#/components/responses/InvalidEmailError'
+  /private-chat:
+    post:
+      tags: [chat]
+      operationId: createPrivateChat
+      description: Create a private chat.
+      parameters:
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: user_id
+          description: The user to chat with.
+      responses:
+        '204':
+          description: Chat created.
+        '400':
+          description: The supplied user ID is either nonexistent, or is the user themselves.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
   /user:
     get:
       tags: [search]
