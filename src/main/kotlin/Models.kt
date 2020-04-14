@@ -73,3 +73,11 @@ data class Chat(val type: ChatType, val id: Int)
 enum class ChatType { PRIVATE, GROUP }
 
 data class ChatId(val id: Int)
+
+data class GroupChatUpdate(
+    val chatId: Int,
+    val title: String? = null,
+    val description: String? = null,
+    val newUserIdList: Set<String>? = null,
+    val removedUserIdList: Set<String>? = null
+)

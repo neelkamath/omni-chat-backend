@@ -13,14 +13,14 @@ object PrivateChats : IntIdTable() {
     val invitedUserId = varchar("invited_user_id", Auth.userIdLength)
 
     /** Returns the chat ID after creating it. */
-    fun create(creatorUserId: String, invitedUserId: String): Int = DB.transact {
+    fun create(creatorUserId: String, invitedUserId: String): Int = Db.transact {
         insertAndGetId {
             it[this.creatorUserId] = creatorUserId
             it[this.invitedUserId] = invitedUserId
         }.value
     }
 
-    fun read(creatorUserId: String): List<PrivateChat> = DB.transact {
+    fun read(creatorUserId: String): List<PrivateChat> = Db.transact {
         select { PrivateChats.creatorUserId eq creatorUserId }
             .map { PrivateChat(it[id].value, it[this.creatorUserId], it[invitedUserId]) }
     }

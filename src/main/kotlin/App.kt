@@ -3,7 +3,7 @@ package com.neelkamath.omniChat
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.neelkamath.omniChat.db.DB
+import com.neelkamath.omniChat.db.Db
 import com.neelkamath.omniChat.routes.*
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -32,7 +32,7 @@ val ApplicationCall.userId get(): String = authentication.principal<JWTPrincipal
 
 fun Application.main() {
     Auth.setUp()
-    DB.setUp()
+    Db.setUp()
     install(CallLogging)
     install(ContentNegotiation) { register(ContentType.Application.Json, GsonConverter(gson)) }
     install(Authentication) { jwt() }
@@ -70,9 +70,9 @@ private fun Routing.route() {
     resetPassword()
     readUser()
     authenticate {
+        routeGroupChat()
         createPrivateChat()
         readChats()
         routeContacts()
-        createGroupChat()
     }
 }

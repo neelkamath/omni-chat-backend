@@ -10,6 +10,7 @@ Here's how a standard project iteration looks like.
 1. Pick a feature to work on using the [spec](spec.md). Since the spec only lists features end-users are aware of, and not implementation details, the feature doesn't have to be present in the spec. If the feature isn't present in the spec, but is relevant to a technical (e.g., a programmer who will make bots for the service) or nontechnical end-user, add it to the spec. 
 1. If the feature is an HTTP API endpoint, plan it in the [OpenAPI spec](openapi.yaml).
 1. Create any required [models](../src/main/kotlin/Models.kt).
+1. If you're updating the DB, keep in mind that you might have to wipe it when the account is deleted.
 1. Write tests (i.e., TDD). If you're writing tests for an HTTP API endpoint, perform the following sub-steps.
     1. Create a file in [`src/test/kotlin/routes`](../src/test/kotlin/routes) named using the format `<TAG>Test.kt`, where `<TAG>` is the feature's tag in the OpenAPI spec. For example, the JWT feature's `/jwt-request` and `/jwt-refresh` endpoints are tagged `jwt` in the OpenAPI spec, and are therefore have their tests in [`src/test/kotlin/routes/JwtTest.kt`](../src/test/kotlin/routes/JwtTest.kt).
     1. Create functions for each endpoint in the newly created file, each of which return a `io.ktor.server.testing.TestApplicationResponse`. The functions should be named the operation ID used by the endpoint in the OpenAPI spec.

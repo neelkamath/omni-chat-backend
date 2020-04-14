@@ -7,12 +7,17 @@ import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
-import io.ktor.routing.Route
-import io.ktor.routing.get
-import io.ktor.routing.post
+import io.ktor.routing.*
+
+fun Route.routeGroupChat() {
+    route("group-chat") {
+        createGroupChat()
+        updateGroupChat()
+    }
+}
 
 fun Route.createGroupChat() {
-    post("group-chat") {
+    post {
         val chat = call.receive<GroupChat>()
         val userIdList = chat.userIdList.filter { it != call.userId }
         val reason = when {
@@ -31,6 +36,20 @@ fun Route.createGroupChat() {
     }
 }
 
+fun Route.updateGroupChat() {
+    patch {
+        val update = call.receive<GroupChatUpdate>()
+        when {
+            !GroupChats.chatIdExists(update.chatId) -> call.respond(HttpStatusCode.BadRequest)
+            !GroupChats.isAdmin(call.userId, update.chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            else -> {
+                GroupChats.update(update)
+                call.respond(HttpStatusCode.NoContent)
+            }
+        }
+    }
+}
+
 fun Route.createPrivateChat() {
     post("private-chat") {
         val invitedUserId = call.parameters["user_id"]!!
@@ -43,7 +62,7 @@ fun Route.createPrivateChat() {
 
 fun Route.readChats() {
     get("chats") {
-        val groupChats = GroupChats.read(call.userId).map { Chat(ChatType.GROUP, it.id) }
+        val groupChats = GroupChats.readCreated(call.userId).map { Chat(ChatType.GROUP, it.id) }
         val privateChats = PrivateChats.read(call.userId).map { Chat(ChatType.PRIVATE, it.id) }
         call.respond(Chats(groupChats + privateChats))
     }

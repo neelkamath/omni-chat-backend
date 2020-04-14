@@ -112,6 +112,19 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidEmailError'
   /group-chat:
+    patch:
+      operationId: updateGroupChat
+      tags: [chat]
+      description: Updates a group chat.
+      requestBody:
+        $ref: '#/components/requestBodies/GroupChatUpdate'
+      responses:
+        '204':
+          description: Updated.
+        '400':
+          description: The specified group chat ID doesn't exist.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     post:
       tags: [chat]
       operationId: createGroupChat
@@ -358,6 +371,35 @@ components:
                 type: number
             required: [type, id]
       required: [chats]
+    GroupChatUpdate:
+      type: object
+      example:
+        chat_id: 17
+        title: Science Fiction Book Club
+        description: Discussions on sci-fi novels.
+        new_user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 9i878d05-9i04-hgcf-lm61-50225e04a9k3]
+        removed_user_id_list: [k8j78d05-9804-34cf-mn61-50225e04ajk2]
+      properties:
+        chat_id:
+          type: number
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+        new_user_id_list:
+          type: array
+          description: The user ID of every new user to add to the chat.
+          items:
+            type: string
+        removed_user_id_list:
+          type: array
+          description: The user ID of every user to remove from the chat.
+          items:
+            type: string
+      required: [chat_id]
     InvalidNewAccountError:
       type: object
       example:
@@ -448,7 +490,6 @@ components:
         description:
           type: string
           maximum: 1000
-          default: null
       required: [user_id_list, title]
     NewGroupChatError:
       type: object
@@ -500,6 +541,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AccountUpdate'
+    GroupChatUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GroupChatUpdate'
     JwtRequest:
       required: true
       content:

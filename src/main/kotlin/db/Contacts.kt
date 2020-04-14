@@ -11,7 +11,7 @@ object Contacts : IntIdTable() {
     val contactOwnerUserId = varchar("contact_owner", Auth.userIdLength)
     val contactUserId = varchar("contact", Auth.userIdLength)
 
-    fun create(userId: String, userIdList: Set<String>): Unit = DB.transact {
+    fun create(userId: String, userIdList: Set<String>): Unit = Db.transact {
         batchInsert(userIdList) {
             this[contactOwnerUserId] = userId
             this[contactUserId] = it
@@ -19,16 +19,16 @@ object Contacts : IntIdTable() {
     }
 
     /** Returns the user ID list of the contacts saved by the contact owner (denoted by the [userId]). */
-    fun read(userId: String): Set<String> = DB.transact {
+    fun read(userId: String): Set<String> = Db.transact {
         select { contactOwnerUserId eq userId }.map { it[contactUserId] }.toSet()
     }
 
-    fun delete(userId: String, userIdList: Set<String>): Unit = DB.transact {
+    fun delete(userId: String, userIdList: Set<String>): Unit = Db.transact {
         deleteWhere { (contactOwnerUserId eq userId) and (contactUserId inList userIdList) }
     }
 
-    /** Deletes any row containing a column with the [userId]. */
-    fun deleteUserEntries(userId: String): Unit = DB.transact {
+    /** Deletes every contact who owns, or is owned by. the given [userId]. */
+    fun deleteUserEntries(userId: String): Unit = Db.transact {
         deleteWhere { (contactOwnerUserId eq userId) or (contactUserId eq userId) }
     }
 }

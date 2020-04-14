@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.db.GroupChatWithId
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.PrivateChat
 import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.test.db.readChat
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -32,6 +33,15 @@ fun readChats(jwt: String): TestApplicationResponse = withTestApplication(Applic
     handleRequest(HttpMethod.Get, "chats") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
 
+fun updateGroupChat(update: GroupChatUpdate, jwt: String): TestApplicationResponse =
+    withTestApplication(Application::main) {
+        handleRequest(HttpMethod.Patch, "group-chat") {
+            addHeader(HttpHeaders.Authorization, "Bearer $jwt")
+            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(update))
+        }
+    }.response
+
 class PostGroupChatTest : StringSpec({
     listener(AppListener())
 
@@ -46,7 +56,7 @@ class PostGroupChatTest : StringSpec({
         val response = createGroupChat(chat, getJwt(creator.login))
         response.status() shouldBe HttpStatusCode.OK
         val body = gson.fromJson(response.content, ChatId::class.java)
-        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(body.id, chat))
+        GroupChats.readCreated(creator.id) shouldBe listOf(GroupChatWithId(body.id, chat))
     }
 
     fun testInvalidChat(users: List<CreatedUser>, chat: GroupChat, reason: InvalidGroupChatReason) {
@@ -127,5 +137,40 @@ class GetChatsTest : StringSpec({
         val groupChat = Chat(ChatType.GROUP, groupChatId)
         val privateChat = Chat(ChatType.PRIVATE, privateChatId)
         body shouldBe Chats(listOf(groupChat, privateChat))
+    }
+})
+
+class PatchGroupChatTest : StringSpec({
+    listener(AppListener())
+
+    "A group chat should update" {
+        val users = createVerifiedUsers(3)
+        val jwt = getJwt(users[0].login)
+        val initialUserIdList = setOf(users[1].id)
+        val createdChatResponse = createGroupChat(GroupChat(initialUserIdList, "Title"), jwt)
+        val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
+        val update = GroupChatUpdate(
+            chatId,
+            "New Title",
+            "New Description",
+            newUserIdList = setOf(users[2].id),
+            removedUserIdList = setOf(users[1].id)
+        )
+        val response = updateGroupChat(update, jwt)
+        response.status() shouldBe HttpStatusCode.NoContent
+        val userIdList = initialUserIdList + update.newUserIdList!! - update.removedUserIdList!!
+        GroupChats.readChat(chatId) shouldBe GroupChat(userIdList, update.title!!, update.description)
+    }
+
+    "Updating a nonexistent group chat should respond with an HTTP status code of 400" {
+        val (login) = createVerifiedUsers(1)[0]
+        updateGroupChat(GroupChatUpdate(chatId = 5), getJwt(login)).status() shouldBe HttpStatusCode.BadRequest
+    }
+
+    "Updating a group chat the user isn't the admin of should respond with an HTTP status code of 401" {
+        val users = createVerifiedUsers(2)
+        val createdChatResponse = createGroupChat(GroupChat(setOf(users[1].id), "Title"), getJwt(users[0].login))
+        val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
+        updateGroupChat(GroupChatUpdate(chatId), getJwt(users[1].login)).status() shouldBe HttpStatusCode.Unauthorized
     }
 })
