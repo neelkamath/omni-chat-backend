@@ -5,7 +5,7 @@ info:
   description: |
     Free, open core, federated chat system, to replace every existing chat app.
 
-    To view the documentation for previos versions, see the
+    To view the documentation for previous versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
 
     A "private chat" is a chat between two users which cannot be converted into a group chat.
@@ -90,6 +90,26 @@ paths:
       tags: [chat]
       operationId: readChats
       description: Get every chat the user partakes in.
+      responses:
+        '200':
+          $ref: '#/components/responses/Chats'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /chats-search:
+    get:
+      tags: [chat]
+      operationId: searchChats
+      description: Searches group chats and private chats. Private chats are searched by matching the query with the
+        username, first name, and last name of users this user has chats with. Group chats are searched by matching the
+        query with the title of group chats this user is in.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          name: query
+          description: Case-insensitive. A query which is empty, or contains only whitespace, will yield zero search
+            results.
+          required: true
       responses:
         '200':
           $ref: '#/components/responses/Chats'
@@ -251,7 +271,7 @@ paths:
           $ref: '#/components/responses/AuthorizationError'
   /user:
     get:
-      tags: [search]
+      tags: [user]
       operationId: readUser
       description: Retrieve the given user's metadata.
       security: []
@@ -268,7 +288,7 @@ paths:
           description: There is no user with the specified user ID.
   /user-search:
     get:
-      tags: [search]
+      tags: [user]
       description: Search users. You must send at least one of the query parameters.
       security: []
       operationId: searchUsers
@@ -292,8 +312,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/UserIdList'
-        '400':
-          description: At least one search filter must be used.
 components:
   securitySchemes:
     bearerAuth:

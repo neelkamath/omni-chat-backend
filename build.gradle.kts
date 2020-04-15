@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     application
@@ -40,6 +41,7 @@ tasks {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
     withType<ShadowJar> { archiveVersion.set("") }
+    named<KotlinJvmCompile>("compileTestKotlin") { kotlinOptions.jvmTarget = "1.8" }
 }
 
 if (gradle.startParameter.taskNames.contains("githubRelease"))

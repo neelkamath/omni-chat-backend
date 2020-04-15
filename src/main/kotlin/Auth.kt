@@ -136,10 +136,11 @@ object Auth {
 
     fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
-    fun findUserByEmail(email: String): UserRepresentation = realm.users().list().filter { it.email == email }[0]
+    private fun findUserByEmail(email: String): UserRepresentation =
+        realm.users().list().filter { it.email == email }[0]
 
     fun searchUsers(query: UserSearchQuery): List<UserRepresentation> =
-        realm.users().search(query.username, query.firstName, query.lastName, query.email, null, null)
+        with(query) { realm.users().search(username, firstName, lastName, email, null, null) }
 
     fun getUserIdList(): List<String> = realm.users().list().map { it.id }
 

@@ -9,10 +9,10 @@ import org.jetbrains.exposed.sql.select
 
 object GroupChatUsers : IntIdTable() {
     override val tableName get() = "group_chat_users"
-    val userId = varchar("user_id", Auth.userIdLength)
-    val groupChatId = integer("group_chat_id").references(GroupChats.id)
+    private val userId = varchar("user_id", Auth.userIdLength)
+    private val groupChatId = integer("group_chat_id").references(GroupChats.id)
 
-    fun isUserInChat(groupChatId: Int, userId: String): Boolean = Db.transact {
+    private fun isUserInChat(groupChatId: Int, userId: String): Boolean = Db.transact {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
@@ -39,5 +39,10 @@ object GroupChatUsers : IntIdTable() {
     /** Removes every user in the [userIdList] in the chat (specified by the [groupChatId]) if they're in it.  */
     fun removeUsers(groupChatId: Int, userIdList: Set<String>): Unit = Db.transact {
         deleteWhere { (GroupChatUsers.groupChatId eq groupChatId) and (userId inList userIdList) }
+    }
+
+    /** Returns the chat ID list of every chat the [userId] is in. */
+    fun getChatIdList(userId: String): List<Int> = Db.transact {
+        select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }
     }
 }

@@ -61,10 +61,10 @@ Name the functions the same as their <operationId>s in the OpenAPI spec. If ther
 function for the endpoints (e.g., <routeAccount()>), name it according to the format "route<URL>".
  */
 private fun Routing.route() {
+    routeAccount()
     checkHealth()
     requestJwt()
     refreshJwt()
-    routeAccount()
     searchUsers()
     verifyEmail()
     resetPassword()
@@ -74,5 +74,6 @@ private fun Routing.route() {
         createPrivateChat()
         readChats()
         routeContacts()
+        searchChats()
     }
 }

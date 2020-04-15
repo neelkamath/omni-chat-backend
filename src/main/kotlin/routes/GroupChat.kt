@@ -2,12 +2,14 @@ package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.db.PrivateChats
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respond
-import io.ktor.routing.*
+import io.ktor.routing.Route
+import io.ktor.routing.patch
+import io.ktor.routing.post
+import io.ktor.routing.route
 
 fun Route.routeGroupChat() {
     route("group-chat") {
@@ -16,7 +18,7 @@ fun Route.routeGroupChat() {
     }
 }
 
-fun Route.createGroupChat() {
+private fun Route.createGroupChat() {
     post {
         val chat = call.receive<GroupChat>()
         val userIdList = chat.userIdList.filter { it != call.userId }
@@ -36,7 +38,7 @@ fun Route.createGroupChat() {
     }
 }
 
-fun Route.updateGroupChat() {
+private fun Route.updateGroupChat() {
     patch {
         val update = call.receive<GroupChatUpdate>()
         when {
@@ -47,23 +49,5 @@ fun Route.updateGroupChat() {
                 call.respond(HttpStatusCode.NoContent)
             }
         }
-    }
-}
-
-fun Route.createPrivateChat() {
-    post("private-chat") {
-        val invitedUserId = call.parameters["user_id"]!!
-        if (Auth.userIdExists(invitedUserId) && invitedUserId != call.userId) {
-            val id = PrivateChats.create(call.userId, invitedUserId)
-            call.respond(ChatId(id))
-        } else call.respond(HttpStatusCode.BadRequest)
-    }
-}
-
-fun Route.readChats() {
-    get("chats") {
-        val groupChats = GroupChats.readCreated(call.userId).map { Chat(ChatType.GROUP, it.id) }
-        val privateChats = PrivateChats.read(call.userId).map { Chat(ChatType.PRIVATE, it.id) }
-        call.respond(Chats(groupChats + privateChats))
     }
 }

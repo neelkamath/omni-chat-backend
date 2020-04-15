@@ -75,23 +75,3 @@ private fun Route.createAccount() {
         }
     }
 }
-
-fun Routing.verifyEmail() {
-    get("email-verification") {
-        val email = call.parameters["email"]!!
-        if (Auth.emailExists(email)) {
-            Auth.sendEmailVerification(email)
-            call.respond(HttpStatusCode.NoContent)
-        } else call.respond(HttpStatusCode.BadRequest)
-    }
-}
-
-fun Routing.resetPassword() {
-    get("password-reset") {
-        val email = call.parameters["email"]!!
-        if (Auth.emailExists(email)) {
-            Auth.resetPassword(email)
-            call.respond(HttpStatusCode.NoContent)
-        } else call.respond(HttpStatusCode.BadRequest)
-    }
-}

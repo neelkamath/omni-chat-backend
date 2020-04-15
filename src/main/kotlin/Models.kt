@@ -49,9 +49,7 @@ data class UserSearchQuery(
     val firstName: String? = null,
     val lastName: String? = null,
     val email: String? = null
-) {
-    fun hasNoFilters(): Boolean = username == null && firstName == null && lastName == null && email == null
-}
+)
 
 data class GroupChat(val userIdList: Set<String>, val title: String, val description: String? = null)
 
