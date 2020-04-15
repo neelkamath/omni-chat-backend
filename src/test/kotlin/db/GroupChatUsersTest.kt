@@ -10,10 +10,11 @@ class GroupChatUsersTest : StringSpec({
     listener(DbListener())
 
     "Users should be added to the group chat, ignoring the ones already in it" {
+        val admin = "admin user ID"
         val initialUserIdList = setOf("user ID")
-        val chatId = GroupChats.create("admin user ID", GroupChat(initialUserIdList, "Title"))
+        val chatId = GroupChats.create(admin, GroupChat(initialUserIdList, "Title"))
         val newUserIdList = setOf("new user")
         GroupChatUsers.addUsers(chatId, initialUserIdList + newUserIdList)
-        GroupChatUsers.readUserIdList(chatId) shouldBe initialUserIdList + newUserIdList
+        GroupChatUsers.readUserIdList(chatId) shouldBe initialUserIdList + newUserIdList + admin
     }
 })

@@ -1,8 +1,15 @@
 package com.neelkamath.omniChat
 
+import com.google.gson.FieldNamingPolicy
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import java.util.*
 
-// The JSON models used in the HTTP API.
+/** Project-wide Gson config. */
+val gson: Gson = GsonBuilder()
+    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO 8601 format.
+    .create()
 
 data class Login(val username: String, val password: String)
 
@@ -79,3 +86,7 @@ data class GroupChatUpdate(
     val newUserIdList: Set<String>? = null,
     val removedUserIdList: Set<String>? = null
 )
+
+data class InvalidPrivateChat(val reason: InvalidPrivateChatReason)
+
+enum class InvalidPrivateChatReason { CHAT_EXISTS, INVALID_USER_ID }

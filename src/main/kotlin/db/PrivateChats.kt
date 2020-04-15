@@ -5,12 +5,14 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.keycloak.representations.idm.UserRepresentation
 
 data class PrivateChat(val id: Int, val creatorUserId: String, val invitedUserId: String)
 
 private data class PrivateUserChat(val user: UserRepresentation, val chatId: Int)
 
+/** [PrivateChatClears] holds the data on when each user deleted the chat for themselves. */
 object PrivateChats : IntIdTable() {
     override val tableName get() = "private_chats"
     private val creatorUserId = varchar("creator_user_id", Auth.userIdLength)
@@ -24,9 +26,16 @@ object PrivateChats : IntIdTable() {
         }.value
     }
 
-    fun read(creatorUserId: String): List<PrivateChat> = Db.transact {
-        select { PrivateChats.creatorUserId eq creatorUserId }
+    /** Returns the chats the [userId] is in. */
+    fun read(userId: String): List<PrivateChat> = Db.transact {
+        select { (creatorUserId eq userId) or (invitedUserId eq userId) }
             .map { PrivateChat(it[id].value, it[this.creatorUserId], it[invitedUserId]) }
+    }
+
+    /** Whether [userId1] and [userId2] are in a chat with each other. */
+    fun exists(userId1: String, userId2: String): Boolean = Db.transact {
+        val userIdPairs = selectAll().map { Pair(it[creatorUserId], it[invitedUserId]) }
+        Pair(userId1, userId2) in userIdPairs || Pair(userId2, userId1) in userIdPairs
     }
 
     /**
@@ -43,6 +52,10 @@ object PrivateChats : IntIdTable() {
             }
             .filter { matchesUser(it.user, query) }
             .map { it.chatId }
+    }
+
+    fun isCreator(chatId: Int, userId: String): Boolean = Db.transact {
+        select { id eq chatId }.first()[creatorUserId] == userId
     }
 
     /**

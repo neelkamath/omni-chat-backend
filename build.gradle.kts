@@ -26,6 +26,7 @@ dependencies {
     val exposedVersion = "0.23.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
     implementation("org.postgresql:postgresql:42.2.2")
     val keycloakVersion = "9.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")

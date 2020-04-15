@@ -1,3 +1,5 @@
+# Top-level keys under <paths> must be alphabetically ordered. Top-level sub-keys under <components> (e.g., keys under
+# <components/schemas>) must be alphabetically ordered.
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -8,13 +10,6 @@ info:
     To view the documentation for previous versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
 
-    A "private chat" is a chat between two users which cannot be converted into a group chat.
-
-    Dates conform to ISO 8601.
-
-    Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
-    GET /user endpoint with the user ID you have.
-
     Here is the usual flow for using this service.
     1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
       POST /account endpoint.
@@ -23,6 +18,17 @@ info:
       future actions by using the HTTP POST /jwt-request endpoint.
     1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /account endpoint).
     1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
+
+    A _private chat_ is a chat between two users which cannot be converted into a group chat. When a private chat is
+    deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved
+    when requesting their chats. However, the user they were chatting with will still have the chat in the same state it
+    was in before the user deleted it. If the other user sends a message to the user, it will show up as the first
+    message in the user's chat.
+
+    Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
+    GET /user endpoint with the user ID you have.
+
+    Dates conform to ISO 8601.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -251,6 +257,23 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidEmailError'
   /private-chat:
+    delete:
+      tags: [chat]
+      description: Deletes a private chat for the current user only.
+      operationId: deletePrivateChat
+      parameters:
+        - in: query
+          schema:
+            type: integer
+          name: chat_id
+          required: true
+      responses:
+        '204':
+          description: Chat deleted.
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     post:
       tags: [chat]
       operationId: createPrivateChat
@@ -266,7 +289,7 @@ paths:
         '200':
           $ref: '#/components/responses/ChatId'
         '400':
-          description: The supplied user ID is either nonexistent, or is the user themselves.
+          $ref: '#/components/responses/PrivateChatCreationError'
         '401':
           $ref: '#/components/responses/AuthorizationError'
   /user:
@@ -366,7 +389,7 @@ components:
         id: 7
       properties:
         id:
-          type: number
+          type: integer
       required: [id]
     Chats:
       type: object
@@ -386,7 +409,7 @@ components:
                 type: string
                 enum: [PRIVATE, GROUP]
               id:
-                type: number
+                type: integer
             required: [type, id]
       required: [chats]
     GroupChatUpdate:
@@ -399,7 +422,7 @@ components:
         removed_user_id_list: [k8j78d05-9804-34cf-mn61-50225e04ajk2]
       properties:
         chat_id:
-          type: number
+          type: integer
         title:
           type: string
           minimum: 1
@@ -517,6 +540,15 @@ components:
         reason:
           type: string
           enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
+      required: [reason]
+    PrivateChatCreationError:
+      type: object
+      example:
+        reason: CHAT_EXISTS
+      properties:
+        reason:
+          type: string
+          enum: [CHAT_EXISTS, INVALID_USER_ID]
       required: [reason]
     RefreshJwt:
       type: object
@@ -637,6 +669,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChatError'
+    PrivateChatCreationError:
+      description: Couldn't create private chat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrivateChatCreationError'
     User:
       description: User info.
       content:

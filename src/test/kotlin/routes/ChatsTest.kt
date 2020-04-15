@@ -29,4 +29,22 @@ class GetChatsTest : StringSpec({
         val privateChat = Chat(ChatType.PRIVATE, privateChatId)
         body shouldBe Chats(listOf(groupChat, privateChat))
     }
+
+    "Chats deleted by the user shouldn't be retrieved" {
+        val users = createVerifiedUsers(2)
+        val jwt = getJwt(users[0].login)
+        val response = createPrivateChat(users[1].id, jwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        deletePrivateChat(chatId, jwt)
+        gson.fromJson(readChats(jwt).content, Chats::class.java) shouldBe Chats(listOf())
+    }
+
+    "Chats deleted by the invitee, but not by the creator, should be retrieved" {
+        val users = createVerifiedUsers(2)
+        val jwt = getJwt(users[0].login)
+        val response = createPrivateChat(users[1].id, jwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        deletePrivateChat(chatId, getJwt(users[1].login))
+        gson.fromJson(readChats(jwt).content, Chats::class.java) shouldBe Chats(listOf(Chat(ChatType.PRIVATE, chatId)))
+    }
 })

@@ -2,11 +2,11 @@
 
 ## Flow
 
-Here's how a standard project iteration looks like.
+Here's what a standard project iteration looks like.
 
 1. Pick a feature to work on using the [spec](spec.md). Since the spec only lists features end-users are aware of, and not implementation details, the feature doesn't have to be present in the spec. If the feature isn't present in the spec, but is relevant to a technical (e.g., a programmer who will make bots for the service) or nontechnical end-user, add it to the spec. 
 1. If the feature is an HTTP API endpoint, plan it in the [OpenAPI spec](openapi.yaml).
-1. Create any required [models](../src/main/kotlin/Models.kt).
+1. Create any required [JSON models](../src/main/kotlin/Json.kt).
 1. If you're updating the DB, keep in mind that you might have to wipe it when the account is deleted.
 1. Write tests (i.e., TDD). If you're writing tests for an HTTP API endpoint, perform the following sub-steps.
     1. Create a file in [`src/test/kotlin/routes`](../src/test/kotlin/routes) named using the format `<URL>Test.kt`. For example, the endpoint `/jwt-request` has its tests in [`src/test/kotlin/routes/JwtRequestTest.kt`](../src/test/kotlin/routes/JwtRequestTest.kt).
@@ -14,7 +14,7 @@ Here's how a standard project iteration looks like.
     1. Create a class using the format `<HTTP_VERB><URL>Test`. For example, if the endpoint `/chat-message` accepts the POST verb, then the class `PostChatMessageTest` would be created.
 1. Implement the feature.
 
-    If the feature is an HTTP API endpoint, then name the function the same as its operation ID in the OpenAPI spec. If the endpoint accepts multiple HTTP verbs, create a separate routing function named using the format `route<URL>`. See [`src/main/kotlin/routes/Account.kt`](../src/main/kotlin/routes/Account.kt) for an example.
+    If the feature is an HTTP API endpoint, then name the routing function the same as its operation ID in the OpenAPI spec. If the endpoint accepts multiple HTTP verbs, create a separate routing function named using the format `route<URL>`. See [`src/main/kotlin/routes/Account.kt`](../src/main/kotlin/routes/Account.kt) for an example.
 1. If the feature was from the [spec](spec.md), mark it as completed.
 1. If you have updated the server's functionality, or the OpenAPI spec, follow these sub-steps to create a new release.
     1. Update the version in the [OpenAPI spec](openapi.yaml) and the [build file](../build.gradle.kts). Even if the server is still backwards compatible, you must bump the major version if you've renamed an entity in the OpenAPI spec (e.g., a key under `schemas/components/`). This is because [OpenAPI Generator](https://openapi-generator.tech/) uses the names of keys when creating client SDKs, which would have otherwise become backwards-incompatible.
@@ -75,7 +75,7 @@ Here's how a standard project iteration looks like.
 
 ## OpenAPI Spec
 
-[`openapi.yaml`](openapi.yaml) is the OpenAPI spec. Top-level keys under `paths` must be alphabetically ordered. Top-level sub-keys under `components` (e.g., keys under `components/schemas`) must be alphabetically ordered.
+[`openapi.yaml`](openapi.yaml) is the OpenAPI spec.
 
 ### Development
 

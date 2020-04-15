@@ -1,8 +1,5 @@
 package com.neelkamath.omniChat
 
-import com.google.gson.FieldNamingPolicy
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.neelkamath.omniChat.db.Db
 import com.neelkamath.omniChat.routes.*
 import io.ktor.application.Application
@@ -19,15 +16,8 @@ import io.ktor.gson.GsonConverter
 import io.ktor.http.ContentType
 import io.ktor.routing.Routing
 import io.ktor.routing.routing
-import org.keycloak.representations.idm.UserRepresentation
 
-/** Project-wide Gson config. */
-val gson: Gson = GsonBuilder()
-    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO 8601 format.
-    .create()
-
-/** On authenticated calls, this will be the callee's [UserRepresentation.id]. */
+/** On authenticated calls, this will be the callee's user ID. */
 val ApplicationCall.userId get(): String = authentication.principal<JWTPrincipal>()!!.payload.subject
 
 fun Application.main() {
@@ -71,7 +61,7 @@ private fun Routing.route() {
     readUser()
     authenticate {
         routeGroupChat()
-        createPrivateChat()
+        routePrivateChat()
         readChats()
         routeContacts()
         searchChats()
