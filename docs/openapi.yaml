@@ -155,8 +155,8 @@ paths:
           schema:
             type: string
           name: new_admin_user_id
-          description: If the user is the group's admin, this parameter must be specified as the user ID of another
-            participant in the group who will become the new admin.
+          description: If the user is the group's admin, and is not the last user in the chat, this parameter must be
+            specified as the user ID of another participant in the group who will become the new admin.
       responses:
         '204':
           description: Left the group chat.
@@ -474,9 +474,7 @@ components:
       properties:
         reason:
           type: string
-          description: |
-            `MISSING_USER_ID` and `INVALID_USER_ID` refer to the ID of the user who is to become the new admin.
-          enum: [MISSING_USER_ID, INVALID_USER_ID, INVALID_CHAT_ID]
+          enum: [MISSING_NEW_ADMIN_ID, INVALID_NEW_ADMIN_ID, INVALID_CHAT_ID]
       required: [reason]
     InvalidNewAccountError:
       type: object

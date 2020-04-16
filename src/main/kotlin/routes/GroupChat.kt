@@ -55,16 +55,17 @@ private fun Route.leaveGroupChat() {
     delete {
         val chatId = call.parameters["chat_id"]!!.toInt()
         val newAdminUserId = call.parameters["new_admin_user_id"]
-        val isAdmin = lazy { GroupChats.isAdmin(call.userId, chatId) }
+        val mustSpecifyNewAdmin =
+            lazy { GroupChats.isAdmin(call.userId, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1 }
         when {
             chatId !in GroupChats.read(call.userId).map { it.id } ->
                 call.respond(HttpStatusCode.BadRequest, InvalidGroupLeave(InvalidGroupLeaveReason.INVALID_CHAT_ID))
-            isAdmin.value && newAdminUserId == null ->
-                call.respond(HttpStatusCode.BadRequest, InvalidGroupLeave(InvalidGroupLeaveReason.MISSING_USER_ID))
-            isAdmin.value && newAdminUserId !in GroupChatUsers.readUserIdList(chatId) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidGroupLeave(InvalidGroupLeaveReason.INVALID_USER_ID))
+            mustSpecifyNewAdmin.value && newAdminUserId == null ->
+                call.respond(HttpStatusCode.BadRequest, InvalidGroupLeave(InvalidGroupLeaveReason.MISSING_NEW_ADMIN_ID))
+            mustSpecifyNewAdmin.value && newAdminUserId !in GroupChatUsers.readUserIdList(chatId) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidGroupLeave(InvalidGroupLeaveReason.INVALID_NEW_ADMIN_ID))
             else -> {
-                if (isAdmin.value) GroupChats.switchAdmin(chatId, newAdminUserId!!)
+                if (mustSpecifyNewAdmin.value) GroupChats.switchAdmin(chatId, newAdminUserId!!)
                 GroupChats.update(GroupChatUpdate(chatId, removedUserIdList = setOf(call.userId)))
                 call.respond(HttpStatusCode.NoContent)
             }

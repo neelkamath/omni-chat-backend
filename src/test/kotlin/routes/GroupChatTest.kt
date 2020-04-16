@@ -146,13 +146,22 @@ class DeleteGroupChatTest : StringSpec({
         GroupChatUsers.readUserIdList(chatId) shouldBe setOf(admin.id)
     }
 
-    "The admin should leave the chat" {
+    "The admin should leave the chat after specifying the new admin if there are users left in the chat" {
         val (admin, user) = createVerifiedUsers(2)
         val chat = GroupChat(setOf(user.id), "Title")
         val response = createGroupChat(chat, getJwt(admin.login))
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         leaveGroupChat(getJwt(admin.login), chatId, newAdminUserId = user.id).status() shouldBe HttpStatusCode.NoContent
         GroupChatUsers.readUserIdList(chatId) shouldBe setOf(user.id)
+    }
+
+    "The admin should leave the chat without specifying a new admin if they are the last user" {
+        val (admin, user) = createVerifiedUsers(2)
+        val adminJwt = getJwt(admin.login)
+        val response = createGroupChat(GroupChat(setOf(admin.id, user.id), "Title"), adminJwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        leaveGroupChat(getJwt(user.login), chatId)
+        leaveGroupChat(adminJwt, chatId).status() shouldBe HttpStatusCode.NoContent
     }
 
     fun testBadResponse(response: TestApplicationResponse, reason: InvalidGroupLeaveReason) {
@@ -166,11 +175,12 @@ class DeleteGroupChatTest : StringSpec({
         val response = createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         val newAdminUserId = if (givingId) "invalid new admin ID" else null
-        val reason = if (givingId) InvalidGroupLeaveReason.INVALID_USER_ID else InvalidGroupLeaveReason.MISSING_USER_ID
+        val reason =
+            if (givingId) InvalidGroupLeaveReason.INVALID_NEW_ADMIN_ID else InvalidGroupLeaveReason.MISSING_NEW_ADMIN_ID
         testBadResponse(leaveGroupChat(jwt, chatId, newAdminUserId), reason)
     }
 
-    "The admin shouldn't be allowed to leave the chat without specifying a new admin" {
+    "The admin shouldn't be allowed to leave without specifying a new admin if there are users left" {
         testBadUserId(givingId = false)
     }
 
