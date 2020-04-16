@@ -14,7 +14,7 @@ import io.ktor.routing.get
 
 fun Route.readChats() {
     get("chats") {
-        val groupChats = GroupChats.readCreated(call.userId).map { Chat(ChatType.GROUP, it.id) }
+        val groupChats = GroupChats.read(call.userId).map { Chat(ChatType.GROUP, it.id) }
         val privateChats = PrivateChats.read(call.userId).map { Chat(ChatType.PRIVATE, it.id) }.filter {
             val isCreator = PrivateChats.isCreator(it.id, call.userId)
             !PrivateChatClears.hasCleared(isCreator, it.id)

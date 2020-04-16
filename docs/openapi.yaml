@@ -25,6 +25,9 @@ info:
     was in before the user deleted it. If the other user sends a message to the user, it will show up as the first
     message in the user's chat.
 
+    If you are added to a group chat, or are added back to a group chat after leaving it, you will be able to see the
+    entire chat's history.
+
     Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
     GET /user endpoint with the user ID you have.
 
@@ -138,6 +141,29 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidEmailError'
   /group-chat:
+    delete:
+      tags: [chat]
+      operationId: leaveGroupChat
+      description: Leave the group chat.
+      parameters:
+        - in: query
+          schema:
+            type: integer
+          name: chat_id
+          required: true
+        - in: query
+          schema:
+            type: string
+          name: new_admin_user_id
+          description: If the user is the group's admin, this parameter must be specified as the user ID of another
+            participant in the group who will become the new admin.
+      responses:
+        '204':
+          description: Left the group chat.
+        '400':
+          $ref: '#/components/responses/InvalidGroupChatLeave'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     patch:
       operationId: updateGroupChat
       tags: [chat]
@@ -148,7 +174,7 @@ paths:
         '204':
           description: Updated.
         '400':
-          description: The specified group chat ID doesn't exist.
+          description: Invalid chat ID.
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
@@ -432,15 +458,26 @@ components:
           maximum: 1000
         new_user_id_list:
           type: array
-          description: The user ID of every new user to add to the chat.
+          description: The ID of every new user to add.
           items:
             type: string
         removed_user_id_list:
           type: array
-          description: The user ID of every user to remove from the chat.
+          description: The ID of every user to remove.
           items:
             type: string
       required: [chat_id]
+    InvalidGroupChatLeave:
+      type: object
+      example:
+        reason: INVALID_USER_ID
+      properties:
+        reason:
+          type: string
+          description: |
+            `MISSING_USER_ID` and `INVALID_USER_ID` refer to the ID of the user who is to become the new admin.
+          enum: [MISSING_USER_ID, INVALID_USER_ID, INVALID_CHAT_ID]
+      required: [reason]
     InvalidNewAccountError:
       type: object
       example:
@@ -651,6 +688,12 @@ components:
             $ref: '#/components/schemas/ChatId'
     InvalidEmailError:
       description: There is no registered user with the specified email address.
+    InvalidGroupChatLeave:
+      description: Group chat couldn't be left.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidGroupChatLeave'
     InvalidNewAccountError:
       description: The user couldn't be created.
       content:

@@ -1,16 +1,14 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.GroupChatUsers
 import com.neelkamath.omniChat.db.GroupChatWithId
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.test.db.readChat
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import io.ktor.server.testing.TestApplicationResponse
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
@@ -30,6 +28,17 @@ fun updateGroupChat(update: GroupChatUpdate, jwt: String): TestApplicationRespon
             addHeader(HttpHeaders.Authorization, "Bearer $jwt")
             addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(update))
+        }
+    }.response
+
+fun leaveGroupChat(jwt: String, chatId: Int, newAdminUserId: String? = null): TestApplicationResponse =
+    withTestApplication(Application::main) {
+        val parameters = Parameters.build {
+            append("chat_id", chatId.toString())
+            newAdminUserId?.let { append("new_admin_user_id", it) }
+        }.formUrlEncode()
+        handleRequest(HttpMethod.Delete, "group-chat?$parameters") {
+            addHeader(HttpHeaders.Authorization, "Bearer $jwt")
         }
     }.response
 
@@ -82,8 +91,8 @@ class PostGroupChatTest : StringSpec({
         )
         val response = createGroupChat(chat, getJwt(creator.login))
         response.status() shouldBe HttpStatusCode.OK
-        val body = gson.fromJson(response.content, ChatId::class.java)
-        GroupChats.readCreated(creator.id) shouldBe listOf(GroupChatWithId(body.id, chat))
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(chatId, chat, isAdmin = true))
     }
 
     fun testInvalidChat(users: List<CreatedUser>, chat: GroupChat, reason: InvalidGroupChatReason) {
@@ -122,5 +131,56 @@ class PostGroupChatTest : StringSpec({
         val description = CharArray(GroupChats.maxDescriptionLength + 1) { 'a' }.joinToString("")
         val chat = GroupChat(setOf(users[1].id), "Group Chat Title", description)
         testInvalidChat(users, chat, InvalidGroupChatReason.INVALID_DESCRIPTION_LENGTH)
+    }
+})
+
+class DeleteGroupChatTest : StringSpec({
+    listener(AppListener())
+
+    "A non-admin should leave the chat" {
+        val (admin, user) = createVerifiedUsers(2)
+        val chat = GroupChat(setOf(user.id), "Title")
+        val response = createGroupChat(chat, getJwt(admin.login))
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        leaveGroupChat(getJwt(user.login), chatId).status() shouldBe HttpStatusCode.NoContent
+        GroupChatUsers.readUserIdList(chatId) shouldBe setOf(admin.id)
+    }
+
+    "The admin should leave the chat" {
+        val (admin, user) = createVerifiedUsers(2)
+        val chat = GroupChat(setOf(user.id), "Title")
+        val response = createGroupChat(chat, getJwt(admin.login))
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        leaveGroupChat(getJwt(admin.login), chatId, newAdminUserId = user.id).status() shouldBe HttpStatusCode.NoContent
+        GroupChatUsers.readUserIdList(chatId) shouldBe setOf(user.id)
+    }
+
+    fun testBadResponse(response: TestApplicationResponse, reason: InvalidGroupLeaveReason) {
+        response.status() shouldBe HttpStatusCode.BadRequest
+        gson.fromJson(response.content, InvalidGroupLeave::class.java) shouldBe InvalidGroupLeave(reason)
+    }
+
+    fun testBadUserId(givingId: Boolean) {
+        val (admin, user) = createVerifiedUsers(2)
+        val jwt = getJwt(admin.login)
+        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        val newAdminUserId = if (givingId) "invalid new admin ID" else null
+        val reason = if (givingId) InvalidGroupLeaveReason.INVALID_USER_ID else InvalidGroupLeaveReason.MISSING_USER_ID
+        testBadResponse(leaveGroupChat(jwt, chatId, newAdminUserId), reason)
+    }
+
+    "The admin shouldn't be allowed to leave the chat without specifying a new admin" {
+        testBadUserId(givingId = false)
+    }
+
+    "The admin shouldn't be allowed to leave the chat if the new admin's user ID is invalid" {
+        testBadUserId(givingId = true)
+    }
+
+    "Leaving a group chat the user is not in should respond with an HTTP status code of 400" {
+        val jwt = getJwt(createVerifiedUsers(1)[0].login)
+        val response = leaveGroupChat(jwt, chatId = 1)
+        testBadResponse(response, InvalidGroupLeaveReason.INVALID_CHAT_ID)
     }
 })

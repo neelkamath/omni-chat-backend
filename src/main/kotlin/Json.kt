@@ -90,3 +90,7 @@ data class GroupChatUpdate(
 data class InvalidPrivateChat(val reason: InvalidPrivateChatReason)
 
 enum class InvalidPrivateChatReason { CHAT_EXISTS, INVALID_USER_ID }
+
+data class InvalidGroupLeave(val reason: InvalidGroupLeaveReason)
+
+enum class InvalidGroupLeaveReason { MISSING_USER_ID, INVALID_USER_ID, INVALID_CHAT_ID }

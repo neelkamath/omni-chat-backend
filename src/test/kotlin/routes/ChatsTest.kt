@@ -17,20 +17,30 @@ fun readChats(jwt: String): TestApplicationResponse = withTestApplication(Applic
 class GetChatsTest : StringSpec({
     listener(AppListener())
 
-    "Chats should be retrieved" {
-        val users = createVerifiedUsers(2)
-        val jwt = getJwt(users[0].login)
-        val groupChatResponse = createGroupChat(GroupChat(setOf(users[1].id), "Title"), jwt)
-        val groupChatId = gson.fromJson(groupChatResponse.content, ChatId::class.java).id
-        val privateChatResponse = createPrivateChat(users[1].id, jwt)
-        val privateChatId = gson.fromJson(privateChatResponse.content, ChatId::class.java).id
-        val body = gson.fromJson(readChats(jwt).content, Chats::class.java)
-        val groupChat = Chat(ChatType.GROUP, groupChatId)
-        val privateChat = Chat(ChatType.PRIVATE, privateChatId)
-        body shouldBe Chats(listOf(groupChat, privateChat))
+    fun getChatId(response: TestApplicationResponse): Int = gson.fromJson(response.content, ChatId::class.java).id
+
+    fun createChats(admin: CreatedUser, user: CreatedUser): List<Chat> {
+        val adminJwt = getJwt(admin.login)
+        val adminGroupChatResponse = createGroupChat(GroupChat(setOf(user.id), "Title"), adminJwt)
+        val userGroupChatResponse = createGroupChat(GroupChat(setOf(admin.id), "Title"), getJwt(user.login))
+        val createdPrivateChatResponse = createPrivateChat(user.id, adminJwt)
+        val invitedPrivateChatResponse = createPrivateChat(admin.id, getJwt(createVerifiedUsers(1)[0].login))
+        return listOf(
+            Chat(ChatType.GROUP, getChatId(adminGroupChatResponse)),
+            Chat(ChatType.GROUP, getChatId(userGroupChatResponse)),
+            Chat(ChatType.PRIVATE, getChatId(createdPrivateChatResponse)),
+            Chat(ChatType.PRIVATE, getChatId(invitedPrivateChatResponse))
+        )
     }
 
-    "Chats deleted by the user shouldn't be retrieved" {
+    "Private and group chats the user made, was invited to, and was added to should be retrieved" {
+        val (admin, user) = createVerifiedUsers(2)
+        val chats = Chats(createChats(admin, user))
+        val response = readChats(getJwt(admin.login))
+        gson.fromJson(response.content, Chats::class.java) shouldBe chats
+    }
+
+    "Private chats deleted by the user shouldn't be retrieved" {
         val users = createVerifiedUsers(2)
         val jwt = getJwt(users[0].login)
         val response = createPrivateChat(users[1].id, jwt)
@@ -39,7 +49,16 @@ class GetChatsTest : StringSpec({
         gson.fromJson(readChats(jwt).content, Chats::class.java) shouldBe Chats(listOf())
     }
 
-    "Chats deleted by the invitee, but not by the creator, should be retrieved" {
+    "Group chats deleted by the user shouldn't be retrieved" {
+        val (admin, user) = createVerifiedUsers(2)
+        val jwt = getJwt(admin.login)
+        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        leaveGroupChat(jwt, chatId, newAdminUserId = user.id)
+        gson.fromJson(readChats(jwt).content, Chats::class.java) shouldBe Chats(listOf())
+    }
+
+    "Chats deleted only by the invitee should be retrieved" {
         val users = createVerifiedUsers(2)
         val jwt = getJwt(users[0].login)
         val response = createPrivateChat(users[1].id, jwt)

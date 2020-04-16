@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.update
 
-data class GroupChatWithId(val id: Int, val chat: GroupChat)
+data class GroupChatWithId(val id: Int, val chat: GroupChat, val isAdmin: Boolean)
 
 /** The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat. */
 object GroupChats : IntIdTable() {
@@ -22,13 +22,20 @@ object GroupChats : IntIdTable() {
     const val maxDescriptionLength = 1000
     val description = varchar("description", maxDescriptionLength).nullable()
 
-    fun chatIdExists(id: Int): Boolean = Db.transact {
-        !select { GroupChats.id eq id }.empty()
-    }
+    fun isUserInChat(userId: String, chatId: Int): Boolean = chatId in read(userId).map { it.id }
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
     fun isAdmin(userId: String, chatId: Int): Boolean = Db.transact {
         select { id eq chatId }.first()[adminUserId] == userId
+    }
+
+    /**
+     * Converts the current admin of [chatId] to a regular user, and sets the [newAdminUserId] as the new admin.
+     *
+     * It is assumed that the [newAdminUserId] is valid.
+     */
+    fun switchAdmin(chatId: Int, newAdminUserId: String): Unit = Db.transact {
+        update({ id eq chatId }) { it[adminUserId] = newAdminUserId }
     }
 
     /** Returns the chat ID after creating it. */
@@ -42,10 +49,12 @@ object GroupChats : IntIdTable() {
         groupId
     }
 
-    fun readCreated(adminUserId: String): List<GroupChatWithId> = Db.transact {
-        GroupChats.select { GroupChats.adminUserId eq adminUserId }.map {
-            val userIdList = GroupChatUsers.readUserIdList(it[id].value)
-            GroupChatWithId(it[id].value, GroupChat(userIdList, it[title], it[description]))
+    /** Returns all every chat the user is in. */
+    fun read(userId: String): List<GroupChatWithId> = Db.transact {
+        GroupChatUsers.getChatIdList(userId).map {
+            val row = select { id eq it }.first()
+            val chat = GroupChat(GroupChatUsers.readUserIdList(it), row[title], row[description])
+            GroupChatWithId(it, chat, isAdmin(userId, it))
         }
     }
 
