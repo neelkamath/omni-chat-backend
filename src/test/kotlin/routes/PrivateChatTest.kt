@@ -4,9 +4,8 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.PrivateChat
 import com.neelkamath.omniChat.db.PrivateChatClears
 import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.db.read
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
 import io.ktor.http.*
@@ -33,9 +32,7 @@ class DeletePrivateChatTest : StringSpec({
         val response = createPrivateChat(users[1].id, jwt)
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         deletePrivateChat(chatId, jwt).status() shouldBe HttpStatusCode.NoContent
-        withClue("The list of chat deletions should be from the creator of the chat") {
-            PrivateChatClears.read(chatId) shouldBe listOf(true)
-        }
+        PrivateChatClears.hasCleared(isCreator = true, chatId = chatId).shouldBeTrue()
     }
 
     "Deleting an invalid chat ID should respond with an HTTP status code of 400" {

@@ -2,10 +2,7 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.Auth
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.or
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.keycloak.representations.idm.UserRepresentation
 
 data class PrivateChat(val id: Int, val creatorUserId: String, val invitedUserId: String)
@@ -56,6 +53,11 @@ object PrivateChats : IntIdTable() {
 
     fun isCreator(chatId: Int, userId: String): Boolean = Db.transact {
         select { id eq chatId }.first()[creatorUserId] == userId
+    }
+
+    /** Deletes every chat the [userId] is in. */
+    fun delete(userId: String): Unit = Db.transact {
+        deleteWhere { (creatorUserId eq userId) or (invitedUserId eq userId) }
     }
 
     /**

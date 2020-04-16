@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.`java-time`.datetime
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import java.time.LocalDateTime
@@ -16,10 +17,10 @@ import java.time.LocalDateTime
 object PrivateChatClears : IntIdTable() {
     override val tableName get() = "private_chat_clears"
     val chatId = integer("chat_id").references(PrivateChats.id)
+    private val pointInTime = datetime("point_in_time").clientDefault { LocalDateTime.now() }
 
     /** Whether the [PrivateChats.creatorUserId] cleared the chat ([PrivateChats.invitedUserId] otherwise). */
     val isCreator = bool("is_creator")
-    private val pointInTime = datetime("point_in_time").clientDefault { LocalDateTime.now() }
 
     /** Creates a new [pointInTime] for the deletion of the [chatId] ([isCreator] specifies who deleted it). */
     fun create(chatId: Int, isCreator: Boolean): Unit = Db.transact {
@@ -34,5 +35,10 @@ object PrivateChatClears : IntIdTable() {
         with(select { PrivateChatClears.chatId eq chatId }) {
             if (empty()) false else first()[PrivateChatClears.isCreator] == isCreator
         }
+    }
+
+    /** Deletes every chat clear for the [chatId]. */
+    fun delete(chatId: Int): Unit = Db.transact {
+        deleteWhere { PrivateChatClears.chatId eq chatId }
     }
 }

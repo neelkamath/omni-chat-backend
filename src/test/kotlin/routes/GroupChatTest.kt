@@ -4,7 +4,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.GroupChatUsers
 import com.neelkamath.omniChat.db.GroupChatWithId
 import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.test.db.readChat
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -55,14 +54,15 @@ class PatchGroupChatTest : StringSpec({
         val update = GroupChatUpdate(
             chatId,
             "New Title",
-            "New Description",
+            "New description",
             newUserIdList = setOf(users[2].id),
             removedUserIdList = setOf(users[1].id)
         )
         val response = updateGroupChat(update, jwt)
         response.status() shouldBe HttpStatusCode.NoContent
         val userIdList = initialUserIdList + update.newUserIdList!! - update.removedUserIdList!!
-        GroupChats.readChat(chatId) shouldBe GroupChat(userIdList + creator.id, update.title!!, update.description)
+        val groupChat = GroupChat(userIdList + creator.id, update.title!!, update.description)
+        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(chatId, groupChat, isAdmin = true))
     }
 
     "Updating a nonexistent group chat should respond with an HTTP status code of 400" {

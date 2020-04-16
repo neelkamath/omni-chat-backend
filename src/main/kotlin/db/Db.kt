@@ -38,4 +38,15 @@ object Db {
         addLogger(StdOutSqlLogger)
         return@transaction function()
     }
+
+    /** Deletes the [userId]'s data (it is assumed that the [userId] is not the admin of a group chat). */
+    fun deleteUserData(userId: String) {
+        Contacts.deleteUserEntries(userId)
+        for (chatId in GroupChats.read(userId).map { it.id }) {
+            GroupChatUsers.removeUsers(chatId, setOf(userId))
+            if (GroupChats.read(chatId).userIdList.isEmpty()) GroupChats.delete(chatId)
+        }
+        PrivateChats.read(userId).map { it.id }.forEach(PrivateChatClears::delete)
+        PrivateChats.delete(userId)
+    }
 }

@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.routes
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Contacts
+import com.neelkamath.omniChat.db.Db
+import com.neelkamath.omniChat.db.GroupChats
 import io.ktor.application.call
 import io.ktor.auth.authenticate
 import io.ktor.http.HttpStatusCode
@@ -22,11 +23,16 @@ fun Routing.routeAccount() {
 
 private fun Route.deleteAccount() {
     delete {
-        Auth.deleteUser(call.userId)
-        Contacts.deleteUserEntries(call.userId)
-        call.respond(HttpStatusCode.NoContent)
+        if (canDeleteAccount(call.userId)) {
+            Auth.deleteUser(call.userId)
+            Db.deleteUserData(call.userId)
+            call.respond(HttpStatusCode.NoContent)
+        } else call.respond(HttpStatusCode.BadRequest)
     }
 }
+
+private fun canDeleteAccount(userId: String): Boolean =
+    true !in GroupChats.read(userId).filter { GroupChats.read(it.id).userIdList.size > 1 }.map { it.isAdmin }
 
 private fun Route.readAccount() {
     get {

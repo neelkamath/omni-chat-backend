@@ -15,9 +15,9 @@ object GroupChats : IntIdTable() {
     override val tableName get() = "group_chats"
     private val adminUserId = varchar("admin_user_id", Auth.userIdLength)
     const val maxTitleLength = 70
-    val title = varchar("title", maxTitleLength)
+    private val title = varchar("title", maxTitleLength)
     const val maxDescriptionLength = 1000
-    val description = varchar("description", maxDescriptionLength).nullable()
+    private val description = varchar("description", maxDescriptionLength).nullable()
 
     fun isUserInChat(userId: String, chatId: Int): Boolean = chatId in read(userId).map { it.id }
 
@@ -46,13 +46,14 @@ object GroupChats : IntIdTable() {
         groupId
     }
 
+    fun read(chatId: Int): GroupChat = Db.transact {
+        val row = select { id eq chatId }.first()
+        GroupChat(GroupChatUsers.readUserIdList(chatId), row[title], row[description])
+    }
+
     /** Returns all every chat the user is in. */
     fun read(userId: String): List<GroupChatWithId> = Db.transact {
-        GroupChatUsers.getChatIdList(userId).map {
-            val row = select { id eq it }.first()
-            val chat = GroupChat(GroupChatUsers.readUserIdList(it), row[title], row[description])
-            GroupChatWithId(it, chat, isAdmin(userId, it))
-        }
+        GroupChatUsers.getChatIdList(userId).map { GroupChatWithId(it, read(it), isAdmin(userId, it)) }
     }
 
     /** If every user is removed, the chat is deleted. */
@@ -64,6 +65,10 @@ object GroupChats : IntIdTable() {
         update.newUserIdList?.let { GroupChatUsers.addUsers(update.chatId, it) }
         update.removedUserIdList?.let { GroupChatUsers.removeUsers(update.chatId, it) }
         if (GroupChatUsers.readUserIdList(update.chatId).isEmpty()) deleteWhere { id eq update.chatId }
+    }
+
+    fun delete(chatId: Int): Unit = Db.transact {
+        deleteWhere { id eq chatId }
     }
 
     /**

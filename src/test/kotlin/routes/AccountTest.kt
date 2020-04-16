@@ -1,9 +1,16 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.Contacts
+import com.neelkamath.omniChat.db.GroupChats
+import com.neelkamath.omniChat.db.PrivateChatClears
+import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.test.db.count
 import com.neelkamath.omniChat.test.verifyEmail
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.ints.shouldBeZero
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
 import io.ktor.http.ContentType
@@ -75,12 +82,9 @@ class PatchAccountTest : StringSpec({
         val user = NewAccount(username = "john_doe", password = "pass", email = "john.doe@example.com")
         createAccount(user)
         Auth.verifyEmail(user.username)
-        val updatedUser =
-            AccountUpdate(username = "john_rogers", email = "john.rogers@example.com", lastName = "Rogers")
-        updateAccount(
-            updatedUser,
-            getJwt(Login(user.username, user.password))
-        ).status() shouldBe HttpStatusCode.NoContent
+        val updatedUser = AccountUpdate(username = "john_roger", email = "john.roger@example.com", lastName = "Roger")
+        val jwt = getJwt(Login(user.username, user.password))
+        updateAccount(updatedUser, jwt).status() shouldBe HttpStatusCode.NoContent
         testAccountInfo(user, updatedUser)
     }
 
@@ -158,10 +162,66 @@ class DeleteAccountTest : StringSpec({
     listener(AppListener())
 
     "An account should be deleted" {
-        val login = Login("username", "password")
-        createAccount(NewAccount(login.username, login.password, "username@example.com"))
-        Auth.verifyEmail(login.username)
+        val (login) = createVerifiedUsers(1)[0]
         deleteAccount(getJwt(login)).status() shouldBe HttpStatusCode.NoContent
-        Auth.usernameExists(login.username).shouldBeFalse()
+    }
+
+    "An account should be deleted from the auth service" {
+        val (login, id) = createVerifiedUsers(1)[0]
+        deleteAccount(getJwt(login))
+        Auth.userIdExists(id).shouldBeFalse()
+    }
+
+    "The user's contacts and contacts of the user should be deleted when their account is deleted" {
+        val users = createVerifiedUsers(2)
+        val jwt = getJwt(users[0].login)
+        createContacts(UserIdList(setOf(users[1].id)), jwt)
+        createContacts(UserIdList(setOf(users[0].id)), getJwt(users[1].login))
+        deleteAccount(jwt)
+        Contacts.read(users[0].id).shouldBeEmpty()
+        Contacts.read(users[1].id).shouldBeEmpty()
+    }
+
+    "A group chat should be deleted if its only member's account is deleted" {
+        val (admin, user) = createVerifiedUsers(2)
+        val adminJwt = getJwt(admin.login)
+        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), adminJwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        leaveGroupChat(getJwt(user.login), chatId)
+        deleteAccount(adminJwt)
+        GroupChats.count().shouldBeZero()
+    }
+
+    "The user whose account is deleted should be removed from group chats" {
+        val (admin, user) = createVerifiedUsers(2)
+        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), getJwt(admin.login))
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        deleteAccount(getJwt(user.login))
+        GroupChats.read(chatId).userIdList shouldBe setOf(admin.id)
+    }
+
+    "Private chat clears should be empty for chats with a user who deleted their account" {
+        val (creator, invitee) = createVerifiedUsers(2)
+        val jwt = getJwt(creator.login)
+        val response = createPrivateChat(invitee.id, jwt)
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        deletePrivateChat(chatId, jwt)
+        deleteAccount(jwt)
+        PrivateChatClears.count().shouldBeZero()
+    }
+
+    "Private chats with a user who deleted their account should be deleted" {
+        val (creator, invitee) = createVerifiedUsers(2)
+        val jwt = getJwt(creator.login)
+        createPrivateChat(invitee.id, jwt)
+        deleteAccount(jwt)
+        PrivateChats.read(invitee.id).shouldBeEmpty()
+    }
+
+    "An account cannot be deleted if the user is the admin of a group chat" {
+        val (admin, user) = createVerifiedUsers(2)
+        val jwt = getJwt(admin.login)
+        createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
+        deleteAccount(jwt).status() shouldBe HttpStatusCode.BadRequest
     }
 })

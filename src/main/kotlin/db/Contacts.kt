@@ -8,8 +8,8 @@ import org.jetbrains.exposed.sql.*
 
 /** Each user's (denoted by their [contactOwnerUserId]) saved contacts (denoted by the [contactUserId]s). */
 object Contacts : IntIdTable() {
-    private val contactOwnerUserId = varchar("contact_owner", Auth.userIdLength)
-    private val contactUserId = varchar("contact", Auth.userIdLength)
+    val contactOwnerUserId = varchar("contact_owner", Auth.userIdLength)
+    val contactUserId = varchar("contact", Auth.userIdLength)
 
     fun create(userId: String, userIdList: Set<String>): Unit = Db.transact {
         batchInsert(userIdList) {

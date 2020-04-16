@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.select
 
 object GroupChatUsers : IntIdTable() {
     override val tableName get() = "group_chat_users"
-    private val userId = varchar("user_id", Auth.userIdLength)
+    val userId = varchar("user_id", Auth.userIdLength)
     private val groupChatId = integer("group_chat_id").references(GroupChats.id)
 
     private fun isUserInChat(groupChatId: Int, userId: String): Boolean = Db.transact {

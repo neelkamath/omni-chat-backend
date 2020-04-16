@@ -53,6 +53,9 @@ paths:
       responses:
         '204':
           description: Account deleted.
+        '400':
+          description: The account couldn't be deleted because the user is the admin of a group chat. The user must
+            either leave the chat, or appoint a different member as the admin.
         '401':
           $ref: '#/components/responses/AuthorizationError'
     get:
@@ -167,7 +170,7 @@ paths:
     patch:
       operationId: updateGroupChat
       tags: [chat]
-      description: Updates a group chat.
+      description: Updates a group chat. Only the admin can update it.
       requestBody:
         $ref: '#/components/requestBodies/GroupChatUpdate'
       responses:
@@ -470,7 +473,7 @@ components:
     InvalidGroupChatLeave:
       type: object
       example:
-        reason: INVALID_USER_ID
+        reason: INVALID_NEW_ADMIN_ID
       properties:
         reason:
           type: string
