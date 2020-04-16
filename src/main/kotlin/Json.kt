@@ -84,8 +84,13 @@ data class GroupChatUpdate(
     val title: String? = null,
     val description: String? = null,
     val newUserIdList: Set<String>? = null,
-    val removedUserIdList: Set<String>? = null
+    val removedUserIdList: Set<String>? = null,
+    val newAdminId: String? = null
 )
+
+data class InvalidGroupUpdate(val reason: InvalidGroupUpdateReason)
+
+enum class InvalidGroupUpdateReason { INVALID_CHAT_ID, INVALID_NEW_ADMIN_ID }
 
 data class InvalidPrivateChat(val reason: InvalidPrivateChatReason)
 

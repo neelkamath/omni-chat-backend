@@ -41,8 +41,14 @@ private fun Route.updateGroupChat() {
     patch {
         val update = call.receive<GroupChatUpdate>()
         when {
-            !GroupChats.isUserInChat(call.userId, update.chatId) -> call.respond(HttpStatusCode.BadRequest)
+            !GroupChats.isUserInChat(call.userId, update.chatId) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidGroupUpdate(InvalidGroupUpdateReason.INVALID_CHAT_ID))
             !GroupChats.isAdmin(call.userId, update.chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            update.newAdminId != null && update.newAdminId !in GroupChatUsers.readUserIdList(update.chatId) ->
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    InvalidGroupUpdate(InvalidGroupUpdateReason.INVALID_NEW_ADMIN_ID)
+                )
             else -> {
                 GroupChats.update(update)
                 call.respond(HttpStatusCode.NoContent)

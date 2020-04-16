@@ -8,7 +8,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 
-data class GroupChatWithId(val id: Int, val chat: GroupChat, val isAdmin: Boolean)
+data class GroupChatMetadata(val id: Int, val chat: GroupChat, val adminUserId: String)
 
 /** The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat. */
 object GroupChats : IntIdTable() {
@@ -46,14 +46,15 @@ object GroupChats : IntIdTable() {
         groupId
     }
 
-    fun read(chatId: Int): GroupChat = Db.transact {
+    fun read(chatId: Int): GroupChatMetadata = Db.transact {
         val row = select { id eq chatId }.first()
-        GroupChat(GroupChatUsers.readUserIdList(chatId), row[title], row[description])
+        val chat = GroupChat(GroupChatUsers.readUserIdList(chatId), row[title], row[description])
+        GroupChatMetadata(chatId, chat, row[adminUserId])
     }
 
     /** Returns all every chat the user is in. */
-    fun read(userId: String): List<GroupChatWithId> = Db.transact {
-        GroupChatUsers.getChatIdList(userId).map { GroupChatWithId(it, read(it), isAdmin(userId, it)) }
+    fun read(userId: String): List<GroupChatMetadata> = Db.transact {
+        GroupChatUsers.getChatIdList(userId).map { read(it) }
     }
 
     /** If every user is removed, the chat is deleted. */
@@ -64,6 +65,7 @@ object GroupChats : IntIdTable() {
         }
         update.newUserIdList?.let { GroupChatUsers.addUsers(update.chatId, it) }
         update.removedUserIdList?.let { GroupChatUsers.removeUsers(update.chatId, it) }
+        update.newAdminId?.let { switchAdmin(update.chatId, update.newAdminId) }
         if (GroupChatUsers.readUserIdList(update.chatId).isEmpty()) deleteWhere { id eq update.chatId }
     }
 

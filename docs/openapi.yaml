@@ -177,7 +177,7 @@ paths:
         '204':
           description: Updated.
         '400':
-          description: Invalid chat ID.
+          $ref: '#/components/responses/InvalidGroupChatUpdate'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
@@ -449,6 +449,7 @@ components:
         description: Discussions on sci-fi novels.
         new_user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 9i878d05-9i04-hgcf-lm61-50225e04a9k3]
         removed_user_id_list: [k8j78d05-9804-34cf-mn61-50225e04ajk2]
+        new_admin_id: 44778d05-0304-47cf-be61-50225e04a1c7
       properties:
         chat_id:
           type: integer
@@ -469,7 +470,19 @@ components:
           description: The ID of every user to remove.
           items:
             type: string
+        new_admin_id:
+          type: string
+          description: Transfers the admin status to the specified user ID.
       required: [chat_id]
+    InvalidGroupChatUpdate:
+      type: object
+      example:
+        reason: INVALID_NEW_ADMIN_ID
+      properties:
+        reason:
+          type: string
+          enum: [INVALID_NEW_ADMIN_ID, INVALID_CHAT_ID]
+      required: [reason]
     InvalidGroupChatLeave:
       type: object
       example:
@@ -689,6 +702,12 @@ components:
             $ref: '#/components/schemas/ChatId'
     InvalidEmailError:
       description: There is no registered user with the specified email address.
+    InvalidGroupChatUpdate:
+      description: Couldn't update.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidGroupChatUpdate'
     InvalidGroupChatLeave:
       description: Group chat couldn't be left.
       content:

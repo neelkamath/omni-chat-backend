@@ -32,7 +32,7 @@ private fun Route.deleteAccount() {
 }
 
 private fun canDeleteAccount(userId: String): Boolean =
-    true !in GroupChats.read(userId).filter { GroupChats.read(it.id).userIdList.size > 1 }.map { it.isAdmin }
+    userId !in GroupChats.read(userId).filter { GroupChats.read(it.id).chat.userIdList.size > 1 }.map { it.adminUserId }
 
 private fun Route.readAccount() {
     get {

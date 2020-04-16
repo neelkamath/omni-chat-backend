@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.GroupChatMetadata
 import com.neelkamath.omniChat.db.GroupChatUsers
-import com.neelkamath.omniChat.db.GroupChatWithId
 import com.neelkamath.omniChat.db.GroupChats
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -44,7 +44,7 @@ fun leaveGroupChat(jwt: String, chatId: Int, newAdminUserId: String? = null): Te
 class PatchGroupChatTest : StringSpec({
     listener(AppListener())
 
-    "A group chat should update" {
+    "The chat should update" {
         val users = createVerifiedUsers(3)
         val creator = users[0]
         val jwt = getJwt(creator.login)
@@ -62,15 +62,39 @@ class PatchGroupChatTest : StringSpec({
         response.status() shouldBe HttpStatusCode.NoContent
         val userIdList = initialUserIdList + update.newUserIdList!! - update.removedUserIdList!!
         val groupChat = GroupChat(userIdList + creator.id, update.title!!, update.description)
-        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(chatId, groupChat, isAdmin = true))
+        GroupChats.read(creator.id) shouldBe listOf(GroupChatMetadata(chatId, groupChat, adminUserId = creator.id))
     }
 
-    "Updating a nonexistent group chat should respond with an HTTP status code of 400" {
+    "The chat's admin should be switched" {
+        val (firstAdmin, secondAdmin) = createVerifiedUsers(2)
+        val jwt = getJwt(firstAdmin.login)
+        val createdChatResponse = createGroupChat(GroupChat(setOf(secondAdmin.id), "Title"), jwt)
+        val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
+        val response = updateGroupChat(GroupChatUpdate(chatId, newAdminId = secondAdmin.id), jwt)
+        response.status() shouldBe HttpStatusCode.NoContent
+        GroupChats.read(chatId).adminUserId shouldBe secondAdmin.id
+    }
+
+    "Transferring admin status to a user not in the chat should respond with an HTTP status code of 400" {
+        val (admin, invitedUser, notInvitedUser) = createVerifiedUsers(3)
+        val jwt = getJwt(admin.login)
+        val createdChatResponse = createGroupChat(GroupChat(setOf(invitedUser.id), "Title"), jwt)
+        val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
+        val response = updateGroupChat(GroupChatUpdate(chatId, newAdminId = notInvitedUser.id), jwt)
+        response.status() shouldBe HttpStatusCode.BadRequest
+        val body = gson.fromJson(response.content, InvalidGroupUpdate::class.java)
+        body shouldBe InvalidGroupUpdate(InvalidGroupUpdateReason.INVALID_NEW_ADMIN_ID)
+    }
+
+    "Updating a nonexistent chat should respond with an HTTP status code of 400" {
         val (login) = createVerifiedUsers(1)[0]
-        updateGroupChat(GroupChatUpdate(chatId = 5), getJwt(login)).status() shouldBe HttpStatusCode.BadRequest
+        val response = updateGroupChat(GroupChatUpdate(chatId = 5), getJwt(login))
+        response.status() shouldBe HttpStatusCode.BadRequest
+        val body = gson.fromJson(response.content, InvalidGroupUpdate::class.java)
+        body shouldBe InvalidGroupUpdate(InvalidGroupUpdateReason.INVALID_CHAT_ID)
     }
 
-    "Updating a group chat the user isn't the admin of should respond with an HTTP status code of 401" {
+    "Updating a chat the user isn't the admin of should respond with an HTTP status code of 401" {
         val users = createVerifiedUsers(2)
         val createdChatResponse = createGroupChat(GroupChat(setOf(users[1].id), "Title"), getJwt(users[0].login))
         val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
@@ -92,7 +116,7 @@ class PostGroupChatTest : StringSpec({
         val response = createGroupChat(chat, getJwt(creator.login))
         response.status() shouldBe HttpStatusCode.OK
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
-        GroupChats.read(creator.id) shouldBe listOf(GroupChatWithId(chatId, chat, isAdmin = true))
+        GroupChats.read(creator.id) shouldBe listOf(GroupChatMetadata(chatId, chat, adminUserId = creator.id))
     }
 
     fun testInvalidChat(users: List<CreatedUser>, chat: GroupChat, reason: InvalidGroupChatReason) {

@@ -44,7 +44,7 @@ object Db {
         Contacts.deleteUserEntries(userId)
         for (chatId in GroupChats.read(userId).map { it.id }) {
             GroupChatUsers.removeUsers(chatId, setOf(userId))
-            if (GroupChats.read(chatId).userIdList.isEmpty()) GroupChats.delete(chatId)
+            if (GroupChats.read(chatId).chat.userIdList.isEmpty()) GroupChats.delete(chatId)
         }
         PrivateChats.read(userId).map { it.id }.forEach(PrivateChatClears::delete)
         PrivateChats.delete(userId)

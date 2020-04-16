@@ -197,7 +197,7 @@ class DeleteAccountTest : StringSpec({
         val response = createGroupChat(GroupChat(setOf(user.id), "Title"), getJwt(admin.login))
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         deleteAccount(getJwt(user.login))
-        GroupChats.read(chatId).userIdList shouldBe setOf(admin.id)
+        GroupChats.read(chatId).chat.userIdList shouldBe setOf(admin.id)
     }
 
     "Private chat clears should be empty for chats with a user who deleted their account" {
