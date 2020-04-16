@@ -33,10 +33,10 @@ class GetChatsSearchTest : StringSpec({
     fun createGroupChats(jwt: String): List<Int> {
         val userIdList = setOf(createVerifiedUsers(1)[0].id)
         return listOf(
-            GroupChat(userIdList, "Iron Man Fan Club"),
-            GroupChat(userIdList, "Language Class"),
-            GroupChat(userIdList, "Programming Languages"),
-            GroupChat(userIdList, "Tony's Birthday")
+            NewGroupChat(userIdList, "Iron Man Fan Club"),
+            NewGroupChat(userIdList, "Language Class"),
+            NewGroupChat(userIdList, "Programming Languages"),
+            NewGroupChat(userIdList, "Tony's Birthday")
         ).map { gson.fromJson(createGroupChat(it, jwt).content, ChatId::class.java).id }
     }
 

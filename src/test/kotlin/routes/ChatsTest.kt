@@ -21,8 +21,8 @@ class GetChatsTest : StringSpec({
 
     fun createChats(admin: CreatedUser, user: CreatedUser): List<Chat> {
         val adminJwt = getJwt(admin.login)
-        val adminGroupChatResponse = createGroupChat(GroupChat(setOf(user.id), "Title"), adminJwt)
-        val userGroupChatResponse = createGroupChat(GroupChat(setOf(admin.id), "Title"), getJwt(user.login))
+        val adminGroupChatResponse = createGroupChat(NewGroupChat(setOf(user.id), "Title"), adminJwt)
+        val userGroupChatResponse = createGroupChat(NewGroupChat(setOf(admin.id), "Title"), getJwt(user.login))
         val createdPrivateChatResponse = createPrivateChat(user.id, adminJwt)
         val invitedPrivateChatResponse = createPrivateChat(admin.id, getJwt(createVerifiedUsers(1)[0].login))
         return listOf(
@@ -52,7 +52,7 @@ class GetChatsTest : StringSpec({
     "Group chats deleted by the user shouldn't be retrieved" {
         val (admin, user) = createVerifiedUsers(2)
         val jwt = getJwt(admin.login)
-        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
+        val response = createGroupChat(NewGroupChat(setOf(user.id), "Title"), jwt)
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         leaveGroupChat(jwt, chatId, newAdminUserId = user.id)
         gson.fromJson(readChats(jwt).content, Chats::class.java) shouldBe Chats(listOf())

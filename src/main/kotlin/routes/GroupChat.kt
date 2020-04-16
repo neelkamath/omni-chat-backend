@@ -14,12 +14,22 @@ fun Route.routeGroupChat() {
         createGroupChat()
         updateGroupChat()
         leaveGroupChat()
+        readGroupChat()
+    }
+}
+
+private fun Route.readGroupChat() {
+    get {
+        val chatId = call.parameters["chat_id"]!!.toInt()
+        val chats = GroupChats.read(call.userId)
+        if (chatId in chats.map { it.id }) call.respond(chats.first { it.id == chatId }.chat)
+        else call.respond(HttpStatusCode.BadRequest)
     }
 }
 
 private fun Route.createGroupChat() {
     post {
-        val chat = call.receive<GroupChat>()
+        val chat = call.receive<NewGroupChat>()
         val userIdList = chat.userIdList.filter { it != call.userId }
         val reason = when {
             userIdList.isEmpty() -> InvalidGroupChatReason.EMPTY_USER_ID_LIST

@@ -31,8 +31,11 @@ private fun Route.deleteAccount() {
     }
 }
 
-private fun canDeleteAccount(userId: String): Boolean =
-    userId !in GroupChats.read(userId).filter { GroupChats.read(it.id).chat.userIdList.size > 1 }.map { it.adminUserId }
+private fun canDeleteAccount(userId: String): Boolean {
+    // If the user is the only one in the chat, then the chat can be deleted without transferring admin status.
+    val chatsWithOtherUsers = GroupChats.read(userId).filter { GroupChats.read(it.id).chat.userIdList.size > 1 }
+    return userId !in chatsWithOtherUsers.map { it.chat.adminId }
+}
 
 private fun Route.readAccount() {
     get {

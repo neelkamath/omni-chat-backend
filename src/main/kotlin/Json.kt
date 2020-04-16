@@ -58,7 +58,7 @@ data class UserSearchQuery(
     val email: String? = null
 )
 
-data class GroupChat(val userIdList: Set<String>, val title: String, val description: String? = null)
+data class NewGroupChat(val userIdList: Set<String>, val title: String, val description: String? = null)
 
 data class InvalidGroupChat(val reason: InvalidGroupChatReason)
 
@@ -99,3 +99,10 @@ enum class InvalidPrivateChatReason { CHAT_EXISTS, INVALID_USER_ID }
 data class InvalidGroupLeave(val reason: InvalidGroupLeaveReason)
 
 enum class InvalidGroupLeaveReason { MISSING_NEW_ADMIN_ID, INVALID_NEW_ADMIN_ID, INVALID_CHAT_ID }
+
+data class GroupChat(
+    val adminId: String,
+    val userIdList: Set<String>,
+    val title: String,
+    val description: String? = null
+)

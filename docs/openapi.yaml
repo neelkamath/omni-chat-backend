@@ -1,5 +1,7 @@
 # Top-level keys under <paths> must be alphabetically ordered. Top-level sub-keys under <components> (e.g., keys under
 # <components/schemas>) must be alphabetically ordered.
+#
+# We use ReDoc for generating docs. Since ReDoc doesn't understand <link>s, so we manually document them too.
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -30,6 +32,9 @@ info:
 
     Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
     GET /user endpoint with the user ID you have.
+
+    Endpoints such as HTTP GET /chats return chat ID lists. You can fetch metadata on group chats by supplying the HTTP
+    GET /group-chat endpoint with the chat ID you have.
 
     Dates conform to ISO 8601.
   contact:
@@ -144,6 +149,23 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidEmailError'
   /group-chat:
+    get:
+      tags: [chat]
+      operationId: readGroupChat
+      description: Get a group chat's metadata.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          required: true
+          name: chat_id
+      responses:
+        '200':
+          $ref: '#/components/responses/GroupChat'
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     delete:
       tags: [chat]
       operationId: leaveGroupChat
@@ -441,6 +463,30 @@ components:
                 type: integer
             required: [type, id]
       required: [chats]
+    GroupChat:
+      type: object
+      example:
+        title: Book Club
+        description: Discussion on the books you're reading.
+        admin_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 8i378d05-0304-47cf-be61-50225e04a9o2]
+      properties:
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+        admin_id:
+          type: string
+        user_id_list:
+          type: array
+          minimum: 1
+          uniqueItems: true
+          items:
+            type: string
+      required: [title, admin_id, user_id_list]
     GroupChatUpdate:
       type: object
       example:
@@ -463,11 +509,13 @@ components:
         new_user_id_list:
           type: array
           description: The ID of every new user to add.
+          uniqueItems: true
           items:
             type: string
         removed_user_id_list:
           type: array
           description: The ID of every user to remove.
+          uniqueItems: true
           items:
             type: string
         new_admin_id:
@@ -573,6 +621,7 @@ components:
         user_id_list:
           type: array
           minimum: 1
+          uniqueItems: true
           items:
             type: string
         title:
@@ -632,6 +681,7 @@ components:
       properties:
         user_id_list:
           type: array
+          uniqueItems: true
           items:
             type: string
       required: [user_id_list]
@@ -687,9 +737,12 @@ components:
           schema:
             $ref: '#/components/schemas/AccountDetails'
     AuthorizationError:
-      description: Access token is missing or invalid
+      description: Access token is missing or invalid.
     Chats:
       description: Metadata on chats.
+      links:
+        chat:
+          operationId: readGroupChat
       content:
         application/json:
           schema:
@@ -700,6 +753,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ChatId'
+    GroupChat:
+      description: A group chat's metadata.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GroupChat'
     InvalidEmailError:
       description: There is no registered user with the specified email address.
     InvalidGroupChatUpdate:

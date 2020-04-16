@@ -185,7 +185,7 @@ class DeleteAccountTest : StringSpec({
     "A group chat should be deleted if its only member's account is deleted" {
         val (admin, user) = createVerifiedUsers(2)
         val adminJwt = getJwt(admin.login)
-        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), adminJwt)
+        val response = createGroupChat(NewGroupChat(setOf(user.id), "Title"), adminJwt)
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         leaveGroupChat(getJwt(user.login), chatId)
         deleteAccount(adminJwt)
@@ -194,7 +194,7 @@ class DeleteAccountTest : StringSpec({
 
     "The user whose account is deleted should be removed from group chats" {
         val (admin, user) = createVerifiedUsers(2)
-        val response = createGroupChat(GroupChat(setOf(user.id), "Title"), getJwt(admin.login))
+        val response = createGroupChat(NewGroupChat(setOf(user.id), "Title"), getJwt(admin.login))
         val chatId = gson.fromJson(response.content, ChatId::class.java).id
         deleteAccount(getJwt(user.login))
         GroupChats.read(chatId).chat.userIdList shouldBe setOf(admin.id)
@@ -221,7 +221,7 @@ class DeleteAccountTest : StringSpec({
     "An account cannot be deleted if the user is the admin of a group chat" {
         val (admin, user) = createVerifiedUsers(2)
         val jwt = getJwt(admin.login)
-        createGroupChat(GroupChat(setOf(user.id), "Title"), jwt)
+        createGroupChat(NewGroupChat(setOf(user.id), "Title"), jwt)
         deleteAccount(jwt).status() shouldBe HttpStatusCode.BadRequest
     }
 })

@@ -3,12 +3,13 @@ package com.neelkamath.omniChat.db
 import com.neelkamath.omniChat.Auth
 import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.GroupChatUpdate
+import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChats.adminUserId
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 
-data class GroupChatMetadata(val id: Int, val chat: GroupChat, val adminUserId: String)
+data class GroupChatWithId(val id: Int, val chat: GroupChat)
 
 /** The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat. */
 object GroupChats : IntIdTable() {
@@ -36,7 +37,7 @@ object GroupChats : IntIdTable() {
     }
 
     /** Returns the chat ID after creating it. */
-    fun create(adminUserId: String, chat: GroupChat): Int = Db.transact {
+    fun create(adminUserId: String, chat: NewGroupChat): Int = Db.transact {
         val groupId = insertAndGetId {
             it[this.adminUserId] = adminUserId
             it[title] = chat.title
@@ -46,14 +47,14 @@ object GroupChats : IntIdTable() {
         groupId
     }
 
-    fun read(chatId: Int): GroupChatMetadata = Db.transact {
+    fun read(chatId: Int): GroupChatWithId = Db.transact {
         val row = select { id eq chatId }.first()
-        val chat = GroupChat(GroupChatUsers.readUserIdList(chatId), row[title], row[description])
-        GroupChatMetadata(chatId, chat, row[adminUserId])
+        val userIdList = GroupChatUsers.readUserIdList(chatId)
+        GroupChatWithId(chatId, GroupChat(row[adminUserId], userIdList, row[title], row[description]))
     }
 
-    /** Returns all every chat the user is in. */
-    fun read(userId: String): List<GroupChatMetadata> = Db.transact {
+    /** Returns every chat the user is in. */
+    fun read(userId: String): List<GroupChatWithId> = Db.transact {
         GroupChatUsers.getChatIdList(userId).map { read(it) }
     }
 
@@ -79,9 +80,9 @@ object GroupChats : IntIdTable() {
      * Returns the chat ID list by searching for the [query] in every chat's title case-insensitively.
      */
     fun search(userId: String, query: String): List<Int> = Db.transact {
+        val chatIdList = GroupChatUsers.getChatIdList(userId)
         selectAll()
-            .filter { it[id].value in GroupChatUsers.getChatIdList(userId) }
-            .filter { query.toLowerCase() in it[title].toLowerCase() }
+            .filter { it[id].value in chatIdList && it[title].contains(query, ignoreCase = true) }
             .map { it[id].value }
     }
 }
