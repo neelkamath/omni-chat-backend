@@ -9,7 +9,7 @@ import io.kotest.matchers.shouldBe
 class GroupChatUsersTest : StringSpec({
     listener(DbListener())
 
-    "Users should be added to the group chat, ignoring the ones already in it" {
+    "Users should be added to the chat, ignoring the ones already in it" {
         val admin = "admin user ID"
         val initialUserIdList = setOf("user ID")
         val chatId = GroupChats.create(admin, GroupChat(initialUserIdList, "Title"))

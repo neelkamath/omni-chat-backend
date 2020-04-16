@@ -5,11 +5,8 @@ import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.GroupChatUpdate
 import com.neelkamath.omniChat.db.GroupChats.adminUserId
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
-import org.jetbrains.exposed.sql.update
 
 data class GroupChatWithId(val id: Int, val chat: GroupChat, val isAdmin: Boolean)
 
@@ -58,6 +55,7 @@ object GroupChats : IntIdTable() {
         }
     }
 
+    /** If every user is removed, the chat is deleted. */
     fun update(update: GroupChatUpdate): Unit = Db.transact {
         update({ id eq update.chatId }) { statement: UpdateStatement ->
             update.title?.let { statement[title] = it }
@@ -65,6 +63,7 @@ object GroupChats : IntIdTable() {
         }
         update.newUserIdList?.let { GroupChatUsers.addUsers(update.chatId, it) }
         update.removedUserIdList?.let { GroupChatUsers.removeUsers(update.chatId, it) }
+        if (GroupChatUsers.readUserIdList(update.chatId).isEmpty()) deleteWhere { id eq update.chatId }
     }
 
     /**
