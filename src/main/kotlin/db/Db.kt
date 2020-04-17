@@ -6,8 +6,8 @@ import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 
-object DB {
-    val tables = arrayOf(Contacts, GroupChats, GroupChatUsers)
+object Db {
+    val tables = arrayOf(Contacts, GroupChats, GroupChatUsers, PrivateChats, PrivateChatClears)
 
     /**
      * Opens the DB connection, and creates the tables.
@@ -37,5 +37,16 @@ object DB {
     fun <T> transact(function: () -> T): T = transaction {
         addLogger(StdOutSqlLogger)
         return@transaction function()
+    }
+
+    /** Deletes the [userId]'s data (it is assumed that the [userId] is not the admin of a group chat). */
+    fun deleteUserData(userId: String) {
+        Contacts.deleteUserEntries(userId)
+        for (chatId in GroupChats.read(userId).map { it.id }) {
+            GroupChatUsers.removeUsers(chatId, setOf(userId))
+            if (GroupChats.read(chatId).chat.userIdList.isEmpty()) GroupChats.delete(chatId)
+        }
+        PrivateChats.read(userId).map { it.id }.forEach(PrivateChatClears::delete)
+        PrivateChats.delete(userId)
     }
 }

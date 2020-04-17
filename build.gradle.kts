@@ -1,8 +1,9 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.3.71"
+    kotlin("jvm") version "1.3.72"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
@@ -25,6 +26,7 @@ dependencies {
     val exposedVersion = "0.23.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
     implementation("org.postgresql:postgresql:42.2.2")
     val keycloakVersion = "9.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
@@ -40,6 +42,7 @@ tasks {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
     withType<ShadowJar> { archiveVersion.set("") }
+    named<KotlinJvmCompile>("compileTestKotlin") { kotlinOptions.jvmTarget = "1.8" }
 }
 
 if (gradle.startParameter.taskNames.contains("githubRelease"))

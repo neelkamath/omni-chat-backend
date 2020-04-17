@@ -1,3 +1,5 @@
+# Top-level keys under <paths> must be alphabetically ordered. Top-level sub-keys under <components> (e.g., keys under
+# <components/schemas>) must be alphabetically ordered.
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -5,19 +7,34 @@ info:
   description: |
     Free, open core, federated chat system, to replace every existing chat app.
 
-    To view the documentation for previos versions, see the
+    To view the documentation for previous versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
-
-    Dates conform to ISO 8601.
 
     Here is the usual flow for using this service.
     1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
-      POST /user endpoint.
+      POST /account endpoint.
     1. Have the user verify their email.
     1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
       future actions by using the HTTP POST /jwt-request endpoint.
-    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /user endpoint).
+    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /account endpoint).
     1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
+
+    A _private chat_ is a chat between two users which cannot be converted into a group chat. When a private chat is
+    deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved
+    when requesting their chats. However, the user they were chatting with will still have the chat in the same state it
+    was in before the user deleted it. If the other user sends a message to the user, it will show up as the first
+    message in the user's chat.
+
+    If you are added to a group chat, or are added back to a group chat after leaving it, you will be able to see the
+    entire chat's history.
+
+    Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
+    GET /user endpoint with the user ID you have.
+
+    Endpoints such as HTTP GET /chats return chat ID lists. You can fetch data on private and group chats by supplying
+    the HTTP GET /private-chat and HTTP GET /group-chat endpoints with the chat ID you have respectively.
+
+    Dates conform to ISO 8601.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -31,23 +48,91 @@ servers:
 security:
   - bearerAuth: []
 paths:
-  /group-chat:
-    post:
-      tags: [chat]
-      operationId: createGroupChat
-      description: Creates a group chat.
-      requestBody:
-        $ref: '#/components/requestBodies/NewGroupChat'
+  /account:
+    delete:
+      tags: [account]
+      description: Delete account.
+      operationId: deleteAccount
       responses:
         '204':
-          description: Chat created.
+          description: Account deleted.
         '400':
-          $ref: '#/components/responses/NewGroupChatError'
+          description: The account couldn't be deleted because the user is the admin of a group chat. The user must
+            either leave the chat, or appoint a different member as the admin.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    get:
+      tags: [account]
+      description: Get account details.
+      operationId: readAccount
+      responses:
+        '200':
+          $ref: '#/components/responses/AccountDetails'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    patch:
+      tags: [account]
+      description: Update account.
+      operationId: updateAccount
+      requestBody:
+        $ref: '#/components/requestBodies/AccountUpdate'
+      responses:
+        '204':
+          description: Account updated
+        '400':
+          description: Account couldn't be updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNewAccountError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [account]
+      security: []
+      description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
+        they verify their email address. The same email address cannot be registered twice.
+      operationId: createAccount
+      requestBody:
+        $ref: '#/components/requestBodies/NewAccount'
+      responses:
+        '201':
+          description: Account created
+        '400':
+          $ref: '#/components/responses/InvalidNewAccountError'
+  /chats:
+    get:
+      tags: [chat]
+      operationId: readChats
+      description: Get every chat the user partakes in.
+      responses:
+        '200':
+          $ref: '#/components/responses/Chats'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /chats-search:
+    get:
+      tags: [chat]
+      operationId: searchChats
+      description: Searches group chats and private chats. Private chats are searched by matching the query with the
+        username, first name, and last name of users this user has chats with. Group chats are searched by matching the
+        query with the title of group chats this user is in.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          name: query
+          description: Case-insensitive. A query which is empty, or contains only whitespace, will yield zero search
+            results.
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/Chats'
         '401':
           $ref: '#/components/responses/AuthorizationError'
   /email-verification:
     get:
-      tags: [user]
+      tags: [account]
       operationId: verifyEmail
       description: Sends the user an email to verify their email address.
       parameters:
@@ -61,6 +146,73 @@ paths:
           description: Verification email sent.
         '400':
           $ref: '#/components/responses/InvalidEmailError'
+  /group-chat:
+    get:
+      tags: [chat]
+      operationId: readGroupChat
+      description: Get a group chat's metadata.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          required: true
+          name: chat_id
+      responses:
+        '200':
+          $ref: '#/components/responses/GroupChat'
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    delete:
+      tags: [chat]
+      operationId: leaveGroupChat
+      description: Leave the group chat.
+      parameters:
+        - in: query
+          schema:
+            type: integer
+          name: chat_id
+          required: true
+        - in: query
+          schema:
+            type: string
+          name: new_admin_user_id
+          description: If the user is the group's admin, and is not the last user in the chat, this parameter must be
+            specified as the user ID of another participant in the group who will become the new admin.
+      responses:
+        '204':
+          description: Left the group chat.
+        '400':
+          $ref: '#/components/responses/InvalidGroupChatLeave'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    patch:
+      operationId: updateGroupChat
+      tags: [chat]
+      description: Updates a group chat. Only the admin can update it.
+      requestBody:
+        $ref: '#/components/requestBodies/GroupChatUpdate'
+      responses:
+        '204':
+          description: Updated.
+        '400':
+          $ref: '#/components/responses/InvalidGroupChatUpdate'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [chat]
+      operationId: createGroupChat
+      description: Creates a group chat.
+      requestBody:
+        $ref: '#/components/requestBodies/NewGroupChat'
+      responses:
+        '200':
+          $ref: '#/components/responses/ChatId'
+        '400':
+          $ref: '#/components/responses/NewGroupChatError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
   /health-check:
     get:
       tags: [status]
@@ -88,7 +240,7 @@ paths:
       operationId: readContacts
       responses:
         '200':
-          $ref: '#/components/responses/User'
+          $ref: '#/components/responses/UserIdList'
         '401':
           $ref: '#/components/responses/AuthorizationError'
     post:
@@ -106,6 +258,18 @@ paths:
             because a user whose contact was to be saved deleted their account just before the contacts were saved.
         '401':
           $ref: '#/components/responses/AuthorizationError'
+  /jwt-refresh:
+    post:
+      tags: [jwt]
+      security: []
+      description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
+        set of tokens using the refresh token you received with the JWT.
+      operationId: refreshJwt
+      requestBody:
+        $ref: '#/components/requestBodies/RefreshJwt'
+      responses:
+        '200':
+          $ref: '#/components/responses/Jwt'
   /jwt-request:
     post:
       tags: [jwt]
@@ -124,20 +288,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwtRequestError'
-  /jwt-refresh:
-    post:
-      tags: [jwt]
-      description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
-        set of tokens using the refresh token you received with the JWT.
-      operationId: refreshJwt
-      requestBody:
-        $ref: '#/components/requestBodies/RefreshJwt'
-      responses:
-        '200':
-          $ref: '#/components/responses/Jwt'
   /password-reset:
     get:
-      tags: [user]
+      tags: [account]
       operationId: resetPassword
       description: Sends an password reset email to the specified address. If the user is logged in (i.e., you have a
         JWT), and wants to update their password, you should use the HTTP PATCH /user endpoint instead.
@@ -152,9 +305,79 @@ paths:
           description: Email sent.
         '400':
           $ref: '#/components/responses/InvalidEmailError'
+  /private-chat:
+    get:
+      tags: [chat]
+      operationId: readPrivateChat
+      description: Get metadata on a private chat.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          name: chat_id
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/PrivateChat'
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    delete:
+      tags: [chat]
+      description: Deletes a private chat for the current user only.
+      operationId: deletePrivateChat
+      parameters:
+        - in: query
+          schema:
+            type: integer
+          name: chat_id
+          required: true
+      responses:
+        '204':
+          description: Chat deleted.
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [chat]
+      operationId: createPrivateChat
+      description: Create a private chat.
+      parameters:
+        - in: query
+          required: true
+          schema:
+            type: string
+          name: user_id
+          description: The user to chat with.
+      responses:
+        '200':
+          $ref: '#/components/responses/ChatId'
+        '400':
+          $ref: '#/components/responses/PrivateChatCreationError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /user:
+    get:
+      tags: [user]
+      operationId: readUser
+      description: Retrieve the given user's metadata.
+      security: []
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/User'
+        '400':
+          description: There is no user with the specified user ID.
   /user-search:
     get:
-      tags: [search]
+      tags: [user]
       description: Search users. You must send at least one of the query parameters.
       security: []
       operationId: searchUsers
@@ -177,58 +400,7 @@ paths:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/User'
-        '400':
-          description: At least one search filter must be used.
-  /user:
-    delete:
-      tags: [user]
-      description: Delete account.
-      operationId: deleteUser
-      responses:
-        '204':
-          description: Account deleted.
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    get:
-      tags: [user]
-      description: Get account details.
-      operationId: readUser
-      responses:
-        '200':
-          $ref: '#/components/responses/UserDetails'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    patch:
-      tags: [user]
-      description: Update account.
-      operationId: updateUser
-      requestBody:
-        $ref: '#/components/requestBodies/UserUpdate'
-      responses:
-        '204':
-          description: Account updated
-        '400':
-          description: Account couldn't be updated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvalidNewUserError'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    post:
-      tags: [user]
-      security: []
-      description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
-        they verify their email address. The same email address cannot be registered twice.
-      operationId: createUser
-      requestBody:
-        $ref: '#/components/requestBodies/NewUser'
-      responses:
-        '201':
-          description: Account created
-        '400':
-          $ref: '#/components/responses/InvalidNewUserError'
+          $ref: '#/components/responses/UserIdList'
 components:
   securitySchemes:
     bearerAuth:
@@ -236,7 +408,154 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    InvalidNewUserError:
+    AccountDetails:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        username: john_doe
+        email: john.doe@example.com
+        first_name: John
+        last_name: Doe
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required: [user_id, username, email]
+    AccountUpdate:
+      type: object
+      example:
+        email: john.rogers@example.com
+        last_name: Rogers
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+          description: Changing the email address will require the user to verify their new address. If the user
+            requested that their address be updated, and the server successfully updates it, then you should log the
+            user out. This is because your current refresh token won't work since the user's account is disabled until
+            they verify their address. This means that they will have to contact an admin to reset their address in
+            case they entered an incorrect address.
+        first_name:
+          type: string
+        last_name:
+          type: string
+    ChatId:
+      type: object
+      example:
+        id: 7
+      properties:
+        id:
+          type: integer
+      required: [id]
+    Chats:
+      type: object
+      example:
+        chats:
+          - type: PRIVATE
+            id: 3
+          - type: GROUP
+            id: 17
+      properties:
+        chats:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [PRIVATE, GROUP]
+              id:
+                type: integer
+            required: [type, id]
+      required: [chats]
+    GroupChat:
+      type: object
+      example:
+        title: Book Club
+        description: Discussion on the books you're reading.
+        admin_id: 44778d05-0304-47cf-be61-50225e04a1c7
+        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 8i378d05-0304-47cf-be61-50225e04a9o2]
+      properties:
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+        admin_id:
+          type: string
+        user_id_list:
+          type: array
+          minimum: 1
+          uniqueItems: true
+          items:
+            type: string
+      required: [title, admin_id, user_id_list]
+    GroupChatUpdate:
+      type: object
+      example:
+        chat_id: 17
+        title: Science Fiction Book Club
+        description: Discussions on sci-fi novels.
+        new_user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 9i878d05-9i04-hgcf-lm61-50225e04a9k3]
+        removed_user_id_list: [k8j78d05-9804-34cf-mn61-50225e04ajk2]
+        new_admin_id: 44778d05-0304-47cf-be61-50225e04a1c7
+      properties:
+        chat_id:
+          type: integer
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+        new_user_id_list:
+          type: array
+          description: The ID of every new user to add.
+          uniqueItems: true
+          items:
+            type: string
+        removed_user_id_list:
+          type: array
+          description: The ID of every user to remove.
+          uniqueItems: true
+          items:
+            type: string
+        new_admin_id:
+          type: string
+          description: Transfers the admin status to the specified user ID.
+      required: [chat_id]
+    InvalidGroupChatUpdate:
+      type: object
+      example:
+        reason: INVALID_NEW_ADMIN_ID
+      properties:
+        reason:
+          type: string
+          enum: [INVALID_NEW_ADMIN_ID, INVALID_CHAT_ID]
+      required: [reason]
+    InvalidGroupChatLeave:
+      type: object
+      example:
+        reason: INVALID_NEW_ADMIN_ID
+      properties:
+        reason:
+          type: string
+          enum: [MISSING_NEW_ADMIN_ID, INVALID_NEW_ADMIN_ID, INVALID_CHAT_ID]
+      required: [reason]
+    InvalidNewAccountError:
       type: object
       example:
         reason: USERNAME_TAKEN
@@ -287,37 +606,7 @@ components:
         password:
           type: string
       required: [username, password]
-    NewGroupChat:
-      type: object
-      example:
-        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 98iuhd73-8734-lo9f--as3-998dje0487uh]
-        title: (Unofficial) MIT CS Department
-        description: Unofficial group for students in the MIT CS department to plan workshops, etc. for it.
-      properties:
-        user_id_list:
-          type: array
-          minimum: 1
-          items:
-            type: string
-        title:
-          type: string
-          minimum: 1
-          maximum: 70
-        description:
-          type: string
-          maximum: 1000
-          default: null
-      required: [user_id_list, title]
-    NewGroupChatError:
-      type: object
-      example:
-        reason: INVALID_USER_ID
-      properties:
-        reason:
-          type: string
-          enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
-      required: [reason]
-    NewUser:
+    NewAccount:
       type: object
       example:
         username: johndoe
@@ -337,6 +626,53 @@ components:
         last_name:
           type: string
       required: [username, password, email]
+    NewGroupChat:
+      type: object
+      example:
+        user_id_list: [44778d05-0304-47cf-be61-50225e04a1c7, 98iuhd73-8734-lo9f--as3-998dje0487uh]
+        title: (Unofficial) MIT CS Department
+        description: Unofficial group for students in the MIT CS department to plan workshops, etc. for it.
+      properties:
+        user_id_list:
+          type: array
+          minimum: 1
+          uniqueItems: true
+          items:
+            type: string
+        title:
+          type: string
+          minimum: 1
+          maximum: 70
+        description:
+          type: string
+          maximum: 1000
+      required: [user_id_list, title]
+    NewGroupChatError:
+      type: object
+      example:
+        reason: INVALID_USER_ID
+      properties:
+        reason:
+          type: string
+          enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
+      required: [reason]
+    PrivateChat:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+      properties:
+        user_id:
+          type: string
+      required: [user_id]
+    PrivateChatCreationError:
+      type: object
+      example:
+        reason: CHAT_EXISTS
+      properties:
+        reason:
+          type: string
+          enum: [CHAT_EXISTS, INVALID_USER_ID]
+      required: [reason]
     RefreshJwt:
       type: object
       properties:
@@ -347,41 +683,11 @@ components:
     User:
       type: object
       example:
-        users:
-          - user_id: 44778d05-0304-47cf-be61-50225e04a1c7
-            username: john_doe
-            email: john.doe@example.com
-            first_name: John
-            last_name: Doe
-      properties:
-        users:
-          type: array
-          items:
-            type: object
-            properties:
-              user_id:
-                type: string
-              username:
-                type: string
-              email:
-                type: string
-              first_name:
-                type: string
-              last_name:
-                type: string
-            required: [user_id, username]
-      required: [users]
-    UserDetails:
-      type: object
-      example:
-        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
         username: john_doe
         email: john.doe@example.com
         first_name: John
         last_name: Doe
       properties:
-        user_id:
-          type: string
         username:
           type: string
         email:
@@ -390,7 +696,7 @@ components:
           type: string
         last_name:
           type: string
-      required: [user_id, username, email]
+      required: [username, email]
     UserIdList:
       type: object
       example:
@@ -398,37 +704,35 @@ components:
       properties:
         user_id_list:
           type: array
+          uniqueItems: true
           items:
             type: string
       required: [user_id_list]
-    UserUpdate:
-      type: object
-      example:
-        email: john.rogers@example.com
-        last_name: Rogers
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        email:
-          type: string
-          description: Changing the email address will require the user to verify their new address. If the user
-            requested that their address be updated, and the server successfully updates it, then you should log the
-            user out. This is because your current refresh token won't work since the user's account is disabled until
-            they verify their address. This means that they will have to contact an admin to reset their address in
-            case they entered an incorrect address.
-        first_name:
-          type: string
-        last_name:
-          type: string
   requestBodies:
+    AccountUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AccountUpdate'
+    GroupChatUpdate:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GroupChatUpdate'
     JwtRequest:
       required: true
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Login'
+    NewAccount:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewAccount'
     NewGroupChat:
       required: true
       description: If the user's own user ID is supplied, it will be ignored.
@@ -436,12 +740,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChat'
-    NewUser:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/NewUser'
     RefreshJwt:
       required: true
       content:
@@ -454,23 +752,58 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/UserIdList'
-    UserUpdate:
-      required: true
+  responses:
+    AccountDetails:
+      description: Account details.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/UserUpdate'
-  responses:
+            $ref: '#/components/schemas/AccountDetails'
     AuthorizationError:
-      description: Access token is missing or invalid
+      description: Access token is missing or invalid.
+    Chats:
+      description: Metadata on chats.
+      links:
+        private-chat:
+          operationId: readPrivateChat
+        group-chat:
+          operationId: readGroupChat
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Chats'
+    ChatId:
+      description: The ID of the chat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ChatId'
+    GroupChat:
+      description: A group chat's metadata.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GroupChat'
     InvalidEmailError:
       description: There is no registered user with the specified email address.
-    InvalidNewUserError:
+    InvalidGroupChatUpdate:
+      description: Couldn't update.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidGroupChatUpdate'
+    InvalidGroupChatLeave:
+      description: Group chat couldn't be left.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidGroupChatLeave'
+    InvalidNewAccountError:
       description: The user couldn't be created.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidNewUserError'
+            $ref: '#/components/schemas/InvalidNewAccountError'
     Jwt:
       description: Token set
       content:
@@ -483,15 +816,30 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChatError'
+    PrivateChat:
+      description: Private chat details
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrivateChat'
+    PrivateChatCreationError:
+      description: Couldn't create private chat.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrivateChatCreationError'
     User:
-      description: Users.
+      description: User info.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
-    UserDetails:
-      description: Account details.
+    UserIdList:
+      description: User ID list.
+      links:
+        user:
+          operationId: readUser
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/UserDetails'
+            $ref: '#/components/schemas/UserIdList'

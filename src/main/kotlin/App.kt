@@ -1,9 +1,6 @@
 package com.neelkamath.omniChat
 
-import com.google.gson.FieldNamingPolicy
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.neelkamath.omniChat.db.DB
+import com.neelkamath.omniChat.db.Db
 import com.neelkamath.omniChat.routes.*
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -19,20 +16,13 @@ import io.ktor.gson.GsonConverter
 import io.ktor.http.ContentType
 import io.ktor.routing.Routing
 import io.ktor.routing.routing
-import org.keycloak.representations.idm.UserRepresentation
 
-/** Project-wide Gson config. */
-val gson: Gson = GsonBuilder()
-    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO 8601 format.
-    .create()
-
-/** On authenticated calls, this will be the callee's [UserRepresentation.id]. */
+/** On authenticated calls, this will be the callee's user ID. */
 val ApplicationCall.userId get(): String = authentication.principal<JWTPrincipal>()!!.payload.subject
 
 fun Application.main() {
     Auth.setUp()
-    DB.setUp()
+    Db.setUp()
     install(CallLogging)
     install(ContentNegotiation) { register(ContentType.Application.Json, GsonConverter(gson)) }
     install(Authentication) { jwt() }
@@ -56,16 +46,24 @@ private fun Authentication.Configuration.jwt(): Unit = jwt {
     }
 }
 
+/*
+Name the functions the same as their <operationId>s in the OpenAPI spec. If there is a common <io.ktor.routing.route>
+function for the endpoints (e.g., <routeAccount()>), name it according to the format "route<URL>".
+ */
 private fun Routing.route() {
-    routeHealthCheck()
-    routeJwtRequest()
-    routeJwtRefresh()
-    routeUser()
-    routeUserSearch()
-    routeEmailVerification()
-    routePasswordReset()
+    routeAccount()
+    checkHealth()
+    requestJwt()
+    refreshJwt()
+    searchUsers()
+    verifyEmail()
+    resetPassword()
+    readUser()
     authenticate {
-        routeContacts()
         routeGroupChat()
+        routePrivateChat()
+        readChats()
+        routeContacts()
+        searchChats()
     }
 }

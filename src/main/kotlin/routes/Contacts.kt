@@ -1,7 +1,9 @@
 package com.neelkamath.omniChat.routes
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.Auth
+import com.neelkamath.omniChat.UserIdList
 import com.neelkamath.omniChat.db.Contacts
+import com.neelkamath.omniChat.userId
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
@@ -10,36 +12,35 @@ import io.ktor.routing.*
 
 fun Route.routeContacts() {
     route("contacts") {
-        delete()
-        get()
-        post()
+        deleteContacts()
+        readContacts()
+        createContacts()
     }
 }
 
-private fun Route.delete() {
+private fun Route.deleteContacts() {
     delete {
-        val saved = Contacts.read(call.userId).userIdList
+        val saved = Contacts.read(call.userId)
         val userIdList = call.receive<UserIdList>().userIdList.filter { it in saved }.toSet()
-        Contacts.delete(call.userId, UserIdList(userIdList))
+        Contacts.delete(call.userId, (userIdList))
         call.respond(HttpStatusCode.NoContent)
     }
 }
 
-private fun Route.get() {
+private fun Route.readContacts() {
     get {
-        val users = Contacts.read(call.userId).userIdList.map { Auth.findUserById(it) }
-        val infoList = users.map { UserPublicInfo(it.id, it.username, it.email, it.firstName, it.lastName) }
-        call.respond(UserPublicInfoList(infoList))
+        val userIdList = Contacts.read(call.userId)
+        call.respond(UserIdList(userIdList))
     }
 }
 
-private fun Route.post() {
+private fun Route.createContacts() {
     post {
-        val saved = Contacts.read(call.userId).userIdList
+        val saved = Contacts.read(call.userId)
         val userIdList = call.receive<UserIdList>().userIdList.filter { it !in saved && it != call.userId }.toSet()
         if (!userIdList.all { it in Auth.getUserIdList() }) call.respond(HttpStatusCode.BadRequest)
         else {
-            Contacts.create(call.userId, UserIdList(userIdList))
+            Contacts.create(call.userId, userIdList)
             call.respond(HttpStatusCode.NoContent)
         }
     }

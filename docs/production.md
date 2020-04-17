@@ -10,4 +10,4 @@
     ```
 1. [Set up authentication](auth_setup.md).
 
-## [Authentication](authentication.md)
+There is an [auth admin panel](auth_admin_panel.md).

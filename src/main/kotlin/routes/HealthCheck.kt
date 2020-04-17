@@ -6,6 +6,6 @@ import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 
-fun Routing.routeHealthCheck() {
+fun Routing.checkHealth() {
     get("health-check") { call.respond(HttpStatusCode.NoContent) }
 }
