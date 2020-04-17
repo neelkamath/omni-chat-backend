@@ -106,3 +106,5 @@ data class GroupChat(
     val title: String,
     val description: String? = null
 )
+
+data class PrivateChat(val userId: String)

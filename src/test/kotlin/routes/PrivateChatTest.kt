@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.PrivateChat
 import com.neelkamath.omniChat.db.PrivateChatClears
+import com.neelkamath.omniChat.db.PrivateChatMetadata
 import com.neelkamath.omniChat.db.PrivateChats
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -22,6 +22,30 @@ fun deletePrivateChat(chatId: Int, jwt: String): TestApplicationResponse = withT
     val parameters = Parameters.build { append("chat_id", chatId.toString()) }.formUrlEncode()
     handleRequest(HttpMethod.Delete, "private-chat?$parameters") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
 }.response
+
+fun readPrivateChat(chatId: Int, jwt: String): TestApplicationResponse = withTestApplication(Application::main) {
+    val parameters = Parameters.build { append("chat_id", chatId.toString()) }.formUrlEncode()
+    handleRequest(HttpMethod.Get, "private-chat?$parameters") { addHeader(HttpHeaders.Authorization, "Bearer $jwt") }
+}.response
+
+class GetPrivateChatTest : StringSpec({
+    listener(AppListener())
+
+    "The private chat should be read" {
+        val (creator, invitee) = createVerifiedUsers(2)
+        val jwt = getJwt(creator.login)
+        val createdChatResponse = createPrivateChat(invitee.id, jwt)
+        val chatId = gson.fromJson(createdChatResponse.content, ChatId::class.java).id
+        val response = readPrivateChat(chatId, jwt)
+        response.status() shouldBe HttpStatusCode.OK
+        gson.fromJson(response.content, PrivateChat::class.java) shouldBe PrivateChat(invitee.id)
+    }
+
+    "Reading a nonexistent private chat should respond with an HTTP status code of 400" {
+        val (login) = createVerifiedUsers(1)[0]
+        readPrivateChat(chatId = 1, jwt = getJwt(login)).status() shouldBe HttpStatusCode.BadRequest
+    }
+})
 
 class DeletePrivateChatTest : StringSpec({
     listener(AppListener())
@@ -50,8 +74,8 @@ class PostPrivateChatTest : StringSpec({
         val invitedUser = users[1].id
         val response = createPrivateChat(invitedUser, getJwt(creator.login))
         response.status() shouldBe HttpStatusCode.OK
-        val body = gson.fromJson(response.content, ChatId::class.java)
-        PrivateChats.read(creator.id) shouldBe listOf(PrivateChat(body.id, creator.id, invitedUser))
+        val chatId = gson.fromJson(response.content, ChatId::class.java).id
+        PrivateChats.read(creator.id) shouldBe listOf(PrivateChatMetadata(chatId, creator.id, invitedUser))
     }
 
     fun testBadResponse(response: TestApplicationResponse, reason: InvalidPrivateChatReason) {

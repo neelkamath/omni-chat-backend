@@ -1,7 +1,5 @@
 # Top-level keys under <paths> must be alphabetically ordered. Top-level sub-keys under <components> (e.g., keys under
 # <components/schemas>) must be alphabetically ordered.
-#
-# We use ReDoc for generating docs. Since ReDoc doesn't understand <link>s, so we manually document them too.
 openapi: 3.0.3
 info:
   title: Omni Chat
@@ -33,8 +31,8 @@ info:
     Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
     GET /user endpoint with the user ID you have.
 
-    Endpoints such as HTTP GET /chats return chat ID lists. You can fetch metadata on group chats by supplying the HTTP
-    GET /group-chat endpoint with the chat ID you have.
+    Endpoints such as HTTP GET /chats return chat ID lists. You can fetch data on private and group chats by supplying
+    the HTTP GET /private-chat and HTTP GET /group-chat endpoints with the chat ID you have respectively.
 
     Dates conform to ISO 8601.
   contact:
@@ -308,6 +306,23 @@ paths:
         '400':
           $ref: '#/components/responses/InvalidEmailError'
   /private-chat:
+    get:
+      tags: [chat]
+      operationId: readPrivateChat
+      description: Get metadata on a private chat.
+      parameters:
+        - in: query
+          schema:
+            type: string
+          name: chat_id
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/PrivateChat'
+        '400':
+          description: Invalid chat ID.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
     delete:
       tags: [chat]
       description: Deletes a private chat for the current user only.
@@ -641,6 +656,14 @@ components:
           type: string
           enum: [EMPTY_USER_ID_LIST, INVALID_USER_ID, INVALID_TITLE_LENGTH, INVALID_DESCRIPTION_LENGTH]
       required: [reason]
+    PrivateChat:
+      type: object
+      example:
+        user_id: 44778d05-0304-47cf-be61-50225e04a1c7
+      properties:
+        user_id:
+          type: string
+      required: [user_id]
     PrivateChatCreationError:
       type: object
       example:
@@ -741,7 +764,9 @@ components:
     Chats:
       description: Metadata on chats.
       links:
-        chat:
+        private-chat:
+          operationId: readPrivateChat
+        group-chat:
           operationId: readGroupChat
       content:
         application/json:
@@ -791,6 +816,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChatError'
+    PrivateChat:
+      description: Private chat details
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrivateChat'
     PrivateChatCreationError:
       description: Couldn't create private chat.
       content:

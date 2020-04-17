@@ -5,7 +5,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.keycloak.representations.idm.UserRepresentation
 
-data class PrivateChat(val id: Int, val creatorUserId: String, val invitedUserId: String)
+data class PrivateChatMetadata(val id: Int, val creatorUserId: String, val invitedUserId: String)
 
 private data class PrivateUserChat(val user: UserRepresentation, val chatId: Int)
 
@@ -23,10 +23,10 @@ object PrivateChats : IntIdTable() {
         }.value
     }
 
-    /** Returns the chats the [userId] is in. */
-    fun read(userId: String): List<PrivateChat> = Db.transact {
+    /** Returns the private chats the [userId] is in. */
+    fun read(userId: String): List<PrivateChatMetadata> = Db.transact {
         select { (creatorUserId eq userId) or (invitedUserId eq userId) }
-            .map { PrivateChat(it[id].value, it[this.creatorUserId], it[invitedUserId]) }
+            .map { PrivateChatMetadata(it[id].value, it[creatorUserId], it[invitedUserId]) }
     }
 
     /** Whether [userId1] and [userId2] are in a chat with each other. */
