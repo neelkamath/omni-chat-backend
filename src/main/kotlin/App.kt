@@ -60,6 +60,7 @@ private fun Routing.route() {
     resetPassword()
     readUser()
     authenticate {
+        searchContacts()
         routeGroupChat()
         routePrivateChat()
         readChats()

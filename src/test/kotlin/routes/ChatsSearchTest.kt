@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.test.routes
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.test.verifyEmail
-import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -43,7 +42,7 @@ class GetChatsSearchTest : StringSpec({
     fun testSearch(query: String, results: List<Chat>, jwt: String) {
         val response = searchChats(query, jwt)
         response.status() shouldBe HttpStatusCode.OK
-        withClue("query: $query") { gson.fromJson(response.content, Chats::class.java) shouldBe Chats(results) }
+        gson.fromJson(response.content, Chats::class.java) shouldBe Chats(results)
     }
 
     "Private chats and group chats should be searched case-insensitively" {

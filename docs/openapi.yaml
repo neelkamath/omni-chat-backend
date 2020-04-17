@@ -114,9 +114,9 @@ paths:
     get:
       tags: [chat]
       operationId: searchChats
-      description: Searches group chats and private chats. Private chats are searched by matching the query with the
-        username, first name, and last name of users this user has chats with. Group chats are searched by matching the
-        query with the title of group chats this user is in.
+      description: Case-insensitively searches group chats and private chats. Private chats are searched by matching the
+        query with the username, first name, and last name of users this user has chats with. Group chats are searched
+        by matching the query with the title of group chats this user is in.
       parameters:
         - in: query
           schema:
@@ -128,6 +128,58 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Chats'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /contacts:
+    delete:
+      tags: [contacts]
+      description: Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
+      operationId: deleteContacts
+      requestBody:
+        $ref: '#/components/requestBodies/UserIdList'
+      responses:
+        '204':
+          description: Contacts deleted.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    get:
+      tags: [contacts]
+      description: Retrieve saved contacts.
+      operationId: readContacts
+      responses:
+        '200':
+          $ref: '#/components/responses/UserIdList'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+    post:
+      tags: [contacts]
+      description: Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it
+        will be ignored.
+      operationId: createContacts
+      requestBody:
+        $ref: '#/components/requestBodies/UserIdList'
+      responses:
+        '204':
+          description: Contacts saved.
+        '400':
+          description: At least one of the contacts were invalid, and so none of the users were saved. This might happen
+            because a user whose contact was to be saved deleted their account just before the contacts were saved.
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /contacts-search:
+    get:
+      tags: [contacts]
+      operationId: searchContacts
+      description: Case-insensitively searches contacts.
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/UserIdList'
         '401':
           $ref: '#/components/responses/AuthorizationError'
   /email-verification:
@@ -222,42 +274,6 @@ paths:
       responses:
         '204':
           description: All systems are operational.
-  /contacts:
-    delete:
-      tags: [contacts]
-      description: Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
-      operationId: deleteContacts
-      requestBody:
-        $ref: '#/components/requestBodies/UserIdList'
-      responses:
-        '204':
-          description: Contacts deleted.
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    get:
-      tags: [contacts]
-      description: Retrieve saved contacts.
-      operationId: readContacts
-      responses:
-        '200':
-          $ref: '#/components/responses/UserIdList'
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
-    post:
-      tags: [contacts]
-      description: Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it
-        will be ignored.
-      operationId: createContacts
-      requestBody:
-        $ref: '#/components/requestBodies/UserIdList'
-      responses:
-        '204':
-          description: Contacts saved.
-        '400':
-          description: At least one of the contacts were invalid, and so none of the users were saved. This might happen
-            because a user whose contact was to be saved deleted their account just before the contacts were saved.
-        '401':
-          $ref: '#/components/responses/AuthorizationError'
   /jwt-refresh:
     post:
       tags: [jwt]
@@ -378,7 +394,7 @@ paths:
   /user-search:
     get:
       tags: [user]
-      description: Search users. You must send at least one of the query parameters.
+      description: Case-insensitively searches users. You must send at least one of the query parameters.
       security: []
       operationId: searchUsers
       parameters:

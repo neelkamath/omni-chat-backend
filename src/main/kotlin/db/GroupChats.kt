@@ -75,7 +75,7 @@ object GroupChats : IntIdTable() {
     }
 
     /**
-     * Searches the chats the [userId]'s is in.
+     * Searches the chats the [userId] is in.
      *
      * Returns the chat ID list by searching for the [query] in every chat's title case-insensitively.
      */
