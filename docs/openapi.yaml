@@ -10,6 +10,8 @@ info:
     To view the documentation for previous versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
 
+    ## Flow
+
     Here is the usual flow for using this service.
     1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
       POST /account endpoint.
@@ -18,6 +20,17 @@ info:
       future actions by using the HTTP POST /jwt-request endpoint.
     1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /account endpoint).
     1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
+
+    Here are the endpoints you can follow to retrieve all the information you might need.
+    - Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
+      GET /user endpoint with the user ID you have.
+    - Endpoints such as HTTP GET /chats return chat ID lists. You can fetch data on private and group chats by supplying
+      the HTTP GET /private-chat and HTTP GET /group-chat endpoints with the chat ID you have respectively.
+
+    ## How It Works
+
+    A message can have one of three states. A _sent_ message has been uploaded to the server. A _delivered_ message has
+    been downloaded by the other user. A _read_ message has been seen by the other user.
 
     A _private chat_ is a chat between two users which cannot be converted into a group chat. When a private chat is
     deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved
@@ -28,13 +41,10 @@ info:
     If you are added to a group chat, or are added back to a group chat after leaving it, you will be able to see the
     entire chat's history.
 
-    Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
-    GET /user endpoint with the user ID you have.
+    ## Notes
 
-    Endpoints such as HTTP GET /chats return chat ID lists. You can fetch data on private and group chats by supplying
-    the HTTP GET /private-chat and HTTP GET /group-chat endpoints with the chat ID you have respectively.
-
-    Dates conform to ISO 8601.
+    - The same email address cannot be registered twice.
+    - Dates conform to ISO 8601.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -91,7 +101,7 @@ paths:
       tags: [account]
       security: []
       description: Creates an account, and sends them a verification email. The user will not be allowed to log in until
-        they verify their email address. The same email address cannot be registered twice.
+        they verify their email address.
       operationId: createAccount
       requestBody:
         $ref: '#/components/requestBodies/NewAccount'
@@ -186,7 +196,8 @@ paths:
     get:
       tags: [account]
       operationId: verifyEmail
-      description: Sends the user an email to verify their email address.
+      description: Sends the user an email to verify their email address. For example, the user may want the email
+        verification to be resent because the one which was automatically sent when their account was created timed out.
       parameters:
         - in: query
           name: email
@@ -202,7 +213,7 @@ paths:
     get:
       tags: [chat]
       operationId: readGroupChat
-      description: Get a group chat's metadata.
+      description: Get a group chat you're in.
       parameters:
         - in: query
           schema:
@@ -372,6 +383,20 @@ paths:
           $ref: '#/components/responses/ChatId'
         '400':
           $ref: '#/components/responses/PrivateChatCreationError'
+        '401':
+          $ref: '#/components/responses/AuthorizationError'
+  /message:
+    post:
+      tags: [chat]
+      operationId: message
+      description: Send a message in a private or group chat.
+      requestBody:
+        $ref: '#/components/requestBodies/Message'
+      responses:
+        '204':
+          description: Message sent.
+        '400':
+          $ref: '#/components/responses/InvalidMessage'
         '401':
           $ref: '#/components/responses/AuthorizationError'
   /user:
@@ -580,6 +605,15 @@ components:
           type: string
           enum: [USERNAME_TAKEN, EMAIL_TAKEN]
       required: [reason]
+    InvalidMessage:
+      type: object
+      example:
+        reason: INVALID_MESSAGE_LENGTH
+      properties:
+        reason:
+          type: string
+          enum: [INVALID_CHAT_ID, INVALID_MESSAGE_LENGTH]
+      required: [reason]
     Jwt:
       type: object
       example:
@@ -689,6 +723,19 @@ components:
           type: string
           enum: [CHAT_EXISTS, INVALID_USER_ID]
       required: [reason]
+    Message:
+      type: object
+      example:
+        chat_id: 4
+        message: Is tomorrow a holiday?
+      properties:
+        chat_id:
+          type: integer
+        message:
+          type: string
+          minimum: 1
+          maximum: 10000
+      required: [chat_id, message]
     RefreshJwt:
       type: object
       properties:
@@ -756,6 +803,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/NewGroupChat'
+    Message:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Message'
     RefreshJwt:
       required: true
       content:
@@ -820,6 +873,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InvalidNewAccountError'
+    InvalidMessage:
+      description: Invalid private chat message.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidMessage'
     Jwt:
       description: Token set
       content:

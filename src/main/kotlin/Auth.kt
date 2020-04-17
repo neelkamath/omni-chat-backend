@@ -53,6 +53,7 @@ object Auth {
 
     private fun buildOmniChatRealm(): RealmRepresentation = RealmRepresentation().apply {
         realm = realmName
+        displayName = "Omni Chat"
         isEnabled = true
         isVerifyEmail = true
         isEditUsernameAllowed = true

@@ -9,7 +9,12 @@ data class PrivateChatMetadata(val id: Int, val creatorUserId: String, val invit
 
 private data class PrivateUserChat(val user: UserRepresentation, val chatId: Int)
 
-/** [PrivateChatClears] holds the data on when each user deleted the chat for themselves. */
+/**
+ * Private chats.
+ *
+ * [PrivateChatClears] holds the data on when each user deleted the chat for themselves. [PrivateMessages] holds
+ * chat messages.
+ */
 object PrivateChats : IntIdTable() {
     override val tableName get() = "private_chats"
     private val creatorUserId = varchar("creator_user_id", Auth.userIdLength)
