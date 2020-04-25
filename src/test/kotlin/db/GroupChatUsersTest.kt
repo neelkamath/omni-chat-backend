@@ -12,7 +12,7 @@ class GroupChatUsersTest : StringSpec({
     "Users should be added to the chat, ignoring the ones already in it" {
         val admin = "admin user ID"
         val initialUserIdList = setOf("user ID")
-        val chatId = GroupChats.create(admin, NewGroupChat(initialUserIdList, "Title"))
+        val chatId = GroupChats.create(admin, NewGroupChat("Title", userIdList = initialUserIdList))
         val newUserIdList = setOf("new user")
         GroupChatUsers.addUsers(chatId, initialUserIdList + newUserIdList)
         GroupChatUsers.readUserIdList(chatId) shouldBe initialUserIdList + newUserIdList + admin

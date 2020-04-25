@@ -12,7 +12,7 @@ class GroupChatsTest : StringSpec({
     "The chat should be deleted once every user has left it" {
         val adminId = "admin user ID"
         val userIdList = setOf("user 1 ID", "user 2 ID")
-        val chatId = GroupChats.create(adminId, NewGroupChat(userIdList, "Title"))
+        val chatId = GroupChats.create(adminId, NewGroupChat("Title", userIdList = userIdList))
         GroupChats.update(GroupChatUpdate(chatId, removedUserIdList = userIdList + adminId))
         GroupChats.count().shouldBeZero()
     }

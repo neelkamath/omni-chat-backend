@@ -6,7 +6,6 @@ services:
     build:
       dockerfile: docker/Dockerfile
       context: .
-    restart: always
     ports: [80:80]
     command: java
       -server

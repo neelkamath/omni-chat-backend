@@ -3,8 +3,9 @@ services:
   chat:
     image: gradle:6.3-jdk8
     command: gradle --no-daemon test
+    restart: 'no'
     environment:
-      IS_TEST_ENVIRONMENT: 1
+      IS_TESTING_ENVIRONMENT: 1
     volumes:
       - type: bind
         source: .

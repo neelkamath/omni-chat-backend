@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     application
@@ -15,19 +14,20 @@ repositories { jcenter() }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("com.graphql-java:graphql-java:14.0")
+    implementation("org.postgresql:postgresql:42.2.2")
+    implementation("ch.qos.logback:logback-classic:1.2.1")
     val ktorVersion = "1.3.2"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-gson:$ktorVersion")
+    implementation("io.ktor:ktor-jackson:$ktorVersion")
     implementation("io.ktor:ktor-auth:$ktorVersion")
     implementation("io.ktor:ktor-auth-jwt:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    implementation("ch.qos.logback:logback-classic:1.2.1")
     val exposedVersion = "0.23.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
-    implementation("org.postgresql:postgresql:42.2.2")
     val keycloakVersion = "9.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
@@ -42,7 +42,8 @@ tasks {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
     withType<ShadowJar> { archiveVersion.set("") }
-    named<KotlinJvmCompile>("compileTestKotlin") { kotlinOptions.jvmTarget = "1.8" }
+    compileKotlin { kotlinOptions.jvmTarget = "1.8" }
+    compileTestKotlin { kotlinOptions.jvmTarget = "1.8" }
 }
 
 if (gradle.startParameter.taskNames.contains("githubRelease"))

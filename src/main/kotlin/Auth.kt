@@ -113,14 +113,14 @@ object Auth {
         sendEmailVerification(findUserByUsername(account.username).id)
     }
 
-    /** Sends an email to the user to verify their email address. This does nothing if [isTestEnvironment]. */
+    /** Sends an email to the user to verify their email address. This does nothing if [isTestingEnvironment]. */
     fun sendEmailVerification(userId: String) {
-        if (!isTestEnvironment()) realm.users().get(userId).sendVerifyEmail()
+        if (!isTestingEnvironment) realm.users().get(userId).sendVerifyEmail()
     }
 
-    /** Sends an email for the user to reset their password. This does nothing if [isTestEnvironment]. */
+    /** Sends an email for the user to reset their password. This does nothing if [isTestingEnvironment]. */
     fun resetPassword(email: String) {
-        if (!isTestEnvironment())
+        if (!isTestingEnvironment)
             realm.users().get(findUserByEmail(email).id).executeActionsEmail(listOf("UPDATE_PASSWORD"))
     }
 
@@ -140,8 +140,29 @@ object Auth {
     private fun findUserByEmail(email: String): UserRepresentation =
         realm.users().list().filter { it.email == email }[0]
 
-    fun searchUsers(query: UserSearchQuery): List<UserRepresentation> =
-        with(query) { realm.users().search(username, firstName, lastName, email, null, null) }
+    /**
+     * Case-insensitively searches users with the [query].
+     *
+     * The [query] is matched against the [UserRepresentation.username], [UserRepresentation.firstName],
+     * [UserRepresentation.lastName], and [UserRepresentation.email].
+     */
+    fun searchUsers(query: String): List<UserRepresentation> =
+        searchByUsername(query) + searchByFirstName(query) + searchByLastName(query) + searchByEmail(query)
+
+    /** Case-insensitively searches users by their [username]. */
+    private fun searchByUsername(username: String): List<UserRepresentation> = realm.users().search(username)
+
+    /** Case-insensitively searches users by their [firstName]. */
+    private fun searchByFirstName(firstName: String): List<UserRepresentation> =
+        realm.users().search(null, firstName, null, null, null, null)
+
+    /** Case-insensitively searches users by their [lastName]. */
+    private fun searchByLastName(lastName: String): List<UserRepresentation> =
+        realm.users().search(null, null, lastName, null, null, null)
+
+    /** Case-insensitively searches users by their [email]. */
+    private fun searchByEmail(email: String): List<UserRepresentation> =
+        realm.users().search(null, null, null, email, null, null)
 
     fun getUserIdList(): List<String> = realm.users().list().map { it.id }
 

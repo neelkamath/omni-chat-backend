@@ -1,1 +1,2 @@
-Open the release asset `redoc-static.html` in your browser to view the HTTP API docs. You can see what's new in this release's corresponding [changelog](docs/CHANGELOG.md) entry. To run this version, download the `Source code` release asset and follow the instructions in `README.md`.
+1. Download the `Source code` asset, and read `README.md`. It links to the docs, changelog, and instructions to run the app. 
+1. Open the release asset `redoc-static.html` in your browser to view the HTTP API docs.

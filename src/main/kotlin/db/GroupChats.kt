@@ -9,8 +9,6 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 
-data class GroupChatWithId(val id: Int, val chat: GroupChat)
-
 /** The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat. */
 object GroupChats : IntIdTable() {
     override val tableName get() = "group_chats"
@@ -47,14 +45,14 @@ object GroupChats : IntIdTable() {
         groupId
     }
 
-    fun read(chatId: Int): GroupChatWithId = Db.transact {
+    fun read(chatId: Int): GroupChat = Db.transact {
         val row = select { id eq chatId }.first()
         val userIdList = GroupChatUsers.readUserIdList(chatId)
-        GroupChatWithId(chatId, GroupChat(row[adminUserId], userIdList, row[title], row[description]))
+        GroupChat(chatId, row[adminUserId], userIdList, row[title], row[description])
     }
 
     /** Returns every chat the user is in. */
-    fun read(userId: String): List<GroupChatWithId> = Db.transact {
+    fun read(userId: String): List<GroupChat> = Db.transact {
         GroupChatUsers.getChatIdList(userId).map { read(it) }
     }
 
@@ -64,8 +62,8 @@ object GroupChats : IntIdTable() {
             update.title?.let { statement[title] = it }
             update.description?.let { statement[description] = it }
         }
-        update.newUserIdList?.let { GroupChatUsers.addUsers(update.chatId, it) }
-        update.removedUserIdList?.let { GroupChatUsers.removeUsers(update.chatId, it) }
+        update.newUserIdList.let { GroupChatUsers.addUsers(update.chatId, it) }
+        update.removedUserIdList.let { GroupChatUsers.removeUsers(update.chatId, it) }
         update.newAdminId?.let { switchAdmin(update.chatId, update.newAdminId) }
         if (GroupChatUsers.readUserIdList(update.chatId).isEmpty()) deleteWhere { id eq update.chatId }
     }
@@ -79,10 +77,13 @@ object GroupChats : IntIdTable() {
      *
      * Returns the chat ID list by searching for the [query] in every chat's title case-insensitively.
      */
-    fun search(userId: String, query: String): List<Int> = Db.transact {
+    fun search(userId: String, query: String): List<GroupChat> = Db.transact {
         val chatIdList = GroupChatUsers.getChatIdList(userId)
         selectAll()
             .filter { it[id].value in chatIdList && it[title].contains(query, ignoreCase = true) }
-            .map { it[id].value }
+            .map {
+                val chatId = it[id].value
+                GroupChat(chatId, it[adminUserId], GroupChatUsers.readUserIdList(chatId), it[title], it[description])
+            }
     }
 }
