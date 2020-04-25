@@ -7,42 +7,6 @@ info:
 
     To view the documentation for previous versions, see the
     [older releases](https://github.com/neelkamath/omni-chat/releases).
-
-    ## Flow
-
-    Here is the usual flow for using this service.
-    1. Have the user sign up for an account. Pass the info they give you to create an account for them using the HTTP
-      POST /account endpoint.
-    1. Have the user verify their email.
-    1. Have the user log in. Using the credentials they give you while logging in, request a JWT to authenticate their
-      future actions by using the HTTP POST /jwt-request endpoint.
-    1. Use the JWT to authorize requests on behalf of the user (e.g., to use the HTTP PATCH /account endpoint).
-    1. Whenever required, refresh the JWT using the HTTP POST /jwt-refresh endpoint.
-
-    Here are the endpoints you can follow to retrieve all the information you might need.
-    - Endpoints such as HTTP GET /contacts return user ID lists. You can fetch metadata on a user by supplying the HTTP
-      GET /user endpoint with the user ID you have.
-    - Endpoints such as HTTP GET /chats return chat ID lists. You can fetch data on private and group chats by supplying
-      the HTTP GET /private-chat and HTTP GET /group-chat endpoints with the chat ID you have respectively.
-
-    ## How It Works
-
-    A message can have one of three states. A _sent_ message has been uploaded to the server. A _delivered_ message has
-    been downloaded by the other user. A _read_ message has been seen by the other user.
-
-    A _private chat_ is a chat between two users which cannot be converted into a group chat. When a private chat is
-    deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved
-    when requesting their chats. However, the user they were chatting with will still have the chat in the same state it
-    was in before the user deleted it. If the other user sends a message to the user, it will show up as the first
-    message in the user's chat.
-
-    If you are added to a group chat, or are added back to a group chat after leaving it, you will be able to see the
-    entire chat's history.
-
-    ## Notes
-
-    - The same email address cannot be registered twice.
-    - Dates conform to ISO 8601.
   contact:
     name: Neel Kamath
     email: neelkamathonline@gmail.com
@@ -69,7 +33,7 @@ paths:
       tags: [jwt]
       security: []
       description: Once the JWT has expired, the user would have to log in again. You can avoid this by requesting a new
-        set of tokens using the refresh token you received with the JWT.
+        set of tokens using the refresh token you received with the JWT. Dates conform to ISO 8601.
       operationId: refreshJwt
       requestBody:
         $ref: '#/components/requestBodies/RefreshJwt'
