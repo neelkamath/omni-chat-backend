@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.Auth
+import com.neelkamath.omniChat.PrivateChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.keycloak.representations.idm.UserRepresentation
@@ -44,16 +45,15 @@ object PrivateChats : IntIdTable() {
      * Searches chats the user (specified by the [userId]) is in.
      *
      * The other users the specified user is chatting with have their username, first name, and last name matched with
-     * the [query]. The search results are returned as a chat ID [List].
+     * the [query].
      */
-    fun search(userId: String, query: String): List<Int> = Db.transact {
+    fun search(userId: String, query: String): List<PrivateChat> = Db.transact {
         select { (creatorUserId eq userId) or (invitedUserId eq userId) }
-            .map {
-                val user = if (it[creatorUserId] == userId) it[invitedUserId] else userId
-                PrivateUserChat(Auth.findUserById(user), it[id].value)
+            .fold(mutableListOf()) { chats: MutableList<PrivateChat>, row: ResultRow ->
+                val user = if (row[creatorUserId] == userId) row[invitedUserId] else userId
+                if (matchesUser(Auth.findUserById(user), query)) chats.add(PrivateChat(row[id].value, user))
+                chats
             }
-            .filter { matchesUser(it.user, query) }
-            .map { it.chatId }
     }
 
     fun isCreator(chatId: Int, userId: String): Boolean = Db.transact {

@@ -1,15 +1,5 @@
 # Spec
 
-Free, open core, federated chat system, to replace every existing chat app.
-
-## Product Vision
-
-For people who need to communicate via chat, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services while leaving out their annoying parts.
-
-## Mantra/Slogan
-
-Trusted, Extensible, Better Chat
-
 ## The Problem
 
 There are way too many chat apps. Every new one tries to implement features another lacks, but in the process don't implement the features they do. The end result is that users are forced to use several apps, none of which do not serve their purpose well. What's more is that certain people will refuse to use certain apps because they're already on too many. Another issue is that you don't know which app to use for which person at what time for a particular type of message.
@@ -147,27 +137,6 @@ The following ideas will only be worked on if it makes sense after the full chat
 - [ ] Instead of slow random semi-public tweets or FB posts, companies like Uber can easily set up customer support on our app. They don't even need to use it as an additional support channel because anyone can use it anonymously without an account. This way people with grievances can simply give them the required proof over chat, and never have to install the app.
 
 With these features, we might even be able to replace social media sites, and some of the infrastructure required by call centers. Unlike Instagram and Snapchat, which only replaced half of social media usage, our app will try to go all the way.
-
-## Tech
-
-### Backend
-
-It could use the following technologies.
-- Build tool: Gradle
-- Language: Kotlin
-- DB: PostgreSQL
-- Account management: [Fast](https://www.fast.co/)
-- Framework: ktor
-- Deployment: Docker
-- Schema: OpenAPI
-
-### Frontend Web App
-
-It could be built with Parcel, HTML, CSS, TypeScript, React, antd, PWA, and styled components.
-
-### Mobile Apps
-
-The mobile apps could be native apps written in Kotlin/JVM on Android, Swift on iOS, and Kotlin/Native for shared business logic.
 
 ## Implementation
 

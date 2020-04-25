@@ -15,15 +15,20 @@ object Jwt {
 
     fun buildVerifier(): JWTVerifier = JWT.require(algorithm).withAudience(audience).withIssuer(issuer).build()
 
-    /** The [AuthToken.jwt]'s `sub` will be the [userId] (a [UserRepresentation.id]). */
+    /**
+     * The [AuthToken.jwt]'s `sub` will be the [userId] (a [UserRepresentation.id]).
+     *
+     * The [AccessTokenResponse.expiresIn] and [AccessTokenResponse.refreshExpiresIn] will be set to one hour and one
+     * week respectively.
+     */
     fun buildAuthToken(userId: String, token: AccessTokenResponse): AuthToken {
+        val oneHour = 60L * 60
+        token.expiresIn = oneHour
+        val oneWeek = 7L * 24 * 60 * 60
+        token.refreshExpiresIn = oneWeek
         val expiry = Date(currentTimeMillis() + (token.expiresIn * 1000))
-        return AuthToken(
-            build(userId, expiry),
-            expiry,
-            token.refreshToken,
-            refreshTokenExpiry = Date(currentTimeMillis() + (token.refreshExpiresIn * 1000))
-        )
+        val refreshTokenExpiry = Date(currentTimeMillis() + (token.refreshExpiresIn * 1000))
+        return AuthToken(build(userId, expiry), expiry, token.refreshToken, refreshTokenExpiry)
     }
 
     /** The [userId] is a [UserRepresentation.id]. */
