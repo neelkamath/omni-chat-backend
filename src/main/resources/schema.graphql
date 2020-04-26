@@ -202,13 +202,17 @@ type Mutation {
   ): Int!
 
   """
-  Sends a message in a chat. Returns whether the message was sent.
+  Sends a message in a chat. Returns the date and time the message was sent.
+
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`, or `"INVALID_MESSAGE_LENGTH"`.
 
   You must send a JWT with this request.
   """
   message(
-    message: Message!
-  ): Boolean!
+    chatId: Int!
+    """At most 10,000 characters."""
+    message: String!
+  ): DateTime!
 
   """
   Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored. Returns whether
@@ -310,10 +314,4 @@ input NewGroupChat {
   """At most 1000 characters."""
   description: String
   userIdList: [String!]
-}
-
-input Message {
-  chatId: Int!
-  """At most 10,000 characters."""
-  message: String!
 }

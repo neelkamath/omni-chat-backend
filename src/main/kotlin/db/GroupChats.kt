@@ -9,7 +9,11 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 
-/** The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat. */
+/**
+ * The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat.
+ *
+ * [Messages] holds the messages.
+ */
 object GroupChats : IntIdTable() {
     override val tableName get() = "group_chats"
     private val adminUserId = varchar("admin_user_id", Auth.userIdLength)
@@ -65,11 +69,15 @@ object GroupChats : IntIdTable() {
         update.newUserIdList.let { GroupChatUsers.addUsers(update.chatId, it) }
         update.removedUserIdList.let { GroupChatUsers.removeUsers(update.chatId, it) }
         update.newAdminId?.let { switchAdmin(update.chatId, update.newAdminId) }
-        if (GroupChatUsers.readUserIdList(update.chatId).isEmpty()) deleteWhere { id eq update.chatId }
     }
 
-    fun delete(chatId: Int): Unit = Db.transact {
-        deleteWhere { id eq chatId }
+    /** Deletes the specified chat from [GroupChats], [GroupChatUsers], and [Messages]. */
+    fun delete(chatId: Int) {
+        Messages.delete(chatId)
+        GroupChatUsers.delete(chatId)
+        Db.transact {
+            deleteWhere { id eq chatId }
+        }
     }
 
     /**

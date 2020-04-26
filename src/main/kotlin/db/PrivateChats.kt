@@ -13,8 +13,7 @@ private data class PrivateUserChat(val user: UserRepresentation, val chatId: Int
 /**
  * Private chats.
  *
- * [PrivateChatClears] holds the data on when each user deleted the chat for themselves. [PrivateMessages] holds
- * chat messages.
+ * [PrivateChatClears] holds the data on when each user deleted the chat for themselves. [Messages] holds chat messages.
  */
 object PrivateChats : IntIdTable() {
     override val tableName get() = "private_chats"
@@ -60,10 +59,18 @@ object PrivateChats : IntIdTable() {
         select { id eq chatId }.first()[creatorUserId] == userId
     }
 
-    /** Deletes every chat the [userId] is in. */
-    fun delete(userId: String): Unit = Db.transact {
-        deleteWhere { (creatorUserId eq userId) or (invitedUserId eq userId) }
+    /** Deletes every chat the [userId] is in from [PrivateChats], [PrivateChatClears], and [Messages]. */
+    fun delete(userId: String) {
+        read(userId).map { it.id }.forEach { chatId ->
+            PrivateChatClears.delete(chatId)
+            Messages.delete(chatId)
+        }
+        Db.transact {
+            deleteWhere { (creatorUserId eq userId) or (invitedUserId eq userId) }
+        }
     }
+
+    fun isUserInChat(userId: String, chatId: Int): Boolean = chatId in read(userId).map { it.id }
 
     /**
      * Whether the [query] matches the [user] (case-insensitive).

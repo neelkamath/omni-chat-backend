@@ -6,11 +6,11 @@ import com.neelkamath.omniChat.Login
 import com.neelkamath.omniChat.NewAccount
 import com.neelkamath.omniChat.test.verifyEmail
 
+private var userCount = 0
+
 data class CreatedUser(val info: AccountInfo, val password: String) {
     val login = Login(info.username, password)
 }
-
-private var userCount = 0
 
 /**
  * Creates [count] users, verifies their emails, and returns them.

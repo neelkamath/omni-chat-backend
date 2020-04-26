@@ -3,6 +3,8 @@ package com.neelkamath.omniChat.graphql
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
+import java.sql.Timestamp
+import java.util.*
 
 fun createAccount(env: DataFetchingEnvironment): Boolean {
     val account = getArgument<NewAccount>(env, "account")
@@ -30,7 +32,7 @@ fun leaveGroupChat(env: DataFetchingEnvironment): Boolean {
     val mustSpecifyNewAdmin =
         lazy { GroupChats.isAdmin(env.userId, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1 }
     when {
-        chatId !in GroupChats.read(env.userId).map { it.id } -> throw InvalidChatIdException()
+        !GroupChats.isUserInChat(env.userId, chatId) -> throw InvalidChatIdException()
         mustSpecifyNewAdmin.value && newAdminUserId == null -> throw MissingNewAdminIdException()
         mustSpecifyNewAdmin.value && newAdminUserId !in GroupChatUsers.readUserIdList(chatId) ->
             throw InvalidNewAdminIdException()
@@ -104,7 +106,7 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
 fun deletePrivateChat(env: DataFetchingEnvironment): Boolean {
     verifyAuth(env)
     val chatId = env.getArgument<Int>("chatId")
-    if (chatId !in PrivateChats.read(env.userId).map { it.id }) throw InvalidChatIdException()
+    if (!PrivateChats.isUserInChat(env.userId, chatId)) throw InvalidChatIdException()
     PrivateChatClears.create(chatId, PrivateChats.isCreator(chatId, env.userId))
     return true
 }
@@ -119,10 +121,19 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
     }
 }
 
-fun message(env: DataFetchingEnvironment): Boolean {
+fun message(env: DataFetchingEnvironment): Date {
     verifyAuth(env)
-    return true
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId, chatId)) throw InvalidChatIdException()
+    val message = env.getArgument<String>("message")
+    if (message.length > Messages.maxMessageLength) throw InvalidMessageLengthException()
+    val createdAt = Messages.create(chatId, env.userId, message)
+    return Timestamp.valueOf(createdAt)
 }
+
+/** Whether the [userId] is in the specified private or group chat. */
+private fun isUserInChat(userId: String, chatId: Int): Boolean =
+    PrivateChats.isUserInChat(userId, chatId) || GroupChats.isUserInChat(userId, chatId)
 
 fun deleteContacts(env: DataFetchingEnvironment): Boolean {
     verifyAuth(env)

@@ -195,7 +195,7 @@ class CanDeleteAccountTest : StringSpec({
     "An account should be able to be deleted if the user is the admin of an empty group chat" {
         val login = createVerifiedUsers(1)[0].login
         val jwt = requestJwt(login).jwt
-        createGroupChat(NewGroupChat("Title", userIdList = setOf()), jwt)
+        createGroupChat(NewGroupChat("Title"), jwt)
         canDeleteAccount(jwt).shouldBeTrue()
     }
 
@@ -278,11 +278,10 @@ class ReadChatsTest : StringSpec({
     }
 
     "Group chats deleted by the user shouldn't be retrieved" {
-        val (admin, user) = createVerifiedUsers(2)
-        val jwt = requestJwt(admin.login).jwt
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
-        val chatId = createGroupChat(chat, jwt)
-        leaveGroupChat(jwt, chatId, newAdminId = user.info.id)
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        leaveGroupChat(jwt, chatId)
         readChats(jwt).shouldBeEmpty()
     }
 
@@ -311,10 +310,10 @@ class SearchChatsTest : StringSpec({
     }
 
     fun createGroupChats(adminId: String, jwt: String): List<GroupChat> = listOf(
-        NewGroupChat("Iron Man Fan Club", userIdList = setOf()),
-        NewGroupChat("Language Class", userIdList = setOf()),
-        NewGroupChat("Programming Languages", userIdList = setOf()),
-        NewGroupChat("Tony's Birthday", userIdList = setOf())
+        NewGroupChat("Iron Man Fan Club"),
+        NewGroupChat("Language Class"),
+        NewGroupChat("Programming Languages"),
+        NewGroupChat("Tony's Birthday")
     ).map {
         val chatId = createGroupChat(it, jwt)
         GroupChat(chatId, adminId, it.userIdList + adminId, it.title, it.description)

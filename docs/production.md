@@ -8,6 +8,6 @@
         --project-directory . \
         up --build
     ```
-1. [Set up authentication](auth_setup.md).
+1. [Set up auth](auth_setup.md).
 
 There is an [auth admin panel](auth_admin_panel.md).

@@ -33,9 +33,9 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3M
 ## Flow
 
 Here is the usual flow for using this service.
-1. Have the user sign up for an account. Pass the info they give you to create an account for them using the `Mutatation.createAccount` operation.
+1. Have the user sign up for an account. Pass the info they give you to the `Mutatation.createAccount` operation.
 1. Have the user verify their email.
-1. Have the user log in. Pass the credentials they give you while logging in to the `Query.requestJwt` operation. This will give you a [JWT](https://jwt.io/) to authenticate their
+1. Have the user log in. Pass the credentials they give you to the `Query.requestJwt` operation. This will give you a [JWT](https://jwt.io/) to authenticate their
   future actions.
 1. Use the JWT to authorize requests on behalf of the user (e.g., to use the `Query.readChats` operation).
 1. Whenever required, refresh the JWT using the HTTP POST `/refresh_jwt` endpoint.

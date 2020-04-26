@@ -12,6 +12,9 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeZero
 import io.kotest.matchers.shouldBe
+import java.sql.Timestamp
+import java.time.Instant
+import java.util.*
 
 fun operateDeleteAccount(jwt: String): GraphQlResponse = operateGraphQl(
     """
@@ -131,16 +134,19 @@ fun operateCreatePrivateChat(userId: String, jwt: String): GraphQlResponse = ope
 fun createPrivateChat(userId: String, jwt: String): Int =
     operateCreatePrivateChat(userId, jwt).data!!["createPrivateChat"] as Int
 
-fun operateMessage(message: String, jwt: String): GraphQlResponse = operateGraphQl(
+fun operateMessage(chatId: Int, message: String, jwt: String): GraphQlResponse = operateGraphQl(
     """
     mutation Message {
-      message(message: "$message")
+      message(chatId: $chatId, message: "$message")
     }
     """,
     jwt = jwt
 )
 
-fun message(message: String, jwt: String): Boolean = operateMessage(message, jwt).data!!["message"] as Boolean
+fun message(chatId: Int, message: String, jwt: String): Date {
+    val date = operateMessage(chatId, message, jwt).data!!["message"] as String
+    return Date.from(Instant.parse(date))
+}
 
 fun operateDeleteContacts(userIdList: List<String>, jwt: String): GraphQlResponse = operateGraphQl(
     """
@@ -174,7 +180,7 @@ class DeleteAccountTest : StringSpec({
     "An account should be able to be deleted if the user is the admin of an empty group chat" {
         val login = createVerifiedUsers(1)[0].login
         val jwt = requestJwt(login).jwt
-        createGroupChat(NewGroupChat("Title", userIdList = setOf()), jwt)
+        createGroupChat(NewGroupChat("Title"), jwt)
         deleteAccount(jwt).shouldBeTrue()
     }
 
@@ -191,7 +197,7 @@ class DeleteAccountTest : StringSpec({
         Auth.userIdExists(user.info.id).shouldBeFalse()
     }
 
-    "The user's contacts and contacts of the user should be deleted when their account is deleted" {
+    "The user's contacts, and others' contacts of the user, should be deleted when their account is deleted" {
         val (user1, user2) = createVerifiedUsers(2)
         val user1Jwt = requestJwt(user1.login).jwt
         val user2Jwt = requestJwt(user2.login).jwt
@@ -203,11 +209,10 @@ class DeleteAccountTest : StringSpec({
     }
 
     "A group chat should be deleted if its only member's account is deleted" {
-        val (admin, user) = createVerifiedUsers(2)
-        val adminJwt = requestJwt(admin.login).jwt
-        val chatId = createGroupChat(NewGroupChat("Title", userIdList = setOf(user.info.id)), adminJwt)
-        leaveGroupChat(requestJwt(user.login).jwt, chatId)
-        deleteAccount(adminJwt)
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        createGroupChat(NewGroupChat("Title"), jwt)
+        deleteAccount(jwt)
         GroupChats.count().shouldBeZero()
     }
 
@@ -216,16 +221,21 @@ class DeleteAccountTest : StringSpec({
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, requestJwt(admin.login).jwt)
         deleteAccount(requestJwt(user.login).jwt)
-        GroupChats.read(chatId).userIdList shouldBe setOf(admin.info.id)
+        GroupChatUsers.readUserIdList(chatId) shouldBe setOf(admin.info.id)
     }
 
-    "Private chat clears should be empty for chats with a user who deleted their account" {
-        val (creator, invitee) = createVerifiedUsers(2)
-        val jwt = requestJwt(creator.login).jwt
-        val chatId = createPrivateChat(invitee.info.id, jwt)
-        deletePrivateChat(chatId, jwt)
-        deleteAccount(jwt)
-        PrivateChatClears.count().shouldBeZero()
+    "Group chat messages from a deleted account should be deleted" {
+        val (admin, user) = createVerifiedUsers(2)
+        val adminJwt = requestJwt(admin.login).jwt
+        val userJwt = requestJwt(user.login).jwt
+        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chatId = createGroupChat(chat, adminJwt)
+        val text = "message"
+        val sentAt = message(chatId, text, adminJwt).run { Timestamp(time).toLocalDateTime() }
+        message(chatId, "message", userJwt)
+        deleteAccount(userJwt)
+        val message = Message(admin.info.id, text, MessageStatus.SENT, MessageDateTimes(sentAt))
+        Messages.read(chatId) shouldBe listOf(message)
     }
 
     "Private chats with a user who deleted their account should be deleted" {
@@ -234,6 +244,8 @@ class DeleteAccountTest : StringSpec({
         createPrivateChat(invitee.info.id, jwt)
         deleteAccount(jwt)
         PrivateChats.read(invitee.info.id).shouldBeEmpty()
+        PrivateChatClears.count().shouldBeZero()
+        Messages.count().shouldBeZero()
     }
 })
 
@@ -348,13 +360,11 @@ class LeaveGroupChatTest : StringSpec({
         GroupChatUsers.readUserIdList(chatId) shouldBe setOf(user.info.id)
     }
 
-    "The admin should leave the chat without specifying a new admin if they are the last user" {
-        val (admin, user) = createVerifiedUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(admin.info.id, user.info.id))
-        val adminJwt = requestJwt(admin.login).jwt
-        val chatId = createGroupChat(chat, adminJwt)
-        leaveGroupChat(requestJwt(user.login).jwt, chatId)
-        leaveGroupChat(adminJwt, chatId).shouldBeTrue()
+    "The admin should leave the chat without specifying a new admin if they are the only user" {
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        leaveGroupChat(jwt, chatId).shouldBeTrue()
     }
 
     fun testBadUserId(supplyingId: Boolean) {
@@ -378,6 +388,17 @@ class LeaveGroupChatTest : StringSpec({
     "Leaving a group chat the user is not in should throw an error" {
         val jwt = requestJwt(createVerifiedUsers(1)[0].login).jwt
         operateLeaveGroupChat(jwt, chatId = 1).errors!![0].message shouldBe InvalidChatIdException().message
+    }
+
+    "A group chat with no users should be deleted" {
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        message(chatId, "message", jwt)
+        leaveGroupChat(jwt, chatId)
+        GroupChats.count().shouldBeZero()
+        GroupChatUsers.count().shouldBeZero()
+        Messages.count().shouldBeZero()
     }
 })
 
@@ -412,10 +433,9 @@ class UpdateGroupChatTest : StringSpec({
     }
 
     "Transferring admin status to a user not in the chat should throw an error" {
-        val (admin, invitedUser, notInvitedUser) = createVerifiedUsers(3)
+        val (admin, notInvitedUser) = createVerifiedUsers(2)
         val jwt = requestJwt(admin.login).jwt
-        val chat = NewGroupChat("Title", userIdList = setOf(invitedUser.info.id))
-        val chatId = createGroupChat(chat, jwt)
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
         val update = GroupChatUpdate(chatId, newAdminId = notInvitedUser.info.id)
         operateUpdateGroupChat(update, jwt).errors!![0].message shouldBe InvalidNewAdminIdException().message
     }
@@ -438,13 +458,16 @@ class UpdateGroupChatTest : StringSpec({
 class CreateGroupChatTest : StringSpec({
     listener(AppListener())
 
+    "Emoji should be handled" {
+        val user = createVerifiedUsers(1)[0]
+        val title = "Title \uD83D\uDCDA"
+        val chatId = createGroupChat(NewGroupChat(title), requestJwt(user.login).jwt)
+        GroupChats.read(chatId).title shouldBe title
+    }
+
     "A group chat should be created, ignoring the user's own user ID" {
         val (admin, user1, user2) = createVerifiedUsers(3)
-        val chat = NewGroupChat(
-            title = "\uD83D\uDCDA Book Club", // Test that emoji works.
-            description = "Books discussion",
-            userIdList = setOf(admin.info.id, user1.info.id, user2.info.id)
-        )
+        val chat = NewGroupChat("Title", "Description", setOf(admin.info.id, user1.info.id, user2.info.id))
         val chatId = createGroupChat(chat, requestJwt(admin.login).jwt)
         val userIdList = chat.userIdList + admin.info.id
         val groupChat = GroupChat(chatId, admin.info.id, userIdList, chat.title, chat.description)
@@ -458,21 +481,21 @@ class CreateGroupChatTest : StringSpec({
     }
 
     "A group chat should not be created if an empty title is supplied" {
-        val chat = NewGroupChat(title = "", userIdList = setOf())
+        val chat = NewGroupChat(title = "")
         val jwt = requestJwt(createVerifiedUsers(1)[0].login).jwt
         operateCreateGroupChat(chat, jwt).errors!![0].message shouldBe InvalidTitleLengthException().message
     }
 
     "A group chat should not be created if the title is too long" {
         val title = CharArray(GroupChats.maxTitleLength + 1) { 'a' }.joinToString("")
-        val chat = NewGroupChat(title = title, userIdList = setOf())
+        val chat = NewGroupChat(title)
         val jwt = requestJwt(createVerifiedUsers(1)[0].login).jwt
         operateCreateGroupChat(chat, jwt).errors!![0].message shouldBe InvalidTitleLengthException().message
     }
 
     "A group chat should not be created if the description has an invalid length" {
         val description = CharArray(GroupChats.maxDescriptionLength + 1) { 'a' }.joinToString("")
-        val chat = NewGroupChat("Title", description, userIdList = setOf())
+        val chat = NewGroupChat("Title", description)
         val jwt = requestJwt(createVerifiedUsers(1)[0].login).jwt
         operateCreateGroupChat(chat, jwt).errors!![0].message shouldBe InvalidDescriptionLengthException().message
     }
@@ -492,6 +515,21 @@ class DeletePrivateChatTest : StringSpec({
     "Deleting an invalid chat ID should throw an error" {
         val jwt = requestJwt(createVerifiedUsers(1)[0].login).jwt
         operateDeletePrivateChat(chatId = 1, jwt = jwt).errors!![0].message shouldBe InvalidChatIdException().message
+    }
+
+    "Messages should be deleted up to the point that both users have cleared the chat" {
+        val (creator, invitee) = createVerifiedUsers(2)
+        val creatorJwt = requestJwt(creator.login).jwt
+        val inviteeJwt = requestJwt(invitee.login).jwt
+        val chatId = createPrivateChat(invitee.info.id, creatorJwt)
+        message(chatId, "message", creatorJwt)
+        deletePrivateChat(chatId, creatorJwt)
+        Messages.count() shouldBe 1
+        message(chatId, "message", inviteeJwt)
+        deletePrivateChat(chatId, creatorJwt)
+        Messages.count() shouldBe 2
+        deletePrivateChat(chatId, inviteeJwt)
+        Messages.count().shouldBeZero()
     }
 })
 
@@ -571,5 +609,54 @@ class CreateContactsTest : StringSpec({
         val response = operateCreateContacts(contacts, requestJwt(owner.login).jwt)
         response.errors!![0].message shouldBe InvalidContactException().message
         Contacts.read(owner.info.id).shouldBeEmpty()
+    }
+})
+
+class MessageTest : StringSpec({
+    listener(AppListener())
+
+    "Emoji should be handled" {
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        val message = "message \uD83D\uDCDA"
+        message(chatId, message, jwt)
+        Messages.read(chatId)[0].message shouldBe message
+    }
+
+    "A message should be sent in a private chat" {
+        val (creator, invitee) = createVerifiedUsers(2)
+        val jwt = requestJwt(creator.login).jwt
+        val chatId = createPrivateChat(invitee.info.id, jwt)
+        val message = "Hi"
+        val dateTime = message(chatId, message, jwt).run { Timestamp(time).toLocalDateTime() }
+        val privateMessage = Message(creator.info.id, message, MessageStatus.SENT, MessageDateTimes(sent = dateTime))
+        Messages.read(chatId) shouldBe listOf(privateMessage)
+    }
+
+    "A message should be sent in a group chat" {
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        val message = "Hi"
+        val dateTime = message(chatId, message, jwt).run { Timestamp(time).toLocalDateTime() }
+        val groupChat = Message(user.info.id, message, MessageStatus.SENT, MessageDateTimes(sent = dateTime))
+        Messages.read(chatId) shouldBe listOf(groupChat)
+    }
+
+    "Messaging in a chat the user isn't in should throw an error" {
+        val (user1, user2) = createVerifiedUsers(2)
+        val chat1Id = createGroupChat(NewGroupChat("Title"), requestJwt(user1.login).jwt)
+        val jwt = requestJwt(user2.login).jwt
+        createGroupChat(NewGroupChat("Title"), jwt)
+        operateMessage(chat1Id, "message", jwt).errors!![0].message shouldBe InvalidChatIdException().message
+    }
+
+    "Sending a message longer than 10,000 characters should throw an error" {
+        val user = createVerifiedUsers(1)[0]
+        val jwt = requestJwt(user.login).jwt
+        val chatId = createGroupChat(NewGroupChat("Title"), jwt)
+        val message = CharArray(Messages.maxMessageLength + 1) { 'a' }.joinToString("")
+        operateMessage(chatId, message, jwt).errors!![0].message shouldBe InvalidMessageLengthException().message
     }
 })

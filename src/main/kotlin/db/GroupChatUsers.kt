@@ -23,6 +23,11 @@ object GroupChatUsers : IntIdTable() {
         }
     }
 
+    /** Removes every user from the [chatId]. */
+    fun delete(chatId: Int): Unit = Db.transact {
+        deleteWhere { groupChatId eq chatId }
+    }
+
     /** Returns the user ID list from the specified [groupChatId]. */
     fun readUserIdList(groupChatId: Int): Set<String> = Db.transact {
         select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }.toSet()
@@ -36,9 +41,19 @@ object GroupChatUsers : IntIdTable() {
         }
     }
 
-    /** Removes every user in the [userIdList] in the chat (specified by the [groupChatId]) if they're in it.  */
-    fun removeUsers(groupChatId: Int, userIdList: Set<String>): Unit = Db.transact {
-        deleteWhere { (GroupChatUsers.groupChatId eq groupChatId) and (userId inList userIdList) }
+    /**
+     * Removes every user in the [userIdList] from the [chatId], ignoring users who aren't in the chat.
+     *
+     * If every user from the chat is removed, then the chat is deleted from [GroupChats], and [Messages].
+     */
+    fun removeUsers(chatId: Int, userIdList: Set<String>) {
+        Db.transact {
+            deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
+        }
+        if (readUserIdList(chatId).isEmpty()) {
+            GroupChats.delete(chatId)
+            Messages.delete(chatId)
+        }
     }
 
     /** Returns the chat ID list of every chat the [userId] is in. */

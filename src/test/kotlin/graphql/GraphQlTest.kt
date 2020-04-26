@@ -18,6 +18,7 @@ class GraphQlTest : StringSpec({
         set(Calendar.MINUTE, 18)
         set(Calendar.SECOND, 51)
         set(Calendar.MILLISECOND, 791)
+        set(Calendar.AM_PM, Calendar.AM)
     }.time
 
     "A value should be parsed" { coercing.parseValue(iso8601DateTime) shouldBe date }

@@ -32,3 +32,5 @@ class InvalidDescriptionLengthException : ClientException("INVALID_DESCRIPTION_L
 class ChatExistsException : ClientException("CHAT_EXISTS")
 
 class InvalidContactException : ClientException("INVALID_CONTACT")
+
+class InvalidMessageLengthException : ClientException("INVALID_MESSAGE_LENGTH")
