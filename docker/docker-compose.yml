@@ -29,7 +29,6 @@ services:
     networks: [auth, chat-db]
     restart: always
     environment:
-      IS_TEST_ENVIRONMENT: 0
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_URL: http://auth:8080
@@ -44,7 +43,7 @@ services:
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
       POSTGRES_URL: chat-db:5432
   chat-db:
-    image: postgres:12
+    image: postgres:12.3
     restart: always
     networks: [chat-db]
     environment:

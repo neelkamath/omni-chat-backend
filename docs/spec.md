@@ -22,6 +22,25 @@ These systems may seem to be highly specialized and out of our reach. But this i
 
 Certain systems (e.g., Twitter DMs) will exist even if our app is a success because the creators of those services want to roll their own. The creators of those services will not use our app because they want to be "different" from the other services, even though they'll only build a suboptimal system. We can only hope that users on such platforms will prefer to exchange usernames to chat on our platform.
 
+## Implementation Notes for the User
+
+### Accounts
+
+- The same email address cannot be registered twice.
+- Deleting your account results in all your data (e.g., every message you've ever sent) to be wiped.
+
+- A message can have one of three states. A _sent_ message has been uploaded to the server. A _delivered_ message has been downloaded by the other user. A _read_ message has been seen by the other user.
+
+### Private Chats
+
+- A _private chat_ is a chat between two users which cannot be converted into a group chat. 
+- When a private chat is deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved when requesting their chats. However, the user they were chatting with will still have the chat in the same state it was in before the user deleted it. If the other user sends a message to the user, it will show up as the first message in the user's chat.
+
+### Group Chats
+
+- If you are added to a group chat, or are added back to a group chat after leaving it, you will be able to see the entire chat's history.
+- If you leave a group chat, your messages will remain in the chat.
+
 ## Features
 
 - The core software will be open source so that user requiring libre software (e.g., idealist hobbyists, companies requiring code control, organizations requiring private deployments on their own servers) will be able to use the service. 
@@ -45,6 +64,13 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### General
 
+- Although we allow users to set only particular chats' notifications on, it still won't be enough to know if there's an important message from a particular chat. For example, your mom might only text you occasionally - half the time it's important, and half the time she's just sharing a joke. To deal with this case, we'll have each message associated with a priority. The priorities are:
+    - Urgent: Needs attention within a minute (e.g., need help filling out a time-sensitive bank form)
+    - Important: Needs attention within an hour (e.g., need to know what the HW assignment is so I can start before I go to bed)
+    - Useful: Need attention within this day (e.g., need to schedule a meeting for tomorrow; can be scheduled any time today)
+    - Default: Doesn't need attention within this day
+    
+    By default, messages are sent with the _Default_ priority so as to not waste time picking priorities on every text. By default, priorities will be honored. If the user finds other user's ideas of priority incorrect, then they can choose to ignore priorities associated with messages for all chats, individual chats, or all users except handpicked chats.
 - [ ] See saved contacts from both people you've chatted with, and people you've saved but haven't yet chatted with. For example, your phone book or mail book might automatically find contacts which are on the service by searching and saving them for you via searching their phone numbers or emails if they're listed publicly. 
 - [ ] For privacy purposes, chats with only two people (you and the other person) cannot be converted into group chats by adding other users. You can however start a chat with two people as a group chat so that new users could be added later. This way chats between two people could easily become visible by potential future team members.
 - [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username. Useful information can be displayed publicly, such as an organization they went to (e.g., you can search users using Google or Stanford as an organization filter if they went/go there).
@@ -105,9 +131,9 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 ### Security
 
 - [ ] Allow instances to pick one of the following access types.
-    - [ ] Only clients an admin creates are allowed to access the HTTP API.
-    - [x] Anyone can access the HTTP API without registering.
-    - [ ] Anyone can access the HTTP API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
+    - [ ] Only clients an admin creates are allowed to access the API.
+    - [x] Anyone can access the API without registering.
+    - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
 - [ ] Allow people you don't know to not directly contact you (i.e., they will go to an "Invites" tab where you'll have to go to allow, ignore, or block them).
 - [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.

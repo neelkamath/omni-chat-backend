@@ -5,35 +5,50 @@
 Here's what a standard project iteration looks like.
 
 1. Pick a feature to work on using the [project board](https://github.com/neelkamath/omni-chat/projects/1).
-1. Update the [GraphQL schema](../src/main/resources/schema.graphql) or [OpenAPI spec](openapi.yaml) if required.
-1. Create any required [JSON models](../src/main/kotlin/Json.kt).
-1. If you're updating the DB, keep in mind that you might have to wipe this data when an account is deleted.
-1. Write tests (i.e., TDD). If you're writing tests for the API, perform the following sub-steps.
-    - HTTP API
-        1. Create a function to deal with the HTTP request and response in [`RoutingTest.kt`](../src/test/kotlin/RoutingTest.kt). Name it the operation ID used by the endpoint in the OpenAPI spec, and have it return a `io.ktor.server.testing.TestApplicationResponse`.
-        1. Create a class to hold the tests. Name it using the format `<HTTP_VERB><URL>Test`. For example, if the endpoint `/jwt-refresh` accepts the POST verb, then the class `PostJwtRefreshTest` would be created.
-    - GraphQL API
-        1. Create two functions in the `com.neelkamath.omniChat.test.graphql` package to deal with the HTTP request and response. One function should be named using the format `operate<OPERATION>` (e.g., `operateReadChats`), and return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`. The other function should be named the GraphQL operation (e.g., `readChats`), and return the operation's data mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
-        1. Create a class to hold the tests. Name it using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
-1. Implement the feature.
+1. Update the [GraphQL schema](../src/main/resources/schema.graphqls).
+1. Create [JSON models](../src/main/kotlin/Json.kt).
+1. When updating the DB, keep in mind the following.
+    - This data may need to be wiped when an account is deleted. For example, the user's messages must be deleted when they delete their account.
+    - Subscribers may need to be notified whenever this data is created. For example, deleting a chat requires notifying subscribers of such.
+    - Subscribers may need to be notified whenever the user who created the data updates their account. For example, if the user sends a message, and then updates their name, the frontend developer would want to update the UI to reflect the new name of the user who sent the message.
+1. Write tests.
 
-    If the feature is an HTTP API endpoint, name the routing function the same as its operation ID in the OpenAPI spec. If the feature is a GraphQL operation, name it the same as the operation.
-1. If the feature is in the [spec](spec.md), mark it as completed.
-1. If you have updated the server's functionality, the OpenAPI spec, or the GraphQL schema, follow these sub-steps to create a new release.
-    1. Update the version in the [OpenAPI spec](openapi.yaml), and the [build file](../build.gradle.kts). Even if the server is still backwards compatible, you must bump the major version if you've renamed an entity in the OpenAPI spec (e.g., a key under `schemas/components/`). This is because [OpenAPI Generator](https://openapi-generator.tech/) uses the names of keys when creating client SDKs, which would have otherwise become backwards-incompatible.
+    We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test using the GraphQL engine, and an integration test using the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly. If you're writing tests for the GraphQL API, perform the following steps.
+    1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>Fragment` (e.g., `privateChatDeletionFragment`).    
+    1. Create a file named using the format `<OPERATION>Test.kt` (e.g., `DeleteAccountTest.kt`).
+    1. Create a `const val` `String` for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES__QUERY`).
+    1. Follow these steps for `Query`s and `Mutation`s.
+        1. Create a private function (referred to as the "operator function" below) which deals with the HTTP request. Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`.
+        1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
+        1. When required, create a function which deals with the HTTP response's error message. Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
+    1. Follow these steps for `Subscription`s.
+        1. Create a function which creates the subscription request. Name the function `build<OPERATION>Request` (e.g., `buildMessageUpdatesRequest`), and have it return a `com.neelkamath.omniChat.GraphQlRequest`.
+        1. Create a function which receives the events. Name the function `operate<OPERATION>` (e.g., `operateMessageUpdates`).
+    1. Create a class named using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
+1. Implement the feature. For `Query`s and `Mutation`s, name the resolver the same as the GraphQL operation (e.g., `readChats`). For `Subscription`s, name the resolver named using the format `operate<OPERATION>` (e.g., `routeMessageUpdates`).
+1. Mark the feature as completed in the [spec](spec.md).
+1. Create a new release.
+    1. Update the version in the [build file](../build.gradle.kts).
     1. Add an entry to the [changelog](CHANGELOG.md).
-    1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created, and the new docs will be hosted.
+    1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created.
+
+## Style Guide
+
+- GraphQL uses 2 spaces for query indentation. We use 4 spaces to indent GraphQL queries in Kotlin files for maintainability.
+- Use `io.kotest.core.spec.style.FunSpec` for test suites.
+- Ignore this point if you're writing functional tests (e.g., tests in `com.neelkamath.omniChat.test.graphql.api`). Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to `context` must be the function's signature without the packages and top-level namespace. For example, the test suite for `Contacts` would have a `context` with the argument `"create(String, Set<String>)"` for `Contacts.create(String, Set<String>)`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality is tested.
+
+## DB
+
+- Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) and its mirror files in [`src/test/kotlin/db/`](../src/test/kotlin/db)) instead of directly operating on the DB.
+- The [abstraction layer](../src/main/kotlin/db) isn't concerned whether the user IDs it processes exist in the auth system.
+- It is possible that the nanosecond a user deletes a private chat, the other user sends a message. Thus, chat deletions delete messages _until_, and not _up to_, the time of deletion.
 
 ## Server
 
-### Notes
-
-- Always use the [`src/main/kotlin/Auth.kt`](../src/main/kotlin/Auth.kt) and [`src/test/kotlin/Auth.kt`](../src/test/kotlin/Auth.kt) abstraction layers instead of directly using Keycloak's API.
-- Always use the [`src/main/kotlin/db/`](../src/main/kotlin/db) and [`src/test/kotlin/db/`](../src/test/kotlin/db) abstraction layers instead of directly operating on the DB.
-
 ### Development
 
-1. Run the server on http://localhost:5000 with autoreload enabled.
+1. Run the server on http://localhost:80 with autoreload enabled.
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -46,7 +61,7 @@ Here's what a standard project iteration looks like.
 
 ### Testing
 
-1. Spin up the services.
+1. Spin up the services:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -55,49 +70,45 @@ Here's what a standard project iteration looks like.
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Enter into the shell. You needn't have a valid email configuration in `.env` (e.g., `KEYCLOAK_SMTP_HOST`, `KEYCLOAK_SMTP_PASSWORD`), because the testing environment disables the sending of emails.
+1. Since the testing environment disables the sending of emails, the [`.example.env`](.example.env) file will suffice. Enter the shell:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.test.yml \
         -p test \
         --project-directory . \
-        run --rm chat bash
+        run --rm --service-ports chat bash
     ```
-1. `gradle test` whenever you want. Build reports save to `build/reports/tests/test/`.
+1. Update the code and run tests any number of times. Reports save to `build/reports/tests/test/`.
+    - Test: `gradle test`
+    - Debug:
+        1. `gradle test --debug-jvm`
+        1. Wait for `Listening for transport dt_socket at address: 5005` to be printed.
+        1. Run `jdb -attach 5005` in another terminal.
+        1. Run `exit` in the debugger's terminal once you're done. 
+    - If you've updated the schema (e.g., renamed a column), you will need to drop every table. Use the following steps in another terminal:
+        1. `docker run --rm -it --network test_chat-db postgres:12.3 psql -h test_chat-db_1 -U postgres`
+        1. When prompted for the password, enter the value of the `CHAT_DB_PASSWORD` environment variable.
+        1. Drop the tables (code taken from [this Stack Overflow QA](https://stackoverflow.com/a/36023359/6354805)):
+            ```
+            DO $$ DECLARE
+                r RECORD;
+            BEGIN
+                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+                    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+                END LOOP;
+            END $$;
+            ```
+1. Run `exit` once you're done.
 
 ### [Production](production.md)
 
 ## Auth
 
+- Usernames must be lowercase because the auth service saves them as such.
 - The auth system disallows two users from having the same registered email address.
 - The auth system strips leading and trailing whitespace for usernames, first names, and last names.
 - There is an [admin panel](auth_admin_panel.md).
+- Always use the [`src/main/kotlin/Auth.kt`](../src/main/kotlin/Auth.kt) and [`src/test/kotlin/Auth.kt`](../src/test/kotlin/Auth.kt) abstraction layers instead of directly using Keycloak's API.
 
 ## [Spec](spec.md)
-
-## OpenAPI Spec
-
-[`openapi.yaml`](openapi.yaml) is the OpenAPI spec.
-
-### Development
-
-```
-npx redoc-cli serve -wp 8081 docs/openapi.yaml
-```
-
-The documentation will be served on http://127.0.0.1:8081. It will automatically rebuild when the spec is updated. Refresh the page to view the updated version.
-
-### Testing
-
-```
-npx @stoplight/spectral lint docs/openapi.yaml
-```
-
-### Production
-
-```
-npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
-```
-
-The documentation will be saved to `redoc-static.html`.

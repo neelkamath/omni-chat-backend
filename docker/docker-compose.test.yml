@@ -1,15 +1,15 @@
 version: '3.7'
 services:
   chat:
-    image: gradle:6.3-jdk8
+    image: gradle:6.4.0-jdk14
     command: gradle --no-daemon test
+    working_dir: /home/gradle/project
     restart: 'no'
-    environment:
-      IS_TESTING_ENVIRONMENT: 1
+    ports: [5005:5005] # The debugger attaches to this port.
     volumes:
       - type: bind
         source: .
-        target: /home/gradle
+        target: /home/gradle/project
       - type: volume
         source: gradle-cache
         target: /home/gradle/.gradle

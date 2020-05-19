@@ -3,35 +3,27 @@ package com.neelkamath.omniChat
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
-import org.keycloak.representations.AccessTokenResponse
 import org.keycloak.representations.idm.UserRepresentation
-import java.lang.System.currentTimeMillis
-import java.util.*
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
-object Jwt {
-    const val audience = "omni-chat"
-    private val issuer: String = System.getenv("KEYCLOAK_URL")
-    private val algorithm: Algorithm = Algorithm.HMAC256(System.getenv("JWT_SECRET"))
+private val algorithm: Algorithm = Algorithm.HMAC256(System.getenv("JWT_SECRET"))
 
-    fun buildVerifier(): JWTVerifier = JWT.require(algorithm).withAudience(audience).withIssuer(issuer).build()
+fun buildVerifier(): JWTVerifier = JWT.require(algorithm).build()
 
-    /**
-     * The [AuthToken.jwt]'s `sub` will be the [userId] (a [UserRepresentation.id]).
-     *
-     * The [AccessTokenResponse.expiresIn] and [AccessTokenResponse.refreshExpiresIn] will be set to one hour and one
-     * week respectively.
-     */
-    fun buildAuthToken(userId: String, token: AccessTokenResponse): AuthToken {
-        val oneHour = 60L * 60
-        token.expiresIn = oneHour
-        val oneWeek = 7L * 24 * 60 * 60
-        token.refreshExpiresIn = oneWeek
-        val expiry = Date(currentTimeMillis() + (token.expiresIn * 1000))
-        val refreshTokenExpiry = Date(currentTimeMillis() + (token.refreshExpiresIn * 1000))
-        return AuthToken(build(userId, expiry), expiry, token.refreshToken, refreshTokenExpiry)
-    }
+/**
+ * The [TokenSet.accessToken]'s `sub` will be the [userId] (a [UserRepresentation.id]). The [TokenSet.accessToken]'s
+ * expiry and [TokenSet.refreshToken]'s expiry will be set to one hour and one week respectively.
+ */
+fun buildAuthToken(userId: String): TokenSet {
+    val now = LocalDateTime.now()
+    val accessToken = build(userId, now.plusHours(1))
+    val refreshToken = build(userId, now.plusWeeks(1))
+    return TokenSet(accessToken, refreshToken)
+}
 
-    /** The [userId] is a [UserRepresentation.id]. */
-    private fun build(userId: String, expiry: Date): String =
-        JWT.create().withExpiresAt(expiry).withSubject(userId).withAudience(audience).withIssuer(issuer).sign(algorithm)
+/** The [userId] is a [UserRepresentation.id]. */
+private fun build(userId: String, expiry: LocalDateTime): String {
+    val date = Timestamp.valueOf(expiry)
+    return JWT.create().withExpiresAt(date).withSubject(userId).sign(algorithm)
 }

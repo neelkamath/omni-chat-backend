@@ -1,97 +1,140 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.Auth
-import com.neelkamath.omniChat.GroupChat
-import com.neelkamath.omniChat.GroupChatUpdate
-import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.GroupChats.adminUserId
+import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.GroupChats.adminId
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.statements.UpdateStatement
 
 /**
- * The [GroupChatUsers] table contains the participants, including the [adminUserId], of a particular chat.
- *
- * [Messages] holds the messages.
+ * The [GroupChatUsers] table contains the participants, including the [adminId], of a particular chat. [Messages] holds
+ * the messages.
  */
 object GroupChats : IntIdTable() {
     override val tableName get() = "group_chats"
-    private val adminUserId = varchar("admin_user_id", Auth.userIdLength)
-    const val maxTitleLength = 70
-    private val title = varchar("title", maxTitleLength)
-    const val maxDescriptionLength = 1000
-    private val description = varchar("description", maxDescriptionLength).nullable()
+    private val adminId: Column<String> = varchar("admin_id", USER_ID_LENGTH)
 
-    fun isUserInChat(userId: String, chatId: Int): Boolean = chatId in read(userId).map { it.id }
+    /** Titles cannot exceed this length. */
+    const val MAX_TITLE_LENGTH = 70
+
+    /** Can have at most [MAX_TITLE_LENGTH]. */
+    private val title: Column<String> = varchar("title", MAX_TITLE_LENGTH)
+
+    /** Descriptions cannot exceed this length. */
+    const val MAX_DESCRIPTION_LENGTH = 1000
+
+    /** Can have at most [MAX_DESCRIPTION_LENGTH]. */
+    private val description: Column<String?> = varchar("description", MAX_DESCRIPTION_LENGTH).nullable()
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
-    fun isAdmin(userId: String, chatId: Int): Boolean = Db.transact {
-        select { id eq chatId }.first()[adminUserId] == userId
+    fun isAdmin(userId: String, chatId: Int): Boolean = transact {
+        select { GroupChats.id eq chatId }.first()[adminId] == userId
     }
 
     /**
-     * Converts the current admin of [chatId] to a regular user, and sets the [newAdminUserId] as the new admin.
-     *
-     * It is assumed that the [newAdminUserId] is valid.
+     * Sets the [userId] as the admin of the [chatId]. An [IllegalArgumentException] will be thrown if the [userId]
+     * isn't in the chat
      */
-    fun switchAdmin(chatId: Int, newAdminUserId: String): Unit = Db.transact {
-        update({ id eq chatId }) { it[adminUserId] = newAdminUserId }
+    fun setAdmin(chatId: Int, userId: String) {
+        val userIdList = read(chatId).userIdList
+        if (userId !in userIdList)
+            throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
+        transact {
+            update({ GroupChats.id eq chatId }) { it[adminId] = userId }
+        }
     }
 
-    /** Returns the chat ID after creating it. */
-    fun create(adminUserId: String, chat: NewGroupChat): Int = Db.transact {
-        val groupId = insertAndGetId {
-            it[this.adminUserId] = adminUserId
-            it[title] = chat.title
-            it[description] = chat.description
-        }.value
-        GroupChatUsers.create(groupId, chat.userIdList + adminUserId)
-        groupId
+    /** Returns the [chat]'s ID after creating it. */
+    fun create(adminId: String, chat: NewGroupChat): Int {
+        val chatId = transact {
+            insertAndGetId {
+                it[this.adminId] = adminId
+                it[title] = chat.title
+                it[description] = chat.description
+            }.value
+        }
+        GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
+        return chatId
     }
 
-    fun read(chatId: Int): GroupChat = Db.transact {
-        val row = select { id eq chatId }.first()
-        val userIdList = GroupChatUsers.readUserIdList(chatId)
-        GroupChat(chatId, row[adminUserId], userIdList, row[title], row[description])
+    fun read(chatId: Int): GroupChat {
+        val row = transact {
+            select { GroupChats.id eq chatId }.first()
+        }
+        return buildGroupChat(row, chatId)
     }
 
-    /** Returns every chat the user is in. */
-    fun read(userId: String): List<GroupChat> = Db.transact {
-        GroupChatUsers.getChatIdList(userId).map { read(it) }
+    /**
+     * Returns the [userId]'s chats. If you just need the chat IDs, [GroupChatUsers.readChatIdList] is more efficient.
+     */
+    fun read(userId: String): List<GroupChat> = transact {
+        GroupChatUsers.readChatIdList(userId).map { read(it) }
     }
 
-    /** If every user is removed, the chat is deleted. */
-    fun update(update: GroupChatUpdate): Unit = Db.transact {
-        update({ id eq update.chatId }) { statement: UpdateStatement ->
-            update.title?.let { statement[title] = it }
-            update.description?.let { statement[description] = it }
+    /**
+     * [update]s the chat.
+     *
+     * Users in the [GroupChatUpdate.newUserIdList] who are already in the chat are ignored.
+     *
+     * Users in the [GroupChatUpdate.removedUserIdList] who aren't in the chat are ignored. Removed users will be
+     * [unsubscribeFromMessageUpdates]. The chat is deleted if every user is removed.
+     *
+     * An [IllegalArgumentException] will be thrown if the [GroupChatUpdate.title] is empty.
+     */
+    fun update(update: GroupChatUpdate) {
+        if (update.title != null && update.title.trim().isEmpty())
+            throw IllegalArgumentException("""The title ("${update.title}") is empty.""")
+        transact {
+            update({ GroupChats.id eq update.chatId }) { statement ->
+                update.title?.let { statement[title] = it }
+                update.description?.let { statement[description] = it }
+            }
         }
         update.newUserIdList.let { GroupChatUsers.addUsers(update.chatId, it) }
         update.removedUserIdList.let { GroupChatUsers.removeUsers(update.chatId, it) }
-        update.newAdminId?.let { switchAdmin(update.chatId, update.newAdminId) }
-    }
-
-    /** Deletes the specified chat from [GroupChats], [GroupChatUsers], and [Messages]. */
-    fun delete(chatId: Int) {
-        Messages.delete(chatId)
-        GroupChatUsers.delete(chatId)
-        Db.transact {
-            deleteWhere { id eq chatId }
-        }
+        update.newAdminId?.let { setAdmin(update.chatId, update.newAdminId) }
     }
 
     /**
-     * Searches the chats the [userId] is in.
+     * Deletes the [chatId] from [GroupChats]. [Messages], and [MessageStatuses]. Users who have
+     * [subscribeToMessageUpdates]rs will be notified of a [DeletionOfEveryMessage], and then
+     * [unsubscribeFromMessageUpdates].
      *
-     * Returns the chat ID list by searching for the [query] in every chat's title case-insensitively.
+     * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
-    fun search(userId: String, query: String): List<GroupChat> = Db.transact {
-        val chatIdList = GroupChatUsers.getChatIdList(userId)
-        selectAll()
-            .filter { it[id].value in chatIdList && it[title].contains(query, ignoreCase = true) }
-            .map {
-                val chatId = it[id].value
-                GroupChat(chatId, it[adminUserId], GroupChatUsers.readUserIdList(chatId), it[title], it[description])
-            }
+    fun delete(chatId: Int) {
+        val userIdList = GroupChatUsers.readUserIdList(chatId)
+        if (userIdList.isNotEmpty())
+            throw IllegalArgumentException("The chat (ID: $chatId) is not empty (users: $userIdList).")
+        transact {
+            deleteWhere { GroupChats.id eq chatId }
+        }
+        Messages.deleteChat(chatId)
+        unsubscribeFromMessageUpdates(chatId)
     }
+
+    /**
+     * Searches the chats the [userId] is in. Returns the chat ID list by searching for the [query] in every chat's
+     * title case-insensitively.
+     */
+    fun search(userId: String, query: String): List<GroupChat> {
+        val chatIdList = GroupChatUsers.readChatIdList(userId)
+        return transact {
+            select { GroupChats.id inList chatIdList }
+                .filter { it[title].contains(query, ignoreCase = true) }
+                .map { buildGroupChat(it, it[GroupChats.id].value) }
+        }
+    }
+
+    private fun buildGroupChat(row: ResultRow, chatId: Int): GroupChat = GroupChat(
+        chatId,
+        row[adminId],
+        GroupChatUsers.readUserIdList(chatId),
+        row[title],
+        row[description],
+        Messages.read(chatId)
+    )
+
+    /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
+    fun isNonemptyChatAdmin(userId: String): Boolean =
+        userId in read(userId).filter { read(it.id).userIdList.size > 1 }.map { it.adminId }
 }
