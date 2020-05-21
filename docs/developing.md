@@ -19,7 +19,7 @@ Here's what a standard project iteration looks like.
     1. Follow these steps for `Query`s and `Mutation`s.
         1. Create a private function which deals with the HTTP request (the "operator function"). Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`.
         1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
-        1. When required, create a function which deals with the HTTP response's error message. Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
+        1. If the operation returns custom error messages (e.g., `"INVALID_CHAT_ID"`), create a function which deals with the HTTP response's error message. Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
     1. Follow these steps for `Subscription`s.
         1. Create a function which creates the subscription request. Name the function `build<OPERATION>Request` (e.g., `buildMessageUpdatesRequest`), and have it return a `com.neelkamath.omniChat.GraphQlRequest`.
         1. Create a function which receives the events. Name the function `operate<OPERATION>` (e.g., `operateMessageUpdates`).

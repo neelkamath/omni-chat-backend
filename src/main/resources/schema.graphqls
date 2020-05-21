@@ -18,6 +18,15 @@ type Query {
   canDeleteAccount: Boolean!
 
   """
+  Case-insensitively `query`s text messages in the `chatId`.
+
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+  You must send an access token with this request.
+  """
+  searchChatMessages(chatId: Int!, query: String!): [Message!]!
+
+  """
   Returns the user's account info.
 
   You must send an access token with this request.

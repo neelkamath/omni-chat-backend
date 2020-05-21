@@ -3,9 +3,7 @@ package com.neelkamath.omniChat.graphql
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Contacts
-import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 import org.keycloak.representations.idm.UserRepresentation
 
@@ -58,6 +56,14 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     return buildAuthToken(userId)
 }
 
+fun searchChatMessages(env: DataFetchingEnvironment): List<Message> {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
+    val query = env.getArgument<String>("query")
+    return Messages.search(chatId, query)
+}
+
 fun searchChats(env: DataFetchingEnvironment): List<Chat> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
@@ -67,11 +73,7 @@ fun searchChats(env: DataFetchingEnvironment): List<Chat> {
 fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    return Contacts
-        .read(env.userId!!)
-        .map(::findUserById)
-        .filter { it.matches(query) }
-        .map { buildAccountInfo(it.id) }
+    return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }.map { buildAccountInfo(it.id) }
 }
 
 /**

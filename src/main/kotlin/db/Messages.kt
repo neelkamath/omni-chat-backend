@@ -39,6 +39,10 @@ object Messages : IntIdTable() {
         notifyMessageUpdate(chatId, buildMessage(row))
     }
 
+    /** Case-insensitively [query]s the [chatId]'s text messages. */
+    fun search(chatId: Int, query: String): List<Message> =
+        readChat(chatId).filter { it.text.contains(query, ignoreCase = true) }
+
     /** Returns the chat [id]'s messages in the order of creation. */
     fun readChat(id: Int): List<Message> = transact {
         select { chatId eq id }.map(::buildMessage)
