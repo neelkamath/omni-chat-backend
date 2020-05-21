@@ -87,6 +87,8 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("resetPassword", ::resetPassword)
     .dataFetcher("leaveGroupChat", ::leaveGroupChat)
     .dataFetcher("updateGroupChat", ::updateGroupChat)
+    .dataFetcher("createDeliveredStatus", ::createDeliveredStatus)
+    .dataFetcher("createReadStatus", ::createReadStatus)
     .dataFetcher("createGroupChat", ::createGroupChat)
     .dataFetcher("deletePrivateChat", ::deletePrivateChat)
     .dataFetcher("createPrivateChat", ::createPrivateChat)

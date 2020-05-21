@@ -15,6 +15,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
@@ -68,14 +69,18 @@ class DeleteAccountTest : FunSpec({
         GroupChatUsers.readUserIdList(chatId) shouldBe setOf(admin.info.id)
     }
 
-    test("Group chat messages from a deleted account should be deleted") {
+    test("Group chat messages and message statuses from a deleted account should be deleted") {
         val (admin, user) = createVerifiedUsers(2)
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
-        createMessage(chatId, "text", admin.accessToken)
-        createMessage(chatId, "text", user.accessToken)
+        val adminMessageId = readCreatedMessageId(chatId, "text", admin.accessToken)
+        readCreatedMessageId(chatId, "text", user.accessToken)
+        createReadStatus(adminMessageId, user.accessToken)
         deleteAccount(user.accessToken)
-        Messages.read(chatId) shouldBe listOf(Messages.read(chatId)[0])
+        val messages = Messages.readChat(chatId)
+        messages shouldHaveSize 1
+        messages[0].senderId shouldBe admin.info.id
+        messages[0].dateTimes.statuses.shouldBeEmpty()
     }
 
     test("A private chat with a user who deleted their account should be deleted") {

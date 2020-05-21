@@ -37,14 +37,14 @@ class SearchChatsTest : FunSpec({
     listener(AppListener())
 
     fun createPrivateChats(accessToken: String): List<PrivateChat> = listOf(
-        NewAccount(username = "iron man", password = "malibu", emailAddress = "tony@stark.com", firstName = "Tony"),
-        NewAccount(username = "iron fist", password = "monk", emailAddress = "iron.fist@monks.org"),
+        NewAccount(username = "iron man", password = "malibu", emailAddress = "tony@example.com", firstName = "Tony"),
+        NewAccount(username = "iron fist", password = "monk", emailAddress = "iron.fist@example.org"),
         NewAccount(username = "chris tony", password = "pass", emailAddress = "chris@example.com", lastName = "Tony")
     ).map {
         createAccount(it)
         val userId = findUserByUsername(it.username).id
         val chatId = createPrivateChat(userId, accessToken)
-        PrivateChat(chatId, userId, Messages.read(chatId))
+        PrivateChat(chatId, userId, Messages.readChat(chatId))
     }
 
     fun createGroupChats(adminId: String, accessToken: String): List<GroupChat> = listOf(
@@ -54,7 +54,7 @@ class SearchChatsTest : FunSpec({
         NewGroupChat("Tony's Birthday")
     ).map {
         val chatId = createGroupChat(it, accessToken)
-        GroupChat(chatId, adminId, it.userIdList + adminId, it.title, it.description, Messages.read(chatId))
+        GroupChat(chatId, adminId, it.userIdList + adminId, it.title, it.description, Messages.readChat(chatId))
     }
 
     test("Private chats and group chats should be searched case-insensitively") {

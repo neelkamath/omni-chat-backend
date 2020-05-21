@@ -32,7 +32,7 @@ class EncodingTest : FunSpec({
         val token = createVerifiedUsers(1)[0].accessToken
         val chatId = createGroupChat(NewGroupChat("Title"), token)
         createMessage(chatId, message, token)
-        Messages.read(chatId)[0].text shouldBe message
+        Messages.readChat(chatId)[0].text shouldBe message
     }
 
     test("A message should allow emoji") { testMessage("message \uD83D\uDCDA") }

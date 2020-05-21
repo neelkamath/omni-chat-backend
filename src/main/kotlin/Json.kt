@@ -102,13 +102,7 @@ data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageD
 /** The [dateTime] and [status] the [userId] has on a message. */
 data class MessageDateTimeStatus(val userId: String, val dateTime: LocalDateTime, val status: MessageStatus)
 
-enum class MessageStatus {
-    /** The message has been delivered. */
-    DELIVERY,
-
-    /** The message has been read. */
-    READ
-}
+enum class MessageStatus { DELIVERED, READ }
 
 data class DeletedMessage(val id: Int) : MessageUpdate
 

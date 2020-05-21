@@ -38,3 +38,5 @@ class InvalidContactException : ClientException("INVALID_CONTACT")
 class InvalidMessageLengthException : ClientException("INVALID_MESSAGE_LENGTH")
 
 class InvalidMessageIdException : ClientException("INVALID_MESSAGE_ID")
+
+class DuplicateStatusException : ClientException("DUPLICATE_STATUS")

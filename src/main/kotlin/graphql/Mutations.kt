@@ -27,6 +27,30 @@ fun createContacts(env: DataFetchingEnvironment): Boolean {
     return true
 }
 
+fun createDeliveredStatus(env: DataFetchingEnvironment): Boolean = createStatus(env, MessageStatus.DELIVERED)
+
+fun createReadStatus(env: DataFetchingEnvironment): Boolean = createStatus(env, MessageStatus.READ)
+
+/** Implementation for [createDeliveredStatus] and [createReadStatus] (based on the [status]). */
+private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): Boolean {
+    env.verifyAuth()
+    val messageId = env.getArgument<Int>("messageId")
+    verifyCanCreateStatus(messageId, env.userId!!, status)
+    MessageStatuses.create(messageId, env.userId!!, status)
+    return true
+}
+
+/**
+ * Throws an [InvalidMessageIdException]/[DuplicateStatusException] if the [userId] cannot create the [status] on the
+ * [messageId].
+ */
+private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
+    if (!Messages.exists(messageId)) throw InvalidMessageIdException()
+    val chatId = Messages.findChatFromMessage(messageId)
+    if (!isUserInChat(userId, chatId) || Messages.read(messageId).senderId == userId) throw InvalidMessageIdException()
+    if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException()
+}
+
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val chat = env.parseArgument<NewGroupChat>("chat")

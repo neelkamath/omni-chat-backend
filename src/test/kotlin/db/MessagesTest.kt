@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.db.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.ints.shouldBeZero
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
@@ -27,7 +27,7 @@ class MessagesTest : FunSpec({
             val user1Subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             val user2Subscriber = createMessageUpdatesSubscriber(user2Id, chatId)
             repeat(3) { Messages.create(chatId, listOf(adminId, user1Id, user2Id).random(), "text") }
-            val updates = Messages.read(chatId).toTypedArray()
+            val updates = Messages.readChat(chatId).toTypedArray()
             listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { it.assertValues(*updates) }
         }
     }
@@ -43,7 +43,7 @@ class MessagesTest : FunSpec({
                 CreatedMessage(user1Id, "Is tomorrow a holiday?")
             )
             createdMessages.forEach { Messages.create(chatId, it.creator, it.message) }
-            Messages.read(chatId).forEachIndexed { index, message ->
+            Messages.readChat(chatId).forEachIndexed { index, message ->
                 message.senderId shouldBe createdMessages[index].creator
                 message.text shouldBe createdMessages[index].message
             }
@@ -62,7 +62,7 @@ class MessagesTest : FunSpec({
             Messages.message(chatId, user2Id, "text")
             PrivateChatDeletions.create(chatId, user1Id)
             val messageId = Messages.message(chatId, user2Id, "text")
-            Messages.read(chatId, user1Id) shouldBe listOf(Messages.readMessage(messageId))
+            Messages.read(chatId, user1Id) shouldBe listOf(Messages.read(messageId))
         }
     }
 
@@ -71,7 +71,7 @@ class MessagesTest : FunSpec({
             val (user1Id, user2Id) = (1..2).map { "user $it ID" }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERY)
+            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
             Messages.deleteChat(chatId)
             Messages.count().shouldBeZero()
             MessageStatuses.count().shouldBeZero()
@@ -95,9 +95,9 @@ class MessagesTest : FunSpec({
             MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
             val now = LocalDateTime.now()
             val message2Id = Messages.message(chatId, user2Id, "text")
-            MessageStatuses.create(message2Id, user1Id, MessageStatus.DELIVERY)
+            MessageStatuses.create(message2Id, user1Id, MessageStatus.DELIVERED)
             Messages.delete(chatId, until = now)
-            Messages.read(chatId).map { it.id } shouldBe listOf(message2Id)
+            Messages.readChat(chatId).map { it.id } shouldBe listOf(message2Id)
             MessageStatuses.count() shouldBe 1
         }
     }
@@ -112,8 +112,8 @@ class MessagesTest : FunSpec({
             val message2Id = Messages.message(chatId, userId, "text")
             MessageStatuses.create(message2Id, adminId, MessageStatus.READ)
             Messages.delete(chatId, userId)
-            Messages.read(chatId).map { it.id } shouldBe listOf(message1Id)
-            MessageStatuses.count() shouldBe 2
+            Messages.readChat(chatId).map { it.id } shouldBe listOf(message1Id)
+            MessageStatuses.count().shouldBeZero()
         }
 
         test("A subscriber should be notified when a user's messages have been deleted from the chat") {
@@ -127,30 +127,44 @@ class MessagesTest : FunSpec({
     }
 
     context("delete(String)") {
-        test("Deleting a user's messages should delete every message they sent in every chat, including groups they left") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
-            val privateChatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(privateChatId, user2Id, "text")
-            val chat = NewGroupChat("Title", userIdList = setOf(user2Id))
-            val groupChatId = GroupChats.create(user1Id, chat)
-            Messages.create(groupChatId, user2Id, "text")
-            GroupChatUsers.removeUsers(groupChatId, setOf(user2Id))
-            Messages.delete(user2Id)
-            Messages.count().shouldBeZero()
-            MessageStatuses.count().shouldBeZero()
+        fun createUtilizedPrivateChat(user1Id: String, user2Id: String): Int {
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val message1Id = Messages.message(chatId, user1Id, "text")
+            MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
+            val message2Id = Messages.message(chatId, user2Id, "text")
+            MessageStatuses.create(message2Id, user1Id, MessageStatus.READ)
+            return chatId
         }
 
-        test("Every message the user created in the chat should be deleted with other users' statuses on those messages") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
-            val chat = NewGroupChat("Title", userIdList = setOf(userId))
-            val chatId = GroupChats.create(adminId, chat)
-            val message1Id = Messages.message(chatId, userId, "text")
-            MessageStatuses.create(message1Id, adminId, MessageStatus.READ)
-            val message2Id = Messages.message(chatId, adminId, "text")
-            MessageStatuses.create(message2Id, userId, MessageStatus.DELIVERY)
-            Messages.delete(userId)
-            Messages.read(chatId).map { it.id } shouldNotContain message1Id
-            MessageStatuses.count() shouldBe 1
+        fun createUtilizedGroupChat(user1Id: String, user2Id: String): Int {
+            val chat = NewGroupChat("Title", userIdList = setOf(user2Id))
+            val chatId = GroupChats.create(user1Id, chat)
+            val message1Id = Messages.message(chatId, user1Id, "text")
+            MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
+            val message2Id = Messages.message(chatId, user2Id, "text")
+            MessageStatuses.create(message2Id, user1Id, MessageStatus.READ)
+            GroupChatUsers.removeUsers(chatId, setOf(user2Id))
+            return chatId
+        }
+
+        test(
+            """
+            Given a user in a private chat, and a group chat they've left,
+            when deleting the user's messages,
+            then their messages, created message statues, and received message statuses should be deleted
+            """
+        ) {
+            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val privateChatId = createUtilizedPrivateChat(user1Id, user2Id)
+            val groupChatId = createUtilizedGroupChat(user1Id, user2Id)
+            Messages.delete(user2Id)
+            val testMessages = { chatId: Int ->
+                val messages = Messages.readChat(chatId)
+                messages.map { it.senderId } shouldBe listOf(user1Id)
+                messages.flatMap { it.dateTimes.statuses }.map { it.userId }.shouldBeEmpty()
+            }
+            testMessages(privateChatId)
+            testMessages(groupChatId)
         }
 
         /**
@@ -181,9 +195,9 @@ class MessagesTest : FunSpec({
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
-            MessageStatuses.create(messageId, userId, MessageStatus.DELIVERY)
+            MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED)
             Messages.delete(messageId)
-            Messages.read(chatId).size.shouldBeZero()
+            Messages.readChat(chatId).size.shouldBeZero()
             MessageStatuses.count().shouldBeZero()
         }
 

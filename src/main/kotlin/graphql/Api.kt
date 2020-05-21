@@ -159,9 +159,7 @@ private class Subscriber(
     }
 
     /** Closes the connection with the [GraphQlSubscription.completionReason]. */
-    override fun onComplete() {
-        runInSessionContext { close(graphQlSubscription.completionReason) }
-    }
+    override fun onComplete(): Unit = runInSessionContext { close(graphQlSubscription.completionReason) }
 
     /** Closes the connection using [CloseReason.Codes.INTERNAL_ERROR]. */
     override fun onError(throwable: Throwable): Unit = runInSessionContext {

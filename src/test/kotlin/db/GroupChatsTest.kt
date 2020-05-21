@@ -92,7 +92,7 @@ class GroupChatsTest : FunSpec({
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, userId, "text")
             GroupChatUsers.removeUsers(chatId, setOf(userId))
-            Messages.read(chatId).map { it.id } shouldBe listOf(messageId)
+            Messages.readChat(chatId).map { it.id } shouldBe listOf(messageId)
         }
 
         test("When the user leaves the chat they were accessing on two devices, both subscriptions should be removed") {

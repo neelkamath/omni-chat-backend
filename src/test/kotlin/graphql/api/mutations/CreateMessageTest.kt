@@ -40,10 +40,10 @@ class CreateMessageTest : FunSpec({
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
         val text = "Hi"
         createMessage(chatId, text, user1.accessToken)
-        val createdMessage = Messages.read(chatId)[0]
+        val createdMessage = Messages.readChat(chatId)[0]
         val dateTimes = MessageDateTimes(createdMessage.dateTimes.sent)
         val message = Message(createdMessage.id, user1.info.id, text, dateTimes)
-        Messages.read(chatId) shouldBe listOf(message)
+        Messages.readChat(chatId) shouldBe listOf(message)
     }
 
     test("A message should be sent in a group chat") {
@@ -51,9 +51,9 @@ class CreateMessageTest : FunSpec({
         val chatId = createGroupChat(NewGroupChat("Title"), user.accessToken)
         val text = "Hi"
         createMessage(chatId, text, user.accessToken)
-        val createdMessage = Messages.read(chatId)[0]
+        val createdMessage = Messages.readChat(chatId)[0]
         val groupChat = Message(createdMessage.id, user.info.id, text, MessageDateTimes(createdMessage.dateTimes.sent))
-        Messages.read(chatId) shouldBe listOf(groupChat)
+        Messages.readChat(chatId) shouldBe listOf(groupChat)
     }
 
     test("Messaging in a chat the user isn't in should throw an exception") {

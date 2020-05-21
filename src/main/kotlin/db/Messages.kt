@@ -39,9 +39,9 @@ object Messages : IntIdTable() {
         notifyMessageUpdate(chatId, buildMessage(row))
     }
 
-    /** Returns the [chatId]'s messages in the order of creation. */
-    fun read(chatId: Int): List<Message> = transact {
-        select { Messages.chatId eq chatId }.map(::buildMessage)
+    /** Returns the chat [id]'s messages in the order of creation. */
+    fun readChat(id: Int): List<Message> = transact {
+        select { chatId eq id }.map(::buildMessage)
     }
 
     /**
@@ -49,12 +49,12 @@ object Messages : IntIdTable() {
      * [userId].
      */
     fun read(chatId: Int, userId: String): List<Message> = transact {
-        val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return@transact read(chatId)
+        val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return@transact readChat(chatId)
         select { (Messages.chatId eq chatId) and (sent greaterEq deletion) }.map(::buildMessage)
     }
 
-    fun readMessage(messageId: Int): Message = transact {
-        select { Messages.id eq messageId }.first().let(::buildMessage)
+    fun read(id: Int): Message = transact {
+        select { Messages.id eq id }.first().let(::buildMessage)
     }
 
     /** Returns the ID of the chat which contains the [messageId]. */
@@ -91,10 +91,11 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages] and [MessageStatuses] the [userId] has in the [chatId]. Clients who have
+     * Deletes all [Messages] and [MessageStatuses] the [userId] created in the [chatId]. Clients who have
      * [subscribeToMessageUpdates] will be be notified of the [UserChatMessagesRemoval].
      */
     fun delete(chatId: Int, userId: String) {
+        MessageStatuses.delete(chatId, userId)
         val idList = readMessageIdList(chatId, senderId eq userId)
         MessageStatuses.delete(idList)
         transact {
@@ -104,16 +105,17 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages] and [MessageStatuses] the [userId] has sent. Clients who have [subscribeToMessageUpdates]
-     * will be notified of the [UserChatMessagesRemoval].
+     * Deletes all [Messages] and [MessageStatuses] the [userId] has. Clients who have [subscribeToMessageUpdates] will
+     * be notified of the [UserChatMessagesRemoval].
      */
     fun delete(userId: String) {
-        val messages = readChatMessages(userId)
-        MessageStatuses.delete(messages.map { it.messageId })
+        MessageStatuses.delete(userId)
+        val chatMessages = readChatMessages(userId)
+        MessageStatuses.delete(chatMessages.map { it.messageId })
         transact {
             deleteWhere { senderId eq userId }
         }
-        messages.map { it.chatId }.toSet().forEach { notifyMessageUpdate(it, UserChatMessagesRemoval(userId)) }
+        chatMessages.map { it.chatId }.toSet().forEach { notifyMessageUpdate(it, UserChatMessagesRemoval(userId)) }
     }
 
     /**
@@ -149,6 +151,10 @@ object Messages : IntIdTable() {
     /** Whether the message [id] exists in the [chatId]. */
     fun exists(id: Int, chatId: Int): Boolean = transact {
         !select { (Messages.chatId eq chatId) and (Messages.id eq id) }.empty()
+    }
+
+    fun exists(id: Int): Boolean = transact {
+        !select { Messages.id eq id }.empty()
     }
 
     private fun buildMessage(row: ResultRow): Message {

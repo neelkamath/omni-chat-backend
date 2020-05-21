@@ -2,8 +2,10 @@ package com.neelkamath.omniChat.test.graphql.api.subscriptions
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Messages
+import com.neelkamath.omniChat.db.subscribeToMessageUpdates
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.test.CreatedUser
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.db.message
 import com.neelkamath.omniChat.test.graphql.api.*
@@ -53,7 +55,7 @@ class MessageUpdatesTest : FunSpec({
         operateMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
             val user = if (senderIsSubscriber) user1 else user2
             createMessage(chatId, "text", user.accessToken)
-            parseFrameData<Message>(incoming) shouldBe Messages.read(chatId).last()
+            parseFrameData<Message>(incoming) shouldBe Messages.readChat(chatId).last()
         }
     }
 
@@ -130,7 +132,7 @@ class MessageUpdatesTest : FunSpec({
     test(
         """
         Given a group chat,
-        when a member has left,
+        when a member has deleted their account,
         then the members should be notified that the old member's messages were deleted 
         """
     ) {
@@ -170,4 +172,77 @@ class MessageUpdatesTest : FunSpec({
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
     }
+
+    /**
+     * Creates a group chat with the [subscriber], [sender], and [statusCreator]. The [subscriber] is the user who has
+     * [subscribeToMessageUpdates]. The [sender] is the user who sends a message. The [statusCreator] the user who
+     * creates a [MessageStatus.DELIVERED] on the [sender]'s message. The [subscriber] and [sender] can be the same
+     * [CreatedUser].
+     */
+    fun createUtilizedChat(
+        subscriber: CreatedUser,
+        sender: CreatedUser,
+        statusCreator: CreatedUser,
+        status: MessageStatus
+    ) {
+        val chat = NewGroupChat("Title", userIdList = setOf(sender.info.id, statusCreator.info.id))
+        val chatId = createGroupChat(chat, subscriber.accessToken)
+        operateMessageUpdates(chatId, subscriber.accessToken) { incoming, _ ->
+            createMessage(chatId, "text", sender.accessToken)
+            val messageId = parseFrameData<Message>(incoming).id
+            when (status) {
+                MessageStatus.DELIVERED -> createDeliveredStatus(messageId, statusCreator.accessToken)
+                MessageStatus.READ -> createReadStatus(messageId, statusCreator.accessToken)
+            }
+            if (status == MessageStatus.READ) incoming.poll() // Ignore the "delivered" status.
+            // We convert it to a set because in the case of a "read" status, a "delivered" status would also exist.
+            val statuses = parseFrameData<Message>(incoming).dateTimes.statuses.map { it.userId }.toSet()
+            statuses shouldBe setOf(statusCreator.info.id)
+        }
+    }
+
+    fun `the subscriber should be notified when a user creates a status on their message`(status: MessageStatus): Unit =
+        test(
+            """
+            The subscriber should be notified when a user creates a "${status.name.toLowerCase()}" status on their 
+            message
+            """
+        ) {
+            val (user1, user2) = createVerifiedUsers(2)
+            createUtilizedChat(subscriber = user1, sender = user1, statusCreator = user2, status = status)
+        }
+
+    fun `the subscriber should be notified when they create a status a user's message`(status: MessageStatus): Unit =
+        test(
+            """
+            The subscriber should be notified when they create a "${status.name.toLowerCase()}" status a user's message
+            """
+        ) {
+            val (user1, user2) = createVerifiedUsers(2)
+            createUtilizedChat(subscriber = user1, sender = user2, statusCreator = user1, status = status)
+        }
+
+    fun `the subscriber should be notified when a user creates a status on another user's message`(
+        status: MessageStatus
+    ): Unit = test(
+        """
+        The subscriber should be notified when a user creates a "${status.name.toLowerCase()}" status on another user's 
+        message
+        """
+    ) {
+        val (user1, user2, user3) = createVerifiedUsers(3)
+        createUtilizedChat(subscriber = user1, sender = user2, statusCreator = user3, status = status)
+    }
+
+    `the subscriber should be notified when a user creates a status on their message`(MessageStatus.DELIVERED)
+
+    `the subscriber should be notified when they create a status a user's message`(MessageStatus.DELIVERED)
+
+    `the subscriber should be notified when a user creates a status on another user's message`(MessageStatus.DELIVERED)
+
+    `the subscriber should be notified when a user creates a status on their message`(MessageStatus.READ)
+
+    `the subscriber should be notified when they create a status a user's message`(MessageStatus.READ)
+
+    `the subscriber should be notified when a user creates a status on another user's message`(MessageStatus.READ)
 })

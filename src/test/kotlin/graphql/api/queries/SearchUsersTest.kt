@@ -30,8 +30,8 @@ class SearchUsersTest : FunSpec({
 
     test("Users should be searched") {
         val accounts = listOf(
-            NewAccount(username = "iron_man", password = "p", emailAddress = "tony@stark.com"),
-            NewAccount(username = "iron_fist", password = "p", emailAddress = "iron_fist@avengers.com"),
+            NewAccount(username = "iron_man", password = "p", emailAddress = "tony@example.com"),
+            NewAccount(username = "iron_fist", password = "p", emailAddress = "iron_fist@example.com"),
             NewAccount(username = "hulk", password = "p", emailAddress = "bruce@example.com")
         )
         val infoList = accounts.map {

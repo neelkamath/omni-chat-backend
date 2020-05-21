@@ -19,7 +19,7 @@ class MessageUpdatesTest : FunSpec({
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             Messages.create(chatId, user2Id, "Hi")
             Messages.create(chatId, user1Id, "How are you?")
-            val messages = Messages.read(chatId).drop(1).toTypedArray()
+            val messages = Messages.readChat(chatId).drop(1).toTypedArray()
             subscriber.assertValues(*messages)
         }
     }
@@ -40,8 +40,8 @@ class MessageUpdatesTest : FunSpec({
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERY)
-            subscriber.assertValue(Messages.read(chatId)[0])
+            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
+            subscriber.assertValue(Messages.readChat(chatId)[0])
         }
     }
 })

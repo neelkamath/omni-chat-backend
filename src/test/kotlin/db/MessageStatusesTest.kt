@@ -8,9 +8,11 @@ import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChats
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
-class MessagesStatusesTest : FunSpec({
+class MessageStatusesTest : FunSpec({
     listener(DbListener())
 
     context("create(Int, String, MessageStatus)") {
@@ -20,21 +22,21 @@ class MessagesStatusesTest : FunSpec({
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
-            val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERY) }
+            val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED) }
             createStatus()
             shouldThrowExactly<IllegalArgumentException>(createStatus)
         }
 
-        test("""Recording a "read" status shouldn't create a "delivery" status if one was already recorded""") {
+        test("""Recording a "read" status shouldn't create a "delivered" status if one was already recorded""") {
             val (user1Id, user2Id) = (1..2).map { "user $it ID" }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERY)
+            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
             MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
             MessageStatuses.count() shouldBe 2
         }
 
-        test(""""Recording a "read" status should automatically record a "delivery" status if there wasn't one""") {
+        test(""""Recording a "read" status should automatically record a "delivered" status if there wasn't one""") {
             val (user1Id, user2Id) = (1..2).map { "user $it ID" }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
@@ -63,8 +65,36 @@ class MessagesStatusesTest : FunSpec({
             val text = "text"
             val messageId = Messages.message(chatId, user1Id, text)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERY)
-            subscriber.assertValue(Messages.read(chatId)[0])
+            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
+            subscriber.assertValue(Messages.readChat(chatId)[0])
+        }
+    }
+
+    context("delete(Int, String)") {
+        /**
+         * Creates a private chat between [user1Id] and [user2Id], has [user2Id] send a message in it, has [user1Id]
+         * create a [MessageStatus.DELIVERED] on it, and returns the chat's ID.
+         */
+        fun createUsedChat(user1Id: String, user2Id: String): Int {
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val messageId = Messages.message(chatId, user2Id, "text")
+            MessageStatuses.create(messageId, user1Id, MessageStatus.DELIVERED)
+            return chatId
+        }
+
+        test(
+            """
+            Given a user in two chats,
+            when deleting the user's statuses in one of the chats,
+            then only the statuses the user created in that chat should be deleted
+            """
+        ) {
+            val (user1Id, user2Id, user3Id) = (1..3).map { "user $it ID" }
+            val chat1Id = createUsedChat(user1Id, user2Id)
+            val chat2Id = createUsedChat(user1Id, user3Id)
+            MessageStatuses.delete(chat1Id, user1Id)
+            Messages.readChat(chat1Id).flatMap { it.dateTimes.statuses }.shouldBeEmpty()
+            Messages.readChat(chat2Id).flatMap { it.dateTimes.statuses }.shouldNotBeEmpty()
         }
     }
 })

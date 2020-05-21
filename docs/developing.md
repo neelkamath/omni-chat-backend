@@ -10,15 +10,14 @@ Here's what a standard project iteration looks like.
 1. When updating the DB, keep in mind the following.
     - This data may need to be wiped when an account is deleted. For example, the user's messages must be deleted when they delete their account.
     - Subscribers may need to be notified whenever this data is created. For example, deleting a chat requires notifying subscribers of such.
-    - Subscribers may need to be notified whenever the user who created the data updates their account. For example, if the user sends a message, and then updates their name, the frontend developer would want to update the UI to reflect the new name of the user who sent the message.
 1. Write tests.
 
     We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test using the GraphQL engine, and an integration test using the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly. If you're writing tests for the GraphQL API, perform the following steps.
-    1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>Fragment` (e.g., `privateChatDeletionFragment`).    
+    1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>Fragment` (e.g., `PRIVATE_CHAT_DELETION_FRAGMENT`).    
     1. Create a file named using the format `<OPERATION>Test.kt` (e.g., `DeleteAccountTest.kt`).
-    1. Create a `const val` `String` for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES__QUERY`).
+    1. Create a `const val` `String` for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES_QUERY`).
     1. Follow these steps for `Query`s and `Mutation`s.
-        1. Create a private function (referred to as the "operator function" below) which deals with the HTTP request. Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`.
+        1. Create a private function which deals with the HTTP request (the "operator function"). Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`.
         1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
         1. When required, create a function which deals with the HTTP response's error message. Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
     1. Follow these steps for `Subscription`s.
@@ -43,12 +42,37 @@ Here's what a standard project iteration looks like.
 - Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) and its mirror files in [`src/test/kotlin/db/`](../src/test/kotlin/db)) instead of directly operating on the DB.
 - The [abstraction layer](../src/main/kotlin/db) isn't concerned whether the user IDs it processes exist in the auth system.
 - It is possible that the nanosecond a user deletes a private chat, the other user sends a message. Thus, chat deletions delete messages _until_, and not _up to_, the time of deletion.
+- You may need to drop data if you've updated the schema (e.g., renamed a column, updated a type):
+    1. Spin up the services:
+        ``` 
+        docker-compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.test.yml \
+            -p test \
+            --project-directory . \
+            up --scale chat=0 -d
+        ```
+    1. `docker run --rm -it --network test_chat-db postgres:12.3 psql -h test_chat-db_1 -U postgres`
+    1. When prompted for the password, enter the value of the `CHAT_DB_PASSWORD` environment variable.
+    1. Drop the relevant data.
+        - Drop tables (code taken from [this Stack Overflow QA](https://stackoverflow.com/a/36023359/6354805)):
+            ```
+            DO $$ DECLARE
+                r RECORD;
+            BEGIN
+                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+                    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+                END LOOP;
+            END $$;
+            ```
+        - Drop types: `DROP TYPE <TYPE>;` (e.g., `DROP TYPE message_status;`)
+    1. `exit`
 
 ## Server
 
 ### Development
 
-1. Run the server on http://localhost:80 with autoreload enabled.
+1. Run the server on http://localhost:80 with autoreload enabled:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -79,27 +103,13 @@ Here's what a standard project iteration looks like.
         --project-directory . \
         run --rm --service-ports chat bash
     ```
-1. Update the code and run tests any number of times. Reports save to `build/reports/tests/test/`.
-    - Test: `gradle test`
-    - Debug:
-        1. `gradle test --debug-jvm`
+1. Reports save to `build/reports/tests/test/`. Update the code and run tests any number of times: 
+    1. `gradle test`
+    1. Optionally, debug.
         1. Wait for `Listening for transport dt_socket at address: 5005` to be printed.
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 
-    - If you've updated the schema (e.g., renamed a column), you will need to drop every table. Use the following steps in another terminal:
-        1. `docker run --rm -it --network test_chat-db postgres:12.3 psql -h test_chat-db_1 -U postgres`
-        1. When prompted for the password, enter the value of the `CHAT_DB_PASSWORD` environment variable.
-        1. Drop the tables (code taken from [this Stack Overflow QA](https://stackoverflow.com/a/36023359/6354805)):
-            ```
-            DO $$ DECLARE
-                r RECORD;
-            BEGIN
-                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
-                    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-                END LOOP;
-            END $$;
-            ```
-1. Run `exit` once you're done.
+1. `exit`
 
 ### [Production](production.md)
 

@@ -33,21 +33,23 @@ object MessageStatuses : IntIdTable() {
      * notified of the [messageId]'s [MessageStatus] update.
      *
      * If you record that the [userId] has [MessageStatus.READ] the [messageId], but haven't recorded that the [userId]
-     * had a [messageId] [MessageStatus.DELIVERY], then it will also be recorded that the [userId] had a [messageId]
-     * [MessageStatus.DELIVERY] too. An [IllegalArgumentException] will be thrown if the status has already been
-     * recorded, or if the [userId] is the sender of the [messageId].
+     * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
+     * [MessageStatus.DELIVERED] too.
+     *
+     * An [IllegalArgumentException] will be thrown if the status has already been recorded, or if the [userId] is the
+     * sender of the [messageId]. You can check if the [status] already [exists].
      */
     fun create(messageId: Int, userId: String, status: MessageStatus) {
         if (Messages.readSender(messageId) == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
         if (exists(messageId, userId, status)) {
-            val text = if (status == MessageStatus.DELIVERY) "delivered to" else "seen by"
+            val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
             throw IllegalArgumentException(
                 "The message (ID: $messageId) has already been $text the user (ID: $userId)."
             )
         }
-        if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERY))
-            insertAndNotify(messageId, userId, MessageStatus.DELIVERY)
+        if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERED))
+            insertAndNotify(messageId, userId, MessageStatus.DELIVERED)
         insertAndNotify(messageId, userId, status)
     }
 
@@ -64,7 +66,7 @@ object MessageStatuses : IntIdTable() {
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
-    private fun exists(messageId: Int, userId: String, status: MessageStatus): Boolean = !transact {
+    fun exists(messageId: Int, userId: String, status: MessageStatus): Boolean = !transact {
         select {
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
@@ -80,14 +82,22 @@ object MessageStatuses : IntIdTable() {
     /** Deletes all [MessageStatuses] from the [messageIdList]. */
     fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
+    /** Deletes every status the [userId] created in the [chatId]. */
+    fun delete(chatId: Int, userId: String) {
+        val messageIdList = Messages.readChat(chatId).map { it.id }
+        transact {
+            deleteWhere { (messageId inList messageIdList) and (MessageStatuses.userId eq userId) }
+        }
+    }
+
+    /** Deletes every status the [userId] created. */
+    fun delete(userId: String): Unit = transact {
+        deleteWhere { MessageStatuses.userId eq userId }
+    }
+
     /** Returns the [MessageDateTimeStatus]es for the [messageId]. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
-        select { MessageStatuses.messageId eq messageId }.map {
-            MessageDateTimeStatus(
-                it[userId],
-                it[dateTime],
-                it[status]
-            )
-        }
+        select { MessageStatuses.messageId eq messageId }
+            .map { MessageDateTimeStatus(it[userId], it[dateTime], it[status]) }
     }
 }

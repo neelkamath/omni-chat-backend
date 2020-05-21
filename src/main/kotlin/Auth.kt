@@ -13,7 +13,6 @@ import org.keycloak.representations.idm.RealmRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 
 const val USER_ID_LENGTH = 36
-private lateinit var realm: RealmResource
 private const val REALM_NAME = "omni-chat"
 private const val CLIENT_ID = "server"
 private val config: Configuration = Configuration().apply {
@@ -24,6 +23,33 @@ private val config: Configuration = Configuration().apply {
     credentials = mapOf("secret" to System.getenv("KEYCLOAK_CLIENT_SECRET"))
     confidentialPort = 0
 }
+private val keycloak: Keycloak = KeycloakBuilder
+    .builder()
+    .serverUrl("${System.getenv("KEYCLOAK_URL")}/auth")
+    .realm("master")
+    .username(System.getenv("KEYCLOAK_USER"))
+    .password(System.getenv("KEYCLOAK_PASSWORD"))
+    .clientId("admin-cli")
+    .build()
+private lateinit var realm: RealmResource
+private val omniChatRealm: Lazy<RealmRepresentation> = lazy {
+    RealmRepresentation().apply {
+        realm = REALM_NAME
+        displayName = "Omni Chat"
+        isEnabled = true
+        isVerifyEmail = true
+        isEditUsernameAllowed = true
+        smtpServer = mapOf(
+            "host" to System.getenv("KEYCLOAK_SMTP_HOST"),
+            "port" to System.getenv("KEYCLOAK_SMTP_TLS_PORT"),
+            "from" to System.getenv("KEYCLOAK_SMTP_USER"),
+            "starttls" to "true",
+            "auth" to "true",
+            "user" to System.getenv("KEYCLOAK_SMTP_USER"),
+            "password" to System.getenv("KEYCLOAK_SMTP_PASSWORD")
+        )
+    }
+}
 
 /**
  * Sets up account management.
@@ -32,46 +58,20 @@ private val config: Configuration = Configuration().apply {
  * time.
  */
 fun setUpAuth() {
-    val keycloak = getMasterRealm()
     val shouldBuild = REALM_NAME !in keycloak.realms().findAll().map { it.realm }
-    if (shouldBuild) keycloak.realms().create(buildOmniChatRealm())
+    if (shouldBuild) keycloak.realms().create(omniChatRealm.value)
     realm = keycloak.realm(REALM_NAME)
     if (shouldBuild) createClient()
 }
 
-private fun getMasterRealm(): Keycloak = KeycloakBuilder
-    .builder()
-    .serverUrl("${System.getenv("KEYCLOAK_URL")}/auth")
-    .realm("master")
-    .username(System.getenv("KEYCLOAK_USER"))
-    .password(System.getenv("KEYCLOAK_PASSWORD"))
-    .clientId("admin-cli")
-    .build()
-
-private fun buildOmniChatRealm(): RealmRepresentation = RealmRepresentation().apply {
-    realm = REALM_NAME
-    displayName = "Omni Chat"
-    isEnabled = true
-    isVerifyEmail = true
-    isEditUsernameAllowed = true
-    smtpServer = mapOf(
-        "host" to System.getenv("KEYCLOAK_SMTP_HOST"),
-        "port" to System.getenv("KEYCLOAK_SMTP_TLS_PORT"),
-        "from" to System.getenv("KEYCLOAK_SMTP_USER"),
-        "starttls" to "true",
-        "auth" to "true",
-        "user" to System.getenv("KEYCLOAK_SMTP_USER"),
-        "password" to System.getenv("KEYCLOAK_SMTP_PASSWORD")
-    )
-}
-
+/** Creates the client used to access the [realm] programmatically. Don't call this if the client exists.  */
 private fun createClient() {
     realm.clients().create(
-        ClientRepresentation().also {
-            it.clientId = CLIENT_ID
-            it.secret = System.getenv("KEYCLOAK_CLIENT_SECRET")
-            it.isDirectAccessGrantsEnabled = true
-            it.rootUrl = System.getenv("KEYCLOAK_URL")
+        ClientRepresentation().apply {
+            clientId = CLIENT_ID
+            secret = System.getenv("KEYCLOAK_CLIENT_SECRET")
+            isDirectAccessGrantsEnabled = true
+            rootUrl = System.getenv("KEYCLOAK_URL")
         }
     )
 }
@@ -84,9 +84,9 @@ fun isValidLogin(login: Login): Boolean = try {
     if (exception.reasonPhrase == "Unauthorized") false else throw exception
 }
 
-fun userIdExists(id: String): Boolean = realm.users().list().map { it.id }.contains(id)
+fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }
 
-fun emailAddressExists(email: String): Boolean = realm.users().list().map { it.email }.contains(email)
+fun emailAddressExists(email: String): Boolean = email in realm.users().list().map { it.email }
 
 /** Creates a new account, and sends the user a verification email. */
 fun createUser(account: NewAccount) {
@@ -96,9 +96,7 @@ fun createUser(account: NewAccount) {
 }
 
 /** Sends an email to the user to verify their email address. */
-fun sendEmailAddressVerification(userId: String) {
-    realm.users().get(userId).sendVerifyEmail()
-}
+fun sendEmailAddressVerification(userId: String): Unit = realm.users().get(userId).sendVerifyEmail()
 
 /** Sends an email for the user to reset their password. */
 fun resetPassword(email: String) {
@@ -115,11 +113,8 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
     isEnabled = true
 }
 
-/** An [IllegalArgumentException] will be thrown if not [isUsernameTaken]. */
-fun findUserByUsername(username: String): UserRepresentation {
-    if (!isUsernameTaken(username)) throw IllegalArgumentException("The username ($username) doesn't exist.")
-    return realm.users().search(username)[0]
-}
+fun findUserByUsername(username: String): UserRepresentation =
+    realm.users().search(username).first { it.username == username }
 
 fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 

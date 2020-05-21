@@ -44,7 +44,7 @@ class ReadChatsTest : FunSpec({
             chat.userIdList + admin.info.id,
             chat.title,
             chat.description,
-            Messages.read(chatId)
+            Messages.readChat(chatId)
         )
     }
 
@@ -58,20 +58,20 @@ class ReadChatsTest : FunSpec({
             chat.userIdList + user.info.id,
             chat.title,
             chat.description,
-            Messages.read(chatId)
+            Messages.readChat(chatId)
         )
     }
 
     fun createAdminPrivateChat(admin: CreatedUser): PrivateChat {
         val user = createVerifiedUsers(1)[0]
         val chatId = createPrivateChat(user.info.id, admin.accessToken)
-        return PrivateChat(chatId, user.info.id, Messages.read(chatId))
+        return PrivateChat(chatId, user.info.id, Messages.readChat(chatId))
     }
 
     fun createUserPrivateChat(admin: CreatedUser): PrivateChat {
         val user = createVerifiedUsers(1)[0]
         val chatId = createPrivateChat(admin.info.id, user.accessToken)
-        return PrivateChat(chatId, user.info.id, Messages.read(chatId))
+        return PrivateChat(chatId, user.info.id, Messages.readChat(chatId))
     }
 
     /** Creates and returns the [admin]'s chats. */

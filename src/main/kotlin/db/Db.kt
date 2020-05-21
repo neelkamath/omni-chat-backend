@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.DeletionOfEveryMessage
+import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.UserChatMessagesRemoval
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -45,7 +46,7 @@ private fun connect() {
 
 /** Creates the required types and tables. */
 private fun create(): Unit = transact {
-    createType("message_status", "ENUM ('delivery', 'read')")
+    createTypes()
     SchemaUtils.create(
         Contacts,
         GroupChats,
@@ -57,8 +58,14 @@ private fun create(): Unit = transact {
     )
 }
 
+/** Creates custom types if required. */
+private fun createTypes() {
+    val values = MessageStatus.values().joinToString(", ") { "'${it.name.toLowerCase()}'" }
+    createType("message_status", "ENUM ($values)")
+}
+
 /**
- * Creates the [definition] (e.g., `"ENUM ('delivery', 'read')"`) if the [name] (e.g., `"message_status"`) doesn't
+ * Creates the [name]'s (e.g., `"message_status"`) [definition] (e.g., `"ENUM ('delivered', 'read')"`) if it doesn't
  * exist.
  */
 private fun createType(name: String, definition: String) {

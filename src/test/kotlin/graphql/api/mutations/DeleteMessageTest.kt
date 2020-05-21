@@ -40,7 +40,7 @@ class DeleteMessageTest : FunSpec({
         val chatId = createGroupChat(NewGroupChat("Title"), admin.accessToken)
         val messageId = Messages.message(chatId, admin.info.id, "text")
         deleteMessage(messageId, chatId, admin.accessToken).shouldBeTrue()
-        Messages.read(chatId).shouldBeEmpty()
+        Messages.readChat(chatId).shouldBeEmpty()
     }
 
     test("Deleting a nonexistent message should return an error") {

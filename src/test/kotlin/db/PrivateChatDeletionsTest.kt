@@ -64,7 +64,7 @@ class PrivateChatDeletionsTest : FunSpec({
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(chatId, user1Id, "text")
             PrivateChatDeletions.create(chatId, user1Id)
-            Messages.read(chatId).shouldNotBeEmpty()
+            Messages.readChat(chatId).shouldNotBeEmpty()
         }
     }
 
@@ -78,7 +78,7 @@ class PrivateChatDeletionsTest : FunSpec({
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChatDeletions.create(chatId, user2Id)
             Messages.create(chatId, user1Id, "text")
-            Messages.read(chatId) shouldHaveSize 1
+            Messages.readChat(chatId) shouldHaveSize 1
         }
     }
 

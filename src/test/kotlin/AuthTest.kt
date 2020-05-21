@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.test
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -23,10 +22,10 @@ class AuthTest : FunSpec({
     context("isUsernameTaken(String)") {
         test(
             """
-        Given an existing username, and a nonexistent username similar to the one which exists,
-        when checking if the nonexistent username exists,
-        then it should be said to not exist
-        """
+            Given an existing username, and a nonexistent username similar to the one which exists,
+            when checking if the nonexistent username exists,
+            then it should be said to not exist
+            """
         ) {
             val username = createVerifiedUsers(1)[0].info.username
             isUsernameTaken(username.dropLast(1)).shouldBeFalse()
@@ -61,18 +60,7 @@ class AuthTest : FunSpec({
     context("findUserByUsername(String)") {
         test("Finding a user by their username should yield that user") {
             val username = createVerifiedUsers(1)[0].info.username
-            findUserByUsername(username)
-        }
-
-        test(
-            """
-        Given an existing user, and a nonexistent user whose username is similar to that of the existing user,
-        when finding the nonexistent user,
-        then an exception should be thrown
-        """
-        ) {
-            val username = createVerifiedUsers(1)[0].info.username
-            shouldThrowExactly<IllegalArgumentException> { findUserByUsername(username.dropLast(1)) }
+            findUserByUsername(username).username shouldBe username
         }
     }
 
@@ -99,11 +87,10 @@ class AuthTest : FunSpec({
         }
 
         test("Searching users shouldn't include duplicate results") {
-            val accounts = listOf(
+            val userIdList = listOf(
                 NewAccount(username = "tony_stark", password = "p", emailAddress = "e"),
-                NewAccount("username", "password", emailAddress = "tony@example.com", firstName = "Tony")
-            )
-            val userIdList = accounts.map {
+                NewAccount("username", "password", "tony@example.com", firstName = "Tony")
+            ).map {
                 createAccount(it)
                 findUserByUsername(it.username).id
             }
@@ -111,7 +98,7 @@ class AuthTest : FunSpec({
         }
     }
 
-    context("updateUser(String, AccountUpdate") {
+    context("updateUser(String, AccountUpdate)") {
         test("Updating an account should update only the specified fields") {
             val user = createVerifiedUsers(1)[0]
             val update = AccountUpdate("updated username", firstName = "updated first name")
@@ -137,7 +124,7 @@ class AuthTest : FunSpec({
             when its email address is changed,
             then its email address should become unverified
             """
-        ) { assertEmailAddressUpdate(true) }
+        ) { assertEmailAddressUpdate(changeAddress = true) }
 
         test(
             """
@@ -145,6 +132,6 @@ class AuthTest : FunSpec({
             when its email address is updated to the same address,
             then its email address shouldn't become unverified
             """
-        ) { assertEmailAddressUpdate(false) }
+        ) { assertEmailAddressUpdate(changeAddress = false) }
     }
 })

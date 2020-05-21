@@ -38,7 +38,7 @@ class CreateGroupChatTest : FunSpec({
         val chatId = createGroupChat(chat, admin.accessToken)
         val userIdList = chat.userIdList + admin.info.id
         GroupChats.read(admin.info.id) shouldBe listOf(
-            GroupChat(chatId, admin.info.id, userIdList, chat.title, chat.description, Messages.read(chatId))
+            GroupChat(chatId, admin.info.id, userIdList, chat.title, chat.description, Messages.readChat(chatId))
         )
     }
 

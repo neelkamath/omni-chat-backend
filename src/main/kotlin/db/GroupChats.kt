@@ -131,7 +131,7 @@ object GroupChats : IntIdTable() {
         GroupChatUsers.readUserIdList(chatId),
         row[title],
         row[description],
-        Messages.read(chatId)
+        Messages.readChat(chatId)
     )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */

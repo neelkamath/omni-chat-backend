@@ -44,7 +44,7 @@ class UpdateGroupChatTest : FunSpec({
         updateGroupChat(update, admin.accessToken)
         val userIdList = initialUserIdList + admin.info.id + update.newUserIdList - update.removedUserIdList
         GroupChats.read(admin.info.id) shouldBe listOf(
-            GroupChat(chatId, admin.info.id, userIdList, update.title!!, chat.description, Messages.read(chatId))
+            GroupChat(chatId, admin.info.id, userIdList, update.title!!, chat.description, Messages.readChat(chatId))
         )
     }
 
