@@ -157,3 +157,6 @@ data class CreatedSubscription(
         if (!isCreated) throw IllegalArgumentException("isCreated must be true")
     }
 }
+
+/** The [chatId] the [messages] belong to. */
+data class ChatMessage(val chatId: Int, val messages: List<Message>)

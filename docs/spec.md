@@ -64,7 +64,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### General
 
-- Although we allow users to set only particular chats' notifications on, it still won't be enough to know if there's an important message from a particular chat. For example, your mom might only text you occasionally - half the time it's important, and half the time she's just sharing a joke. To deal with this case, we'll have each message associated with a priority. The priorities are:
+- [ ] Although we allow users to set only particular chats' notifications on, it still won't be enough to know if there's an important message from a particular chat. For example, your mom might only text you occasionally - half the time it's important, and half the time she's just sharing a joke. To deal with this case, we'll have each message associated with a priority. The priorities are:
     - Urgent: Needs attention within a minute (e.g., need help filling out a time-sensitive bank form)
     - Important: Needs attention within an hour (e.g., need to know what the HW assignment is so I can start before I go to bed)
     - Useful: Need attention within this day (e.g., need to schedule a meeting for tomorrow; can be scheduled any time today)

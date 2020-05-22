@@ -25,7 +25,7 @@ object Messages : IntIdTable() {
     /** Can have at most [MAX_TEXT_LENGTH]. */
     private val text: Column<String> = varchar("text", MAX_TEXT_LENGTH)
 
-    private data class ChatMessage(val chatId: Int, val messageId: Int)
+    private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
     /** Clients who have [subscribeToMessageUpdates] will be notified. */
     fun create(chatId: Int, userId: String, text: String) {
@@ -42,6 +42,12 @@ object Messages : IntIdTable() {
     /** Case-insensitively [query]s the [chatId]'s text messages. */
     fun search(chatId: Int, query: String): List<Message> =
         readChat(chatId).filter { it.text.contains(query, ignoreCase = true) }
+
+    /** Case-insensitively [query]s every text message sent in every chat the [userId] is in. */
+    fun search(userId: String, query: String): List<ChatMessage> {
+        val chatIdList = PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
+        return chatIdList.map { ChatMessage(it, search(it, query)) }
+    }
 
     /** Returns the chat [id]'s messages in the order of creation. */
     fun readChat(id: Int): List<Message> = transact {
@@ -135,9 +141,9 @@ object Messages : IntIdTable() {
         notifyMessageUpdate(chatId, DeletedMessage(id))
     }
 
-    /** Returns every [ChatMessage] the [userId] created. */
-    private fun readChatMessages(userId: String): List<ChatMessage> = transact {
-        select { senderId eq userId }.map { ChatMessage(it[chatId], it[Messages.id].value) }
+    /** Returns every [ChatAndMessageId] the [userId] created. */
+    private fun readChatMessages(userId: String): List<ChatAndMessageId> = transact {
+        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */

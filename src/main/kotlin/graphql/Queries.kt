@@ -76,6 +76,12 @@ fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }.map { buildAccountInfo(it.id) }
 }
 
+fun searchMessages(env: DataFetchingEnvironment): List<ChatMessage> {
+    env.verifyAuth()
+    val query = env.getArgument<String>("query")
+    return Messages.search(env.userId!!, query)
+}
+
 /**
  * Case-insensitively matches the [UserRepresentation.username], [UserRepresentation.firstName],
  * [UserRepresentation.lastName], and [UserRepresentation.email] with the [query].

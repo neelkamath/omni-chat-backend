@@ -68,6 +68,15 @@ const val MESSAGE_FRAGMENT: String = """
     }
 """
 
+const val CHAT_MESSAGE_FRAGMENT: String = """
+    ... on ChatMessage {
+        chatId
+        messages {
+            $MESSAGE_FRAGMENT
+        }
+    }
+"""
+
 const val GROUP_CHAT_FRAGMENT: String = """
     ... on GroupChat {
         id

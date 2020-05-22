@@ -27,6 +27,13 @@ type Query {
   searchChatMessages(chatId: Int!, query: String!): [Message!]!
 
   """
+  Case-insensitively `query`s every text message in every chat the user is in.
+
+  You must send an access token with this request.
+  """
+  searchMessages(query: String!): [ChatMessage!]!
+
+  """
   Returns the user's account info.
 
   You must send an access token with this request.
@@ -339,6 +346,11 @@ type AccountInfo {
   emailAddress: String!
   firstName: String
   lastName: String
+}
+
+type ChatMessage {
+  chatId: Int!
+  messages: [Message!]!
 }
 
 interface Chat {
