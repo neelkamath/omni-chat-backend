@@ -11,13 +11,12 @@ The [spec](docs/spec.md) explains how Omni Chat differentiates itself from exist
 ## Installation
 
 1. Install the [app](docs/install.md).
-1. Optionally, generate a wrapper for the HTTP API using [OpenAPI Generator](https://openapi-generator.tech/) using the [OpenAPI spec](docs/openapi.yaml).
-1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on the [schema](src/main/resources/schema.graphql).
+1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on the [schema](src/main/resources/schema.graphqls).
 
 ## Usage
 
 - Branding assets are in [`branding/`](branding). 
-- [Changelog](docs/CHANGELOG.md).
+- [Changelog](docs/CHANGELOG.md)
 - Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
 - We use the term "auth" to refer to "authentication and authorization".
 

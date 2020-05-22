@@ -5,82 +5,173 @@ import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 
 fun createAccount(env: DataFetchingEnvironment): Boolean {
-    val account = getArgument<NewAccount>(env, "account")
+    val account = try {
+        env.parseArgument<NewAccount>("account")
+    } catch (exception: IllegalArgumentException) {
+        throw UsernameNotLowercaseException()
+    }
     when {
-        Auth.usernameExists(account.username) -> throw UsernameTakenException()
-        Auth.emailExists(account.email) -> throw EmailTakenException()
-        else -> Auth.createUser(account)
+        isUsernameTaken(account.username) -> throw UsernameTakenException()
+        emailAddressExists(account.emailAddress) -> throw EmailAddressTakenException()
+        else -> createUser(account)
     }
     return true
 }
 
+fun createContacts(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    val saved = Contacts.read(env.userId!!)
+    val userIdList = env.getArgument<List<String>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
+    if (!userIdList.all { userIdExists(it) }) throw InvalidContactException()
+    Contacts.create(env.userId!!, userIdList)
+    return true
+}
+
+fun createDeliveredStatus(env: DataFetchingEnvironment): Boolean = createStatus(env, MessageStatus.DELIVERED)
+
+fun createReadStatus(env: DataFetchingEnvironment): Boolean = createStatus(env, MessageStatus.READ)
+
+/** Implementation for [createDeliveredStatus] and [createReadStatus] (based on the [status]). */
+private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): Boolean {
+    env.verifyAuth()
+    val messageId = env.getArgument<Int>("messageId")
+    verifyCanCreateStatus(messageId, env.userId!!, status)
+    MessageStatuses.create(messageId, env.userId!!, status)
+    return true
+}
+
+/**
+ * Throws an [InvalidMessageIdException]/[DuplicateStatusException] if the [userId] cannot create the [status] on the
+ * [messageId].
+ */
+private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
+    if (!Messages.exists(messageId)) throw InvalidMessageIdException()
+    val chatId = Messages.findChatFromMessage(messageId)
+    if (!isUserInChat(userId, chatId) || Messages.read(messageId).senderId == userId) throw InvalidMessageIdException()
+    if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException()
+}
+
+fun createGroupChat(env: DataFetchingEnvironment): Int {
+    env.verifyAuth()
+    val chat = env.parseArgument<NewGroupChat>("chat")
+    val userIdList = chat.userIdList.filter { it != env.userId!! }
+    return when {
+        !userIdList.all { userIdExists(it) } -> throw InvalidUserIdException()
+        chat.title.isEmpty() || chat.title.length > GroupChats.MAX_TITLE_LENGTH -> throw InvalidTitleLengthException()
+        chat.description != null && chat.description.length > GroupChats.MAX_DESCRIPTION_LENGTH ->
+            throw InvalidDescriptionLengthException()
+        else -> GroupChats.create(env.userId!!, chat)
+    }
+}
+
+fun createMessage(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
+    val message = env.getArgument<String>("text")
+    if (message.length > Messages.MAX_TEXT_LENGTH) throw InvalidMessageLengthException()
+    Messages.create(chatId, env.userId!!, message)
+    return true
+}
+
+fun createPrivateChat(env: DataFetchingEnvironment): Int {
+    env.verifyAuth()
+    val invitedUserId = env.getArgument<String>("userId")
+    return when {
+        PrivateChats.exists(env.userId!!, invitedUserId) -> throw ChatExistsException()
+        !userIdExists(invitedUserId) || invitedUserId == env.userId!! -> throw InvalidUserIdException()
+        else -> PrivateChats.create(env.userId!!, invitedUserId)
+    }
+}
+
 fun deleteAccount(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    return if (canDeleteAccount(env.userId)) {
-        Auth.deleteUser(env.userId)
-        Db.deleteUserData(env.userId)
+    env.verifyAuth()
+    return if (!GroupChats.isNonemptyChatAdmin(env.userId!!)) {
+        deleteUserFromDb(env.userId!!)
+        deleteUserFromAuth(env.userId!!)
         true
-    } else false
+    } else
+        false
+}
+
+fun deleteContacts(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    val userIdList = env.parseArgument<Set<String>>("userIdList")
+    Contacts.delete(env.userId!!, userIdList)
+    return true
+}
+
+fun deleteMessage(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
+    val messageId = env.getArgument<Int>("id")
+    if (!Messages.exists(messageId, chatId)) throw InvalidMessageIdException()
+    Messages.delete(messageId)
+    return true
+}
+
+fun deletePrivateChat(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (chatId !in PrivateChats.readIdList(env.userId!!)) throw InvalidChatIdException()
+    PrivateChatDeletions.create(chatId, env.userId!!)
+    unsubscribeFromMessageUpdates(env.userId!!, chatId)
+    return true
 }
 
 fun leaveGroupChat(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
+    env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    val newAdminUserId = env.getArgument<String?>("newAdminId")
+    val newAdminId = env.getArgument<String?>("newAdminId")
     val mustSpecifyNewAdmin =
-        lazy { GroupChats.isAdmin(env.userId, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1 }
+        lazy { GroupChats.isAdmin(env.userId!!, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1 }
     when {
-        chatId !in GroupChats.read(env.userId).map { it.id } -> throw InvalidChatIdException()
-        mustSpecifyNewAdmin.value && newAdminUserId == null -> throw MissingNewAdminIdException()
-        mustSpecifyNewAdmin.value && newAdminUserId !in GroupChatUsers.readUserIdList(chatId) ->
+        chatId !in GroupChatUsers.readChatIdList(env.userId!!) -> throw InvalidChatIdException()
+        mustSpecifyNewAdmin.value && newAdminId == null -> throw MissingNewAdminIdException()
+        mustSpecifyNewAdmin.value && newAdminId !in GroupChatUsers.readUserIdList(chatId) ->
             throw InvalidNewAdminIdException()
         else -> {
-            if (mustSpecifyNewAdmin.value) GroupChats.switchAdmin(chatId, newAdminUserId!!)
-            GroupChats.update(GroupChatUpdate(chatId, removedUserIdList = setOf(env.userId)))
+            if (mustSpecifyNewAdmin.value) GroupChats.setAdmin(chatId, newAdminId!!)
+            val update = GroupChatUpdate(chatId, removedUserIdList = setOf(env.userId!!))
+            GroupChats.update(update)
         }
     }
     return true
 }
 
 fun resetPassword(env: DataFetchingEnvironment): Boolean {
-    val email = env.getArgument<String>("email")
-    if (!Auth.emailExists(email)) throw UnregisteredEmailException()
-    Auth.resetPassword(email)
+    val address = env.getArgument<String>("emailAddress")
+    if (!emailAddressExists(address)) throw UnregisteredEmailAddressException()
+    resetPassword(address)
     return true
 }
 
 fun updateAccount(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    val user = getArgument<AccountUpdate>(env, "update")
+    env.verifyAuth()
+    val user = env.parseArgument<AccountUpdate>("update")
     when {
-        wantsTakenUsername(env.userId, user.username) -> throw UsernameTakenException()
-        wantsTakenEmail(env.userId, user.email) -> throw EmailTakenException()
-        else -> Auth.updateUser(env.userId, user)
+        wantsTakenUsername(env.userId!!, user.username) -> throw UsernameTakenException()
+        wantsTakenEmail(env.userId!!, user.emailAddress) -> throw EmailAddressTakenException()
+        else -> updateUser(env.userId!!, user)
     }
     return true
 }
 
 private fun wantsTakenUsername(userId: String, wantedUsername: String?): Boolean =
     wantedUsername != null &&
-            Auth.findUserById(userId).username != wantedUsername &&
-            Auth.isUsernameTaken(wantedUsername)
+            findUserById(userId).username != wantedUsername &&
+            isUsernameTaken(wantedUsername)
 
 private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
-    wantedEmail != null && Auth.findUserById(userId).email != wantedEmail && Auth.emailExists(wantedEmail)
-
-fun verifyEmail(env: DataFetchingEnvironment): Boolean {
-    val email = env.getArgument<String>("email")
-    if (!Auth.emailExists(email)) throw UnregisteredEmailException()
-    Auth.sendEmailVerification(email)
-    return true
-}
+    wantedEmail != null && findUserById(userId).email != wantedEmail && emailAddressExists(wantedEmail)
 
 fun updateGroupChat(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    val update = getArgument<GroupChatUpdate>(env, "update")
+    env.verifyAuth()
+    val update = env.parseArgument<GroupChatUpdate>("update")
     when {
-        !GroupChats.isUserInChat(env.userId, update.chatId) -> throw InvalidChatIdException()
-        !GroupChats.isAdmin(env.userId, update.chatId) -> throw UnauthorizedException()
+        update.chatId !in GroupChatUsers.readChatIdList(env.userId!!) -> throw InvalidChatIdException()
+        !GroupChats.isAdmin(env.userId!!, update.chatId) -> throw UnauthorizedException()
         update.newAdminId != null && update.newAdminId !in GroupChatUsers.readUserIdList(update.chatId) ->
             throw InvalidNewAdminIdException()
         else -> GroupChats.update(update)
@@ -88,55 +179,9 @@ fun updateGroupChat(env: DataFetchingEnvironment): Boolean {
     return true
 }
 
-fun createGroupChat(env: DataFetchingEnvironment): Int {
-    verifyAuth(env)
-    val chat = getArgument<NewGroupChat>(env, "chat")
-    val userIdList = chat.userIdList.filter { it != env.userId }
-    return when {
-        !userIdList.all { Auth.userIdExists(it) } -> throw InvalidUserIdException()
-        chat.title.isEmpty() || chat.title.length > GroupChats.maxTitleLength -> throw InvalidTitleLengthException()
-        chat.description != null && chat.description.length > GroupChats.maxDescriptionLength ->
-            throw InvalidDescriptionLengthException()
-        else -> GroupChats.create(env.userId, chat)
-    }
-}
-
-fun deletePrivateChat(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    val chatId = env.getArgument<Int>("chatId")
-    if (chatId !in PrivateChats.read(env.userId).map { it.id }) throw InvalidChatIdException()
-    PrivateChatClears.create(chatId, PrivateChats.isCreator(chatId, env.userId))
-    return true
-}
-
-fun createPrivateChat(env: DataFetchingEnvironment): Int {
-    verifyAuth(env)
-    val invitedUserId = env.getArgument<String>("userId")
-    return when {
-        PrivateChats.exists(env.userId, invitedUserId) -> throw ChatExistsException()
-        !Auth.userIdExists(invitedUserId) || invitedUserId == env.userId -> throw InvalidUserIdException()
-        else -> PrivateChats.create(env.userId, invitedUserId)
-    }
-}
-
-fun message(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    return true
-}
-
-fun deleteContacts(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    val saved = Contacts.read(env.userId)
-    val userIdList = env.getArgument<List<String>>("userIdList").filter { it in saved }.toSet()
-    Contacts.delete(env.userId, (userIdList))
-    return true
-}
-
-fun createContacts(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    val saved = Contacts.read(env.userId)
-    val userIdList = env.getArgument<List<String>>("userIdList").filter { it !in saved && it != env.userId }.toSet()
-    if (!userIdList.all { it in Auth.getUserIdList() }) throw InvalidContactException()
-    Contacts.create(env.userId, userIdList)
+fun sendEmailAddressVerification(env: DataFetchingEnvironment): Boolean {
+    val address = env.getArgument<String>("emailAddress")
+    if (!emailAddressExists(address)) throw UnregisteredEmailAddressException()
+    sendEmailAddressVerification(address)
     return true
 }

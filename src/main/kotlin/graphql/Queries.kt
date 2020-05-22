@@ -1,75 +1,98 @@
 package com.neelkamath.omniChat.graphql
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.exceptions.JWTDecodeException
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Contacts
-import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.db.PrivateChatClears
-import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 import org.keycloak.representations.idm.UserRepresentation
 
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
-    verifyAuth(env)
-    return canDeleteAccount(env.userId)
+    env.verifyAuth()
+    return !GroupChats.isNonemptyChatAdmin(env.userId!!)
 }
 
-fun isEmailTaken(env: DataFetchingEnvironment): Boolean = Auth.emailExists(env.getArgument("email"))
+fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean = emailAddressExists(env.getArgument("emailAddress"))
 
-fun isUsernameTaken(env: DataFetchingEnvironment): Boolean = Auth.isUsernameTaken(env.getArgument("username"))
+fun isUsernameTaken(env: DataFetchingEnvironment): Boolean = isUsernameTaken(env.getArgument<String>("username"))
 
 fun readAccount(env: DataFetchingEnvironment): AccountInfo {
-    verifyAuth(env)
-    return buildAccountInfo(env.userId)
+    env.verifyAuth()
+    return buildAccountInfo(env.userId!!)
 }
 
 fun readChats(env: DataFetchingEnvironment): List<Chat> {
-    verifyAuth(env)
-    val groupChats = GroupChats.read(env.userId)
-    val privateChats = PrivateChats
-        .read(env.userId)
-        .filter {
-            val isCreator = PrivateChats.isCreator(it.id, env.userId)
-            !PrivateChatClears.hasCleared(isCreator, it.id)
-        }
-        .map { PrivateChat(it.id, if (it.creatorUserId == env.userId) it.invitedUserId else it.creatorUserId) }
+    env.verifyAuth()
+    val groupChats = GroupChats.read(env.userId!!)
+    val privateChats = PrivateChats.read(env.userId!!)
     return groupChats + privateChats
 }
 
 fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
-    verifyAuth(env)
-    return Contacts.read(env.userId).map { userId -> buildAccountInfo(userId) }
+    env.verifyAuth()
+    return Contacts.read(env.userId!!).map(::buildAccountInfo)
 }
 
-fun requestJwt(env: DataFetchingEnvironment): AuthToken {
-    val login = getArgument<Login>(env, "login")
+fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
+    val login = env.parseArgument<Login>("login")
     return when {
-        !Auth.usernameExists(login.username) -> throw NonexistentUserException()
-        !Auth.findUserByUsername(login.username).isEmailVerified -> throw UnverifiedEmailException()
+        !isUsernameTaken(login.username) -> throw NonexistentUserException()
+        !findUserByUsername(login.username).isEmailVerified -> throw UnverifiedEmailAddressException()
         else -> {
-            val token = Auth.getToken(login) ?: throw IncorrectPasswordException()
-            val userId = Auth.findUserByUsername(login.username).id
-            Jwt.buildAuthToken(userId, token)
+            if (!isValidLogin(login)) throw IncorrectCredentialsException()
+            val userId = findUserByUsername(login.username).id
+            buildAuthToken(userId)
         }
     }
 }
 
-fun searchChats(env: DataFetchingEnvironment): List<Chat> {
-    verifyAuth(env)
+fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
+    val refreshToken = env.getArgument<String>("refreshToken")
+    val userId = try {
+        JWT.decode(refreshToken).subject
+    } catch (exception: JWTDecodeException) {
+        throw UnauthorizedException()
+    }
+    return buildAuthToken(userId)
+}
+
+fun searchChatMessages(env: DataFetchingEnvironment): List<Message> {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
     val query = env.getArgument<String>("query")
-    val privateChats = PrivateChats.search(env.userId, query)
-    val groupChats = GroupChats.search(env.userId, query)
-    return privateChats + groupChats
+    return Messages.search(chatId, query)
+}
+
+fun searchChats(env: DataFetchingEnvironment): List<Chat> {
+    env.verifyAuth()
+    val query = env.getArgument<String>("query")
+    return PrivateChats.search(env.userId!!, query) + GroupChats.search(env.userId!!, query)
 }
 
 fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
-    verifyAuth(env)
+    env.verifyAuth()
     val query = env.getArgument<String>("query")
-    val contacts = Contacts.read(env.userId).map { Auth.findUserById(it) }.filter { matches(query, it) }
-    return contacts.map { it.id }.toSet().map { userId -> buildAccountInfo(userId) }
+    return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }.map { buildAccountInfo(it.id) }
 }
 
-private fun matches(query: String, user: UserRepresentation): Boolean =
-    with(user) { listOfNotNull(username, firstName, lastName, email) }.any { it.contains(query, ignoreCase = true) }
+fun searchMessages(env: DataFetchingEnvironment): List<ChatMessage> {
+    env.verifyAuth()
+    val query = env.getArgument<String>("query")
+    return Messages.search(env.userId!!, query)
+}
 
-fun searchUsers(env: DataFetchingEnvironment): List<AccountInfo> =
-    Auth.searchUsers(env.getArgument("query")).map { it.id }.toSet().map { userId -> buildAccountInfo(userId) }
+/**
+ * Case-insensitively matches the [UserRepresentation.username], [UserRepresentation.firstName],
+ * [UserRepresentation.lastName], and [UserRepresentation.email] with the [query].
+ */
+private fun UserRepresentation.matches(query: String): Boolean =
+    listOfNotNull(username, firstName, lastName, email).any { it.contains(query, ignoreCase = true) }
+
+fun searchUsers(env: DataFetchingEnvironment): List<AccountInfo> {
+    val query = env.getArgument<String>("query")
+    return searchUsers(query).map { buildAccountInfo(it.id) }
+}
+
+private fun buildAccountInfo(userId: String): AccountInfo =
+    with(findUserById(userId)) { AccountInfo(id, username, email, firstName, lastName) }
