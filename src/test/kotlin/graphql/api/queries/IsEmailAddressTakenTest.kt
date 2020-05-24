@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -21,8 +20,6 @@ fun isEmailTaken(emailAddress: String): Boolean =
     operateIsEmailAddressTaken(emailAddress).data!!["isEmailAddressTaken"] as Boolean
 
 class IsEmailTakenTest : FunSpec({
-    listener(AppListener())
-
     test("The email shouldn't be taken") { isEmailTaken("username@example.com").shouldBeFalse() }
 
     test("The email should be taken") {

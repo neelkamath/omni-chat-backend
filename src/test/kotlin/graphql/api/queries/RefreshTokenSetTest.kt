@@ -4,8 +4,7 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.TokenSet
 import com.neelkamath.omniChat.graphql.UnauthorizedException
-import com.neelkamath.omniChat.jsonMapper
-import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
@@ -20,19 +19,17 @@ const val REFRESH_TOKEN_SET_QUERY: String = """
     }
 """
 
-fun errRefreshTokenSet(refreshToken: String): String = operateRefreshTokenSet(refreshToken).errors!![0].message
-
 private fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
     operateQueryOrMutation(REFRESH_TOKEN_SET_QUERY, variables = mapOf("refreshToken" to refreshToken))
 
 fun refreshTokenSet(refreshToken: String): TokenSet {
     val data = operateRefreshTokenSet(refreshToken).data!!["refreshTokenSet"] as Map<*, *>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
-class RefreshTokenSetTest : FunSpec({
-    listener(AppListener())
+fun errRefreshTokenSet(refreshToken: String): String = operateRefreshTokenSet(refreshToken).errors!![0].message
 
+class RefreshTokenSetTest : FunSpec({
     test("A refresh token should issue a new token set") {
         val login = createVerifiedUsers(1)[0].login
         val refreshToken = requestTokenSet(login).refreshToken

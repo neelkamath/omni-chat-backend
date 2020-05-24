@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -13,12 +14,9 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
 class MessageStatusesTest : FunSpec({
-    listener(DbListener())
-
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
-            val adminId = "admin ID ID"
-            val userId = "user ID"
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
@@ -28,7 +26,7 @@ class MessageStatusesTest : FunSpec({
         }
 
         test("""Recording a "read" status shouldn't create a "delivered" status if one was already recorded""") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
@@ -37,7 +35,7 @@ class MessageStatusesTest : FunSpec({
         }
 
         test(""""Recording a "read" status should automatically record a "delivered" status if there wasn't one""") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
@@ -45,22 +43,18 @@ class MessageStatusesTest : FunSpec({
         }
 
         test("Creating a status for the user on their own message should throw an exception") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             shouldThrowExactly<IllegalArgumentException> {
-                MessageStatuses.create(
-                    messageId,
-                    user1Id,
-                    MessageStatus.READ
-                )
+                MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
             }
         }
     }
 
     context("insertAndNotify(Int, String, MessageStatus)") {
         test("A subscriber should be notified of updated statuses") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val text = "text"
             val messageId = Messages.message(chatId, user1Id, text)
@@ -89,7 +83,7 @@ class MessageStatusesTest : FunSpec({
             then only the statuses the user created in that chat should be deleted
             """
         ) {
-            val (user1Id, user2Id, user3Id) = (1..3).map { "user $it ID" }
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chat1Id = createUsedChat(user1Id, user2Id)
             val chat2Id = createUsedChat(user1Id, user3Id)
             MessageStatuses.delete(chat1Id, user1Id)

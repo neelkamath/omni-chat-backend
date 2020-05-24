@@ -2,10 +2,9 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.IncorrectCredentialsException
+import com.neelkamath.omniChat.graphql.IncorrectPasswordException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
@@ -21,19 +20,17 @@ const val REQUEST_TOKEN_SET_QUERY: String = """
     }
 """
 
-fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
-
 private fun operateRequestTokenSet(login: Login): GraphQlResponse =
     operateQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login))
 
 fun requestTokenSet(login: Login): TokenSet {
     val data = operateRequestTokenSet(login).data!!["requestTokenSet"] as Map<*, *>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
-class RequestTokenSetTest : FunSpec({
-    listener(AppListener())
+fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
 
+class RequestTokenSetTest : FunSpec({
     test("The access token should work") {
         val login = createVerifiedUsers(1)[0].login
         val token = requestTokenSet(login).accessToken
@@ -52,6 +49,6 @@ class RequestTokenSetTest : FunSpec({
 
     test("A token set shouldn't be created for an incorrect password") {
         val login = createVerifiedUsers(1)[0].login
-        errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectCredentialsException().message
+        errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException().message
     }
 })

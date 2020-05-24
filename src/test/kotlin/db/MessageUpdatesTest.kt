@@ -5,15 +5,13 @@ import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChats
 import com.neelkamath.omniChat.db.unsubscribeFromMessageUpdates
-import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
 class MessageUpdatesTest : FunSpec({
-    listener(AppListener())
-
     context("subscribeToMessageUpdates(String, Int)") {
         test("Notifications for message updates made before subscribing shouldn't be sent") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(chatId, user1Id, "Hello")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
@@ -26,7 +24,7 @@ class MessageUpdatesTest : FunSpec({
 
     context("unsubscribeFromMessageUpdates(String, Int)") {
         test("Unsubscribing should stop notifications") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             unsubscribeFromMessageUpdates(user1Id, chatId)
@@ -36,7 +34,7 @@ class MessageUpdatesTest : FunSpec({
 
     context("notifyMessageUpdate(Int)") {
         test("The subscriber should be notified of the updated message") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)

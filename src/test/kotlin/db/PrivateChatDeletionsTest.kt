@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.test.db
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChatDeletions
 import com.neelkamath.omniChat.db.PrivateChats
+import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -12,24 +13,22 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
 class PrivateChatDeletionsTest : FunSpec({
-    listener(DbListener())
-
     context("isDeleted(String, Int)") {
         test("The chat shouldn't be deleted if the user never deleted it") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeFalse()
         }
 
         test("The chat should be deleted if the user deleted it, and the other user didn't send a message after that") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeTrue()
         }
 
         test("The chat shouldn't be deleted if the other user sent a message after the user deleted it") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.create(chatId, user2Id, "text")
@@ -37,7 +36,7 @@ class PrivateChatDeletionsTest : FunSpec({
         }
 
         test("The chat shouldn't be deleted if the user sent a message to the other user after deleting their chat") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.create(chatId, user1Id, "text")
@@ -51,7 +50,7 @@ class PrivateChatDeletionsTest : FunSpec({
             then it should be false
             """
         ) {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user2Id)
             PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeFalse()
@@ -60,7 +59,7 @@ class PrivateChatDeletionsTest : FunSpec({
 
     context("create(Int, String)") {
         test("Messages deleted by one user shouldn't be deleted for the other user") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(chatId, user1Id, "text")
             PrivateChatDeletions.create(chatId, user1Id)
@@ -70,7 +69,7 @@ class PrivateChatDeletionsTest : FunSpec({
 
     context("readLastDeletion(Int)") {
         test("Only messages deleted by both users should be deleted") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(chatId, user1Id, "text")
             PrivateChatDeletions.create(chatId, user1Id)
@@ -84,7 +83,7 @@ class PrivateChatDeletionsTest : FunSpec({
 
     context("deletePreviousDeletionRecords(Int, String)") {
         test("A user must have at most one record of deleting a chat") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             repeat(3) { PrivateChatDeletions.create(chatId, user1Id) }
             PrivateChatDeletions.count() shouldBe 1
@@ -99,7 +98,7 @@ class PrivateChatDeletionsTest : FunSpec({
             then the chat's record should be deleted
             """
         ) {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChatDeletions.create(chatId, user2Id)
@@ -113,7 +112,7 @@ class PrivateChatDeletionsTest : FunSpec({
             then the chat shouldn't be deleted
             """
         ) {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.create(chatId, user2Id, "text")

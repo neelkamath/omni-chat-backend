@@ -113,12 +113,20 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
     isEnabled = true
 }
 
-fun findUserByUsername(username: String): UserRepresentation =
-    realm.users().search(username).first { it.username == username }
+private fun buildAccountInfo(user: UserRepresentation): AccountInfo =
+    with(user) { AccountInfo(id, username, email, firstName, lastName) }
 
-fun findUserById(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
+fun findUserByUsername(username: String): AccountInfo =
+    realm.users().search(username).first { it.username == username }.let(::buildAccountInfo)
 
-private fun findUserByEmail(email: String): UserRepresentation = realm.users().list().first { it.email == email }
+fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
+
+fun findUserById(userId: String): AccountInfo = buildAccountInfo(readUser(userId))
+
+private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
+
+private fun findUserByEmail(email: String): AccountInfo =
+    realm.users().list().first { it.email == email }.let(::buildAccountInfo)
 
 /**
  * Case-insensitively [query] the users.
@@ -126,14 +134,14 @@ private fun findUserByEmail(email: String): UserRepresentation = realm.users().l
  * The [query] is matched against the [UserRepresentation.username], [UserRepresentation.firstName],
  * [UserRepresentation.lastName], and [UserRepresentation.email].
  */
-fun searchUsers(query: String): List<UserRepresentation> = with(realm.users()) {
+fun searchUsers(query: String): List<AccountInfo> = with(realm.users()) {
     searchBy(username = query) +
             searchBy(firstName = query) +
             searchBy(lastName = query) +
             searchBy(emailAddress = query)
-}.distinctBy { it.id }
+}.distinctBy { it.id }.map(::buildAccountInfo)
 
-/** Convenience function for [UsersResource.search] which provides only the useful (named) parameters. */
+/** Convenience function for [UsersResource.search] which provides only the relevant parameters with names. */
 private fun UsersResource.searchBy(
     username: String? = null,
     firstName: String? = null,
@@ -142,13 +150,15 @@ private fun UsersResource.searchBy(
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
 fun updateUser(id: String, update: AccountUpdate) {
-    val user = findUserById(id)
+    val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     updateUserRepresentation(user, update)
     realm.users().get(id).update(user)
 }
 
+/** Throws an [IllegalArgumentException] if the [username] isn't lowercase. */
 fun isUsernameTaken(username: String): Boolean {
+    if (username.toLowerCase() != username) throw IllegalArgumentException()
     val results = realm.users().search(username)
     return results.isNotEmpty() && results.any { it.username == username }
 }

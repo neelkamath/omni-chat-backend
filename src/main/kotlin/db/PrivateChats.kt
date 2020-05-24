@@ -1,9 +1,6 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.DeletionOfEveryMessage
-import com.neelkamath.omniChat.PrivateChat
-import com.neelkamath.omniChat.USER_ID_LENGTH
-import com.neelkamath.omniChat.findUserById
+import com.neelkamath.omniChat.*
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -42,7 +39,7 @@ object PrivateChats : IntIdTable() {
     fun read(userId: String): List<PrivateChat> = readRows(userId).map {
         val chatId = it[id].value
         val otherUserId = if (it[user1Id] == userId) it[user2Id] else it[user1Id]
-        PrivateChat(chatId, otherUserId, Messages.read(chatId, userId))
+        PrivateChat(chatId, findUserById(otherUserId), Messages.read(chatId, userId))
     }
 
     /**
@@ -73,7 +70,7 @@ object PrivateChats : IntIdTable() {
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
     fun search(userId: String, query: String): List<PrivateChat> =
-        read(userId).filter { findUserById(it.userId).matches(query) }
+        read(userId).filter { findUserById(it.user.id).matches(query) }
 
     /**
      * Deletes every chat the [userId] is in from [PrivateChats], [PrivateChatDeletions], [Messages], and
@@ -110,8 +107,8 @@ object PrivateChats : IntIdTable() {
      * Checks if this user's [UserRepresentation.username], [UserRepresentation.firstName], or
      * [UserRepresentation.lastName] case-insensitively match the [query].
      */
-    private fun UserRepresentation.matches(query: String): Boolean = containsQuery(username, query)
-            || containsQuery(email, query)
+    private fun AccountInfo.matches(query: String): Boolean = containsQuery(username, query)
+            || containsQuery(emailAddress, query)
             || containsQuery(firstName, query)
             || containsQuery(lastName, query)
 

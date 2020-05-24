@@ -45,8 +45,14 @@ object Messages : IntIdTable() {
 
     /** Case-insensitively [query]s every text message sent in every chat the [userId] is in. */
     fun search(userId: String, query: String): List<ChatMessage> {
-        val chatIdList = PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
-        return chatIdList.map { ChatMessage(it, search(it, query)) }
+        val chats = PrivateChats.read(userId) + GroupChats.read(userId)
+        return chats.map {
+            val id = when (it) {
+                is PrivateChat -> it.id
+                is GroupChat -> it.id
+            }
+            ChatMessage(it, search(id, query))
+        }
     }
 
     /** Returns the chat [id]'s messages in the order of creation. */
@@ -170,6 +176,7 @@ object Messages : IntIdTable() {
     private fun buildMessage(row: ResultRow): Message {
         val id = row[id].value
         val dateTimes = MessageDateTimes(row[sent], MessageStatuses.read(id))
-        return Message(id, row[senderId], row[text], dateTimes)
+        val sender = findUserById(row[senderId])
+        return Message(id, sender, row[text], dateTimes)
     }
 }

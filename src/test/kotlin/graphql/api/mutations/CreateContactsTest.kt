@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.test.graphql.api.mutations
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.db.Contacts
 import com.neelkamath.omniChat.graphql.InvalidContactException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -16,12 +15,6 @@ const val CREATE_CONTACTS_QUERY: String = """
     }
 """
 
-fun createContacts(userIdList: List<String>, accessToken: String): Boolean =
-    operateCreateContacts(userIdList, accessToken).data!!["createContacts"] as Boolean
-
-fun errCreateContacts(userIdList: List<String>, accessToken: String): String =
-    operateCreateContacts(userIdList, accessToken).errors!![0].message
-
 private fun operateCreateContacts(userIdList: List<String>, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(
         CREATE_CONTACTS_QUERY,
@@ -29,9 +22,13 @@ private fun operateCreateContacts(userIdList: List<String>, accessToken: String)
         accessToken = accessToken
     )
 
-class CreateContactsTest : FunSpec({
-    listener(AppListener())
+fun createContacts(userIdList: List<String>, accessToken: String): Boolean =
+    operateCreateContacts(userIdList, accessToken).data!!["createContacts"] as Boolean
 
+fun errCreateContacts(userIdList: List<String>, accessToken: String): String =
+    operateCreateContacts(userIdList, accessToken).errors!![0].message
+
+class CreateContactsTest : FunSpec({
     test("Trying to save the user's own contact should be ignored") {
         val (owner, user) = createVerifiedUsers(2)
         createContacts(listOf(owner.info.id, user.info.id), owner.accessToken)

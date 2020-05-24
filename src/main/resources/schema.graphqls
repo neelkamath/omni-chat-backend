@@ -40,7 +40,11 @@ type Query {
   """
   readAccount: AccountInfo!
 
-  """Returns whether the `username` has been taken."""
+  """
+  Returns whether the `username` has been taken.
+
+  Returned `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`.
+  """
   isUsernameTaken(username: String!): Boolean!
 
   """Returns whether the `address` has been taken."""
@@ -80,8 +84,8 @@ type Query {
   Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
   authenticate the user by passing their `username` and `password` to this operation.
 
-  Returned `errors[0].message`s could be `"NONEXISTENT_USER"`, `"UNVERIFIED_EMAIL_ADDRESS"`, or
-  `"INCORRECT_CREDENTIALS"`.
+  Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
+  `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
   """
   requestTokenSet(login: Login!): TokenSet!
 
@@ -146,9 +150,9 @@ type Mutation {
   updateAccount(update: AccountUpdate!): Boolean!
 
   """
-  Creates an account, and sends them a verification email. The user will not be allowed to log in until they verify
-  their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use the
-  requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
+  Creates an account, and sends the user a verification email. The username must be lowercase. The user will not be
+  allowed to log in until they verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken`
+  to see whether you can use the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
   If the account was successfully created, `true` will be returned. Otherwise an error will be returned. Returned
   `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`, `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
@@ -179,15 +183,17 @@ type Mutation {
   Leaves the group chat.
 
   If the chat was left, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"`, `"INVALID_NEW_ADMIN_ID"`, or `"MISSING_NEW_ADMIN_ID"`.
+  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't
+  in the chat), or `"MISSING_NEW_ADMIN_ID"`.
 
   You must send an access token with this request.
   """
   leaveGroupChat(
     chatId: Int!
     """
-    If the user is the group's admin, and is not the last user in the chat, then this must be specified as the user
-    ID of another participant in the group who will become the new admin.
+    If the user is the group's admin and isn't the last user in the chat, then this must be specified as the ID of
+    another user in the chat who will become the new admin. If this is supplied and the user isn't the admin, it'll be
+    ignored.
     """
     newAdminId: ID
   ): Boolean!
@@ -196,7 +202,8 @@ type Mutation {
   Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
 
   If the chat was updated, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"`, `"UNAUTHORIZED"`, or `"INVALID_NEW_ADMIN_ID"`.
+  could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"UNAUTHORIZED"`, or `"INVALID_NEW_ADMIN_ID"` (i.e., the
+  to-be admin isn't in the chat).
 
   You must send an access token with this request.
   """
@@ -205,8 +212,8 @@ type Mutation {
   """
   Creates a group chat. Returns the new chat's ID.
 
-  Returned `errors[0].message`s could be `"INVALID_USER_ID"`, `"INVALID_TITLE_LENGTH"`, or
-  `"INVALID_DESCRIPTION_LENGTH"`.
+  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist),
+  `"INVALID_TITLE_LENGTH"`, or `"INVALID_DESCRIPTION_LENGTH"`.
 
   You must send an access token with this request.
   """
@@ -216,7 +223,7 @@ type Mutation {
   Deletes a private chat.
 
   If the chat was deleted, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"`.
+  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
   You must send an access token with this request.
   """
@@ -225,7 +232,8 @@ type Mutation {
   """
   Creates a private chat with the `userId`. Returns the chat's ID.
 
-  Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"`.
+  Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
+  exist).
 
   You must send an access token with this request.
   """
@@ -235,7 +243,7 @@ type Mutation {
   Sends a message in a chat. Use `Subscription.messageUpdates` to get the message's ID and sending `scalar.DateTime`.
 
   If the message was sent, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"`, or `"INVALID_MESSAGE_LENGTH"`.
+  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_LENGTH"`.
 
   You must send an access token with this request.
   """
@@ -246,10 +254,11 @@ type Mutation {
   ): Boolean!
 
   """
-  Deletes the message `id` from the `chatId`.
+  Deletes the message `id` from the `chatId`. The user can only delete their own messages.
 
   `true` will be returned if the message was deleted. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_CHAT_ID"`, or `"INVALID_MESSAGE_ID"`.
+  `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_ID"` (i.e.,
+  the message doesn't exist, or the message isn't the user's own).
 
   You must send an access token with this request.
   """
@@ -265,10 +274,10 @@ type Mutation {
 
   """
   Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-  Existing contacts will be ignored. Invalid user IDs will be ignored.
+  Existing contacts will be ignored.
 
   If the contacts were saved, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_CONTACT"`.
+  `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
 
   You must send an access token with this request.
   """
@@ -280,7 +289,7 @@ type Subscription {
   Returns new and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the chat
   was deleted.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
   You must send an access token with this request.
   """
@@ -298,11 +307,11 @@ Represents created and deleted messages, deleted chats, and the subscription cre
 """
 union MessageUpdatesInfo =
   CreatedSubscription
-  | Message
   | DeletedMessage
+  | DeletionOfEveryMessage
+  | Message
   | MessageDeletionPoint
   | UserChatMessagesRemoval
-  | DeletionOfEveryMessage
 
 """
 Every message in the chat has been deleted.
@@ -349,7 +358,7 @@ type AccountInfo {
 }
 
 type ChatMessage {
-  chatId: Int!
+  chat: Chat!
   messages: [Message!]!
 }
 
@@ -364,21 +373,22 @@ type GroupChat implements Chat {
   title: String!
   """At most 1000 characters."""
   description: String
+  """The ID of the admin present who is present in the `users`."""
   adminId: ID!
-  userIdList: [String!]!
+  users: [AccountInfo!]!
   messages: [Message!]!
 }
 
 type PrivateChat implements Chat {
   id: Int!
-  """The ID of the user being chatted with."""
-  userId: ID!
+  """The user being chatted with."""
+  user: AccountInfo!
   messages: [Message!]!
 }
 
 type Message {
   id: Int!
-  senderId: ID!
+  sender: AccountInfo!
   text: String!
   dateTimes: MessageDateTimes!
 }
@@ -388,8 +398,9 @@ type MessageDateTimes {
   statuses: [MessageDateTimeStatus!]!
 }
 
+"""The `dateTime` the `user` created the `status`."""
 type MessageDateTimeStatus {
-  userId: ID!
+  user: AccountInfo!
   dateTime: DateTime!
   status: MessageStatus!
 }

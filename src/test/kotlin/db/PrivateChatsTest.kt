@@ -1,17 +1,12 @@
 package com.neelkamath.omniChat.test.db
 
-import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.NewAccount
-import com.neelkamath.omniChat.PrivateChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChatDeletions
 import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.findUserByUsername
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -20,11 +15,10 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
 class PrivateChatsTest : FunSpec({
-    listener(AppListener())
-
     context("create(String, String)") {
         test("Creating an existing chat should throw an exception") {
-            val create = { PrivateChats.create("user 1 ID", "user 2 ID") }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val create = { PrivateChats.create(user1Id, user2Id) }
             create()
             shouldThrowExactly<IllegalArgumentException> { create() }
         }
@@ -32,10 +26,10 @@ class PrivateChatsTest : FunSpec({
 
     context("read(String)") {
         test("Reading a chat should give the ID of the user being chatted with, and not the user's own ID") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val test = { userId: String, otherUserId: String ->
-                val chat = PrivateChat(chatId, otherUserId, messages = listOf())
+                val chat = PrivateChat(chatId, findUserById(otherUserId), messages = listOf())
                 PrivateChats.read(userId) shouldBe listOf(chat)
             }
             test(user1Id, user2Id)
@@ -45,14 +39,14 @@ class PrivateChatsTest : FunSpec({
 
     context("exists(String, String)") {
         test("A chat between two users should be said to exist") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             PrivateChats.exists(user1Id, user2Id).shouldBeTrue()
             PrivateChats.exists(user2Id, user1Id).shouldBeTrue()
         }
 
         test("If two users aren't in a chat with each other, it shouldn't be said that they are") {
-            val (user1Id, user2Id, user3Id) = (1..3).map { "user $it ID" }
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             PrivateChats.create(user2Id, user3Id)
             PrivateChats.exists(user1Id, user3Id).shouldBeFalse()
@@ -67,7 +61,7 @@ class PrivateChatsTest : FunSpec({
             names
             """
         ) {
-            val user = createVerifiedUsers(1)[0]
+            val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
                 NewAccount(username = "dave_tompson", password = "p", emailAddress = "dave@example.com"),
                 NewAccount(username = "iron man fan", password = "p", emailAddress = "tom@example.com"),
@@ -76,11 +70,11 @@ class PrivateChatsTest : FunSpec({
                 NewAccount(username = "steve_rogers", password = "p", emailAddress = "steve@example.com")
             ).map {
                 createAccount(it)
-                val userId = findUserByUsername(it.username).id
-                createPrivateChat(userId, user.accessToken)
-                userId
+                val otherUserId = findUserByUsername(it.username).id
+                PrivateChats.create(userId, otherUserId)
+                otherUserId
             }
-            PrivateChats.search(user.info.id, "tom").map { it.userId } shouldBe userIdList.dropLast(1)
+            PrivateChats.search(userId, "tom").map { it.user.id } shouldBe userIdList.dropLast(1)
         }
     }
 
@@ -107,7 +101,7 @@ class PrivateChatsTest : FunSpec({
             deleted
             """
         ) {
-            val (user1Id, user2Id, user3Id) = (1..3).map { "user $it ID" }
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             createAndUseChat(user1Id, user2Id)
             val chatId = createAndUseChat(user1Id, user3Id)
             PrivateChatDeletions.delete(chatId)
@@ -121,7 +115,7 @@ class PrivateChatsTest : FunSpec({
 
     context("readUsers(Int)") {
         test("Retrieving the user IDs of a chat should return them") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChats.readUsers(chatId) shouldBe listOf(user1Id, user2Id)
         }

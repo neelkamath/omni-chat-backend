@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.graphql.DuplicateStatusException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -32,8 +31,6 @@ fun errCreateDeliveredStatus(messageId: Int, accessToken: String): String =
     operateCreateDeliveredStatus(messageId, accessToken).errors!![0].message
 
 class CreateDeliveredStatusTest : FunSpec({
-    listener(AppListener())
-
     test("""A status should be created returning "true"""") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createDeliveredStatus(messageId, user1.accessToken).shouldBeTrue()

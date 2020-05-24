@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.test.db
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -13,14 +14,11 @@ import io.reactivex.rxjava3.subscribers.TestSubscriber
 import java.time.LocalDateTime
 
 class MessagesTest : FunSpec({
-    listener(DbListener())
-
     data class CreatedMessage(val creator: String, val message: String)
 
     context("create(Int, String, String)") {
         test("Subscribers should receive notifications of created messages") {
-            val adminId = "admin ID"
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(user1Id, user2Id))
             val chatId = GroupChats.create(adminId, chat)
             val adminSubscriber = createMessageUpdatesSubscriber(adminId, chatId)
@@ -34,7 +32,7 @@ class MessagesTest : FunSpec({
 
     context("read(Int)") {
         test("Messages should be read in the order of their creation") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val createdMessages = listOf(
                 CreatedMessage(user1Id, "Hey"),
@@ -44,7 +42,7 @@ class MessagesTest : FunSpec({
             )
             createdMessages.forEach { Messages.create(chatId, it.creator, it.message) }
             Messages.readChat(chatId).forEachIndexed { index, message ->
-                message.senderId shouldBe createdMessages[index].creator
+                message.sender.id shouldBe createdMessages[index].creator
                 message.text shouldBe createdMessages[index].message
             }
         }
@@ -56,7 +54,7 @@ class MessagesTest : FunSpec({
             then it should exclude messages sent before its deletion
             """
         ) {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.message(chatId, user1Id, "text")
             Messages.message(chatId, user2Id, "text")
@@ -68,7 +66,7 @@ class MessagesTest : FunSpec({
 
     context("deleteChat(Int)") {
         test("Deleting a chat should delete its messages and messages statuses") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
@@ -78,7 +76,7 @@ class MessagesTest : FunSpec({
         }
 
         test("The subscriber should be notified of every message being deleted, and then be unsubscribed") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             Messages.deleteChat(chatId)
@@ -89,7 +87,7 @@ class MessagesTest : FunSpec({
 
     context("delete(Int, LocalDateTime)") {
         test("Every message and message status should be deleted until the specified point only") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val message1Id = Messages.message(chatId, user1Id, "text")
             MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
@@ -104,7 +102,7 @@ class MessagesTest : FunSpec({
 
     context("delete(Int, String)") {
         test("Every message and message status the user has in the chat should be deleted") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val message1Id = Messages.message(chatId, adminId, "text")
@@ -117,7 +115,7 @@ class MessagesTest : FunSpec({
         }
 
         test("A subscriber should be notified when a user's messages have been deleted from the chat") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val subscriber = createMessageUpdatesSubscriber(adminId, chatId)
@@ -154,14 +152,14 @@ class MessagesTest : FunSpec({
             then their messages, created message statues, and received message statuses should be deleted
             """
         ) {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val privateChatId = createUtilizedPrivateChat(user1Id, user2Id)
             val groupChatId = createUtilizedGroupChat(user1Id, user2Id)
             Messages.delete(user2Id)
             val testMessages = { chatId: Int ->
                 val messages = Messages.readChat(chatId)
-                messages.map { it.senderId } shouldBe listOf(user1Id)
-                messages.flatMap { it.dateTimes.statuses }.map { it.userId }.shouldBeEmpty()
+                messages.map { it.sender.id } shouldBe listOf(user1Id)
+                messages.flatMap { it.dateTimes.statuses }.map { it.user.id }.shouldBeEmpty()
             }
             testMessages(privateChatId)
             testMessages(groupChatId)
@@ -171,7 +169,7 @@ class MessagesTest : FunSpec({
          * Creates a group chat with the [adminId] and [userId], has the [userId] send a message in it, and returns the
          * [userId]'s [TestSubscriber] to the chat.
          */
-        fun createChatMessageSubscriber(adminId: String, userId: String): TestSubscriber<MessageUpdate> {
+        fun createChatMessageSubscriber(adminId: String, userId: String): TestSubscriber<MessageUpdates> {
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             Messages.create(chatId, userId, "text")
@@ -179,7 +177,7 @@ class MessagesTest : FunSpec({
         }
 
         test("Subscribers should be notified when every message the user sent is deleted") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat1Subscriber = createChatMessageSubscriber(adminId, userId)
             val chat2Subscriber = createChatMessageSubscriber(adminId, userId)
             Messages.delete(userId)
@@ -191,7 +189,7 @@ class MessagesTest : FunSpec({
 
     context("delete(Int)") {
         test("Deleting a message should delete it and its statuses") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
@@ -202,7 +200,7 @@ class MessagesTest : FunSpec({
         }
 
         test("Deleting a message should trigger a notification") {
-            val (user1Id, user2Id) = (1..2).map { "user $it ID" }
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
@@ -219,7 +217,7 @@ class MessagesTest : FunSpec({
             then they should be found
             """
         ) {
-            val adminId = "user ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             val now = LocalDateTime.now()
             Messages.create(chatId, adminId, "text")
@@ -233,7 +231,7 @@ class MessagesTest : FunSpec({
             then none should be found
             """
         ) {
-            val adminId = "user ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             Messages.create(chatId, adminId, "text")
             Messages.existsFrom(chatId, LocalDateTime.now()).shouldBeFalse()

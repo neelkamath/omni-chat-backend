@@ -2,14 +2,13 @@ package com.neelkamath.omniChat.test
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
 class AuthTest : FunSpec({
-    listener(AuthListener())
-
     context("isValidLogin(Login)") {
         test("An incorrect login should be invalid") { isValidLogin(Login("username", "password")).shouldBeFalse() }
 
@@ -29,6 +28,10 @@ class AuthTest : FunSpec({
         ) {
             val username = createVerifiedUsers(1)[0].info.username
             isUsernameTaken(username.dropLast(1)).shouldBeFalse()
+        }
+
+        test("Checking if a non-lowercase username is taken should throw an exception") {
+            shouldThrowExactly<IllegalArgumentException> { isUsernameTaken("Username") }
         }
 
         test("An existing username should be said to exist") {
@@ -105,17 +108,17 @@ class AuthTest : FunSpec({
             updateUser(user.info.id, update)
             with(findUserById(user.info.id)) {
                 username shouldBe update.username
-                email shouldBe user.info.emailAddress
+                emailAddress shouldBe user.info.emailAddress
                 firstName shouldBe update.firstName
                 lastName shouldBe user.info.lastName
             }
         }
 
         fun assertEmailAddressUpdate(changeAddress: Boolean) {
-            val user = createVerifiedUsers(1)[0]
-            val address = if (changeAddress) "updated address" else user.info.emailAddress
-            updateUser(user.info.id, AccountUpdate(emailAddress = address))
-            findUserById(user.info.id).isEmailVerified shouldBe !changeAddress
+            val (userId, _, emailAddress) = createVerifiedUsers(1)[0].info
+            val address = if (changeAddress) "updated address" else emailAddress
+            updateUser(userId, AccountUpdate(emailAddress = address))
+            isEmailVerified(userId) shouldBe !changeAddress
         }
 
         test(

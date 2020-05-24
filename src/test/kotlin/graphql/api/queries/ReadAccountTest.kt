@@ -3,8 +3,7 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountInfo
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.jsonMapper
-import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
@@ -24,12 +23,10 @@ private fun operateReadAccount(accessToken: String): GraphQlResponse =
 
 fun readAccount(accessToken: String): AccountInfo {
     val data = operateReadAccount(accessToken).data!!["readAccount"] as Map<*, *>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
 class ReadAccountTest : FunSpec({
-    listener(AppListener())
-
     test("The user's account info should be returned") {
         val user = createVerifiedUsers(1)[0]
         readAccount(user.accessToken) shouldBe user.info

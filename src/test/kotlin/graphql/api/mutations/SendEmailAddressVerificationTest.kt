@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.test.graphql.api.mutations
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewAccount
 import com.neelkamath.omniChat.graphql.UnregisteredEmailAddressException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -15,18 +14,16 @@ const val SEND_EMAIL_ADDRESS_VERIFICATION_QUERY: String = """
     }
 """
 
-fun errSendEmailVerification(emailAddress: String): String =
-    operateSendEmailAddressVerification(emailAddress).errors!![0].message
-
 private fun operateSendEmailAddressVerification(emailAddress: String): GraphQlResponse =
     operateQueryOrMutation(SEND_EMAIL_ADDRESS_VERIFICATION_QUERY, variables = mapOf("emailAddress" to emailAddress))
 
 fun sendEmailAddressVerification(emailAddress: String): Boolean =
     operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"] as Boolean
 
-class SendEmailAddressVerificationTest : FunSpec({
-    listener(AppListener())
+fun errSendEmailVerification(emailAddress: String): String =
+    operateSendEmailAddressVerification(emailAddress).errors!![0].message
 
+class SendEmailAddressVerificationTest : FunSpec({
     test("A verification email should be sent") {
         val address = "username@example.com"
         val account = NewAccount("username", "password", address)

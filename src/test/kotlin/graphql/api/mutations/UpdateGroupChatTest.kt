@@ -1,15 +1,11 @@
 package com.neelkamath.omniChat.test.graphql.api.mutations
 
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.GroupChat
-import com.neelkamath.omniChat.GroupChatUpdate
-import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
 import com.neelkamath.omniChat.graphql.UnauthorizedException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -28,8 +24,6 @@ fun updateGroupChat(update: GroupChatUpdate, accessToken: String): Boolean =
     operateUpdateGroupChat(update, accessToken).data!!["updateGroupChat"] as Boolean
 
 class UpdateGroupChatTest : FunSpec({
-    listener(AppListener())
-
     test("Only the supplied fields should be updated") {
         val (admin, user1, user2) = createVerifiedUsers(3)
         val initialUserIdList = setOf(user1.info.id)
@@ -43,8 +37,9 @@ class UpdateGroupChatTest : FunSpec({
         )
         updateGroupChat(update, admin.accessToken)
         val userIdList = initialUserIdList + admin.info.id + update.newUserIdList - update.removedUserIdList
+        val users = userIdList.map(::findUserById).toSet()
         GroupChats.read(admin.info.id) shouldBe listOf(
-            GroupChat(chatId, admin.info.id, userIdList, update.title!!, chat.description, Messages.readChat(chatId))
+            GroupChat(chatId, admin.info.id, users, update.title!!, chat.description, Messages.readChat(chatId))
         )
     }
 
