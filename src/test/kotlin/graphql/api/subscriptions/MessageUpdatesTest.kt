@@ -3,11 +3,10 @@ package com.neelkamath.omniChat.test.graphql.api.subscriptions
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.subscribeToMessageUpdates
+import com.neelkamath.omniChat.graphql.ClientException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.CreatedUser
 import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.db.message
 import com.neelkamath.omniChat.test.graphql.api.*
 import com.neelkamath.omniChat.test.graphql.api.mutations.*
 import io.kotest.core.spec.style.FunSpec
@@ -30,21 +29,24 @@ const val MESSAGE_UPDATES_QUERY: String = """
     }
 """
 
-/** Builds the [GraphQlRequest.query] for the `Subscription.messageUpdates` operation. */
-private fun buildMessageUpdatesRequest(chatId: Int): GraphQlRequest =
-    GraphQlRequest(MESSAGE_UPDATES_QUERY, variables = mapOf("chatId" to chatId))
+private fun operateMessageUpdates(chatId: Int, accessToken: String, callback: SubscriptionCallback) {
+    val request = GraphQlRequest(MESSAGE_UPDATES_QUERY, variables = mapOf("chatId" to chatId))
+    subscribe("message-updates", request, accessToken, callback)
+}
 
-fun operateMessageUpdates(chatId: Int, accessToken: String, callback: SubscriptionCallback) {
-    val request = buildMessageUpdatesRequest(chatId)
-    operateSubscription("message-updates", request, accessToken) { incoming, outgoing ->
+fun receiveMessageUpdates(chatId: Int, accessToken: String, callback: SubscriptionCallback): Unit =
+    operateMessageUpdates(chatId, accessToken) { incoming, outgoing ->
         parseFrameData<CreatedSubscription>(incoming)
         callback(incoming, outgoing)
     }
-}
+
+fun errMessageUpdates(chatId: Int, exception: ClientException, accessToken: String): Unit =
+    operateMessageUpdates(chatId, accessToken) { incoming, _ ->
+        parseFrameError(incoming) shouldBe exception.message
+        incoming.receive().frameType shouldBe FrameType.CLOSE
+    }
 
 class MessageUpdatesTest : FunSpec({
-    listener(AppListener())
-
     /**
      * Creates a message in a private chat, and asserts that it was received. If the [senderIsSubscriber], the
      * subscriber will send the message. Otherwise, the other user will send it.
@@ -52,7 +54,7 @@ class MessageUpdatesTest : FunSpec({
     fun receiveCreatedMessage(senderIsSubscriber: Boolean) {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        operateMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
             val user = if (senderIsSubscriber) user1 else user2
             createMessage(chatId, "text", user.accessToken)
             parseFrameData<Message>(incoming) shouldBe Messages.readChat(chatId).last()
@@ -69,7 +71,7 @@ class MessageUpdatesTest : FunSpec({
         val (admin1, admin2) = createVerifiedUsers(2)
         val chat1Id = createGroupChat(NewGroupChat("Title"), admin1.accessToken)
         val chat2Id = createGroupChat(NewGroupChat("Title"), admin2.accessToken)
-        operateMessageUpdates(chat1Id, admin1.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chat1Id, admin1.accessToken) { incoming, _ ->
             createMessage(chat2Id, "text", admin2.accessToken)
             incoming.poll().shouldBeNull()
         }
@@ -83,7 +85,7 @@ class MessageUpdatesTest : FunSpec({
     fun receiveDeletedMessage(deleterIsSubscriber: Boolean) {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        operateMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
             val user = if (deleterIsSubscriber) user1 else user2
             createMessage(chatId, "text", user.accessToken)
             val messageId = parseFrameData<Message>(incoming).id
@@ -104,8 +106,8 @@ class MessageUpdatesTest : FunSpec({
         val admin = createVerifiedUsers(1)[0]
         val chat1Id = createGroupChat(NewGroupChat("Title"), admin.accessToken)
         val chat2Id = createGroupChat(NewGroupChat("Title"), admin.accessToken)
-        val messageId = Messages.message(chat2Id, admin.info.id, "text")
-        operateMessageUpdates(chat1Id, admin.accessToken) { incoming, _ ->
+        val messageId = messageAndReadId(chat2Id, "text", admin.accessToken)
+        receiveMessageUpdates(chat1Id, admin.accessToken) { incoming, _ ->
             deleteMessage(messageId, chat2Id, admin.accessToken)
             incoming.poll().shouldBeNull()
         }
@@ -114,7 +116,7 @@ class MessageUpdatesTest : FunSpec({
     test("The user should be unsubscribed when they delete the private chat") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        operateMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
             deletePrivateChat(chatId, user1.accessToken)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
@@ -123,7 +125,7 @@ class MessageUpdatesTest : FunSpec({
     test("The user should be unsubscribed when they leave a group chat") {
         val token = createVerifiedUsers(1)[0].accessToken
         val chatId = createGroupChat(NewGroupChat("Title"), token)
-        operateMessageUpdates(chatId, token) { incoming, _ ->
+        receiveMessageUpdates(chatId, token) { incoming, _ ->
             leaveGroupChat(token, chatId)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
@@ -140,7 +142,7 @@ class MessageUpdatesTest : FunSpec({
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
         createMessage(chatId, "text", user.accessToken)
-        operateMessageUpdates(chatId, admin.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, admin.accessToken) { incoming, _ ->
             deleteAccount(user.accessToken)
             parseFrameData<UserChatMessagesRemoval>(incoming) shouldBe UserChatMessagesRemoval(user.info.id)
         }
@@ -155,8 +157,8 @@ class MessageUpdatesTest : FunSpec({
     test("When a user in a private chat deletes their account, both users in the chat should be unsubscribed") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        operateMessageUpdates(chatId, user1.accessToken) { user1incoming, _ ->
-            operateMessageUpdates(chatId, user2.accessToken) { user2incoming, _ ->
+        receiveMessageUpdates(chatId, user1.accessToken) { user1incoming, _ ->
+            receiveMessageUpdates(chatId, user2.accessToken) { user2incoming, _ ->
                 deleteAccount(user1.accessToken)
                 assertChatDeletion(user2incoming)
             }
@@ -166,11 +168,7 @@ class MessageUpdatesTest : FunSpec({
 
     test("Subscribing to updates in a chat the user isn't in should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
-        val request = buildMessageUpdatesRequest(chatId = 1)
-        operateSubscription("message-updates", request, token) { incoming, _ ->
-            parseFrameError(incoming) shouldBe InvalidChatIdException().message
-            incoming.receive().frameType shouldBe FrameType.CLOSE
-        }
+        errMessageUpdates(chatId = 1, exception = InvalidChatIdException(), accessToken = token)
     }
 
     /**
@@ -187,7 +185,7 @@ class MessageUpdatesTest : FunSpec({
     ) {
         val chat = NewGroupChat("Title", userIdList = setOf(sender.info.id, statusCreator.info.id))
         val chatId = createGroupChat(chat, subscriber.accessToken)
-        operateMessageUpdates(chatId, subscriber.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, subscriber.accessToken) { incoming, _ ->
             createMessage(chatId, "text", sender.accessToken)
             val messageId = parseFrameData<Message>(incoming).id
             when (status) {
@@ -196,7 +194,7 @@ class MessageUpdatesTest : FunSpec({
             }
             if (status == MessageStatus.READ) incoming.poll() // Ignore the "delivered" status.
             // We convert it to a set because in the case of a "read" status, a "delivered" status would also exist.
-            val statuses = parseFrameData<Message>(incoming).dateTimes.statuses.map { it.userId }.toSet()
+            val statuses = parseFrameData<Message>(incoming).dateTimes.statuses.map { it.user.id }.toSet()
             statuses shouldBe setOf(statusCreator.info.id)
         }
     }

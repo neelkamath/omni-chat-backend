@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
@@ -24,12 +23,10 @@ private fun operateSearchContacts(query: String, accessToken: String): GraphQlRe
 
 fun searchContacts(query: String, accessToken: String): List<AccountInfo> {
     val data = operateSearchContacts(query, accessToken).data!!["searchContacts"] as List<*>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
 class SearchContactsTest : FunSpec({
-    listener(AppListener())
-
     test("Contacts should be searched case-insensitively") {
         val accounts = listOf(
             NewAccount(username = "john_doe", password = "p", emailAddress = "john.doe@example.com"),

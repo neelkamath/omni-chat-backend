@@ -7,7 +7,7 @@ class NonexistentUserException : ClientException("NONEXISTENT_USER")
 
 class UnverifiedEmailAddressException : ClientException("UNVERIFIED_EMAIL_ADDRESS")
 
-class IncorrectCredentialsException : ClientException("INCORRECT_CREDENTIALS")
+class IncorrectPasswordException : ClientException("INCORRECT_PASSWORD")
 
 class UsernameTakenException : ClientException("USERNAME_TAKEN")
 

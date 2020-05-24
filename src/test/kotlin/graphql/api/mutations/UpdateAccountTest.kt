@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.test.graphql.api.mutations
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.api.queries.requestTokenSet
@@ -17,26 +16,24 @@ const val UPDATE_ACCOUNT_QUERY: String = """
     }
 """
 
-fun errUpdateAccount(update: AccountUpdate, accessToken: String): String =
-    operateUpdateAccount(update, accessToken).errors!![0].message
-
 private fun operateUpdateAccount(update: AccountUpdate, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(UPDATE_ACCOUNT_QUERY, variables = mapOf("update" to update), accessToken = accessToken)
 
 fun updateAccount(update: AccountUpdate, accessToken: String): Boolean =
     operateUpdateAccount(update, accessToken).data!!["updateAccount"] as Boolean
 
-class UpdateAccountTest : FunSpec({
-    listener(AppListener())
+fun errUpdateAccount(update: AccountUpdate, accessToken: String): String =
+    operateUpdateAccount(update, accessToken).errors!![0].message
 
-    fun testAccountInfo(account: AccountInfo, updatedAccount: AccountUpdate) {
-        isUsernameTaken(account.username).shouldBeFalse()
-        with(findUserByUsername(updatedAccount.username!!)) {
-            username shouldBe updatedAccount.username
-            email shouldBe updatedAccount.emailAddress
-            isEmailVerified.shouldBeFalse()
-            firstName shouldBe account.firstName
-            lastName shouldBe updatedAccount.lastName
+class UpdateAccountTest : FunSpec({
+    fun testAccountInfo(accountBeforeUpdate: AccountInfo, accountAfterUpdate: AccountUpdate) {
+        isUsernameTaken(accountBeforeUpdate.username).shouldBeFalse()
+        with(findUserByUsername(accountAfterUpdate.username!!)) {
+            username shouldBe accountAfterUpdate.username
+            emailAddress shouldBe accountAfterUpdate.emailAddress
+            isEmailVerified(id).shouldBeFalse()
+            firstName shouldBe accountBeforeUpdate.firstName
+            lastName shouldBe accountAfterUpdate.lastName
         }
     }
 

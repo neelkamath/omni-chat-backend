@@ -3,8 +3,7 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountInfo
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.jsonMapper
-import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createContacts
@@ -25,12 +24,10 @@ private fun operateReadContacts(accessToken: String): GraphQlResponse =
 
 fun readContacts(accessToken: String): List<AccountInfo> {
     val data = operateReadContacts(accessToken).data!!["readContacts"] as List<*>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
 class ReadContactsTest : FunSpec({
-    listener(AppListener())
-
     test("Contacts should be read") {
         val (admin, contact1, contact2) = createVerifiedUsers(3)
         createContacts(listOf(contact1.info.id, contact2.info.id), admin.accessToken)

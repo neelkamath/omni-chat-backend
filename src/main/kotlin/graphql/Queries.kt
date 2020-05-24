@@ -14,11 +14,15 @@ fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
 
 fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean = emailAddressExists(env.getArgument("emailAddress"))
 
-fun isUsernameTaken(env: DataFetchingEnvironment): Boolean = isUsernameTaken(env.getArgument<String>("username"))
+fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
+    val username = env.getArgument<String>("username")
+    if (username.toLowerCase() != username) throw UsernameNotLowercaseException()
+    return isUsernameTaken(username)
+}
 
 fun readAccount(env: DataFetchingEnvironment): AccountInfo {
     env.verifyAuth()
-    return buildAccountInfo(env.userId!!)
+    return findUserById(env.userId!!)
 }
 
 fun readChats(env: DataFetchingEnvironment): List<Chat> {
@@ -30,20 +34,16 @@ fun readChats(env: DataFetchingEnvironment): List<Chat> {
 
 fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     env.verifyAuth()
-    return Contacts.read(env.userId!!).map(::buildAccountInfo)
+    return Contacts.read(env.userId!!).map(::findUserById)
 }
 
 fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
     val login = env.parseArgument<Login>("login")
-    return when {
-        !isUsernameTaken(login.username) -> throw NonexistentUserException()
-        !findUserByUsername(login.username).isEmailVerified -> throw UnverifiedEmailAddressException()
-        else -> {
-            if (!isValidLogin(login)) throw IncorrectCredentialsException()
-            val userId = findUserByUsername(login.username).id
-            buildAuthToken(userId)
-        }
-    }
+    if (!isUsernameTaken(login.username)) throw NonexistentUserException()
+    val userId = findUserByUsername(login.username).id
+    if (!isEmailVerified(userId)) throw UnverifiedEmailAddressException()
+    if (!isValidLogin(login)) throw IncorrectPasswordException()
+    return buildAuthToken(userId)
 }
 
 fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
@@ -73,7 +73,7 @@ fun searchChats(env: DataFetchingEnvironment): List<Chat> {
 fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }.map { buildAccountInfo(it.id) }
+    return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }
 }
 
 fun searchMessages(env: DataFetchingEnvironment): List<ChatMessage> {
@@ -86,13 +86,10 @@ fun searchMessages(env: DataFetchingEnvironment): List<ChatMessage> {
  * Case-insensitively matches the [UserRepresentation.username], [UserRepresentation.firstName],
  * [UserRepresentation.lastName], and [UserRepresentation.email] with the [query].
  */
-private fun UserRepresentation.matches(query: String): Boolean =
-    listOfNotNull(username, firstName, lastName, email).any { it.contains(query, ignoreCase = true) }
+private fun AccountInfo.matches(query: String): Boolean =
+    listOfNotNull(username, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
 
 fun searchUsers(env: DataFetchingEnvironment): List<AccountInfo> {
     val query = env.getArgument<String>("query")
-    return searchUsers(query).map { buildAccountInfo(it.id) }
+    return searchUsers(query)
 }
-
-private fun buildAccountInfo(userId: String): AccountInfo =
-    with(findUserById(userId)) { AccountInfo(id, username, email, firstName, lastName) }

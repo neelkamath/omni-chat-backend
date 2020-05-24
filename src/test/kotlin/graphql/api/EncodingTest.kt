@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.test.graphql.api
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
@@ -19,8 +18,6 @@ import io.kotest.matchers.shouldBe
  * had already accumulated.
  */
 class EncodingTest : FunSpec({
-    listener(AppListener())
-
     test("A group chat's title should allow emoji") {
         val token = createVerifiedUsers(1)[0].accessToken
         val title = "Title \uD83D\uDCDA"

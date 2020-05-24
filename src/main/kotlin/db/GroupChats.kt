@@ -32,10 +32,10 @@ object GroupChats : IntIdTable() {
 
     /**
      * Sets the [userId] as the admin of the [chatId]. An [IllegalArgumentException] will be thrown if the [userId]
-     * isn't in the chat
+     * isn't in the chat.
      */
     fun setAdmin(chatId: Int, userId: String) {
-        val userIdList = read(chatId).userIdList
+        val userIdList = read(chatId).users.map { it.id }
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
         transact {
@@ -125,16 +125,12 @@ object GroupChats : IntIdTable() {
         }
     }
 
-    private fun buildGroupChat(row: ResultRow, chatId: Int): GroupChat = GroupChat(
-        chatId,
-        row[adminId],
-        GroupChatUsers.readUserIdList(chatId),
-        row[title],
-        row[description],
-        Messages.readChat(chatId)
-    )
+    private fun buildGroupChat(row: ResultRow, chatId: Int): GroupChat {
+        val users = GroupChatUsers.readUserIdList(chatId).map(::findUserById).toSet()
+        return GroupChat(chatId, row[adminId], users, row[title], row[description], Messages.readChat(chatId))
+    }
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
     fun isNonemptyChatAdmin(userId: String): Boolean =
-        userId in read(userId).filter { read(it.id).userIdList.size > 1 }.map { it.adminId }
+        userId in read(userId).filter { read(it.id).users.size > 1 }.map { it.adminId }
 }

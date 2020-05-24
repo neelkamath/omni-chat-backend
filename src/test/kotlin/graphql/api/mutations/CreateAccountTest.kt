@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.findUserByUsername
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
 import com.neelkamath.omniChat.graphql.UsernameNotLowercaseException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -25,14 +24,12 @@ fun createAccount(account: NewAccount): Boolean = operateCreateAccount(account).
 fun errCreateAccount(account: NewAccount): String = operateCreateAccount(account).errors!![0].message
 
 class CreateAccountTest : FunSpec({
-    listener(AppListener())
-
     test("An account should be created") {
         val account = NewAccount("username", "password", "username@example.com")
         createAccount(account)
         with(findUserByUsername(account.username)) {
             username shouldBe account.username
-            email shouldBe account.emailAddress
+            emailAddress shouldBe account.emailAddress
         }
     }
 

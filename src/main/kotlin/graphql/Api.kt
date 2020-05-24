@@ -80,7 +80,7 @@ private suspend fun subscribe(
 private suspend fun buildExecutionResult(session: DefaultWebSocketServerSession): ExecutionResult = with(session) {
     val frame = incoming.receive() as Frame.Text
     val text = frame.readText()
-    val request = jsonMapper.readValue<GraphQlRequest>(text)
+    val request = objectMapper.readValue<GraphQlRequest>(text)
     val builder = buildExecutionInput(request, call)
     return graphQl.execute(builder)
 }
@@ -91,7 +91,7 @@ private suspend fun buildExecutionResult(session: DefaultWebSocketServerSession)
  */
 private suspend fun onError(session: DefaultWebSocketServerSession, result: ExecutionResult): Unit = with(session) {
     val spec = buildSpecification(result)
-    val response = jsonMapper.convertValue<GraphQlResponse>(spec)
+    val response = objectMapper.convertValue<GraphQlResponse>(spec)
     sendResponse(this, response)
     onErrorClose(this, response)
 }
@@ -100,7 +100,7 @@ private suspend fun onError(session: DefaultWebSocketServerSession, result: Exec
 private suspend fun sendResponse(session: DefaultWebSocketServerSession, response: GraphQlResponse): Unit =
     with(session) {
         launch(Dispatchers.IO) {
-            val json = jsonMapper.writeValueAsString(response)
+            val json = objectMapper.writeValueAsString(response)
             send(Frame.Text(json))
         }.join()
     }
@@ -140,7 +140,7 @@ private class Subscriber(
     private fun sendCreatedSubscription() {
         val data = mapOf(graphQlSubscription.operation to CreatedSubscription())
         val response = GraphQlResponse(data)
-        val json = jsonMapper.writeValueAsString(response)
+        val json = objectMapper.writeValueAsString(response)
         runInSessionContext { send(Frame.Text(json)) }
     }
 
@@ -154,7 +154,7 @@ private class Subscriber(
 
     private fun sendResult(result: ExecutionResult) {
         val spec = buildSpecification(result)
-        val json = jsonMapper.writeValueAsString(spec)
+        val json = objectMapper.writeValueAsString(spec)
         runInSessionContext { send(Frame.Text(json)) }
     }
 

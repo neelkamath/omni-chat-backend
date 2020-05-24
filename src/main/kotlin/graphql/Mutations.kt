@@ -47,7 +47,7 @@ private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): B
 private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
     if (!Messages.exists(messageId)) throw InvalidMessageIdException()
     val chatId = Messages.findChatFromMessage(messageId)
-    if (!isUserInChat(userId, chatId) || Messages.read(messageId).senderId == userId) throw InvalidMessageIdException()
+    if (!isUserInChat(userId, chatId) || Messages.read(messageId).sender.id == userId) throw InvalidMessageIdException()
     if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException()
 }
 
@@ -106,7 +106,8 @@ fun deleteMessage(env: DataFetchingEnvironment): Boolean {
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.exists(messageId, chatId)) throw InvalidMessageIdException()
+    if (!Messages.exists(messageId, chatId) || Messages.readSender(messageId) != env.userId!!)
+        throw InvalidMessageIdException()
     Messages.delete(messageId)
     return true
 }
@@ -149,22 +150,20 @@ fun resetPassword(env: DataFetchingEnvironment): Boolean {
 
 fun updateAccount(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val user = env.parseArgument<AccountUpdate>("update")
+    val update = env.parseArgument<AccountUpdate>("update")
     when {
-        wantsTakenUsername(env.userId!!, user.username) -> throw UsernameTakenException()
-        wantsTakenEmail(env.userId!!, user.emailAddress) -> throw EmailAddressTakenException()
-        else -> updateUser(env.userId!!, user)
+        wantsTakenUsername(env.userId!!, update.username) -> throw UsernameTakenException()
+        wantsTakenEmail(env.userId!!, update.emailAddress) -> throw EmailAddressTakenException()
+        else -> updateUser(env.userId!!, update)
     }
     return true
 }
 
 private fun wantsTakenUsername(userId: String, wantedUsername: String?): Boolean =
-    wantedUsername != null &&
-            findUserById(userId).username != wantedUsername &&
-            isUsernameTaken(wantedUsername)
+    wantedUsername != null && findUserById(userId).username != wantedUsername && isUsernameTaken(wantedUsername)
 
 private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
-    wantedEmail != null && findUserById(userId).email != wantedEmail && emailAddressExists(wantedEmail)
+    wantedEmail != null && findUserById(userId).emailAddress != wantedEmail && emailAddressExists(wantedEmail)
 
 fun updateGroupChat(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()

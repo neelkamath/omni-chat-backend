@@ -12,17 +12,20 @@ Here's what a standard project iteration looks like.
     - Subscribers may need to be notified whenever this data is created. For example, deleting a chat requires notifying subscribers of such.
 1. Write tests.
 
-    We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test using the GraphQL engine, and an integration test using the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly. If you're writing tests for the GraphQL API, perform the following steps.
+    We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test using the GraphQL engine, and an integration test using the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly.
+    
+    If you're writing tests for the GraphQL API, perform the following steps. See [`RefreshTokenSetTest.kt`](../src/test/kotlin/graphql/api/queries/RefreshTokenSetTest.kt) for an example on queries and mutations, and [`MessageUpdatesTest.kt`](../src/test/kotlin/graphql/api/subscriptions/MessageUpdatesTest.kt) for an example on subscriptions.
     1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>Fragment` (e.g., `PRIVATE_CHAT_DELETION_FRAGMENT`).    
     1. Create a file named using the format `<OPERATION>Test.kt` (e.g., `DeleteAccountTest.kt`).
     1. Create a `const val` `String` for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES_QUERY`). The query should be named using the operation (e.g., the operation `searchMessages` would have it's query named `SearchMessages`).
     1. Follow these steps for `Query`s and `Mutation`s.
         1. Create a private function which deals with the HTTP request (the "operator function"). Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.test.graphql.GraphQlResponse`.
         1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
-        1. If the operation returns custom error messages (e.g., `"INVALID_CHAT_ID"`), create a function which deals with the HTTP response's error message. Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
+        1. create a function which deals with the HTTP response's `com.neelkamath.omniChat.graphql.ClientException` (e.g., `"INVALID_CHAT_ID"`). Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.test.graphql.GraphQlResponse.errors[0].message`.
     1. Follow these steps for `Subscription`s.
-        1. Create a function which creates the subscription request. Name the function `build<OPERATION>Request` (e.g., `buildMessageUpdatesRequest`), and have it return a `com.neelkamath.omniChat.GraphQlRequest`.
-        1. Create a function which receives the events. Name the function `operate<OPERATION>` (e.g., `operateMessageUpdates`).
+        1. Create a private function which deals with opening the WebSocket connection (the "operator function"). Name it using the format `operate<OPERAION>` (e.g., `operateMessageUpdates`).
+        1. Create a function which deals with the `com.neelkamath.omniChat.CreatedSubscription`, and receives the events. Name the function `receive<OPERATION>` (e.g., `receiveMessageUpdates`).
+        1. Create a function which asserts the `com.neelkamath.omniChat.graphql.ClientException` received (e.g., `"INVALID_CHAT_ID"`), and asserts that the connection was closed. Name it using the format `err<OPERATION>` (e.g., `errMessageUpdates`).
     1. Create a class named using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
 1. Implement the feature. For `Query`s and `Mutation`s, name the resolver the same as the GraphQL operation (e.g., `readChats`). For `Subscription`s, name the resolver named using the format `operate<OPERATION>` (e.g., `routeMessageUpdates`).
 1. Mark the feature as completed in the [spec](spec.md).
@@ -40,33 +43,7 @@ Here's what a standard project iteration looks like.
 ## DB
 
 - Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) and its mirror files in [`src/test/kotlin/db/`](../src/test/kotlin/db)) instead of directly operating on the DB.
-- The [abstraction layer](../src/main/kotlin/db) isn't concerned whether the user IDs it processes exist in the auth system.
 - It is possible that the nanosecond a user deletes a private chat, the other user sends a message. Thus, chat deletions delete messages _until_, and not _up to_, the time of deletion.
-- You may need to drop data if you've updated the schema (e.g., renamed a column, updated a type):
-    1. Spin up the services:
-        ``` 
-        docker-compose \
-            -f docker/docker-compose.yml \
-            -f docker/docker-compose.test.yml \
-            -p test \
-            --project-directory . \
-            up --scale chat=0 -d
-        ```
-    1. `docker run --rm -it --network test_chat-db postgres:12.3 psql -h test_chat-db_1 -U postgres`
-    1. When prompted for the password, enter the value of the `CHAT_DB_PASSWORD` environment variable.
-    1. Drop the relevant data.
-        - Drop tables (code taken from [this Stack Overflow QA](https://stackoverflow.com/a/36023359/6354805)):
-            ```
-            DO $$ DECLARE
-                r RECORD;
-            BEGIN
-                FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
-                    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-                END LOOP;
-            END $$;
-            ```
-        - Drop types: `DROP TYPE <TYPE>;` (e.g., `DROP TYPE message_status;`)
-    1. `exit`
 
 ## Server
 

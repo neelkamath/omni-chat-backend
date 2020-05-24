@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.graphql.DuplicateStatusException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -31,8 +30,6 @@ fun errCreateReadStatus(messageId: Int, accessToken: String): String =
     operateCreateReadStatus(messageId, accessToken).errors!![0].message
 
 class CreateReadStatusTest : FunSpec({
-    listener(AppListener())
-
     test("""Creating a status should return "true"""") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createReadStatus(messageId, user1.accessToken).shouldBeTrue()

@@ -19,8 +19,6 @@ Here is the usual flow for using this service.
 
 ## GraphQL
 
-Here are the current version's [API docs](../src/main/resources/schema.graphqls).
-
 The base URL is http://localhost:80.
 
 GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
@@ -44,6 +42,16 @@ Here's an example.
   }
 }
 ```
+
+### Docs
+
+Here are the current version's [API docs](../src/main/resources/schema.graphqls).
+
+The documentation contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message is returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
+
+There are two other types of error messages which could be returned which aren't explicitly documented in the schema because they would be repetitive and irrelevant. They are:
+- Receiving the `"INTERNAL_SERVER_ERROR` `errors[0].message` indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "The service is currently unreachable".
+- If descriptive (long) error messages are returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there is a bug in the client's code, and the programmer consuming the service must fix it. 
 
 ### `Query`s and `Mutation`s
 

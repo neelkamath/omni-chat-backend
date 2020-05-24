@@ -1,13 +1,9 @@
 package com.neelkamath.omniChat.test.graphql.api.mutations
 
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.Message
-import com.neelkamath.omniChat.MessageDateTimes
-import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidMessageLengthException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -19,9 +15,6 @@ const val CREATE_MESSAGE_QUERY: String = """
     }
 """
 
-fun errCreateMessage(chatId: Int, text: String, accessToken: String): String =
-    operateCreateMessage(chatId, text, accessToken).errors!![0].message
-
 private fun operateCreateMessage(chatId: Int, text: String, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(
         CREATE_MESSAGE_QUERY,
@@ -32,9 +25,10 @@ private fun operateCreateMessage(chatId: Int, text: String, accessToken: String)
 fun createMessage(chatId: Int, text: String, accessToken: String): Boolean =
     operateCreateMessage(chatId, text, accessToken).data!!["createMessage"] as Boolean
 
-class CreateMessageTest : FunSpec({
-    listener(AppListener())
+fun errCreateMessage(chatId: Int, text: String, accessToken: String): String =
+    operateCreateMessage(chatId, text, accessToken).errors!![0].message
 
+class CreateMessageTest : FunSpec({
     test("A message should be sent in a private chat") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
@@ -42,7 +36,7 @@ class CreateMessageTest : FunSpec({
         createMessage(chatId, text, user1.accessToken)
         val createdMessage = Messages.readChat(chatId)[0]
         val dateTimes = MessageDateTimes(createdMessage.dateTimes.sent)
-        val message = Message(createdMessage.id, user1.info.id, text, dateTimes)
+        val message = Message(createdMessage.id, findUserById(user1.info.id), text, dateTimes)
         Messages.readChat(chatId) shouldBe listOf(message)
     }
 
@@ -51,8 +45,8 @@ class CreateMessageTest : FunSpec({
         val chatId = createGroupChat(NewGroupChat("Title"), user.accessToken)
         val text = "Hi"
         createMessage(chatId, text, user.accessToken)
-        val createdMessage = Messages.readChat(chatId)[0]
-        val groupChat = Message(createdMessage.id, user.info.id, text, MessageDateTimes(createdMessage.dateTimes.sent))
+        val message = Messages.readChat(chatId)[0]
+        val groupChat = Message(message.id, findUserById(user.info.id), text, MessageDateTimes(message.dateTimes.sent))
         Messages.readChat(chatId) shouldBe listOf(groupChat)
     }
 

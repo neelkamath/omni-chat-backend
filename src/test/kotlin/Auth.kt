@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat.test
 
-import com.neelkamath.omniChat.findUserByUsername
 import com.neelkamath.omniChat.resetPassword
 import com.neelkamath.omniChat.sendEmailAddressVerification
-import com.neelkamath.omniChat.setUpAuth
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockkStatic
@@ -21,14 +19,8 @@ private val realm: RealmResource = KeycloakBuilder
     .build()
     .realm("omni-chat")
 
-/** Use this instead of [setUpAuth] for the testing environment so that the sending of emails is mocked. */
-fun setUpAuthForTests() {
-    setUpAuth()
-    mockEmails()
-}
-
 /** Mocks the sending of emails. */
-private fun mockEmails() {
+fun mockEmails() {
     mockkStatic("com.neelkamath.omniChat.AuthKt")
     every { sendEmailAddressVerification(any()) } just runs
     every { resetPassword(any()) } just runs
@@ -39,6 +31,6 @@ fun tearDownAuth(): Unit = realm.remove()
 
 /** Sets the [username]'s email status to verified without sending them an email. */
 fun verifyEmailAddress(username: String) {
-    val user = findUserByUsername(username)
-    realm.users().get(user.id).update(user.apply { isEmailVerified = true })
+    val user = realm.users().list().first { it.username == username }.apply { isEmailVerified = true }
+    realm.users().get(user.id).update(user)
 }

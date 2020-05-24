@@ -4,12 +4,11 @@ import com.neelkamath.omniChat.DeletionOfEveryMessage
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.db.count
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.operateMessageUpdates
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
+import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
 import com.neelkamath.omniChat.userIdExists
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -32,8 +31,6 @@ private fun operateDeleteAccount(accessToken: String): GraphQlResponse =
 fun deleteAccount(accessToken: String): Boolean = operateDeleteAccount(accessToken).data!!["deleteAccount"] as Boolean
 
 class DeleteAccountTest : FunSpec({
-    listener(AppListener())
-
     test("An account should be able to be deleted if the user is the admin of an empty group chat") {
         val token = createVerifiedUsers(1)[0].accessToken
         createGroupChat(NewGroupChat("Title"), token)
@@ -73,13 +70,13 @@ class DeleteAccountTest : FunSpec({
         val (admin, user) = createVerifiedUsers(2)
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
-        val adminMessageId = readCreatedMessageId(chatId, "text", admin.accessToken)
-        readCreatedMessageId(chatId, "text", user.accessToken)
+        val adminMessageId = messageAndReadId(chatId, "text", admin.accessToken)
+        messageAndReadId(chatId, "text", user.accessToken)
         createReadStatus(adminMessageId, user.accessToken)
         deleteAccount(user.accessToken)
         val messages = Messages.readChat(chatId)
         messages shouldHaveSize 1
-        messages[0].senderId shouldBe admin.info.id
+        messages[0].sender.id shouldBe admin.info.id
         messages[0].dateTimes.statuses.shouldBeEmpty()
     }
 
@@ -96,7 +93,7 @@ class DeleteAccountTest : FunSpec({
     test("Deleting a user should delete their message update subscriptions for private chats") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        operateMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, user1.accessToken) { incoming, _ ->
             deleteAccount(user1.accessToken)
             parseFrameData<DeletionOfEveryMessage>(incoming)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -106,7 +103,7 @@ class DeleteAccountTest : FunSpec({
     test("Deleting a user should delete their message update subscriptions for group chats") {
         val token = createVerifiedUsers(1)[0].accessToken
         val chatId = createGroupChat(NewGroupChat("Title"), token)
-        operateMessageUpdates(chatId, token) { incoming, _ ->
+        receiveMessageUpdates(chatId, token) { incoming, _ ->
             deleteAccount(token)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }

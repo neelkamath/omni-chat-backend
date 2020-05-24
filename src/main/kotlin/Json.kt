@@ -1,16 +1,14 @@
 package com.neelkamath.omniChat
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.LocalDateTime
 
 /** Project-wide Jackson config. */
-val jsonMapper: ObjectMapper = jacksonObjectMapper()
+val objectMapper: ObjectMapper = jacksonObjectMapper()
     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    .setSerializationInclusion(JsonInclude.Include.NON_NULL)
     .findAndRegisterModules()
 
 data class GraphQlRequest(
@@ -69,51 +67,51 @@ data class GroupChatUpdate(
     val newAdminId: String? = null
 )
 
-interface Chat
+sealed class Chat
 
 data class PrivateChat(
     val id: Int,
-    /** The ID of the user being chatted with. */
-    val userId: String,
+    /** The user being chatted with. */
+    val user: AccountInfo,
     val messages: List<Message>
-) : Chat
+) : Chat()
 
 data class GroupChat(
     val id: Int,
     val adminId: String,
-    val userIdList: Set<String>,
+    val users: Set<AccountInfo>,
     val title: String,
     val description: String? = null,
     val messages: List<Message>
-) : Chat
+) : Chat()
 
-/** Represents created [Message]s, updated [Message]s (if the [Message.id] exists), and [DeletedMessage]s. */
-interface MessageUpdate
+/** Represents created and deleted messages, and deleted chats. */
+sealed class MessageUpdates
 
 data class Message(
     val id: Int,
-    val senderId: String,
+    val sender: AccountInfo,
     val text: String,
     val dateTimes: MessageDateTimes
-) : MessageUpdate
+) : MessageUpdates()
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
-/** The [dateTime] and [status] the [userId] has on a message. */
-data class MessageDateTimeStatus(val userId: String, val dateTime: LocalDateTime, val status: MessageStatus)
+/** The [dateTime] and [status] the [user] has on a message. */
+data class MessageDateTimeStatus(val user: AccountInfo, val dateTime: LocalDateTime, val status: MessageStatus)
 
 enum class MessageStatus { DELIVERED, READ }
 
-data class DeletedMessage(val id: Int) : MessageUpdate
+data class DeletedMessage(val id: Int) : MessageUpdates()
 
 /** Every message [until] the [LocalDateTime] has been deleted. */
-data class MessageDeletionPoint(val until: LocalDateTime) : MessageUpdate
+data class MessageDeletionPoint(val until: LocalDateTime) : MessageUpdates()
 
 /**
  * Every message the [userId] sent in the chat has been deleted. This happens when a group chat's member deletes their
  * account.
  */
-data class UserChatMessagesRemoval(val userId: String) : MessageUpdate
+data class UserChatMessagesRemoval(val userId: String) : MessageUpdates()
 
 /**
  * Every message in the chat has been deleted.]
@@ -127,7 +125,7 @@ data class DeletionOfEveryMessage(
      * [IllegalArgumentException] will be thrown if this is `false`.
      */
     val isDeleted: Boolean = true
-) : MessageUpdate {
+) : MessageUpdates() {
     init {
         if (!isDeleted) throw IllegalArgumentException("isDeleted must be true")
     }
@@ -158,5 +156,5 @@ data class CreatedSubscription(
     }
 }
 
-/** The [chatId] the [messages] belong to. */
-data class ChatMessage(val chatId: Int, val messages: List<Message>)
+/** The [chat] the [messages] belong to. */
+data class ChatMessage(val chat: Chat, val messages: List<Message>)

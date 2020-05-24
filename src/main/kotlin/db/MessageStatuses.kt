@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db
 import com.neelkamath.omniChat.MessageDateTimeStatus
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.USER_ID_LENGTH
+import com.neelkamath.omniChat.findUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
@@ -98,6 +99,6 @@ object MessageStatuses : IntIdTable() {
     /** Returns the [MessageDateTimeStatus]es for the [messageId]. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
-            .map { MessageDateTimeStatus(it[userId], it[dateTime], it[status]) }
+            .map { MessageDateTimeStatus(findUserById(it[userId]), it[dateTime], it[status]) }
     }
 }

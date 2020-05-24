@@ -5,8 +5,7 @@ import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.Message
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.jsonMapper
-import com.neelkamath.omniChat.test.AppListener
+import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.MESSAGE_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
@@ -32,15 +31,13 @@ private fun operateSearchChatMessages(chatId: Int, query: String, accessToken: S
 
 fun searchChatMessages(chatId: Int, query: String, accessToken: String): List<Message> {
     val data = operateSearchChatMessages(chatId, query, accessToken).data!!["searchChatMessages"] as List<*>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
 fun errSearchChatMessages(chatId: Int, query: String, accessToken: String): String =
     operateSearchChatMessages(chatId, query, accessToken).errors!![0].message
 
 class SearchChatMessagesTest : FunSpec({
-    listener(AppListener())
-
     test("Messages should be searched case-insensitively") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)

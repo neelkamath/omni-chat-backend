@@ -43,7 +43,7 @@ fun Application.main() {
 /** [Application.install]s features. */
 private fun installFeatures(context: Application): Unit = with(context) {
     install(CallLogging)
-    install(ContentNegotiation) { register(ContentType.Application.Json, JacksonConverter(jsonMapper)) }
+    install(ContentNegotiation) { register(ContentType.Application.Json, JacksonConverter(objectMapper)) }
     install(WebSockets) { pingPeriod = Duration.ofMinutes(1) }
     install(Authentication) { buildJwtConfig(this) }
 }

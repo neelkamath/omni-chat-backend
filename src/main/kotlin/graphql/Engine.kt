@@ -53,7 +53,8 @@ private class DateTimeCoercing : Coercing<LocalDateTime, String> {
  * [DataFetchingEnvironment.getArgument] only returns primitives (e.g., [Int], [List]). Use this for [Set]s, data
  * classes, etc.
  */
-inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T = jsonMapper.convertValue(getArgument(arg))
+inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
+    objectMapper.convertValue(getArgument(arg))
 
 /**
  * Throws an [UnauthorizedException] if the user isn't authenticated.
@@ -136,7 +137,7 @@ fun buildExecutionInput(request: GraphQlRequest, call: ApplicationCall): Executi
         .operationName(request.operationName)
         .context(call.authentication.principal<JWTPrincipal>()?.payload?.subject)
 
-/** Returns the [ExecutionResult.toSpecification] after masking errors, and dealing with empty `"data"`/`"errors"`. */
+/** Returns the [ExecutionResult.toSpecification] after masking errors, and dealing with `null` `"data"`/`"errors"`. */
 fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpecification()
     .mapValues { if (it.key == "errors") result.errors.map(::maskError) else it.value }
     .filterNot {
@@ -148,7 +149,7 @@ private fun maskError(error: GraphQLError): Map<String, Any> {
     val result = error.toSpecification()
     result["message"] = when {
         error is ExceptionWhileDataFetching && error.exception is ClientException -> error.exception.message
-        error is ExceptionWhileDataFetching -> "Internal server error"
+        error is ExceptionWhileDataFetching -> "INTERNAL_SERVER_ERROR"
         else -> error.message
     }
     return result

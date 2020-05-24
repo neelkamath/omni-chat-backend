@@ -1,13 +1,11 @@
 package com.neelkamath.omniChat.test.db
 
-import com.neelkamath.omniChat.GroupChat
-import com.neelkamath.omniChat.GroupChatUpdate
-import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.GroupChatUsers
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
+import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -16,17 +14,15 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
 class GroupChatsTest : FunSpec({
-    listener(DbListener())
-
     context("create(String, NewGroupChat") {
         test("A chat should be created") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             GroupChats.read(chatId) shouldBe GroupChat(
                 chatId,
                 adminId,
-                chat.userIdList + adminId,
+                (chat.userIdList + adminId).map(::findUserById).toSet(),
                 chat.title,
                 chat.description,
                 messages = listOf()
@@ -36,7 +32,7 @@ class GroupChatsTest : FunSpec({
 
     context("setAdmin(Int, String)") {
         test("The new admin should be set") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             GroupChats.setAdmin(chatId, userId)
@@ -44,7 +40,7 @@ class GroupChatsTest : FunSpec({
         }
 
         test("Setting the admin to a user who isn't in the chat should throw an exception") {
-            val adminId = "admin ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             shouldThrowExactly<IllegalArgumentException> { GroupChats.setAdmin(chatId, "new admin ID") }
         }
@@ -52,13 +48,14 @@ class GroupChatsTest : FunSpec({
 
     context("update(GroupChatUpdate)") {
         test("Updating the chat to have an empty title should throw an exception") {
-            val chatId = GroupChats.create("admin ID", NewGroupChat("Title"))
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             val update = GroupChatUpdate(chatId, title = "   ")
             shouldThrowExactly<IllegalArgumentException> { GroupChats.update(update) }
         }
 
         test("When a user leaves a group chat, their subscription to it should be removed") {
-            val adminId = "user ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             val subscriber = createMessageUpdatesSubscriber(adminId, chatId)
             val update = GroupChatUpdate(chatId, removedUserIdList = setOf(adminId))
@@ -67,8 +64,8 @@ class GroupChatsTest : FunSpec({
         }
 
         test("The chat should be deleted once every user has left it") {
-            val adminId = "admin user ID"
-            val userIdList = setOf("user 1 ID", "user 2 ID")
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
+            val userIdList = setOf(user1Id, user2Id)
             val chat = NewGroupChat("Title", userIdList = userIdList)
             val chatId = GroupChats.create(adminId, chat)
             val update = GroupChatUpdate(chatId, removedUserIdList = userIdList + adminId)
@@ -79,7 +76,7 @@ class GroupChatsTest : FunSpec({
 
     context("removeUsers(Int, Set<String>)") {
         test("Subscriptions should be removed for deleted chats") {
-            val adminId = "admin ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             val subscriber = createMessageUpdatesSubscriber(adminId, chatId)
             GroupChatUsers.removeUsers(chatId, setOf(adminId))
@@ -87,7 +84,7 @@ class GroupChatsTest : FunSpec({
         }
 
         test("Messages from a user who left should be retained") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, userId, "text")
@@ -96,7 +93,7 @@ class GroupChatsTest : FunSpec({
         }
 
         test("When the user leaves the chat they were accessing on two devices, both subscriptions should be removed") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val phoneSubscriber = createMessageUpdatesSubscriber(userId, chatId)
@@ -109,21 +106,18 @@ class GroupChatsTest : FunSpec({
 
     context("delete(Int)") {
         test("Deleting a nonempty chat should throw an exception") {
-            val adminId = "admin ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
             shouldThrowExactly<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
 
         test("Deleting a chat should delete it along with its messages and messages statuses") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
             MessageStatuses.create(messageId, userId, MessageStatus.READ)
-            GroupChatUsers.removeUsers(
-                chatId,
-                setOf(adminId, userId)
-            ) // The chat is deleted when every user has left it.
+            GroupChatUsers.removeUsers(chatId, setOf(adminId, userId)) // The chat is deleted once every user has left.
             GroupChats.count().shouldBeZero()
             Messages.count().shouldBeZero()
             MessageStatuses.count().shouldBeZero()
@@ -132,20 +126,20 @@ class GroupChatsTest : FunSpec({
 
     context("isNonemptyChatAdmin(String)") {
         test("A non-admin shouldn't be the admin of a nonempty group chat") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             GroupChats.create(adminId, chat)
             GroupChats.isNonemptyChatAdmin(userId).shouldBeFalse()
         }
 
         test("An admin of an empty group chat shouldn't be the admin of a nonempty group chat") {
-            val adminId = "admin ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             GroupChats.create(adminId, NewGroupChat("Title"))
             GroupChats.isNonemptyChatAdmin(adminId).shouldBeFalse()
         }
 
         test("An admin of a nonempty group chat should be the admin of a nonempty group chat") {
-            val (adminId, userId) = (1..2).map { "user $it ID" }
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = setOf(userId))
             GroupChats.create(adminId, chat)
             GroupChats.isNonemptyChatAdmin(adminId).shouldBeTrue()
@@ -154,7 +148,7 @@ class GroupChatsTest : FunSpec({
 
     context("search(String, String)") {
         test("Chats should be searched case-insensitively") {
-            val adminId = "admin ID"
+            val adminId = createVerifiedUsers(1)[0].info.id
             val chats = listOf(NewGroupChat("Title 1"), NewGroupChat("Title 2"), NewGroupChat("Iron Man Fan Club"))
             chats.forEach { GroupChats.create(adminId, it) }
             GroupChats.search(adminId, "itle ").map { it.title } shouldBe listOf(chats[0].title, chats[1].title)

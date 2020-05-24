@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
 
 /**
- * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It is
+ * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
  * assumed that all enum values are lowercase in the DB.
  */
 class PostgresEnum<T : Enum<T>>(

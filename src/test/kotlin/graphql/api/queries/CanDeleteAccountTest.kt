@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
@@ -23,8 +22,6 @@ fun canDeleteAccount(accessToken: String): Boolean =
     operateCanDeleteAccount(accessToken).data!!["canDeleteAccount"] as Boolean
 
 class CanDeleteAccountTest : FunSpec({
-    listener(AppListener())
-
     test("An account should be able to be deleted if the user is the admin of an empty group chat") {
         val token = createVerifiedUsers(1)[0].accessToken
         createGroupChat(NewGroupChat("Title"), token)

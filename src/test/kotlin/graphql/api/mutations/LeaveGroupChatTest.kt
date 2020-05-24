@@ -3,14 +3,15 @@ package com.neelkamath.omniChat.test.graphql.api.mutations
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChatUsers
+import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
 import com.neelkamath.omniChat.graphql.MissingNewAdminIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.operateMessageUpdates
+import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
 
@@ -19,9 +20,6 @@ const val LEAVE_GROUP_CHAT_QUERY: String = """
         leaveGroupChat(chatId: ${"$"}chatId, newAdminId: ${"$"}newAdminId)
     }
 """
-
-fun errLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): String =
-    operateLeaveGroupChat(accessToken, chatId, newAdminId).errors!![0].message
 
 private fun operateLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): GraphQlResponse =
     operateQueryOrMutation(
@@ -33,9 +31,10 @@ private fun operateLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: 
 fun leaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): Boolean =
     operateLeaveGroupChat(accessToken, chatId, newAdminId).data!!["leaveGroupChat"] as Boolean
 
-class LeaveGroupChatTest : FunSpec({
-    listener(AppListener())
+fun errLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): String =
+    operateLeaveGroupChat(accessToken, chatId, newAdminId).errors!![0].message
 
+class LeaveGroupChatTest : FunSpec({
     test("A non-admin should leave the chat") {
         val (admin, user) = createVerifiedUsers(2)
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
@@ -84,9 +83,23 @@ class LeaveGroupChatTest : FunSpec({
         val (admin, user) = createVerifiedUsers(2)
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
-        operateMessageUpdates(chatId, user.accessToken) { incoming, _ ->
+        receiveMessageUpdates(chatId, user.accessToken) { incoming, _ ->
             leaveGroupChat(user.accessToken, chatId)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
+    }
+
+    test(
+        """
+        Given a non-admin leaving the chat,
+        when they specify a new admin,
+        then the admin shouldn't be changed
+        """
+    ) {
+        val (user1, user2, user3) = createVerifiedUsers(2)
+        val chat = NewGroupChat("Title", userIdList = setOf(user2.info.id, user3.info.id))
+        val chatId = createGroupChat(chat, user1.accessToken)
+        leaveGroupChat(user2.accessToken, chatId, user3.info.id)
+        GroupChats.isAdmin(user1.info.id, chatId).shouldBeTrue()
     }
 })

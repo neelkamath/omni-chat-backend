@@ -4,7 +4,6 @@ import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.db.PrivateChats
 import com.neelkamath.omniChat.graphql.ChatExistsException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -16,18 +15,16 @@ const val CREATE_PRIVATE_CHAT_QUERY: String = """
     }
 """
 
-fun errCreatePrivateChat(userId: String, accessToken: String): String =
-    operateCreatePrivateChat(userId, accessToken).errors!![0].message
-
 private fun operateCreatePrivateChat(userId: String, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(CREATE_PRIVATE_CHAT_QUERY, variables = mapOf("userId" to userId), accessToken = accessToken)
 
 fun createPrivateChat(userId: String, accessToken: String): Int =
     operateCreatePrivateChat(userId, accessToken).data!!["createPrivateChat"] as Int
 
-class CreatePrivateChatTest : FunSpec({
-    listener(AppListener())
+fun errCreatePrivateChat(userId: String, accessToken: String): String =
+    operateCreatePrivateChat(userId, accessToken).errors!![0].message
 
+class CreatePrivateChatTest : FunSpec({
     test("A chat should be created") {
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)

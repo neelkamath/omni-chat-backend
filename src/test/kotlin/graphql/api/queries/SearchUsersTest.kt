@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
@@ -22,12 +21,10 @@ private fun operateSearchUsers(query: String): GraphQlResponse =
 
 fun searchUsers(query: String): List<AccountInfo> {
     val data = operateSearchUsers(query).data!!["searchUsers"] as List<*>
-    return jsonMapper.convertValue(data)
+    return objectMapper.convertValue(data)
 }
 
 class SearchUsersTest : FunSpec({
-    listener(AppListener())
-
     test("Users should be searched") {
         val accounts = listOf(
             NewAccount(username = "iron_man", password = "p", emailAddress = "tony@example.com"),

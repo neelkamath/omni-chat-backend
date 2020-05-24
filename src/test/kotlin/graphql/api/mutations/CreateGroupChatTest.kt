@@ -5,10 +5,10 @@ import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.Messages
+import com.neelkamath.omniChat.findUserById
 import com.neelkamath.omniChat.graphql.InvalidDescriptionLengthException
 import com.neelkamath.omniChat.graphql.InvalidTitleLengthException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
-import com.neelkamath.omniChat.test.AppListener
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -20,26 +20,24 @@ const val CREATE_GROUP_CHAT_QUERY: String = """
     }
 """
 
-fun errCreateGroupChat(chat: NewGroupChat, accessToken: String): String =
-    operateCreateGroupChat(chat, accessToken).errors!![0].message
-
 private fun operateCreateGroupChat(chat: NewGroupChat, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(CREATE_GROUP_CHAT_QUERY, variables = mapOf("chat" to chat), accessToken = accessToken)
 
 fun createGroupChat(chat: NewGroupChat, accessToken: String): Int =
     operateCreateGroupChat(chat, accessToken).data!!["createGroupChat"] as Int
 
-class CreateGroupChatTest : FunSpec({
-    listener(AppListener())
+fun errCreateGroupChat(chat: NewGroupChat, accessToken: String): String =
+    operateCreateGroupChat(chat, accessToken).errors!![0].message
 
+class CreateGroupChatTest : FunSpec({
     test("A group chat should be created, ignoring the user's own ID") {
         val (admin, user1, user2) = createVerifiedUsers(3)
         val chat = NewGroupChat("Title", "Description", setOf(admin.info.id, user1.info.id, user2.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
         val userIdList = chat.userIdList + admin.info.id
-        GroupChats.read(admin.info.id) shouldBe listOf(
-            GroupChat(chatId, admin.info.id, userIdList, chat.title, chat.description, Messages.readChat(chatId))
-        )
+        val users = userIdList.map(::findUserById).toSet()
+        val groupChat = GroupChat(chatId, admin.info.id, users, chat.title, chat.description, Messages.readChat(chatId))
+        GroupChats.read(admin.info.id) shouldBe listOf(groupChat)
     }
 
     test("A group chat should not be created when supplied with an invalid user ID") {
