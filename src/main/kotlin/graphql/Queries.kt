@@ -16,7 +16,7 @@ fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean = emailAddressExi
 
 fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
     val username = env.getArgument<String>("username")
-    if (username.toLowerCase() != username) throw UsernameNotLowercaseException()
+    if (username.toLowerCase() != username) throw UsernameNotLowercaseException
     return isUsernameTaken(username)
 }
 
@@ -39,10 +39,10 @@ fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
 
 fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
     val login = env.parseArgument<Login>("login")
-    if (!isUsernameTaken(login.username)) throw NonexistentUserException()
+    if (!isUsernameTaken(login.username)) throw NonexistentUserException
     val userId = findUserByUsername(login.username).id
-    if (!isEmailVerified(userId)) throw UnverifiedEmailAddressException()
-    if (!isValidLogin(login)) throw IncorrectPasswordException()
+    if (!isEmailVerified(userId)) throw UnverifiedEmailAddressException
+    if (!isValidLogin(login)) throw IncorrectPasswordException
     return buildAuthToken(userId)
 }
 
@@ -51,7 +51,7 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     val userId = try {
         JWT.decode(refreshToken).subject
     } catch (exception: JWTDecodeException) {
-        throw UnauthorizedException()
+        throw UnauthorizedException
     }
     return buildAuthToken(userId)
 }
@@ -59,7 +59,7 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
 fun searchChatMessages(env: DataFetchingEnvironment): List<Message> {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val query = env.getArgument<String>("query")
     return Messages.search(chatId, query)
 }

@@ -28,6 +28,6 @@ class ResetPasswordTest : FunSpec({
     }
 
     test("Requesting a password reset for an unregistered address should throw an exception") {
-        errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException().message
+        errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException.message
     }
 })

@@ -50,22 +50,22 @@ class CreateReadStatusTest : FunSpec({
     test("Creating a duplicate status should fail") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createReadStatus(messageId, user1.accessToken)
-        errCreateReadStatus(messageId, user1.accessToken) shouldBe DuplicateStatusException().message
+        errCreateReadStatus(messageId, user1.accessToken) shouldBe DuplicateStatusException.message
     }
 
     test("Creating a status on a message from a chat the user isn't in should fail") {
         val (messageId) = createUtilizedPrivateChat()
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateReadStatus(messageId, token) shouldBe InvalidMessageIdException().message
+        errCreateReadStatus(messageId, token) shouldBe InvalidMessageIdException.message
     }
 
     test("Creating a status on a nonexistent message should fail") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateReadStatus(messageId = 1, accessToken = token) shouldBe InvalidMessageIdException().message
+        errCreateReadStatus(messageId = 1, accessToken = token) shouldBe InvalidMessageIdException.message
     }
 
     test("Creating a status on the user's own message should fail") {
         val (messageId, _, user2) = createUtilizedPrivateChat()
-        errCreateReadStatus(messageId, user2.accessToken) shouldBe InvalidMessageIdException().message
+        errCreateReadStatus(messageId, user2.accessToken) shouldBe InvalidMessageIdException.message
     }
 })

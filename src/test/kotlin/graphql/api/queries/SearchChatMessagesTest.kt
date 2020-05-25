@@ -50,6 +50,6 @@ class SearchChatMessagesTest : FunSpec({
     test("Searching in a chat the user isn't in should return an error") {
         val (user1, user2, user3) = createVerifiedUsers(3)
         val chatId = createPrivateChat(user3.info.id, user2.accessToken)
-        errSearchChatMessages(chatId, "query", user1.accessToken) shouldBe InvalidChatIdException().message
+        errSearchChatMessages(chatId, "query", user1.accessToken) shouldBe InvalidChatIdException.message
     }
 })

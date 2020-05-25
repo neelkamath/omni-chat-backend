@@ -62,7 +62,7 @@ class LeaveGroupChatTest : FunSpec({
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
         val newAdminId = if (supplyingId) "invalid new admin ID" else null
-        val exception = if (supplyingId) InvalidNewAdminIdException() else MissingNewAdminIdException()
+        val exception = if (supplyingId) InvalidNewAdminIdException else MissingNewAdminIdException
         errLeaveGroupChat(admin.accessToken, chatId, newAdminId) shouldBe exception.message
     }
 
@@ -76,7 +76,7 @@ class LeaveGroupChatTest : FunSpec({
 
     test("Leaving a group chat the user is not in should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errLeaveGroupChat(token, chatId = 1) shouldBe InvalidChatIdException().message
+        errLeaveGroupChat(token, chatId = 1) shouldBe InvalidChatIdException.message
     }
 
     test("The user should be unsubscribed from the chat's message updates when they leave the chat") {

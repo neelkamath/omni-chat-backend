@@ -9,6 +9,6 @@ import org.reactivestreams.Publisher
 
 fun operateMessageUpdates(env: DataFetchingEnvironment): Publisher<MessageUpdates> {
     val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException()
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     return subscribeToMessageUpdates(env.userId!!, chatId)
 }

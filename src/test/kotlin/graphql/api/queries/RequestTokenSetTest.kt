@@ -38,17 +38,17 @@ class RequestTokenSetTest : FunSpec({
     }
 
     test("A token set shouldn't be created for a nonexistent user") {
-        errRequestTokenSet(Login("username", "password")) shouldBe NonexistentUserException().message
+        errRequestTokenSet(Login("username", "password")) shouldBe NonexistentUserException.message
     }
 
     test("A token set shouldn't be created for a user who hasn't verified their email") {
         val login = Login("username", "password")
         createAccount(NewAccount(login.username, login.password, "username@example.com"))
-        errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException().message
+        errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException.message
     }
 
     test("A token set shouldn't be created for an incorrect password") {
         val login = createVerifiedUsers(1)[0].login
-        errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException().message
+        errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException.message
     }
 })

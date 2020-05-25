@@ -42,22 +42,22 @@ class CreateDeliveredStatusTest : FunSpec({
     test("Creating a duplicate status should fail") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createDeliveredStatus(messageId, user1.accessToken)
-        errCreateDeliveredStatus(messageId, user1.accessToken) shouldBe DuplicateStatusException().message
+        errCreateDeliveredStatus(messageId, user1.accessToken) shouldBe DuplicateStatusException.message
     }
 
     test("Creating a status on the user's own message should fail") {
         val (messageId, _, user2) = createUtilizedPrivateChat()
-        errCreateDeliveredStatus(messageId, user2.accessToken) shouldBe InvalidMessageIdException().message
+        errCreateDeliveredStatus(messageId, user2.accessToken) shouldBe InvalidMessageIdException.message
     }
 
     test("Creating a status on a message from a chat the user isn't in should fail") {
         val (messageId) = createUtilizedPrivateChat()
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateDeliveredStatus(messageId, token) shouldBe InvalidMessageIdException().message
+        errCreateDeliveredStatus(messageId, token) shouldBe InvalidMessageIdException.message
     }
 
     test("Creating a status on a nonexistent message should fail") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateDeliveredStatus(messageId = 1, accessToken = token) shouldBe InvalidMessageIdException().message
+        errCreateDeliveredStatus(messageId = 1, accessToken = token) shouldBe InvalidMessageIdException.message
     }
 })

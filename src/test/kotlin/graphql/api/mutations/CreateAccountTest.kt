@@ -36,13 +36,13 @@ class CreateAccountTest : FunSpec({
     test("An account with a taken username shouldn't be created") {
         val account = NewAccount("username", "password", "username@example.com")
         createAccount(account)
-        errCreateAccount(account) shouldBe UsernameTakenException().message
+        errCreateAccount(account) shouldBe UsernameTakenException.message
     }
 
     test("An account with a taken email shouldn't be created") {
         val address = "username@example.com"
         createAccount(NewAccount("username1", "password", address))
-        errCreateAccount(NewAccount("username2", "password", address)) shouldBe EmailAddressTakenException().message
+        errCreateAccount(NewAccount("username2", "password", address)) shouldBe EmailAddressTakenException.message
     }
 
     test("Attempting to create an account with a non-lowercase username should throw an exception") {
@@ -54,6 +54,6 @@ class CreateAccountTest : FunSpec({
             }
             """,
             variables = mapOf("account" to account)
-        ).errors!![0].message shouldBe UsernameNotLowercaseException().message
+        ).errors!![0].message shouldBe UsernameNotLowercaseException.message
     }
 })

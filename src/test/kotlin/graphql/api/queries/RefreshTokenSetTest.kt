@@ -37,6 +37,6 @@ class RefreshTokenSetTest : FunSpec({
     }
 
     test("An invalid refresh token should throw an exception") {
-        errRefreshTokenSet(refreshToken = "invalid token") shouldBe UnauthorizedException().message
+        errRefreshTokenSet(refreshToken = "invalid token") shouldBe UnauthorizedException.message
     }
 })

@@ -32,6 +32,6 @@ class SendEmailAddressVerificationTest : FunSpec({
     }
 
     test("Sending a verification email to an unregistered address should throw an exception") {
-        errSendEmailVerification("username@example.com") shouldBe UnregisteredEmailAddressException().message
+        errSendEmailVerification("username@example.com") shouldBe UnregisteredEmailAddressException.message
     }
 })

@@ -57,13 +57,13 @@ class UpdateGroupChatTest : FunSpec({
         val chatId = createGroupChat(NewGroupChat("Title"), admin.accessToken)
         val update = GroupChatUpdate(chatId, newAdminId = notInvitedUser.info.id)
         val response = operateUpdateGroupChat(update, admin.accessToken)
-        response.errors!![0].message shouldBe InvalidNewAdminIdException().message
+        response.errors!![0].message shouldBe InvalidNewAdminIdException.message
     }
 
     test("Updating a nonexistent chat should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
         val response = operateUpdateGroupChat(GroupChatUpdate(chatId = 1), token)
-        response.errors!![0].message shouldBe InvalidChatIdException().message
+        response.errors!![0].message shouldBe InvalidChatIdException.message
     }
 
     test("Updating a chat the user isn't the admin of should throw an exception") {
@@ -71,6 +71,6 @@ class UpdateGroupChatTest : FunSpec({
         val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
         val chatId = createGroupChat(chat, admin.accessToken)
         val response = operateUpdateGroupChat(GroupChatUpdate(chatId), user.accessToken)
-        response.errors!![0].message shouldBe UnauthorizedException().message
+        response.errors!![0].message shouldBe UnauthorizedException.message
     }
 })

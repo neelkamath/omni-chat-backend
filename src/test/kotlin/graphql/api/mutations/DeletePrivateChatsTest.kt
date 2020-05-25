@@ -36,7 +36,7 @@ class DeletePrivateChatTest : FunSpec({
 
     test("Deleting an invalid chat ID should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errDeletePrivateChat(chatId = 1, accessToken = token) shouldBe InvalidChatIdException().message
+        errDeletePrivateChat(chatId = 1, accessToken = token) shouldBe InvalidChatIdException.message
     }
 
     test("Deleting a chat should unsubscribe the user from its message updates") {

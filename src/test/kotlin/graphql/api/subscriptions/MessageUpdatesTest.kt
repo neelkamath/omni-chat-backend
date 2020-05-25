@@ -168,7 +168,7 @@ class MessageUpdatesTest : FunSpec({
 
     test("Subscribing to updates in a chat the user isn't in should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errMessageUpdates(chatId = 1, exception = InvalidChatIdException(), accessToken = token)
+        errMessageUpdates(chatId = 1, exception = InvalidChatIdException, accessToken = token)
     }
 
     /**

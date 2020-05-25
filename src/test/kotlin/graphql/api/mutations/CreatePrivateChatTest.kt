@@ -34,16 +34,16 @@ class CreatePrivateChatTest : FunSpec({
     test("An existing chat shouldn't be recreated") {
         val (user1, user2) = createVerifiedUsers(2)
         createPrivateChat(user2.info.id, user1.accessToken)
-        errCreatePrivateChat(user2.info.id, user1.accessToken) shouldBe ChatExistsException().message
+        errCreatePrivateChat(user2.info.id, user1.accessToken) shouldBe ChatExistsException.message
     }
 
     test("A chat shouldn't be created with a nonexistent user") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreatePrivateChat("a nonexistent user ID", token) shouldBe InvalidUserIdException().message
+        errCreatePrivateChat("a nonexistent user ID", token) shouldBe InvalidUserIdException.message
     }
 
     test("A chat shouldn't be created with the user themselves") {
         val user = createVerifiedUsers(1)[0]
-        errCreatePrivateChat(user.info.id, user.accessToken) shouldBe InvalidUserIdException().message
+        errCreatePrivateChat(user.info.id, user.accessToken) shouldBe InvalidUserIdException.message
     }
 })

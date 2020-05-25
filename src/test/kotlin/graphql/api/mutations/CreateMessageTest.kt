@@ -54,13 +54,13 @@ class CreateMessageTest : FunSpec({
         val (user1, user2) = createVerifiedUsers(2)
         val chat1Id = createGroupChat(NewGroupChat("Title"), user1.accessToken)
         createGroupChat(NewGroupChat("Title"), user2.accessToken)
-        errCreateMessage(chat1Id, "message", user2.accessToken) shouldBe InvalidChatIdException().message
+        errCreateMessage(chat1Id, "message", user2.accessToken) shouldBe InvalidChatIdException.message
     }
 
     test("Sending a message longer than 10,000 characters should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
         val chatId = createGroupChat(NewGroupChat("Title"), token)
         val message = CharArray(Messages.MAX_TEXT_LENGTH + 1) { 'a' }.joinToString("")
-        errCreateMessage(chatId, message, token) shouldBe InvalidMessageLengthException().message
+        errCreateMessage(chatId, message, token) shouldBe InvalidMessageLengthException.message
     }
 })

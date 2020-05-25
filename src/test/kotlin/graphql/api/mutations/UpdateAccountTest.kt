@@ -55,12 +55,12 @@ class UpdateAccountTest : FunSpec({
     test("Updating a username to one already taken shouldn't allow the account to be updated") {
         val (user1, user2) = createVerifiedUsers(2)
         errUpdateAccount(AccountUpdate(username = user2.info.username), user1.accessToken) shouldBe
-                UsernameTakenException().message
+                UsernameTakenException.message
     }
 
     test("Updating an email to one already taken shouldn't allow the account to be updated") {
         val (user1, user2) = createVerifiedUsers(2)
         errUpdateAccount(AccountUpdate(emailAddress = user2.info.emailAddress), user1.accessToken) shouldBe
-                EmailAddressTakenException().message
+                EmailAddressTakenException.message
     }
 })

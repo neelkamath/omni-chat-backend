@@ -38,7 +38,7 @@ class CreateContactsTest : FunSpec({
     test("If one of the contacts to be saved is invalid, then none of them should be saved") {
         val (owner, user) = createVerifiedUsers(2)
         val contacts = listOf(user.info.id, "invalid user ID")
-        errCreateContacts(contacts, owner.accessToken) shouldBe InvalidContactException().message
+        errCreateContacts(contacts, owner.accessToken) shouldBe InvalidContactException.message
         Contacts.read(owner.info.id).shouldBeEmpty()
     }
 })

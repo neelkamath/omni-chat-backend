@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 private val scalarDateTime: GraphQLScalarType =
-    GraphQLScalarType.Builder().name("DateTime").coercing(DateTimeCoercing()).build()
+    GraphQLScalarType.Builder().name("DateTime").coercing(DateTimeCoercing).build()
 
 val graphQl: GraphQL = run {
     val schemaInput = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
@@ -37,7 +37,7 @@ val graphQl: GraphQL = run {
     GraphQL.newGraphQL(schema).build()
 }
 
-private class DateTimeCoercing : Coercing<LocalDateTime, String> {
+private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
         LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
 
@@ -64,7 +64,7 @@ inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
  * pass valid credentials.
  */
 fun DataFetchingEnvironment.verifyAuth() {
-    userId ?: throw UnauthorizedException()
+    userId ?: throw UnauthorizedException
 }
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder

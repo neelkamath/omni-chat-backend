@@ -31,6 +31,6 @@ class IsUsernameTakenTest : FunSpec({
     }
 
     test("Checking if a non-lowercase username has been taken should return an error") {
-        errIsUsernameTake("Username") shouldBe UsernameNotLowercaseException().message
+        errIsUsernameTake("Username") shouldBe UsernameNotLowercaseException.message
     }
 })

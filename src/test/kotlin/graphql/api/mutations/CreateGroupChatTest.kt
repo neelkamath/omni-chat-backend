@@ -43,26 +43,26 @@ class CreateGroupChatTest : FunSpec({
     test("A group chat should not be created when supplied with an invalid user ID") {
         val chat = NewGroupChat("Title", userIdList = setOf("invalid user ID"))
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateGroupChat(chat, token) shouldBe InvalidUserIdException().message
+        errCreateGroupChat(chat, token) shouldBe InvalidUserIdException.message
     }
 
     test("A group chat should not be created if an empty title is supplied") {
         val chat = NewGroupChat(title = "")
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateGroupChat(chat, token) shouldBe InvalidTitleLengthException().message
+        errCreateGroupChat(chat, token) shouldBe InvalidTitleLengthException.message
     }
 
     test("A group chat should not be created if the title is too long") {
         val title = CharArray(GroupChats.MAX_TITLE_LENGTH + 1) { 'a' }.joinToString("")
         val chat = NewGroupChat(title)
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateGroupChat(chat, token) shouldBe InvalidTitleLengthException().message
+        errCreateGroupChat(chat, token) shouldBe InvalidTitleLengthException.message
     }
 
     test("A group chat should not be created if the description has an invalid length") {
         val description = CharArray(GroupChats.MAX_DESCRIPTION_LENGTH + 1) { 'a' }.joinToString("")
         val chat = NewGroupChat("Title", description)
         val token = createVerifiedUsers(1)[0].accessToken
-        errCreateGroupChat(chat, token) shouldBe InvalidDescriptionLengthException().message
+        errCreateGroupChat(chat, token) shouldBe InvalidDescriptionLengthException.message
     }
 })

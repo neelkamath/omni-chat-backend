@@ -43,17 +43,17 @@ class DeleteMessageTest : FunSpec({
         val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user2.info.id, user1.accessToken)
         val messageId = messageAndReadId(chatId, "text", user2.accessToken)
-        errDeleteMessage(messageId, chatId, user1.accessToken) shouldBe InvalidMessageIdException().message
+        errDeleteMessage(messageId, chatId, user1.accessToken) shouldBe InvalidMessageIdException.message
     }
 
     test("Deleting a nonexistent message should return an error") {
         val token = createVerifiedUsers(1)[0].accessToken
         val chatId = createGroupChat(NewGroupChat("Title"), token)
-        errDeleteMessage(id = 0, chatId = chatId, accessToken = token) shouldBe InvalidMessageIdException().message
+        errDeleteMessage(id = 0, chatId = chatId, accessToken = token) shouldBe InvalidMessageIdException.message
     }
 
     test("Deleting a message from a nonexistent chat should throw an exception") {
         val token = createVerifiedUsers(1)[0].accessToken
-        errDeleteMessage(id = 0, chatId = 0, accessToken = token) shouldBe InvalidChatIdException().message
+        errDeleteMessage(id = 0, chatId = 0, accessToken = token) shouldBe InvalidChatIdException.message
     }
 })
