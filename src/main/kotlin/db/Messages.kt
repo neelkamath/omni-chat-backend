@@ -44,16 +44,14 @@ object Messages : IntIdTable() {
         readChat(chatId).filter { it.text.contains(query, ignoreCase = true) }
 
     /** Case-insensitively [query]s every text message sent in every chat the [userId] is in. */
-    fun search(userId: String, query: String): List<ChatMessage> {
-        val chats = PrivateChats.read(userId) + GroupChats.read(userId)
-        return chats.map {
+    fun search(userId: String, query: String): List<ChatMessages> =
+        PrivateChats.read(userId).plus(GroupChats.read(userId)).map {
             val id = when (it) {
                 is PrivateChat -> it.id
                 is GroupChat -> it.id
             }
-            ChatMessage(it, search(id, query))
+            ChatMessages(it, search(id, query))
         }
-    }
 
     /** Returns the chat [id]'s messages in the order of creation. */
     fun readChat(id: Int): List<Message> = transact {
@@ -76,11 +74,6 @@ object Messages : IntIdTable() {
     /** Returns the ID of the chat which contains the [messageId]. */
     fun findChatFromMessage(messageId: Int): Int = transact {
         select { Messages.id eq messageId }.first()[chatId]
-    }
-
-    /** Returns the ID of the user who sent the [messageId]. */
-    fun readSender(messageId: Int): String = transact {
-        select { Messages.id eq messageId }.first()[senderId]
     }
 
     /**

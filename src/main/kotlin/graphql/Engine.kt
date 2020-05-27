@@ -72,6 +72,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("readAccount", ::readAccount)
     .dataFetcher("isUsernameTaken", ::isUsernameTaken)
     .dataFetcher("isEmailAddressTaken", ::isEmailAddressTaken)
+    .dataFetcher("readChat", ::readChat)
     .dataFetcher("readChats", ::readChats)
     .dataFetcher("searchChats", ::searchChats)
     .dataFetcher("readContacts", ::readContacts)
@@ -104,22 +105,23 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     builder.dataFetcher("messageUpdates", ::operateMessageUpdates)
 
 private fun wireTypeChat(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder.typeResolver {
-    when (val obj = it.getObject<Any>()) {
-        is PrivateChat -> it.schema.getObjectType("PrivateChat")
-        is GroupChat -> it.schema.getObjectType("GroupChat")
-        else -> throw Error("$obj was neither a PrivateChat, nor a GroupChat.")
+    val type = when (val obj = it.getObject<Any>()) {
+        is PrivateChat -> "PrivateChat"
+        is GroupChat -> "GroupChat"
+        else -> throw Error("$obj was neither a PrivateChat nor a GroupChat.")
     }
+    it.schema.getObjectType(type)
 }
 
 private fun wireTypeMessageUpdatesInfo(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
     builder.typeResolver {
-        when (val obj = it.getObject<Any>()) {
-            is CreatedSubscription -> it.schema.getObjectType("CreatedSubscription")
-            is Message -> it.schema.getObjectType("Message")
-            is DeletedMessage -> it.schema.getObjectType("DeletedMessage")
-            is MessageDeletionPoint -> it.schema.getObjectType("MessageDeletionPoint")
-            is UserChatMessagesRemoval -> it.schema.getObjectType("UserChatMessagesRemoval")
-            is DeletionOfEveryMessage -> it.schema.getObjectType("DeletionOfEveryMessage")
+        val type = when (val obj = it.getObject<Any>()) {
+            is CreatedSubscription -> "CreatedSubscription"
+            is Message -> "Message"
+            is DeletedMessage -> "DeletedMessage"
+            is MessageDeletionPoint -> "MessageDeletionPoint"
+            is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
+            is DeletionOfEveryMessage -> "DeletionOfEveryMessage"
             else -> throw Error(
                 """
                 $obj wasn't a CreatedSubscription, Message, DeletedMessage, MessageDeletionPoint, 
@@ -127,6 +129,7 @@ private fun wireTypeMessageUpdatesInfo(builder: TypeRuntimeWiring.Builder): Type
                 """.trimIndent()
             )
         }
+        it.schema.getObjectType(type)
     }
 
 /** If there's a [JWTPrincipal] in the [call], the JWT's `sub` will be saved as the [ExecutionInput.Builder.context]. */

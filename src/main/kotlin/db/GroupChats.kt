@@ -112,10 +112,7 @@ object GroupChats : IntIdTable() {
         unsubscribeFromMessageUpdates(chatId)
     }
 
-    /**
-     * Searches the chats the [userId] is in. Returns the chat ID list by searching for the [query] in every chat's
-     * title case-insensitively.
-     */
+    /** Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in. */
     fun search(userId: String, query: String): List<GroupChat> {
         val chatIdList = GroupChatUsers.readChatIdList(userId)
         return transact {

@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.ChatMessage
+import com.neelkamath.omniChat.ChatMessages
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.test.createVerifiedUsers
@@ -24,7 +24,7 @@ const val SEARCH_MESSAGES_QUERY: String = """
 private fun operateSearchMessages(query: String, accessToken: String): GraphQlResponse =
     operateQueryOrMutation(SEARCH_MESSAGES_QUERY, variables = mapOf("query" to query), accessToken = accessToken)
 
-fun searchMessages(query: String, accessToken: String): List<ChatMessage> {
+fun searchMessages(query: String, accessToken: String): List<ChatMessages> {
     val messages = operateSearchMessages(query, accessToken).data!!["searchMessages"] as List<*>
     return objectMapper.convertValue(messages)
 }

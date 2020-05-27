@@ -157,4 +157,4 @@ data class CreatedSubscription(
 }
 
 /** The [chat] the [messages] belong to. */
-data class ChatMessage(val chat: Chat, val messages: List<Message>)
+data class ChatMessages(val chat: Chat, val messages: List<Message>)

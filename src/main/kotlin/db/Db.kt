@@ -1,8 +1,10 @@
 package com.neelkamath.omniChat.db
 
+import com.neelkamath.omniChat.Chat
 import com.neelkamath.omniChat.DeletionOfEveryMessage
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.UserChatMessagesRemoval
+import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -83,6 +85,13 @@ private fun createType(name: String, definition: String) {
 inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transaction {
     addLogger(StdOutSqlLogger)
     statement()
+}
+
+/** Throws an [InvalidChatIdException] if the [userId] isn't in the chat [id]. */
+fun readChat(id: Int, userId: String): Chat = when (id) {
+    in PrivateChats.readIdList(userId) -> PrivateChats.read(id, userId)
+    in GroupChatUsers.readChatIdList(userId) -> GroupChats.read(id)
+    else -> throw InvalidChatIdException
 }
 
 /**

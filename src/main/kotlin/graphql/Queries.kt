@@ -16,8 +16,7 @@ fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean = emailAddressExi
 
 fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
     val username = env.getArgument<String>("username")
-    if (username.toLowerCase() != username) throw UsernameNotLowercaseException
-    return isUsernameTaken(username)
+    return if (username == username.toLowerCase()) isUsernameTaken(username) else throw UsernameNotLowercaseException
 }
 
 fun readAccount(env: DataFetchingEnvironment): AccountInfo {
@@ -25,11 +24,15 @@ fun readAccount(env: DataFetchingEnvironment): AccountInfo {
     return findUserById(env.userId!!)
 }
 
+fun readChat(env: DataFetchingEnvironment): Chat {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("id")
+    return readChat(chatId, env.userId!!)
+}
+
 fun readChats(env: DataFetchingEnvironment): List<Chat> {
     env.verifyAuth()
-    val groupChats = GroupChats.read(env.userId!!)
-    val privateChats = PrivateChats.read(env.userId!!)
-    return groupChats + privateChats
+    return GroupChats.read(env.userId!!) + PrivateChats.read(env.userId!!)
 }
 
 fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
@@ -50,7 +53,7 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     val refreshToken = env.getArgument<String>("refreshToken")
     val userId = try {
         JWT.decode(refreshToken).subject
-    } catch (exception: JWTDecodeException) {
+    } catch (_: JWTDecodeException) {
         throw UnauthorizedException
     }
     return buildAuthToken(userId)
@@ -76,15 +79,15 @@ fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }
 }
 
-fun searchMessages(env: DataFetchingEnvironment): List<ChatMessage> {
+fun searchMessages(env: DataFetchingEnvironment): List<ChatMessages> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
     return Messages.search(env.userId!!, query)
 }
 
 /**
- * Case-insensitively matches the [UserRepresentation.username], [UserRepresentation.firstName],
- * [UserRepresentation.lastName], and [UserRepresentation.email] with the [query].
+ * Case-insensitively [query]s the [UserRepresentation.username], [UserRepresentation.firstName],
+ * [UserRepresentation.lastName], and [UserRepresentation.email].
  */
 private fun AccountInfo.matches(query: String): Boolean =
     listOfNotNull(username, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }

@@ -14,7 +14,7 @@ Here's what a standard project iteration looks like.
 
     We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test using the GraphQL engine, and an integration test using the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly.
     
-    If you're writing tests for the GraphQL API, perform the following steps. See [`RefreshTokenSetTest.kt`](../src/test/kotlin/graphql/api/queries/RefreshTokenSetTest.kt) for an example on queries and mutations, and [`MessageUpdatesTest.kt`](../src/test/kotlin/graphql/api/subscriptions/MessageUpdatesTest.kt) for an example on subscriptions.
+    If you're writing tests for the GraphQL API, perform the following steps (see [`RefreshTokenSetTest.kt`](../src/test/kotlin/graphql/api/queries/RefreshTokenSetTest.kt) for an example on queries and mutations, and [`MessageUpdatesTest.kt`](../src/test/kotlin/graphql/api/subscriptions/MessageUpdatesTest.kt) for an example on subscriptions):
     1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>Fragment` (e.g., `PRIVATE_CHAT_DELETION_FRAGMENT`).    
     1. Create a file named using the format `<OPERATION>Test.kt` (e.g., `DeleteAccountTest.kt`).
     1. Create a `const val` `String` for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES_QUERY`). The query should be named using the operation (e.g., the operation `searchMessages` would have it's query named `SearchMessages`).
@@ -82,7 +82,7 @@ Here's what a standard project iteration looks like.
     ```
 1. Reports save to `build/reports/tests/test/`. Update the code and run tests any number of times: 
     1. `gradle test`
-    1. Optionally, debug.
+    1. Optionally, debug:
         1. Wait for `Listening for transport dt_socket at address: 5005` to be printed.
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 

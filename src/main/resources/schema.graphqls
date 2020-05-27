@@ -9,9 +9,9 @@ schema {
 
 type Query {
   """
-  Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
-  the admin of a group chat containing users other than themselves. In this case, they must first appoint a different
-  user as the admin.
+  Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
+  admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
+  as the admin.
 
   You must send an access token with this request.
   """
@@ -56,6 +56,15 @@ type Query {
   You must send an access token with this request.
   """
   readChats: [Chat!]!
+
+  """
+  Returns the chat `id`.
+
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+
+  You must send an access token with this request.
+  """
+  readChat(id: Int!): Chat!
 
   """
   Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with

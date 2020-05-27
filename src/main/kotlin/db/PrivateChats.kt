@@ -36,10 +36,16 @@ object PrivateChats : IntIdTable() {
      *
      * If you just need the chat IDs, [readIdList] is more efficient.
      */
-    fun read(userId: String): List<PrivateChat> = readRows(userId).map {
-        val chatId = it[id].value
-        val otherUserId = if (it[user1Id] == userId) it[user2Id] else it[user1Id]
-        PrivateChat(chatId, findUserById(otherUserId), Messages.read(chatId, userId))
+    fun read(userId: String): List<PrivateChat> = readRows(userId).map { buildPrivateChat(it, userId) }
+
+    fun read(id: Int, userId: String): PrivateChat = transact {
+        select { PrivateChats.id eq id }.first()
+    }.let { buildPrivateChat(it, userId) }
+
+    private fun buildPrivateChat(row: ResultRow, userId: String): PrivateChat {
+        val chatId = row[id].value
+        val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
+        return PrivateChat(chatId, findUserById(otherUserId), Messages.read(chatId, userId))
     }
 
     /**

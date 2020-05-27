@@ -41,7 +41,7 @@ object MessageStatuses : IntIdTable() {
      * sender of the [messageId]. You can check if the [status] already [exists].
      */
     fun create(messageId: Int, userId: String, status: MessageStatus) {
-        if (Messages.readSender(messageId) == userId)
+        if (Messages.read(messageId).sender.id == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
         if (exists(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"

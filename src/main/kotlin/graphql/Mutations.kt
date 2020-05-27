@@ -7,7 +7,7 @@ import graphql.schema.DataFetchingEnvironment
 fun createAccount(env: DataFetchingEnvironment): Boolean {
     val account = try {
         env.parseArgument<NewAccount>("account")
-    } catch (exception: IllegalArgumentException) {
+    } catch (_: IllegalArgumentException) {
         throw UsernameNotLowercaseException
     }
     when {
@@ -106,7 +106,7 @@ fun deleteMessage(env: DataFetchingEnvironment): Boolean {
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.exists(messageId, chatId) || Messages.readSender(messageId) != env.userId!!)
+    if (!Messages.exists(messageId, chatId) || Messages.read(messageId).sender.id != env.userId!!)
         throw InvalidMessageIdException
     Messages.delete(messageId)
     return true
