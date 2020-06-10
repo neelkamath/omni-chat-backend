@@ -8,7 +8,9 @@ import com.neelkamath.omniChat.db.unsubscribeFromMessageUpdates
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
-class MessageUpdatesTest : FunSpec({
+class MessageUpdatesTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     context("subscribeToMessageUpdates(String, Int)") {
         test("Notifications for message updates made before subscribing shouldn't be sent") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -17,7 +19,7 @@ class MessageUpdatesTest : FunSpec({
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             Messages.create(chatId, user2Id, "Hi")
             Messages.create(chatId, user1Id, "How are you?")
-            val messages = Messages.readChat(chatId).drop(1).toTypedArray()
+            val messages = Messages.readPrivateChat(chatId, user1Id).drop(1).map { it.node }.toTypedArray()
             subscriber.assertValues(*messages)
         }
     }
@@ -39,7 +41,8 @@ class MessageUpdatesTest : FunSpec({
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            subscriber.assertValue(Messages.readChat(chatId)[0])
+            val message = Messages.readPrivateChat(chatId, user1Id)[0].node
+            subscriber.assertValue(message)
         }
     }
-})
+}

@@ -2,10 +2,9 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.USER_ID_LENGTH
 import com.neelkamath.omniChat.db.Contacts.contactId
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
-object Contacts : IntIdTable() {
+object Contacts : Table() {
     /** The ID of the user who has saved the [contactId]. */
     private val contactOwnerId: Column<String> = varchar("contact_owner_id", USER_ID_LENGTH)
 

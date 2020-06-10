@@ -5,23 +5,23 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.IncorrectPasswordException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
+import com.neelkamath.omniChat.test.graphql.api.buildTokenSetFragment
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-const val REQUEST_TOKEN_SET_QUERY: String = """
+fun buildRequestTokenSetQuery(): String = """
     query RequestTokenSet(${"$"}login: Login!) {
         requestTokenSet(login: ${"$"}login) {
-            $TOKEN_SET_FRAGMENT
+            ${buildTokenSetFragment()}
         }
     }
 """
 
 private fun operateRequestTokenSet(login: Login): GraphQlResponse =
-    operateQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login))
+    operateQueryOrMutation(buildRequestTokenSetQuery(), variables = mapOf("login" to login))
 
 fun requestTokenSet(login: Login): TokenSet {
     val data = operateRequestTokenSet(login).data!!["requestTokenSet"] as Map<*, *>
@@ -30,9 +30,11 @@ fun requestTokenSet(login: Login): TokenSet {
 
 fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
 
-class RequestTokenSetTest : FunSpec({
+class RequestTokenSetTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("The access token should work") {
-        val login = createVerifiedUsers(1)[0].login
+        val login = createSignedInUsers(1)[0].login
         val token = requestTokenSet(login).accessToken
         readAccount(token)
     }
@@ -48,7 +50,7 @@ class RequestTokenSetTest : FunSpec({
     }
 
     test("A token set shouldn't be created for an incorrect password") {
-        val login = createVerifiedUsers(1)[0].login
+        val login = createSignedInUsers(1)[0].login
         errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException.message
     }
-})
+}

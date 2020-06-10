@@ -7,7 +7,9 @@ import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-class GroupChatUsersTest : FunSpec({
+class GroupChatUsersTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     context("addUsers(Int, Set<String>)") {
         test("Users should be added to the chat, ignoring the ones already in it") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
@@ -30,4 +32,4 @@ class GroupChatUsersTest : FunSpec({
             subscriber.assertComplete()
         }
     }
-})
+}

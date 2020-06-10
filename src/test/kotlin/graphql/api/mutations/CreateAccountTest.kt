@@ -10,20 +10,22 @@ import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-const val CREATE_ACCOUNT_QUERY: String = """
+fun buildCreateAccountQuery(): String = """
     mutation CreateAccount(${"$"}account: NewAccount!) {
         createAccount(account: ${"$"}account)
     }
 """
 
 private fun operateCreateAccount(account: NewAccount): GraphQlResponse =
-    operateQueryOrMutation(CREATE_ACCOUNT_QUERY, variables = mapOf("account" to account))
+    operateQueryOrMutation(buildCreateAccountQuery(), variables = mapOf("account" to account))
 
 fun createAccount(account: NewAccount): Boolean = operateCreateAccount(account).data!!["createAccount"] as Boolean
 
 fun errCreateAccount(account: NewAccount): String = operateCreateAccount(account).errors!![0].message
 
-class CreateAccountTest : FunSpec({
+class CreateAccountTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("An account should be created") {
         val account = NewAccount("username", "password", "username@example.com")
         createAccount(account)
@@ -56,4 +58,4 @@ class CreateAccountTest : FunSpec({
             variables = mapOf("account" to account)
         ).errors!![0].message shouldBe UsernameNotLowercaseException.message
     }
-})
+}

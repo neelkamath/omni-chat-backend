@@ -7,6 +7,9 @@ import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 import org.keycloak.representations.idm.UserRepresentation
 
+private fun readBackwardPagination(env: DataFetchingEnvironment): BackwardPagination =
+    BackwardPagination(env.parseFieldArgument("messages", "last"), env.parseFieldArgument("messages", "before"))
+
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
     return !GroupChats.isNonemptyChatAdmin(env.userId!!)
@@ -27,12 +30,14 @@ fun readAccount(env: DataFetchingEnvironment): AccountInfo {
 fun readChat(env: DataFetchingEnvironment): Chat {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("id")
-    return readChat(chatId, env.userId!!)
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    return readChat(chatId, env.userId!!, readBackwardPagination(env))
 }
 
 fun readChats(env: DataFetchingEnvironment): List<Chat> {
     env.verifyAuth()
-    return GroupChats.read(env.userId!!) + PrivateChats.read(env.userId!!)
+    val pagination = readBackwardPagination(env)
+    return GroupChats.read(env.userId!!, pagination) + PrivateChats.read(env.userId!!, pagination)
 }
 
 fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
@@ -59,18 +64,23 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     return buildAuthToken(userId)
 }
 
-fun searchChatMessages(env: DataFetchingEnvironment): List<Message> {
+fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val query = env.getArgument<String>("query")
-    return Messages.search(chatId, query)
+    val pagination = readBackwardPagination(env)
+    return when (chatId) {
+        in PrivateChats.readIdList(env.userId!!) -> Messages.searchPrivateChat(chatId, env.userId!!, query, pagination)
+        in GroupChatUsers.readChatIdList(env.userId!!) -> Messages.searchGroupChat(chatId, query, pagination)
+        else -> throw InvalidChatIdException
+    }
 }
 
 fun searchChats(env: DataFetchingEnvironment): List<Chat> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    return PrivateChats.search(env.userId!!, query) + GroupChats.search(env.userId!!, query)
+    val pagination = readBackwardPagination(env)
+    return PrivateChats.search(env.userId!!, query, pagination) + GroupChats.search(env.userId!!, query, pagination)
 }
 
 fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
@@ -82,7 +92,8 @@ fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
 fun searchMessages(env: DataFetchingEnvironment): List<ChatMessages> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    return Messages.search(env.userId!!, query)
+    val pagination = readBackwardPagination(env)
+    return Messages.search(env.userId!!, query, pagination)
 }
 
 /**

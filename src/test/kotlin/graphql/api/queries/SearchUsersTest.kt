@@ -2,29 +2,31 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
+import com.neelkamath.omniChat.test.graphql.api.buildAccountInfoFragment
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 
-const val SEARCH_USERS_QUERY: String = """
+fun buildSearchUsersQuery(): String = """
     query SearchUsers(${"$"}query: String!) {
         searchUsers(query: ${"$"}query) {
-            $ACCOUNT_INFO_FRAGMENT
+            ${buildAccountInfoFragment()}
         }
     }
 """
 
 private fun operateSearchUsers(query: String): GraphQlResponse =
-    operateQueryOrMutation(SEARCH_USERS_QUERY, variables = mapOf("query" to query))
+    operateQueryOrMutation(buildSearchUsersQuery(), variables = mapOf("query" to query))
 
 fun searchUsers(query: String): List<AccountInfo> {
     val data = operateSearchUsers(query).data!!["searchUsers"] as List<*>
     return objectMapper.convertValue(data)
 }
 
-class SearchUsersTest : FunSpec({
+class SearchUsersTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("Users should be searched") {
         val accounts = listOf(
             NewAccount(username = "iron_man", password = "p", emailAddress = "tony@example.com"),
@@ -38,4 +40,4 @@ class SearchUsersTest : FunSpec({
         }
         searchUsers("iron") shouldContainExactlyInAnyOrder infoList.dropLast(1)
     }
-})
+}

@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat
 
+import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
 import org.keycloak.admin.client.resource.RealmResource
@@ -81,7 +82,15 @@ fun isValidLogin(login: Login): Boolean = try {
     AuthzClient.create(config).obtainAccessToken(login.username, login.password)
     true
 } catch (exception: HttpResponseException) {
-    if (exception.reasonPhrase == "Unauthorized") false else throw exception
+    /*
+    Keycloak returns an HTTP status code of 400 (Bad Request) or 401 (Unauthorized) if the login is invalid. It's
+    possible that a Bad Request is returned due to a bug on Omni Chat's server (i.e., the login is valid). However,
+    were this to occur, every request would be invalid, and it would be obvious that there's a bug.
+     */
+    if (exception.statusCode in listOf(HttpStatusCode.Unauthorized.value, HttpStatusCode.BadRequest.value))
+        false
+    else
+        throw exception
 }
 
 fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }

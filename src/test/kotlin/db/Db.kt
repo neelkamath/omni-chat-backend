@@ -12,7 +12,8 @@ private val tables: List<Table> = listOf(
     PrivateChatDeletions,
     PrivateChats,
     MessageStatuses,
-    Messages
+    Messages,
+    Chats
 )
 
 /** Drops every table and type created. */
@@ -22,7 +23,7 @@ fun tearDownDb(): Unit = transact {
 }
 
 /** Deletes every row from every table created. */
-fun deleteDb(): Unit = transact {
+fun wipeDb(): Unit = transact {
     tables.forEach { it.deleteAll() }
 }
 

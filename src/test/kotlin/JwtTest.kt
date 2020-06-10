@@ -8,7 +8,9 @@ import io.kotest.matchers.date.shouldBeBefore
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-class JwtTest : FunSpec({
+class JwtTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     /** Tests that the [actual] [LocalDateTime] is within five seconds of the [expected] [LocalDateTime]. */
     fun testDateTime(actual: LocalDateTime, expected: LocalDateTime) {
         val leewayInSeconds = 5L
@@ -24,4 +26,4 @@ class JwtTest : FunSpec({
         testDateTime(actual = readExpiry(accessToken), expected = now.plusHours(1))
         testDateTime(actual = readExpiry(refreshToken), expected = now.plusWeeks(1))
     }
-})
+}

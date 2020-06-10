@@ -5,11 +5,10 @@ import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 
 fun createAccount(env: DataFetchingEnvironment): Boolean {
-    val account = try {
-        env.parseArgument<NewAccount>("account")
-    } catch (_: IllegalArgumentException) {
-        throw UsernameNotLowercaseException
-    }
+    val args = env.arguments["account"] as Map<*, *>
+    val username = args["username"] as String
+    if (username != username.toLowerCase()) throw UsernameNotLowercaseException
+    val account = env.parseArgument<NewAccount>("account")
     when {
         isUsernameTaken(account.username) -> throw UsernameTakenException
         emailAddressExists(account.emailAddress) -> throw EmailAddressTakenException
@@ -41,11 +40,11 @@ private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): B
 }
 
 /**
- * Throws an [InvalidMessageIdException]/[DuplicateStatusException] if the [userId] cannot create the [status] on the
+ * Throws an [InvalidMessageIdException] or [DuplicateStatusException] if the [userId] cannot create the [status] on the
  * [messageId].
  */
 private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
-    if (!Messages.exists(messageId)) throw InvalidMessageIdException
+    if (!Messages.exists(messageId) || !Messages.isVisible(messageId, userId)) throw InvalidMessageIdException
     val chatId = Messages.findChatFromMessage(messageId)
     if (!isUserInChat(userId, chatId) || Messages.read(messageId).sender.id == userId) throw InvalidMessageIdException
     if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException
@@ -78,8 +77,9 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val invitedUserId = env.getArgument<String>("userId")
     return when {
-        PrivateChats.exists(env.userId!!, invitedUserId) -> throw ChatExistsException
         !userIdExists(invitedUserId) || invitedUserId == env.userId!! -> throw InvalidUserIdException
+        PrivateChats.areInChat(env.userId!!, invitedUserId) -> throw ChatExistsException
+        PrivateChats.exists(env.userId!!, invitedUserId) -> PrivateChats.readChatId(invitedUserId, env.userId!!)
         else -> PrivateChats.create(env.userId!!, invitedUserId)
     }
 }
@@ -90,8 +90,9 @@ fun deleteAccount(env: DataFetchingEnvironment): Boolean {
         deleteUserFromDb(env.userId!!)
         deleteUserFromAuth(env.userId!!)
         true
-    } else
+    } else {
         false
+    }
 }
 
 fun deleteContacts(env: DataFetchingEnvironment): Boolean {
@@ -106,8 +107,12 @@ fun deleteMessage(env: DataFetchingEnvironment): Boolean {
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.exists(messageId, chatId) || Messages.read(messageId).sender.id != env.userId!!)
+    if (!Messages.exists(messageId, chatId) ||
+        Messages.read(messageId).sender.id != env.userId!! ||
+        !Messages.isVisible(messageId, env.userId!!)
+    ) {
         throw InvalidMessageIdException
+    }
     Messages.delete(messageId)
     return true
 }

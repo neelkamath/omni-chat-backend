@@ -4,11 +4,31 @@ import com.neelkamath.omniChat.Chat
 import com.neelkamath.omniChat.DeletionOfEveryMessage
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.UserChatMessagesRemoval
-import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
+
+/**
+ * Pagination uses [Relay](https://relay.dev)'s
+ * [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) except that fields are only
+ * nullable based on what's more logical.
+ */
+sealed class Pagination
+
+/**
+ * The [last] and [before] arguments indicate the number of items to be returned before the cursor.
+ *
+ * [last] indicates the maximum number of items to retrieve (e.g., if there are two items, and five gets requested, only
+ * two will be returned). [before] is the cursor (i.e., only items before this will be returned). Here is the algorithm
+ * for retrieving items:
+ * - If neither [last] nor [before] are `null`, then at most [last] items will be returned from before the cursor.
+ * - If [last] isn't null but [before] is, then at most [last] items will be returned from the end.
+ * - If [last] is `null` but [before] isn't, then every item before the cursor will be returned.
+ * - If both [last] and [before] are `null`, then every item will be returned.
+ */
+data class BackwardPagination(val last: Int? = null, val before: Int? = null) : Pagination()
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -51,6 +71,7 @@ private fun create(): Unit = transact {
     createTypes()
     SchemaUtils.create(
         Contacts,
+        Chats,
         GroupChats,
         GroupChatUsers,
         PrivateChats,
@@ -71,15 +92,16 @@ private fun createTypes() {
  * exist.
  */
 private fun createType(name: String, definition: String) {
-    val exists = TransactionManager
-        .current()
-        .exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$name');") { resultSet ->
-            resultSet.next()
-            val column = "exists"
-            resultSet.getBoolean(column)
-        }!!
-    if (!exists) transact { exec("CREATE TYPE $name AS $definition;") }
+    if (!exists(name)) transact { exec("CREATE TYPE $name AS $definition;") }
 }
+
+/** Whether the [type] has been created. */
+private fun exists(type: String): Boolean =
+    TransactionManager.current().exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
+        resultSet.next()
+        val column = "exists"
+        resultSet.getBoolean(column)
+    }!!
 
 /** Always use this instead of [transaction]. */
 inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transaction {
@@ -87,20 +109,26 @@ inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transac
     statement()
 }
 
-/** Throws an [InvalidChatIdException] if the [userId] isn't in the chat [id]. */
-fun readChat(id: Int, userId: String): Chat = when (id) {
-    in PrivateChats.readIdList(userId) -> PrivateChats.read(id, userId)
-    in GroupChatUsers.readChatIdList(userId) -> GroupChats.read(id)
-    else -> throw InvalidChatIdException
+/**
+ * Throws an [IllegalArgumentException] if the [userId] isn't in the chat [id] (chats include deleted private chats).
+ *
+ * @see [isUserInChat]
+ */
+fun readChat(id: Int, userId: String, pagination: BackwardPagination? = null): Chat = when (id) {
+    in PrivateChats.readIdList(userId) -> PrivateChats.read(id, userId, pagination)
+    in GroupChatUsers.readChatIdList(userId) -> GroupChats.read(id, pagination)
+    else -> throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $id).")
 }
 
+/** Case-insensitively checks if [this] contains the [pattern]. */
+infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"
+
 /**
- * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). If the [userId]
- * deleted the [chatId], and there was no activity after its deletion, it will appear as if the user isn't in the
- * [chatId].
+ * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). Private chats the
+ * [userId] deleted are included.
  */
 fun isUserInChat(userId: String, chatId: Int): Boolean =
-    chatId in PrivateChats.readIdList(userId) || chatId in GroupChatUsers.readChatIdList(userId)
+    chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 /**
  * Deletes the [userId]'s data. If the [userId] [GroupChats.isNonemptyChatAdmin], an [IllegalArgumentException] will be
@@ -112,8 +140,8 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  *
  * ## Private Chats
  *
- * Deletes every chat the [userId] is in from [PrivateChats], [PrivateChatDeletions], [Messages], and
- * [MessageStatuses]. Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
+ * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and [MessageStatuses].
+ * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
  *
  * ## Group Chats
  *

@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.selectAll
 /** Sends the [text] in the [chatId] from the [userId], and returns the message's ID. */
 fun Messages.message(chatId: Int, userId: String, text: String): Int {
     create(chatId, userId, text)
-    return readChat(chatId).last().id
+    return readIdList(chatId).last()
 }
 
 /** Returns the number of messages in every chat. */

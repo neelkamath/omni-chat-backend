@@ -26,8 +26,8 @@ data class Login(val username: String, val password: String)
 
 data class TokenSet(val accessToken: String, val refreshToken: String)
 
+/** An [IllegalArgumentException] will be thrown if the [username] isn't lowercase. */
 data class NewAccount(
-    /** An [IllegalArgumentException] will be thrown if it's not lowercase. */
     val username: String,
     val password: String,
     val emailAddress: String,
@@ -73,7 +73,7 @@ data class PrivateChat(
     val id: Int,
     /** The user being chatted with. */
     val user: AccountInfo,
-    val messages: List<Message>
+    val messages: MessagesConnection
 ) : Chat()
 
 data class GroupChat(
@@ -82,8 +82,19 @@ data class GroupChat(
     val users: Set<AccountInfo>,
     val title: String,
     val description: String? = null,
-    val messages: List<Message>
+    val messages: MessagesConnection
 ) : Chat()
+
+data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
+
+data class MessageEdge(val node: Message, val cursor: Int)
+
+data class PageInfo(
+    val hasNextPage: Boolean,
+    val hasPreviousPage: Boolean,
+    val startCursor: Int? = null,
+    val endCursor: Int? = null
+)
 
 /** Represents created and deleted messages, and deleted chats. */
 sealed class MessageUpdates
@@ -157,4 +168,4 @@ data class CreatedSubscription(
 }
 
 /** The [chat] the [messages] belong to. */
-data class ChatMessages(val chat: Chat, val messages: List<Message>)
+data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)

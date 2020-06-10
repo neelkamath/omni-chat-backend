@@ -4,11 +4,11 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.Login
 import com.neelkamath.omniChat.NewAccount
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.test.graphql.api.queries.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.test.graphql.api.queries.REQUEST_TOKEN_SET_QUERY
+import com.neelkamath.omniChat.test.graphql.api.queries.buildReadAccountQuery
+import com.neelkamath.omniChat.test.graphql.api.queries.buildRequestTokenSetQuery
 import com.neelkamath.omniChat.test.graphql.api.queries.requestTokenSet
+import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import com.neelkamath.omniChat.test.verifyEmailAddress
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
@@ -24,15 +24,17 @@ import io.kotest.matchers.maps.shouldNotHaveKey
  * 1. Data is serialized as JSON using the [objectMapper]. The [objectMapper] which may remove `null` fields if
  * incorrectly configured. The spec mandates that requested fields be returned even if they're `null`.
  */
-class SpecComplianceTest : FunSpec({
+class SpecComplianceTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("""The "data" key shouldn't be returned if there was no data to be received""") {
         val variables = mapOf("login" to Login("username", "password"))
-        queryOrMutate(REQUEST_TOKEN_SET_QUERY, variables) shouldNotHaveKey "data"
+        queryOrMutate(buildRequestTokenSetQuery(), variables) shouldNotHaveKey "data"
     }
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
-        val login = createVerifiedUsers(1)[0].login
-        queryOrMutate(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "errors"
+        val login = createSignedInUsers(1)[0].login
+        queryOrMutate(buildRequestTokenSetQuery(), variables = mapOf("login" to login)) shouldNotHaveKey "errors"
     }
 
     test("""null fields in the "data" key should be returned""") {
@@ -41,7 +43,7 @@ class SpecComplianceTest : FunSpec({
         verifyEmailAddress(account.username)
         val login = Login(account.username, account.password)
         val accessToken = requestTokenSet(login).accessToken
-        val response = queryOrMutate(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
+        val response = queryOrMutate(buildReadAccountQuery(), accessToken = accessToken)["data"] as Map<*, *>
         objectMapper.convertValue<Map<String, Any>>(response["readAccount"]!!) shouldContain Pair("firstName", null)
     }
-})
+}

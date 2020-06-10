@@ -1,44 +1,47 @@
 """A `String` conforming to ISO 8601."""
 scalar DateTime
 
+"""An `ID` representing a cursor for pagination."""
+scalar Cursor
+
 schema {
-  query: Query
-  mutation: Mutation
-  subscription: Subscription
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
 }
 
 type Query {
-  """
-  Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
+    """
+    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
   admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
   as the admin.
 
   You must send an access token with this request.
-  """
-  canDeleteAccount: Boolean!
+    """
+    canDeleteAccount: Boolean!
 
-  """
-  Case-insensitively `query`s text messages in the `chatId`.
+    """
+    Case-insensitively `query`s text messages in the `chatId`.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  searchChatMessages(chatId: Int!, query: String!): [Message!]!
+    You must send an access token with this request.
+    """
+    searchChatMessages(chatId: Int!, query: String!): [MessageEdge!]!
 
-  """
-  Case-insensitively `query`s every text message in every chat the user is in.
+    """
+    Case-insensitively `query`s every text message in every chat the user is in.
 
-  You must send an access token with this request.
-  """
-  searchMessages(query: String!): [ChatMessage!]!
+    You must send an access token with this request.
+    """
+    searchMessages(query: String!): [ChatMessages!]!
 
-  """
-  Returns the user's account info.
+    """
+    Returns the user's account info.
 
-  You must send an access token with this request.
-  """
-  readAccount: AccountInfo!
+    You must send an access token with this request.
+    """
+    readAccount: AccountInfo!
 
   """
   Returns whether the `username` has been taken.
@@ -359,40 +362,57 @@ type DeletedMessage {
 }
 
 type AccountInfo {
-  id: ID!
-  username: String!
-  emailAddress: String!
-  firstName: String
-  lastName: String
+    id: ID!
+    username: String!
+    emailAddress: String!
+    firstName: String
+    lastName: String
 }
 
-type ChatMessage {
-  chat: Chat!
-  messages: [Message!]!
+type ChatMessages {
+    chat: Chat!
+    messages(last: Int, before: Cursor): [MessageEdge!]!
 }
 
 interface Chat {
-  id: Int!
-  messages: [Message!]!
+    id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
+}
+
+type MessagesConnection {
+    edges: [MessageEdge!]!
+    pageInfo: PageInfo!
+}
+
+type MessageEdge {
+    node: Message!
+    cursor: Cursor!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: Cursor
+    endCursor: Cursor
 }
 
 type GroupChat implements Chat {
-  id: Int!
-  """1-70 characters."""
-  title: String!
-  """At most 1000 characters."""
-  description: String
-  """The ID of the admin present who is present in the `users`."""
-  adminId: ID!
-  users: [AccountInfo!]!
-  messages: [Message!]!
+    id: Int!
+    """1-70 characters."""
+    title: String!
+    """At most 1000 characters."""
+    description: String
+    """The ID of the admin present who is present in the `users`."""
+    adminId: ID!
+    users: [AccountInfo!]!
+    messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type PrivateChat implements Chat {
   id: Int!
-  """The user being chatted with."""
-  user: AccountInfo!
-  messages: [Message!]!
+    """The user being chatted with."""
+    user: AccountInfo!
+    messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type Message {

@@ -13,8 +13,10 @@ import io.ktor.server.testing.withTestApplication
 fun checkHealth(): TestApplicationResponse =
     withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }.response
 
-class GetHealthCheckTest : FunSpec({
+class GetHealthCheckTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("A health check should respond with an HTTP status code of 204") {
         checkHealth().status() shouldBe HttpStatusCode.NoContent
     }
-})
+}

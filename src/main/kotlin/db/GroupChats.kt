@@ -1,16 +1,12 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.GroupChats.adminId
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
-/**
- * The [GroupChatUsers] table contains the participants, including the [adminId], of a particular chat. [Messages] holds
- * the messages.
- */
-object GroupChats : IntIdTable() {
+/** The [GroupChatUsers] table contains the participants. [GroupChats] have [Messages]. */
+object GroupChats : Table() {
     override val tableName get() = "group_chats"
+    val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
     private val adminId: Column<String> = varchar("admin_id", USER_ID_LENGTH)
 
     /** Titles cannot exceed this length. */
@@ -35,7 +31,7 @@ object GroupChats : IntIdTable() {
      * isn't in the chat.
      */
     fun setAdmin(chatId: Int, userId: String) {
-        val userIdList = read(chatId).users.map { it.id }
+        val userIdList = GroupChatUsers.readUserIdList(chatId)
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
         transact {
@@ -46,28 +42,28 @@ object GroupChats : IntIdTable() {
     /** Returns the [chat]'s ID after creating it. */
     fun create(adminId: String, chat: NewGroupChat): Int {
         val chatId = transact {
-            insertAndGetId {
+            insert {
+                it[id] = Chats.create()
                 it[this.adminId] = adminId
                 it[title] = chat.title
                 it[description] = chat.description
-            }.value
+            }[GroupChats.id]
         }
         GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
         return chatId
     }
 
-    fun read(chatId: Int): GroupChat {
-        val row = transact {
-            select { GroupChats.id eq chatId }.first()
-        }
-        return buildGroupChat(row, chatId)
-    }
+    fun read(chatId: Int, pagination: BackwardPagination? = null): GroupChat = transact {
+        select { GroupChats.id eq chatId }.first()
+    }.let { buildGroupChat(it, chatId, pagination) }
 
     /**
-     * Returns the [userId]'s chats. If you just need the chat IDs, [GroupChatUsers.readChatIdList] is more efficient.
+     * Returns the [userId]'s chats.
+     *
+     * @see [GroupChatUsers.readChatIdList]
      */
-    fun read(userId: String): List<GroupChat> = transact {
-        GroupChatUsers.readChatIdList(userId).map { read(it) }
+    fun read(userId: String, pagination: BackwardPagination? = null): List<GroupChat> = transact {
+        GroupChatUsers.readChatIdList(userId).map { read(it, pagination) }
     }
 
     /**
@@ -113,21 +109,23 @@ object GroupChats : IntIdTable() {
     }
 
     /** Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in. */
-    fun search(userId: String, query: String): List<GroupChat> {
-        val chatIdList = GroupChatUsers.readChatIdList(userId)
-        return transact {
-            select { GroupChats.id inList chatIdList }
-                .filter { it[title].contains(query, ignoreCase = true) }
-                .map { buildGroupChat(it, it[GroupChats.id].value) }
-        }
+    fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<GroupChat> = transact {
+        select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
+            .map { buildGroupChat(it, it[GroupChats.id], pagination) }
     }
 
-    private fun buildGroupChat(row: ResultRow, chatId: Int): GroupChat {
-        val users = GroupChatUsers.readUserIdList(chatId).map(::findUserById).toSet()
-        return GroupChat(chatId, row[adminId], users, row[title], row[description], Messages.readChat(chatId))
-    }
+    /** Builds the [chatId] from the [row]. */
+    private fun buildGroupChat(row: ResultRow, chatId: Int, pagination: BackwardPagination? = null): GroupChat =
+        GroupChat(
+            chatId,
+            row[adminId],
+            GroupChatUsers.readUserIdList(chatId).map(::findUserById).toSet(),
+            row[title],
+            row[description],
+            Messages.buildGroupChatConnection(chatId, pagination)
+        )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
     fun isNonemptyChatAdmin(userId: String): Boolean =
-        userId in read(userId).filter { read(it.id).users.size > 1 }.map { it.adminId }
+        userId in read(userId, BackwardPagination(last = 0)).filter { it.users.size > 1 }.map { it.adminId }
 }

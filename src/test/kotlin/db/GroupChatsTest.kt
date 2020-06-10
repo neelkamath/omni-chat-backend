@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.test.emptyMessagesConnection
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -13,7 +14,9 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
-class GroupChatsTest : FunSpec({
+class GroupChatsTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     context("create(String, NewGroupChat") {
         test("A chat should be created") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
@@ -25,7 +28,7 @@ class GroupChatsTest : FunSpec({
                 (chat.userIdList + adminId).map(::findUserById).toSet(),
                 chat.title,
                 chat.description,
-                messages = listOf()
+                emptyMessagesConnection
             )
         }
     }
@@ -89,7 +92,7 @@ class GroupChatsTest : FunSpec({
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, userId, "text")
             GroupChatUsers.removeUsers(chatId, setOf(userId))
-            Messages.readChat(chatId).map { it.id } shouldBe listOf(messageId)
+            Messages.readIdList(chatId) shouldBe listOf(messageId)
         }
 
         test("When the user leaves the chat they were accessing on two devices, both subscriptions should be removed") {
@@ -146,7 +149,7 @@ class GroupChatsTest : FunSpec({
         }
     }
 
-    context("search(String, String)") {
+    context("search(String, String, BackwardPagination?)") {
         test("Chats should be searched case-insensitively") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chats = listOf(NewGroupChat("Title 1"), NewGroupChat("Title 2"), NewGroupChat("Iron Man Fan Club"))
@@ -155,4 +158,4 @@ class GroupChatsTest : FunSpec({
             GroupChats.search(adminId, "iron").map { it.title } shouldBe listOf(chats[2].title)
         }
     }
-})
+}

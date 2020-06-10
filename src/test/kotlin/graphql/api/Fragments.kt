@@ -1,6 +1,8 @@
 package com.neelkamath.omniChat.test.graphql.api
 
-const val ACCOUNT_INFO_FRAGMENT: String = """
+typealias Cursor = String
+
+fun buildAccountInfoFragment(): String = """
     ... on AccountInfo {
         id
         username
@@ -10,108 +12,137 @@ const val ACCOUNT_INFO_FRAGMENT: String = """
     }
 """
 
-const val DELETION_OF_EVERY_MESSAGE_FRAGMENT: String = """
-    ... on DeletionOfEveryMessage {
-        isDeleted
-    }
-"""
-
-const val MESSAGE_DATE_TIME_STATUS_FRAGMENT: String = """
+fun buildMessageDateTimeStatusFragment(): String = """
     ... on MessageDateTimeStatus {
         user {
-            $ACCOUNT_INFO_FRAGMENT
+            ${buildAccountInfoFragment()}
         }
         dateTime
         status
     }
 """
 
-const val MESSAGE_DATE_TIMES_FRAGMENT: String = """
+fun buildMessageDateTimesFragment(): String = """
     ... on MessageDateTimes {
         sent
         statuses {
-            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
+            ${buildMessageDateTimeStatusFragment()}
         }
     }
 """
 
-const val USER_CHAT_MESSAGES_REMOVAL_FRAGMENT: String = """
+fun buildMessageFragment(): String = """
+    ... on Message {
+        id
+        sender {
+            ${buildAccountInfoFragment()}
+        }
+        text
+        dateTimes {
+            ${buildMessageDateTimesFragment()}
+        }
+    }
+"""
+
+fun buildMessageEdgeFragment(): String = """
+    ... on MessageEdge {
+        node {
+            ${buildMessageFragment()}
+        }
+        cursor
+    }
+"""
+
+fun buildPageInfoFragment(): String = """
+    ... on PageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+    }
+"""
+
+fun buildMessagesConnectionFragment(): String = """
+    ... on MessagesConnection {
+        edges {
+            ${buildMessageEdgeFragment()}
+        }
+        pageInfo {
+            ${buildPageInfoFragment()}
+        }
+    }
+"""
+
+fun buildDeletionOfEveryMessageFragment(): String = """
+    ... on DeletionOfEveryMessage {
+        isDeleted
+    }
+"""
+
+fun buildUserChatMessagesRemovalFragment(): String = """
     ... on UserChatMessagesRemoval {
         userId
     }
 """
 
-const val MESSAGE_DELETION_POINT_FRAGMENT: String = """
+fun buildMessageDeletionPointFragment(): String = """
     ... on MessageDeletionPoint {
         until
     }
 """
 
-const val CREATED_SUBSCRIPTION_FRAGMENT: String = """
+fun buildCreatedSubscriptionFragment(): String = """
     ... on CreatedSubscription {
         isCreated
     }
 """
 
-const val DELETED_MESSAGE_FRAGMENT: String = """
+fun buildDeletedMessageFragment(): String = """
     ... on DeletedMessage {
         id
     }
 """
 
-const val MESSAGE_FRAGMENT: String = """
-    ... on Message {
-        id
-        sender {
-            $ACCOUNT_INFO_FRAGMENT
-        }
-        text
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
-        }
-    }
-"""
-
-const val GROUP_CHAT_FRAGMENT: String = """
+fun buildGroupChatFragment(last: Int?, before: Cursor?): String = """
     ... on GroupChat {
         id
         title
         description
         adminId
         users {
-            $ACCOUNT_INFO_FRAGMENT
+            ${buildAccountInfoFragment()}
         }
-        messages {
-            $MESSAGE_FRAGMENT
+        messages(last: $last, before: $before) {
+            ${buildMessagesConnectionFragment()}
         }
     }
 """
 
-const val PRIVATE_CHAT_FRAGMENT: String = """
+fun buildPrivateChatFragment(last: Int?, before: Cursor?): String = """
     ... on PrivateChat {
         id
         user {
-            $ACCOUNT_INFO_FRAGMENT
+            ${buildAccountInfoFragment()}
         }
-        messages {
-            $MESSAGE_FRAGMENT
+        messages(last: $last, before: $before) {
+            ${buildMessagesConnectionFragment()}
         }
     }
 """
 
-const val CHAT_MESSAGE_FRAGMENT: String = """
-    ... on ChatMessage {
+fun buildChatMessagesFragment(last: Int?, before: Cursor?): String = """
+    ... on ChatMessages {
         chat {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
+            ${buildPrivateChatFragment(last, before)}
+            ${buildGroupChatFragment(last, before)}
         }
-        messages {
-            $MESSAGE_FRAGMENT
+        messages(last: $last, before: $before) {
+            ${buildMessageEdgeFragment()}
         }
     }
 """
 
-const val TOKEN_SET_FRAGMENT: String = """
+fun buildTokenSetFragment(): String = """
     ... on TokenSet {
         accessToken
         refreshToken

@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.test.graphql.api.subscriptions
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
@@ -12,7 +12,9 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import java.time.Duration
 import kotlin.system.measureTimeMillis
 
-class PingTest : FunSpec({
+class PingTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     /** Returns once the [channel] sends a [FrameType.CLOSE]. */
     suspend fun awaitClose(channel: ReceiveChannel<Frame>) {
         for (frame in channel)
@@ -34,11 +36,11 @@ class PingTest : FunSpec({
     }
 
     test("The connection should be closed if the client doesn't ping within the ping period") {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
-        receiveMessageUpdates(chatId, token) { incoming, _ ->
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        receiveMessageUpdates(token, chatId) { incoming, _ ->
             val time = measureTimeMillis { awaitClose(incoming) }
             testPingPeriod(time)
         }
     }
-})
+}

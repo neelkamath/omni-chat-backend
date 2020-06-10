@@ -62,7 +62,7 @@ private fun route(context: Routing): Unit = with(context) {
     routeMessageUpdates(context)
 }
 
-/** Routes the `messageUpdates` GraphQL subscription. */
+/** Routes the GraphQL `Subscription.messageUpdates`. */
 private fun routeMessageUpdates(context: Routing): Unit = with(context) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "Chat deleted")
     val subscription = GraphQlSubscription("messageUpdates", completionReason)

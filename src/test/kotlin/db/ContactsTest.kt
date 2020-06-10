@@ -5,7 +5,9 @@ import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-class ContactsTest : FunSpec({
+class ContactsTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     context("create(String, Set<String>)") {
         test("Saving contacts should ignore existing contacts") {
             val (userId, contact1Id, contact2Id, contact3Id) = createVerifiedUsers(4).map { it.info.id }
@@ -14,4 +16,4 @@ class ContactsTest : FunSpec({
             Contacts.read(userId) shouldBe setOf(contact1Id, contact2Id, contact3Id)
         }
     }
-})
+}

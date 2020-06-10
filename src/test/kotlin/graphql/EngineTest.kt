@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.test.graphql
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.createVerifiedUsers
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
@@ -9,14 +8,16 @@ import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpda
 import io.kotest.core.spec.style.FunSpec
 import java.time.Instant
 
-class EngineTest : FunSpec({
+class EngineTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     /** Returns a GraphQL `DateTime` scalar. */
     fun getScalar(): String {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, NewGroupChat("Title"))
         var sent = ""
-        receiveMessageUpdates(chatId, token) { incoming, _ ->
-            createMessage(chatId, "text", token)
+        receiveMessageUpdates(token, chatId) { incoming, _ ->
+            createMessage(token, chatId, "text")
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
             sent = dateTimes["sent"] as String
@@ -27,4 +28,4 @@ class EngineTest : FunSpec({
     test("DateTime scalars should be ISO 8601-compliant") {
         Instant.parse(getScalar()) // Successfully parsing verifies the format.
     }
-})
+}

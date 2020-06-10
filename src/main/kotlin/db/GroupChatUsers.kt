@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.USER_ID_LENGTH
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
-object GroupChatUsers : IntIdTable() {
+/** The users in [GroupChats]. */
+object GroupChatUsers : Table() {
     override val tableName get() = "group_chat_users"
     private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
     private val groupChatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)

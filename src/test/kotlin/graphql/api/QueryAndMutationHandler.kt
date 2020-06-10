@@ -31,14 +31,11 @@ fun queryOrMutate(
     query: String,
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
-): Map<String, Any> {
-    val call = withTestApplication(Application::main) {
-        handleRequest(HttpMethod.Post, "graphql") {
-            if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-            addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            val body = mapOf("query" to query, "variables" to variables)
-            setBody(objectMapper.writeValueAsString(body))
-        }
+): Map<String, Any> = withTestApplication(Application::main) {
+    handleRequest(HttpMethod.Post, "graphql") {
+        if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+        val body = mapOf("query" to query, "variables" to variables)
+        setBody(objectMapper.writeValueAsString(body))
     }
-    return objectMapper.readValue(call.response.content!!)
-}
+}.response.content!!.let(objectMapper::readValue)

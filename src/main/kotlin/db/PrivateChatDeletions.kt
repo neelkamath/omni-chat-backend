@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.`java-time`.datetime
 import java.time.LocalDateTime
 
 /**
- * Stores when users delete their chats.
+ * Stores when users delete their [PrivateChats].
  *
  * When a user deletes a chat, the chat is only deleted for themselves. The person they were chatting with still has the
  * chat in its original condition. If the person they were chatting with sends them a message, it will appear as the
@@ -25,8 +25,12 @@ object PrivateChatDeletions : IntIdTable() {
      * Commonly deleted [Messages] and [MessageStatuses] are deleted. The user's older [PrivateChatDeletions] are
      * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
      * they've deleted it, the [chatId] is deleted from [PrivateChats].
+     *
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: String) {
+        if (!isUserInChat(userId, chatId))
+            throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         insert(chatId, userId)
         deleteUnusedChatData(chatId, userId)
     }
@@ -94,18 +98,12 @@ object PrivateChatDeletions : IntIdTable() {
             ?.get(dateTime)
     }
 
-    /**
-     * Whether the [userId] has deleted the [chatId]. This will be `true` only if the user has deleted the chat, and
-     * neither user in the chat have messaged after that.
-     */
+    /** Whether the [userId] has deleted the [chatId] (and not recreated the chat after that). */
     fun isDeleted(userId: String, chatId: Int): Boolean = transact {
         val deletions = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
-        if (deletions.empty())
-            false
-        else {
-            val lastDeletion = deletions.last { it[PrivateChatDeletions.userId] == userId }
-            !Messages.existsFrom(chatId, lastDeletion[dateTime])
-        }
+        if (deletions.empty()) return@transact false
+        val lastDeletion = deletions.last { it[PrivateChatDeletions.userId] == userId }
+        !Messages.existsFrom(chatId, lastDeletion[dateTime])
     }
 
     /** Deletes every record of chat deletions for the [chatId]. */

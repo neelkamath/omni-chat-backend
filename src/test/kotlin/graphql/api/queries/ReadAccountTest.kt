@@ -4,31 +4,33 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountInfo
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
+import com.neelkamath.omniChat.test.graphql.api.buildAccountInfoFragment
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-const val READ_ACCOUNT_QUERY: String = """
+fun buildReadAccountQuery(): String = """
     query ReadAccount {
         readAccount {
-            $ACCOUNT_INFO_FRAGMENT
+            ${buildAccountInfoFragment()}
         }
     }
 """
 
 private fun operateReadAccount(accessToken: String): GraphQlResponse =
-    operateQueryOrMutation(READ_ACCOUNT_QUERY, accessToken = accessToken)
+    operateQueryOrMutation(buildReadAccountQuery(), accessToken = accessToken)
 
 fun readAccount(accessToken: String): AccountInfo {
     val data = operateReadAccount(accessToken).data!!["readAccount"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
 
-class ReadAccountTest : FunSpec({
+class ReadAccountTest : FunSpec(body)
+
+private val body: FunSpec.() -> Unit = {
     test("The user's account info should be returned") {
-        val user = createVerifiedUsers(1)[0]
+        val user = createSignedInUsers(1)[0]
         readAccount(user.accessToken) shouldBe user.info
     }
-})
+}

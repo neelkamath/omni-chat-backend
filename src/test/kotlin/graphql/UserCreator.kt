@@ -1,12 +1,19 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat.test.graphql
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.AccountInfo
+import com.neelkamath.omniChat.Login
+import com.neelkamath.omniChat.NewAccount
+import com.neelkamath.omniChat.findUserByUsername
+import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
+import com.neelkamath.omniChat.test.graphql.api.queries.requestTokenSet
+import com.neelkamath.omniChat.test.verifyEmailAddress
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0
 
-data class VerifiedUser(val info: AccountInfo, val password: String) {
+data class SignedInUser(val info: AccountInfo, val password: String) {
     val login = Login(info.username, password)
+    val accessToken = requestTokenSet(login).accessToken
 }
 
 /**
@@ -16,7 +23,7 @@ data class VerifiedUser(val info: AccountInfo, val password: String) {
  * email, first name, and last name use the format `username<INTEGER>`, `password<INTEGER>`, `<USERNAME>@example.com`,
  * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
  */
-fun createVerifiedUsers(count: Int): List<VerifiedUser> = (0..count).map {
+fun createSignedInUsers(count: Int): List<SignedInUser> = (0..count).map {
     val account = NewAccount(
         "username${++userCount}",
         "password$userCount",
@@ -24,8 +31,8 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (0..count).map {
         "firstName$userCount",
         "lastName$userCount"
     )
-    createUser(account)
+    createAccount(account)
     verifyEmailAddress(account.username)
     val userId = findUserByUsername(account.username).id
-    with(account) { VerifiedUser(AccountInfo(userId, username, emailAddress, firstName, lastName), password) }
+    with(account) { SignedInUser(AccountInfo(userId, username, emailAddress, firstName, lastName), password) }
 }

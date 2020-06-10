@@ -22,11 +22,15 @@ import java.time.ZoneOffset
 private val scalarDateTime: GraphQLScalarType =
     GraphQLScalarType.Builder().name("DateTime").coercing(DateTimeCoercing).build()
 
+private val scalarCursor: GraphQLScalarType =
+    GraphQLScalarType.Builder().name("Cursor").coercing(CursorCoercing).build()
+
 val graphQl: GraphQL = run {
     val schemaInput = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
     val registry = SchemaParser().parse(schemaInput)
     val wiring = newRuntimeWiring()
         .scalar(scalarDateTime)
+        .scalar(scalarCursor)
         .type("Chat", ::wireTypeChat)
         .type("MessageUpdatesInfo", ::wireTypeMessageUpdatesInfo)
         .type("Query", ::wireQuery)
@@ -49,12 +53,28 @@ private object DateTimeCoercing : Coercing<LocalDateTime, String> {
         (dataFetcherResult as LocalDateTime).toInstant(ZoneOffset.UTC).toString()
 }
 
+private object CursorCoercing : Coercing<Int, String> {
+    override fun parseValue(input: Any): Int = (input as String).toInt()
+
+    override fun parseLiteral(input: Any): Int = (input as StringValue).value.toInt()
+
+    override fun serialize(dataFetcherResult: Any): String = dataFetcherResult.toString()
+}
+
 /**
  * [DataFetchingEnvironment.getArgument] only returns primitives (e.g., [Int], [List]). Use this for [Set]s, data
  * classes, etc.
  */
 inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
     objectMapper.convertValue(getArgument(arg))
+
+/**
+ * Replacement for `selectionSet.getField(field).arguments[arg] as T`.
+ *
+ * @return [T] if the [arg] was supplied to the [field], and `null` if the [field] or [arg] weren't supplied.
+ */
+inline fun <reified T> DataFetchingEnvironment.parseFieldArgument(field: String, arg: String): T? =
+    selectionSet.getField(field)?.arguments?.get(arg)?.let(objectMapper::convertValue)
 
 /**
  * Throws an [UnauthorizedException] if the user isn't authenticated.
