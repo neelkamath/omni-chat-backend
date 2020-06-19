@@ -1,6 +1,5 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteAll

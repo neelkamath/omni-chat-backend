@@ -1,7 +1,4 @@
-package com.neelkamath.omniChat.test
-
-import com.neelkamath.omniChat.MessagesConnection
-import com.neelkamath.omniChat.PageInfo
+package com.neelkamath.omniChat
 
 val emptyMessagesConnection = MessagesConnection(
     edges = listOf(),

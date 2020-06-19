@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
-import com.neelkamath.omniChat.test.graphql.api.messageAndReadId
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.messageAndReadId
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty

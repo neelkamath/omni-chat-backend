@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewAccount
@@ -6,7 +6,7 @@ import com.neelkamath.omniChat.findUserByUsername
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
 import com.neelkamath.omniChat.graphql.UsernameNotLowercaseException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

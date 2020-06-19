@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.test.graphql
+package com.neelkamath.omniChat.graphql
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.api.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.api.subscriptions.receiveMessageUpdates
 import io.kotest.core.spec.style.FunSpec
 import java.time.Instant
 

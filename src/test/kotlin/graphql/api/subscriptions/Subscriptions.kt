@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.subscriptions
+package com.neelkamath.omniChat.graphql.api.subscriptions
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue

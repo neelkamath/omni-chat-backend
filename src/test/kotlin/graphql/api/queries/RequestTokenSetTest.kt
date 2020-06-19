@@ -1,14 +1,14 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.IncorrectPasswordException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
-import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
-import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.TOKEN_SET_FRAGMENT
+import com.neelkamath.omniChat.graphql.api.mutations.createAccount
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

@@ -1,7 +1,6 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.Contacts
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

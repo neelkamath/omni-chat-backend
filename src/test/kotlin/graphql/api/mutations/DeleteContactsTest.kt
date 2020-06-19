@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.db.Contacts
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 

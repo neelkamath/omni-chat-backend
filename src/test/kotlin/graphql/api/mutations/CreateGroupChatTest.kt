@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.GroupChat
@@ -9,8 +9,8 @@ import com.neelkamath.omniChat.findUserById
 import com.neelkamath.omniChat.graphql.InvalidDescriptionLengthException
 import com.neelkamath.omniChat.graphql.InvalidTitleLengthException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

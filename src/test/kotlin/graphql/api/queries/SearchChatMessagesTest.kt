@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
@@ -6,13 +6,13 @@ import com.neelkamath.omniChat.MessageEdge
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
+import com.neelkamath.omniChat.graphql.api.MESSAGE_EDGE_FRAGMENT
+import com.neelkamath.omniChat.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.api.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.api.mutations.deletePrivateChat
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.graphql.api.MESSAGE_EDGE_FRAGMENT
-import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
-import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.deletePrivateChat
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty

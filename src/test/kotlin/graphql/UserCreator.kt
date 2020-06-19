@@ -1,12 +1,8 @@
-package com.neelkamath.omniChat.test.graphql
+package com.neelkamath.omniChat.graphql
 
-import com.neelkamath.omniChat.AccountInfo
-import com.neelkamath.omniChat.Login
-import com.neelkamath.omniChat.NewAccount
-import com.neelkamath.omniChat.findUserByUsername
-import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.test.graphql.api.queries.requestTokenSet
-import com.neelkamath.omniChat.test.verifyEmailAddress
+import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.graphql.api.mutations.createAccount
+import com.neelkamath.omniChat.graphql.api.queries.requestTokenSet
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0

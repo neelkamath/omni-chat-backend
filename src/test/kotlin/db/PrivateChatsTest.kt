@@ -1,12 +1,6 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChatDeletions
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.emptyMessagesConnection
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -32,10 +26,7 @@ private val body: FunSpec.() -> Unit = {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val test = { userId: String, otherUserId: String ->
-                val chat = PrivateChat(
-                    chatId, findUserById(otherUserId),
-                    emptyMessagesConnection
-                )
+                val chat = PrivateChat(chatId, findUserById(otherUserId), emptyMessagesConnection)
                 PrivateChats.readUserChats(userId) shouldBe listOf(chat)
             }
             test(user1Id, user2Id)

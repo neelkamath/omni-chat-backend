@@ -1,9 +1,8 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty

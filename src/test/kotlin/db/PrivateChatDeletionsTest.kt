@@ -1,9 +1,6 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChatDeletions
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse

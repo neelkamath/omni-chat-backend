@@ -1,7 +1,5 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
 
 /** Sends the [text] in the [chatId] from the [userId], and returns the message's ID. */

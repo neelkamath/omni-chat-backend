@@ -1,12 +1,12 @@
-package com.neelkamath.omniChat.test.graphql.api
+package com.neelkamath.omniChat.graphql.api
 
 import com.neelkamath.omniChat.Message
-import com.neelkamath.omniChat.test.graphql.SignedInUser
-import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
-import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.SignedInUser
+import com.neelkamath.omniChat.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.api.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.api.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.api.subscriptions.receiveMessageUpdates
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 
 /** A private chat between two users where [user2] sent the [messageId]. */
 data class UtilizedPrivateChat(val messageId: Int, val user1: SignedInUser, val user2: SignedInUser)

@@ -1,6 +1,5 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.*
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse

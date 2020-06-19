@@ -1,11 +1,7 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.db.unsubscribeUserFromMessageUpdates
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
 class MessageUpdatesTest : FunSpec(body)

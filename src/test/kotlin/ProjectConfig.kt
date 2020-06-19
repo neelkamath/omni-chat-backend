@@ -1,17 +1,13 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.neelkamath.omniChat.Chat
-import com.neelkamath.omniChat.GroupChat
-import com.neelkamath.omniChat.PrivateChat
 import com.neelkamath.omniChat.db.setUpDb
-import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.db.tearDownDb
-import com.neelkamath.omniChat.test.db.wipeDb
+import com.neelkamath.omniChat.db.tearDownDb
+import com.neelkamath.omniChat.db.wipeDb
 import io.kotest.core.config.AbstractProjectConfig
 import io.kotest.core.listeners.Listener
 import io.kotest.core.listeners.TestListener

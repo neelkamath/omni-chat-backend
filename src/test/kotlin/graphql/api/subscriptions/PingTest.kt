@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.test.graphql.api.subscriptions
+package com.neelkamath.omniChat.graphql.api.subscriptions
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan

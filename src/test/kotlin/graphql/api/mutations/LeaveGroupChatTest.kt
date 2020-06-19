@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
@@ -7,9 +7,9 @@ import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
 import com.neelkamath.omniChat.graphql.MissingNewAdminIdException
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.subscriptions.receiveMessageUpdates
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe

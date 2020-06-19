@@ -1,14 +1,14 @@
-package com.neelkamath.omniChat.test.graphql.api.subscriptions
+package com.neelkamath.omniChat.graphql.api.subscriptions
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.subscribeToMessageUpdates
 import com.neelkamath.omniChat.graphql.ClientException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.test.graphql.SignedInUser
-import com.neelkamath.omniChat.test.graphql.api.*
-import com.neelkamath.omniChat.test.graphql.api.mutations.*
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.SignedInUser
+import com.neelkamath.omniChat.graphql.api.*
+import com.neelkamath.omniChat.graphql.api.mutations.*
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe

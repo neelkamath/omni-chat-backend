@@ -1,14 +1,14 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.graphql.DuplicateStatusException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
-import com.neelkamath.omniChat.test.graphql.api.createUtilizedPrivateChat
-import com.neelkamath.omniChat.test.graphql.api.messageAndReadId
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.createUtilizedPrivateChat
+import com.neelkamath.omniChat.graphql.api.messageAndReadId
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe

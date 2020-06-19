@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue

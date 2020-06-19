@@ -1,8 +1,5 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.resetPassword
-import com.neelkamath.omniChat.sendEmailAddressVerification
-import com.neelkamath.omniChat.setUpAuth
 import io.mockk.*
 import org.keycloak.admin.client.KeycloakBuilder
 import org.keycloak.admin.client.resource.RealmResource

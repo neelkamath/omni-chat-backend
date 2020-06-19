@@ -1,6 +1,4 @@
-package com.neelkamath.omniChat.test
-
-import com.neelkamath.omniChat.*
+package com.neelkamath.omniChat
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0

@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountInfo
 import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.graphql.api.ACCOUNT_INFO_FRAGMENT
+import com.neelkamath.omniChat.graphql.api.mutations.createContacts
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
-import com.neelkamath.omniChat.test.graphql.api.mutations.createContacts
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
-import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

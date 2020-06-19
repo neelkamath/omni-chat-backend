@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api
+package com.neelkamath.omniChat.graphql.api
 
 const val ACCOUNT_INFO_FRAGMENT: String = """
     ... on AccountInfo {
