@@ -5,22 +5,22 @@ import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.TokenSet
 import com.neelkamath.omniChat.graphql.UnauthorizedException
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.graphql.api.buildTokenSetFragment
+import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildRefreshTokenSetQuery(): String = """
+const val REFRESH_TOKEN_SET_QUERY: String = """
     query RefreshTokenSet(${"$"}refreshToken: ID!) {
         refreshTokenSet(refreshToken: ${"$"}refreshToken) {
-            ${buildTokenSetFragment()}
+            $TOKEN_SET_FRAGMENT
         }
     }
 """
 
 private fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
-    operateQueryOrMutation(buildRefreshTokenSetQuery(), variables = mapOf("refreshToken" to refreshToken))
+    operateQueryOrMutation(REFRESH_TOKEN_SET_QUERY, variables = mapOf("refreshToken" to refreshToken))
 
 fun refreshTokenSet(refreshToken: String): TokenSet {
     val data = operateRefreshTokenSet(refreshToken).data!!["refreshTokenSet"] as Map<*, *>

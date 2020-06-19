@@ -36,18 +36,35 @@ object PrivateChats : Table() {
      * can check if the [PrivateChats.exists].
      */
     fun readChatId(participantId: String, userId: String): Int =
-        read(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
+        readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
      * returned.
      *
      * @see [readIdList]
+     * @see [readUserChatIdList]
      */
-    fun read(userId: String, pagination: BackwardPagination? = null): List<PrivateChat> = transact {
+    fun readUserChats(userId: String, pagination: BackwardPagination? = null): List<PrivateChat> =
+        readUserChatsRows(userId).map { buildPrivateChat(it, userId, pagination) }
+
+    /**
+     * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
+     * returned.
+     *
+     * @see [readIdList]
+     * @see [readUserChats]
+     */
+    fun readUserChatIdList(userId: String): List<Int> = readUserChatsRows(userId).map { it[id] }
+
+    /**
+     * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
+     * deletion.
+     */
+    private fun readUserChatsRows(userId: String): List<ResultRow> = transact {
         select { (user1Id eq userId) or (user2Id eq userId) }
             .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
-    }.map { buildPrivateChat(it, userId, pagination) }
+    }
 
     fun read(id: Int, userId: String, pagination: BackwardPagination? = null): PrivateChat = transact {
         select { PrivateChats.id eq id }.first()
@@ -58,14 +75,25 @@ object PrivateChats : Table() {
         return PrivateChat(
             row[id],
             findUserById(otherUserId),
-            Messages.buildPrivateChatConnection(row[id], userId, pagination)
+            Messages.readPrivateChatConnection(row[id], userId, pagination)
         )
     }
 
-    /** Returns the ID list of the [userId]'s chats, including deleted chat IDs. */
+    /**
+     * Returns the ID list of the [userId]'s chats, including deleted chat IDs.
+     *
+     * @see [readUserChats]
+     * @see [queryIdList]
+     */
     fun readIdList(userId: String): List<Int> = transact {
         select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }
     }
+
+    /** Returns the chat ID the [userId] is in by case-insensitively [query]ing chat messages. */
+    fun queryIdList(userId: String, query: String): List<Int> = readUserChatIdList(userId)
+        .associateWith { Messages.searchPrivateChat(it, userId, query) }
+        .filter { (_, edges) -> edges.isNotEmpty() }
+        .map { (id, _) -> id }
 
     /**
      * Whether [user1Id] and [user2Id] are in a chat with each other (i.e., a chat [PrivateChats.exists] between them,
@@ -73,7 +101,7 @@ object PrivateChats : Table() {
      */
     fun areInChat(user1Id: String, user2Id: String): Boolean {
         val hasChatWith = { firstUserId: String, secondUserId: String ->
-            read(firstUserId, BackwardPagination(last = 0)).any { it.user.id == secondUserId }
+            readUserChats(firstUserId, BackwardPagination(last = 0)).any { it.user.id == secondUserId }
         }
         return hasChatWith(user1Id, user2Id) && hasChatWith(user2Id, user1Id)
     }
@@ -93,14 +121,14 @@ object PrivateChats : Table() {
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
     fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        read(userId, pagination).filter { findUserById(it.user.id).matches(query) }
+        readUserChats(userId, pagination).filter { findUserById(it.user.id).matches(query) }
 
     /**
      * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and
      * [MessageStatuses]. Chats the [userId] deleted, which had no activity after their deletion, are deleted as well.
-     * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
+     * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeUserFromMessageUpdates].
      */
-    fun delete(userId: String) {
+    fun deleteUserChats(userId: String) {
         val chatIdList = transact {
             select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }
         }

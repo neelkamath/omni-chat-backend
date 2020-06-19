@@ -68,7 +68,7 @@ object PrivateChatDeletions : IntIdTable() {
 
     /** Deletes [Messages] and [MessageStatuses] deleted by both users. */
     private fun deleteCommonlyDeletedMessages(chatId: Int) {
-        readLastDeletion(chatId)?.let { Messages.delete(chatId, until = it) }
+        readLastChatDeletion(chatId)?.let { Messages.deleteChatMessagesUntil(chatId, until = it) }
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */
@@ -81,7 +81,7 @@ object PrivateChatDeletions : IntIdTable() {
     }
 
     /** Returns the last [LocalDateTime] both users deleted the [chatId], if both of them have. */
-    private fun readLastDeletion(chatId: Int): LocalDateTime? = transact {
+    private fun readLastChatDeletion(chatId: Int): LocalDateTime? = transact {
         val deletions = select { PrivateChatDeletions.chatId eq chatId }
         val userIdList = deletions.map { it[userId] }.toSet()
         if (userIdList.size < 2) return@transact null

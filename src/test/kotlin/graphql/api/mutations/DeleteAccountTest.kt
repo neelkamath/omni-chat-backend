@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.test.db.count
+import com.neelkamath.omniChat.test.graphql.api.messageAndReadId
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
@@ -19,14 +20,14 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
 
-fun buildDeleteAccountQuery(): String = """
+const val DELETE_ACCOUNT_QUERY: String = """
     mutation DeleteAccount {
         deleteAccount
     }
 """
 
 private fun operateDeleteAccount(accessToken: String): GraphQlResponse =
-    operateQueryOrMutation(buildDeleteAccountQuery(), accessToken = accessToken)
+    operateQueryOrMutation(DELETE_ACCOUNT_QUERY, accessToken = accessToken)
 
 fun deleteAccount(accessToken: String): Boolean = operateDeleteAccount(accessToken).data!!["deleteAccount"] as Boolean
 
@@ -41,7 +42,7 @@ private val body: FunSpec.() -> Unit = {
 
     test("An account shouldn't be allowed to be deleted if the user is the admin of a nonempty group chat") {
         val (admin, user) = createSignedInUsers(2)
-        createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = setOf(user.info.id)))
+        createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = listOf(user.info.id)))
         deleteAccount(admin.accessToken).shouldBeFalse()
     }
 
@@ -62,17 +63,21 @@ private val body: FunSpec.() -> Unit = {
 
     test("The user whose account is deleted should be removed from group chats") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
         deleteAccount(user.accessToken)
-        GroupChatUsers.readUserIdList(chatId) shouldBe setOf(admin.info.id)
+        GroupChatUsers.readUserIdList(chatId) shouldBe listOf(admin.info.id)
     }
 
     test("Group chat messages and message statuses from a deleted account should be deleted") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
-        val adminMessageId = messageAndReadId(admin.accessToken, chatId, "text")
+        val adminMessageId = messageAndReadId(
+            admin.accessToken,
+            chatId,
+            "text"
+        )
         messageAndReadId(user.accessToken, chatId, "text")
         createReadStatus(user.accessToken, adminMessageId)
         deleteAccount(user.accessToken)

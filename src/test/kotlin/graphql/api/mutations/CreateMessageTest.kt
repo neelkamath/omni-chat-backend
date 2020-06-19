@@ -12,7 +12,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 
-fun buildCreateMessageQuery(): String = """
+const val CREATE_MESSAGE_QUERY: String = """
     mutation CreateMessage(${"$"}chatId: Int!, ${"$"}text: String!) {
         createMessage(chatId: ${"$"}chatId, text: ${"$"}text)
     }
@@ -20,7 +20,7 @@ fun buildCreateMessageQuery(): String = """
 
 private fun operateCreateMessage(accessToken: String, chatId: Int, text: String): GraphQlResponse =
     operateQueryOrMutation(
-        buildCreateMessageQuery(),
+        CREATE_MESSAGE_QUERY,
         variables = mapOf("chatId" to chatId, "text" to text),
         accessToken = accessToken
     )

@@ -11,14 +11,14 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
 
-fun buildDeletePrivateChatQuery(): String = """
+const val DELETE_PRIVATE_CHAT_QUERY: String = """
     mutation DeletePrivateChat(${"$"}chatId: Int!) {
         deletePrivateChat(chatId: ${"$"}chatId)
     }
 """
 
 private fun operateDeletePrivateChat(accessToken: String, chatId: Int): GraphQlResponse = operateQueryOrMutation(
-    buildDeletePrivateChatQuery(),
+    DELETE_PRIVATE_CHAT_QUERY,
     variables = mapOf("chatId" to chatId),
     accessToken = accessToken
 )

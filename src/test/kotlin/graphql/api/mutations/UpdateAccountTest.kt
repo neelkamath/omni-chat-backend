@@ -10,14 +10,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
 
-fun buildUpdateAccountQuery(): String = """
+const val UPDATE_ACCOUNT_QUERY: String = """
     mutation UpdateAccount(${"$"}update: AccountUpdate!) {
         updateAccount(update: ${"$"}update)
     }
 """
 
 private fun operateUpdateAccount(accessToken: String, update: AccountUpdate): GraphQlResponse =
-    operateQueryOrMutation(buildUpdateAccountQuery(), variables = mapOf("update" to update), accessToken = accessToken)
+    operateQueryOrMutation(UPDATE_ACCOUNT_QUERY, variables = mapOf("update" to update), accessToken = accessToken)
 
 fun updateAccount(accessToken: String, update: AccountUpdate): Boolean =
     operateUpdateAccount(accessToken, update).data!!["updateAccount"] as Boolean

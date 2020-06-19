@@ -7,14 +7,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 
-fun buildIsEmailAddressTakenQuery(): String = """
+const val IS_EMAIL_ADDRESS_TAKEN_QUERY: String = """
     query IsEmailAddressTaken(${"$"}emailAddress: String!) {
         isEmailAddressTaken(emailAddress: ${"$"}emailAddress)
     }
 """
 
 private fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
-    operateQueryOrMutation(buildIsEmailAddressTakenQuery(), variables = mapOf("emailAddress" to emailAddress))
+    operateQueryOrMutation(IS_EMAIL_ADDRESS_TAKEN_QUERY, variables = mapOf("emailAddress" to emailAddress))
 
 fun isEmailTaken(emailAddress: String): Boolean =
     operateIsEmailAddressTaken(emailAddress).data!!["isEmailAddressTaken"] as Boolean

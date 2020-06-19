@@ -14,18 +14,15 @@ object GroupChatUsers : Table() {
     }
 
     /** Returns the user ID list from the specified [groupChatId]. */
-    fun readUserIdList(groupChatId: Int): Set<String> = transact {
-        select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }.toSet()
+    fun readUserIdList(groupChatId: Int): List<String> = transact {
+        select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }
     }
 
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
-    fun addUsers(groupChatId: Int, userIdList: Set<String>) {
-        val users = userIdList.filterNot { isUserInChat(groupChatId, it) }
-        transact {
-            batchInsert(users) {
-                this[GroupChatUsers.groupChatId] = groupChatId
-                this[userId] = it
-            }
+    fun addUsers(groupChatId: Int, userIdList: List<String>): Unit = transact {
+        batchInsert(userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()) {
+            this[GroupChatUsers.groupChatId] = groupChatId
+            this[userId] = it
         }
     }
 
@@ -34,13 +31,13 @@ object GroupChatUsers : Table() {
      * user is removed, the [chatId] will be [GroupChats.delete]d.
      *
      * If the chat is deleted, it will be deleted from [GroupChats], [GroupChatUsers], [Messages], and
-     * [MessageStatuses]. Users will be [unsubscribeFromMessageUpdates]d.
+     * [MessageStatuses]. Users will be [unsubscribeUserFromMessageUpdates]d.
      */
-    fun removeUsers(chatId: Int, userIdList: Set<String>) {
+    fun removeUsers(chatId: Int, userIdList: List<String>) {
         transact {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
-        userIdList.forEach { unsubscribeFromMessageUpdates(it, chatId) }
+        userIdList.forEach { unsubscribeUserFromMessageUpdates(it, chatId) }
         if (readUserIdList(chatId).isEmpty()) GroupChats.delete(chatId)
     }
 

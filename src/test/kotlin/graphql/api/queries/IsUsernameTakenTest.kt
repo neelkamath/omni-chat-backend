@@ -9,14 +9,14 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-fun buildIsUsernameTakenQuery(): String = """
+const val IS_USERNAME_TAKEN_QUERY: String = """
     query IsUsernameTaken(${"$"}username: String!) {
         isUsernameTaken(username: ${"$"}username)
     }
 """
 
 private fun operateIsUsernameTaken(username: String): GraphQlResponse =
-    operateQueryOrMutation(buildIsUsernameTakenQuery(), variables = mapOf("username" to username))
+    operateQueryOrMutation(IS_USERNAME_TAKEN_QUERY, variables = mapOf("username" to username))
 
 fun isUsernameTaken(username: String): Boolean = operateIsUsernameTaken(username).data!!["isUsernameTaken"] as Boolean
 

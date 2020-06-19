@@ -9,7 +9,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
-fun buildCreateContactsQuery(): String = """
+const val CREATE_CONTACTS_QUERY: String = """
     mutation CreateContacts(${"$"}userIdList: [String!]!) {
         createContacts(userIdList: ${"$"}userIdList)
     }
@@ -17,7 +17,7 @@ fun buildCreateContactsQuery(): String = """
 
 private fun operateCreateContacts(accessToken: String, userIdList: List<String>): GraphQlResponse =
     operateQueryOrMutation(
-        buildCreateContactsQuery(),
+        CREATE_CONTACTS_QUERY,
         variables = mapOf("userIdList" to userIdList),
         accessToken = accessToken
     )
@@ -25,7 +25,7 @@ private fun operateCreateContacts(accessToken: String, userIdList: List<String>)
 fun createContacts(accessToken: String, userIdList: List<String>): Boolean =
     operateCreateContacts(accessToken, userIdList).data!!["createContacts"] as Boolean
 
-fun errCreateContacts(userIdList: List<String>, accessToken: String): String =
+fun errCreateContacts(accessToken: String, userIdList: List<String>): String =
     operateCreateContacts(accessToken, userIdList).errors!![0].message
 
 class CreateContactsTest : FunSpec(body)
@@ -34,13 +34,13 @@ private val body: FunSpec.() -> Unit = {
     test("Trying to save the user's own contact should be ignored") {
         val (owner, user) = createSignedInUsers(2)
         createContacts(owner.accessToken, listOf(owner.info.id, user.info.id))
-        Contacts.read(owner.info.id) shouldBe setOf(user.info.id)
+        Contacts.read(owner.info.id) shouldBe listOf(user.info.id)
     }
 
     test("If one of the contacts to be saved is invalid, then none of them should be saved") {
         val (owner, user) = createSignedInUsers(2)
         val contacts = listOf(user.info.id, "invalid user ID")
-        errCreateContacts(contacts, owner.accessToken) shouldBe InvalidContactException.message
+        errCreateContacts(owner.accessToken, contacts) shouldBe InvalidContactException.message
         Contacts.read(owner.info.id).shouldBeEmpty()
     }
 }

@@ -1,8 +1,6 @@
 package com.neelkamath.omniChat.test.db
 
-import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.PrivateChat
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -16,7 +14,7 @@ private val body: FunSpec.() -> Unit = {
     context("deleteUserFromDb(String)") {
         test("An exception should be thrown when the admin of a nonempty group chat deletes their data") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat = NewGroupChat("Title", userIdList = setOf(userId))
+            val chat = NewGroupChat("Title", userIdList = listOf(userId))
             GroupChats.create(adminId, chat)
             shouldThrowExactly<IllegalArgumentException> { deleteUserFromDb(adminId) }
         }
@@ -36,15 +34,13 @@ private val body: FunSpec.() -> Unit = {
         test("A private chat should be read") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val chat = readChat(chatId, user1Id) as PrivateChat
-            chat.id shouldBe chatId
+            readChat(chatId, user1Id).id shouldBe chatId
         }
 
         test("A group chat should be read") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId, NewGroupChat("Title"))
-            val chat = readChat(chatId, adminId) as GroupChat
-            chat.id shouldBe chatId
+            readChat(chatId, adminId).id shouldBe chatId
         }
 
         test("Reading a chat the user isn't in should throw an exception") {

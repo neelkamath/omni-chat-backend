@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.graphql
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import graphql.*
+import graphql.GraphQL.newGraphQL
 import graphql.language.StringValue
 import graphql.schema.Coercing
 import graphql.schema.DataFetchingEnvironment
@@ -26,8 +27,8 @@ private val scalarCursor: GraphQLScalarType =
     GraphQLScalarType.Builder().name("Cursor").coercing(CursorCoercing).build()
 
 val graphQl: GraphQL = run {
-    val schemaInput = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
-    val registry = SchemaParser().parse(schemaInput)
+    val schema = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
+    val registry = SchemaParser().parse(schema)
     val wiring = newRuntimeWiring()
         .scalar(scalarDateTime)
         .scalar(scalarCursor)
@@ -37,8 +38,7 @@ val graphQl: GraphQL = run {
         .type("Mutation", ::wireMutation)
         .type("Subscription", ::wireSubscription)
         .build()
-    val schema = SchemaGenerator().makeExecutableSchema(registry, wiring)
-    GraphQL.newGraphQL(schema).build()
+    SchemaGenerator().makeExecutableSchema(registry, wiring).let(::newGraphQL).build()
 }
 
 private object DateTimeCoercing : Coercing<LocalDateTime, String> {
@@ -126,8 +126,8 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
 
 private fun wireTypeChat(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder.typeResolver {
     val type = when (val obj = it.getObject<Any>()) {
-        is PrivateChat -> "PrivateChat"
-        is GroupChat -> "GroupChat"
+        is PrivateChat, is PrivateChatDto -> "PrivateChat"
+        is GroupChat, is GroupChatDto -> "GroupChat"
         else -> throw Error("$obj was neither a PrivateChat nor a GroupChat.")
     }
     it.schema.getObjectType(type)

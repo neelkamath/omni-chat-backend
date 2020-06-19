@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.db.MessageStatuses
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.db.unsubscribeFromMessageUpdates
+import com.neelkamath.omniChat.db.unsubscribeUserFromMessageUpdates
 import com.neelkamath.omniChat.test.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
@@ -29,7 +29,7 @@ private val body: FunSpec.() -> Unit = {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
-            unsubscribeFromMessageUpdates(user1Id, chatId)
+            unsubscribeUserFromMessageUpdates(user1Id, chatId)
             subscriber.assertComplete()
         }
     }

@@ -13,7 +13,7 @@ private val body: FunSpec.() -> Unit = {
             val (userId, contact1Id, contact2Id, contact3Id) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(userId, setOf(contact1Id, contact2Id))
             Contacts.create(userId, setOf(contact1Id, contact2Id, contact3Id))
-            Contacts.read(userId) shouldBe setOf(contact1Id, contact2Id, contact3Id)
+            Contacts.read(userId) shouldBe listOf(contact1Id, contact2Id, contact3Id)
         }
     }
 }

@@ -2,10 +2,10 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.test.graphql.api.Cursor
-import com.neelkamath.omniChat.test.graphql.api.buildGroupChatFragment
-import com.neelkamath.omniChat.test.graphql.api.buildPrivateChatFragment
+import com.neelkamath.omniChat.test.graphql.api.GROUP_CHAT_FRAGMENT
+import com.neelkamath.omniChat.test.graphql.api.PRIVATE_CHAT_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
@@ -17,11 +17,11 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
-fun buildSearchChatsQuery(last: Int?, before: Cursor?): String = """
-    query SearchChats(${"$"}query: String!) {
+const val SEARCH_CHATS_QUERY: String = """
+    query SearchChats(${"$"}query: String!, ${"$"}last: Int, ${"$"}before: Cursor) {
         searchChats(query: ${"$"}query) {
-            ${buildGroupChatFragment(last, before)}
-            ${buildPrivateChatFragment(last, before)}
+            $GROUP_CHAT_FRAGMENT
+            $PRIVATE_CHAT_FRAGMENT
         }
     }
 """
@@ -29,16 +29,15 @@ fun buildSearchChatsQuery(last: Int?, before: Cursor?): String = """
 private fun operateSearchChats(
     accessToken: String,
     query: String,
-    last: Int? = null,
-    before: Cursor? = null
+    pagination: BackwardPagination? = null
 ): GraphQlResponse = operateQueryOrMutation(
-    buildSearchChatsQuery(last, before),
-    variables = mapOf("query" to query),
+    SEARCH_CHATS_QUERY,
+    variables = mapOf("query" to query, "last" to pagination?.last, "before" to pagination?.before?.toString()),
     accessToken = accessToken
 )
 
-fun searchChats(accessToken: String, query: String, last: Int? = null, before: Cursor? = null): List<Chat> {
-    val chats = operateSearchChats(accessToken, query, last, before).data!!["searchChats"] as List<*>
+fun searchChats(accessToken: String, query: String, pagination: BackwardPagination? = null): List<Chat> {
+    val chats = operateSearchChats(accessToken, query, pagination).data!!["searchChats"] as List<*>
     return objectMapper.convertValue(chats)
 }
 
@@ -53,7 +52,7 @@ private val body: FunSpec.() -> Unit = {
         createAccount(it)
         val userId = findUserByUsername(it.username).id
         val chatId = createPrivateChat(accessToken, userId)
-        PrivateChat(chatId, findUserById(userId), Messages.buildPrivateChatConnection(chatId, userId))
+        PrivateChat(chatId, findUserById(userId), Messages.readPrivateChatConnection(chatId, userId))
     }
 
     fun createGroupChats(accessToken: String, adminId: String): List<GroupChat> = listOf(
@@ -63,8 +62,8 @@ private val body: FunSpec.() -> Unit = {
         NewGroupChat("Tony's Birthday")
     ).map {
         val chatId = createGroupChat(accessToken, it)
-        val users = (it.userIdList + adminId).map(::findUserById).toSet()
-        GroupChat(chatId, adminId, users, it.title, it.description, Messages.buildGroupChatConnection(chatId))
+        val users = (it.userIdList + adminId).map(::findUserById)
+        GroupChat(chatId, adminId, users, it.title, it.description, Messages.readGroupChatConnection(chatId))
     }
 
     test("Private chats and group chats should be searched case-insensitively") {
@@ -103,4 +102,6 @@ private val body: FunSpec.() -> Unit = {
         deletePrivateChat(user1.accessToken, chatId)
         searchChats(user1.accessToken, user2.info.username).shouldBeEmpty()
     }
+
+    test("Messages should be paginated") { testPagination(OperationName.SEARCH_CHATS) }
 }

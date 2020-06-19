@@ -16,17 +16,17 @@ private val tables: List<Table> = listOf(
     Chats
 )
 
-/** Drops every table and type created. */
-fun tearDownDb(): Unit = transact {
-    dropTables()
-    dropTypes()
-}
-
 /** Deletes every row from every table created. */
 fun wipeDb(): Unit = transact {
     tables.forEach { it.deleteAll() }
 }
 
-private fun dropTables(): Unit = SchemaUtils.drop(*tables.toTypedArray())
+/** Drops every table and type created. */
+fun tearDownDb() {
+    dropTables()
+    dropTypes()
+}
+
+private fun dropTables(): Unit = transact { SchemaUtils.drop(*tables.toTypedArray()) }
 
 private fun dropTypes(): Unit = transact { exec("DROP TYPE IF EXISTS message_status;") }

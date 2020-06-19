@@ -10,14 +10,14 @@ import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildCreateAccountQuery(): String = """
+const val CREATE_ACCOUNT_QUERY: String = """
     mutation CreateAccount(${"$"}account: NewAccount!) {
         createAccount(account: ${"$"}account)
     }
 """
 
 private fun operateCreateAccount(account: NewAccount): GraphQlResponse =
-    operateQueryOrMutation(buildCreateAccountQuery(), variables = mapOf("account" to account))
+    operateQueryOrMutation(CREATE_ACCOUNT_QUERY, variables = mapOf("account" to account))
 
 fun createAccount(account: NewAccount): Boolean = operateCreateAccount(account).data!!["createAccount"] as Boolean
 

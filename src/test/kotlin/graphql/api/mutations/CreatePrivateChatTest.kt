@@ -9,14 +9,14 @@ import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildCreatePrivateChatQuery(): String = """
+const val CREATE_PRIVATE_CHAT_QUERY: String = """
     mutation CreatePrivateChat(${"$"}userId: ID!) {
         createPrivateChat(userId: ${"$"}userId)
     }
 """
 
 private fun operateCreatePrivateChat(accessToken: String, userId: String): GraphQlResponse = operateQueryOrMutation(
-    buildCreatePrivateChatQuery(),
+    CREATE_PRIVATE_CHAT_QUERY,
     variables = mapOf("userId" to userId),
     accessToken = accessToken
 )

@@ -13,10 +13,10 @@ schema {
 type Query {
     """
     Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
-  admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
-  as the admin.
+    admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
+    as the admin.
 
-  You must send an access token with this request.
+    You must send an access token with this request.
     """
     canDeleteAccount: Boolean!
 
@@ -27,10 +27,12 @@ type Query {
 
     You must send an access token with this request.
     """
-    searchChatMessages(chatId: Int!, query: String!): [MessageEdge!]!
+    searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
     """
-    Case-insensitively `query`s every text message in every chat the user is in.
+    Case-insensitively `query`s every text message in every chat the user is in. Each item in the returned
+    `ChatMessages` will be for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search
+    results.
 
     You must send an access token with this request.
     """
@@ -43,269 +45,269 @@ type Query {
     """
     readAccount: AccountInfo!
 
-  """
-  Returns whether the `username` has been taken.
+    """
+    Returns whether the `username` has been taken.
 
-  Returned `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`.
-  """
-  isUsernameTaken(username: String!): Boolean!
+    Returned `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`.
+    """
+    isUsernameTaken(username: String!): Boolean!
 
-  """Returns whether the `address` has been taken."""
-  isEmailAddressTaken(emailAddress: String!): Boolean!
+    """Returns whether the `address` has been taken."""
+    isEmailAddressTaken(emailAddress: String!): Boolean!
 
-  """
-  Returns the chats the user is in.
+    """
+    Returns the chats the user is in.
 
-  You must send an access token with this request.
-  """
-  readChats: [Chat!]!
+    You must send an access token with this request.
+    """
+    readChats: [Chat!]!
 
-  """
-  Returns the chat `id`.
+    """
+    Returns the chat `id`.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
 
-  You must send an access token with this request.
-  """
-  readChat(id: Int!): Chat!
+    You must send an access token with this request.
+    """
+    readChat(id: Int!): Chat!
 
-  """
-  Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with
-  the username, first name, and last name of users the user has chats with. Group chats are searched by matching the
-  `query` with the title of group chats the user is in.
+    """
+    Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with
+    the username, first name, and last name of users the user has chats with. Group chats are searched by matching the
+    `query` with the title of group chats the user is in.
 
-  You must send an access token with this request.
-  """
-  searchChats(query: String!): [Chat!]!
+    You must send an access token with this request.
+    """
+    searchChats(query: String!): [Chat!]!
 
-  """
-  Retrieves saved contacts.
+    """
+    Retrieves saved contacts.
 
-  You must send an access token with this request.
-  """
-  readContacts: [AccountInfo!]!
+    You must send an access token with this request.
+    """
+    readContacts: [AccountInfo!]!
 
-  """
-  Case-insensitively searches contacts using the `query`.
+    """
+    Case-insensitively searches contacts using the `query`.
 
-  You must send an access token with this request.
-  """
-  searchContacts(query: String!): [AccountInfo!]!
+    You must send an access token with this request.
+    """
+    searchContacts(query: String!): [AccountInfo!]!
 
-  """
-  Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-  authenticate the user by passing their `username` and `password` to this operation.
+    """
+    Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
+    authenticate the user by passing their `username` and `password` to this operation.
 
-  Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
-  `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
-  """
-  requestTokenSet(login: Login!): TokenSet!
+    Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
+    `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
+    """
+    requestTokenSet(login: Login!): TokenSet!
 
-  """
-  The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by passing
-  the `refreshToken` to this operation to request a new set of tokens.
-  """
-  refreshTokenSet(refreshToken: ID!): TokenSet!
+    """
+    The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by passing
+    the `refreshToken` to this operation to request a new set of tokens.
+    """
+    refreshTokenSet(refreshToken: ID!): TokenSet!
 
-  """
-  Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names, and
-  last names. Returns the users found.
-  """
-  searchUsers(query: String!): [AccountInfo!]!
+    """
+    Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names, and
+    last names. Returns the users found.
+    """
+    searchUsers(query: String!): [AccountInfo!]!
 }
 
 type Mutation {
-  """
-  Deletes the user's account. Returns whether the account was deleted. Use `Query.canDeleteAccount` to check if you can
-  delete the account.
-
-  You must send an access token with this request.
-  """
-  deleteAccount: Boolean!
-
-  """
-  Lets the server know that the user has had the `messageId` delivered to them.
-
-  If the status was created, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or the
-  the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has had
-  the message delivered to them).
-
-  You must send an access token with this request.
-  """
-  createDeliveredStatus(messageId: Int!): Boolean!
-
-  """
-  Lets the server know that the user has read the message `id`. If you haven't told the server that the message was
-  received (i.e., `Mutation.receiveMessage`), the delivery status will be created.
-
-  If the status was created, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or the
-  message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has had the
-  message delivered to them).
-
-  You must send an access token with this request.
-  """
-  createReadStatus(messageId: Int!): Boolean!
-
-  """
-  Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
-  `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and `AccountUpdate.emailAddress`
-  fields to the requested ones respectively.
-
-  None of the updates will take place if even one of the fields were invalid. If the account was updated, `true` will be
-  returned. Otherwise, an error will be returned. Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or
-  `"EMAIL_ADDRESS_TAKEN"`.
-
-  You must send an access token with this request.
-  """
-  updateAccount(update: AccountUpdate!): Boolean!
-
-  """
-  Creates an account, and sends the user a verification email. The username must be lowercase. The user will not be
-  allowed to log in until they verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken`
-  to see whether you can use the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
-
-  If the account was successfully created, `true` will be returned. Otherwise an error will be returned. Returned
-  `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`, `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
-  """
-  createAccount(account: NewAccount!): Boolean!
-
-  """
-  Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
-  resent because the one which was automatically sent when their account was created timed out. Use
-  `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
-
-  If the verification email was sent, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
-  """
-  sendEmailAddressVerification(emailAddress: String!): Boolean!
-
-  """
-  Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the supplied
-  `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update their
-  password, you should use `Mutation.updateAccount` instead.
-
-  If the password reset request was sent, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
-  """
-  resetPassword(emailAddress: String!): Boolean!
-
-  """
-  Leaves the group chat.
-
-  If the chat was left, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't
-  in the chat), or `"MISSING_NEW_ADMIN_ID"`.
-
-  You must send an access token with this request.
-  """
-  leaveGroupChat(
-    chatId: Int!
     """
-    If the user is the group's admin and isn't the last user in the chat, then this must be specified as the ID of
-    another user in the chat who will become the new admin. If this is supplied and the user isn't the admin, it'll be
-    ignored.
+    Deletes the user's account. Returns whether the account was deleted. Use `Query.canDeleteAccount` to check if you can
+    delete the account.
+
+    You must send an access token with this request.
     """
-    newAdminId: ID
-  ): Boolean!
+    deleteAccount: Boolean!
 
-  """
-  Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
+    """
+    Lets the server know that the user has had the `messageId` delivered to them.
 
-  If the chat was updated, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"UNAUTHORIZED"`, or `"INVALID_NEW_ADMIN_ID"` (i.e., the
-  to-be admin isn't in the chat).
+    If the status was created, `true` will be returned. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or the
+    the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has had
+    the message delivered to them).
 
-  You must send an access token with this request.
-  """
-  updateGroupChat(update: GroupChatUpdate!): Boolean!
+    You must send an access token with this request.
+    """
+    createDeliveredStatus(messageId: Int!): Boolean!
 
-  """
-  Creates a group chat. Returns the new chat's ID.
+    """
+    Lets the server know that the user has read the message `id`. If you haven't told the server that the message was
+    received (i.e., `Mutation.receiveMessage`), the delivery status will be created.
 
-  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist),
-  `"INVALID_TITLE_LENGTH"`, or `"INVALID_DESCRIPTION_LENGTH"`.
+    If the status was created, `true` will be returned. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or the
+    message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has had the
+    message delivered to them).
 
-  You must send an access token with this request.
-  """
-  createGroupChat(chat: NewGroupChat!): Int!
+    You must send an access token with this request.
+    """
+    createReadStatus(messageId: Int!): Boolean!
 
-  """
-  Deletes a private chat.
+    """
+    Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
+    `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and `AccountUpdate.emailAddress`
+    fields to the requested ones respectively.
 
-  If the chat was deleted, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    None of the updates will take place if even one of the fields were invalid. If the account was updated, `true` will be
+    returned. Otherwise, an error will be returned. Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or
+    `"EMAIL_ADDRESS_TAKEN"`.
 
-  You must send an access token with this request.
-  """
-  deletePrivateChat(chatId: Int!): Boolean!
+    You must send an access token with this request.
+    """
+    updateAccount(update: AccountUpdate!): Boolean!
 
-  """
-  Creates a private chat with the `userId`. Returns the chat's ID.
+    """
+    Creates an account, and sends the user a verification email. The username must be lowercase. The user will not be
+    allowed to log in until they verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken`
+    to see whether you can use the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-  Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
-  exist).
+    If the account was successfully created, `true` will be returned. Otherwise an error will be returned. Returned
+    `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`, `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    """
+    createAccount(account: NewAccount!): Boolean!
 
-  You must send an access token with this request.
-  """
-  createPrivateChat(userId: ID!): Int!
+    """
+    Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
+    resent because the one which was automatically sent when their account was created timed out. Use
+    `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
 
-  """
-  Sends a message in a chat. Use `Subscription.messageUpdates` to get the message's ID and sending `scalar.DateTime`.
+    If the verification email was sent, `true` will be returned. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    """
+    sendEmailAddressVerification(emailAddress: String!): Boolean!
 
-  If the message was sent, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
-  could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_LENGTH"`.
+    """
+    Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the supplied
+    `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update their
+    password, you should use `Mutation.updateAccount` instead.
 
-  You must send an access token with this request.
-  """
-  createMessage(
-    chatId: Int!
-    """At most 10,000 characters."""
-    text: String!
-  ): Boolean!
+    If the password reset request was sent, `true` will be returned. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    """
+    resetPassword(emailAddress: String!): Boolean!
 
-  """
-  Deletes the message `id` from the `chatId`. The user can only delete their own messages.
+    """
+    Leaves the group chat.
 
-  `true` will be returned if the message was deleted. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_ID"` (i.e.,
-  the message doesn't exist, or the message isn't the user's own).
+    If the chat was left, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
+    could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't
+    in the chat), or `"MISSING_NEW_ADMIN_ID"`.
 
-  You must send an access token with this request.
-  """
-  deleteMessage(id: Int!, chatId: Int!): Boolean!
+    You must send an access token with this request.
+    """
+    leaveGroupChat(
+        chatId: Int!
+        """
+        If the user is the group's admin and isn't the last user in the chat, then this must be specified as the ID of
+        another user in the chat who will become the new admin. If this is supplied and the user isn't the admin, it'll be
+        ignored.
+        """
+        newAdminId: ID
+    ): Boolean!
 
-  """
-  Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored. `true` will always
-  be returned.
+    """
+    Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
 
-  You must send an access token with this request.
-  """
-  deleteContacts(userIdList: [String!]!): Boolean!
+    If the chat was updated, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
+    could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"UNAUTHORIZED"`, or `"INVALID_NEW_ADMIN_ID"` (i.e., the
+    to-be admin isn't in the chat).
 
-  """
-  Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-  Existing contacts will be ignored.
+    You must send an access token with this request.
+    """
+    updateGroupChat(update: GroupChatUpdate!): Boolean!
 
-  If the contacts were saved, `true` will be returned. Otherwise, an error will be returned. Returned
-  `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
+    """
+    Creates a group chat. Returns the new chat's ID.
 
-  You must send an access token with this request.
-  """
-  createContacts(userIdList: [String!]!): Boolean!
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist),
+    `"INVALID_TITLE_LENGTH"`, or `"INVALID_DESCRIPTION_LENGTH"`.
+
+    You must send an access token with this request.
+    """
+    createGroupChat(chat: NewGroupChat!): Int!
+
+    """
+    Deletes a private chat.
+
+    If the chat was deleted, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
+    could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    deletePrivateChat(chatId: Int!): Boolean!
+
+    """
+    Creates a private chat with the `userId`. Returns the chat's ID.
+
+    Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
+    exist).
+
+    You must send an access token with this request.
+    """
+    createPrivateChat(userId: ID!): Int!
+
+    """
+    Sends a message in a chat. Use `Subscription.messageUpdates` to get the message's ID and sending `scalar.DateTime`.
+
+    If the message was sent, `true` will be returned. Otherwise, an error will be returned. Returned `errors[0].message`s
+    could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_LENGTH"`.
+
+    You must send an access token with this request.
+    """
+    createMessage(
+        chatId: Int!
+        """At most 10,000 characters."""
+        text: String!
+    ): Boolean!
+
+    """
+    Deletes the message `id` from the `chatId`. The user can only delete their own messages.
+
+    `true` will be returned if the message was deleted. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_ID"` (i.e.,
+    the message doesn't exist, or the message isn't the user's own).
+
+    You must send an access token with this request.
+    """
+    deleteMessage(id: Int!, chatId: Int!): Boolean!
+
+    """
+    Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored. `true` will always
+    be returned.
+
+    You must send an access token with this request.
+    """
+    deleteContacts(userIdList: [String!]!): Boolean!
+
+    """
+    Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
+    Existing contacts will be ignored.
+
+    If the contacts were saved, `true` will be returned. Otherwise, an error will be returned. Returned
+    `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
+
+    You must send an access token with this request.
+    """
+    createContacts(userIdList: [String!]!): Boolean!
 }
 
 type Subscription {
-  """
-  Returns new and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the chat
-  was deleted.
+    """
+    Returns new and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the chat
+    was deleted.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  messageUpdates(chatId: Int!): MessageUpdatesInfo!
+    You must send an access token with this request.
+    """
+    messageUpdates(chatId: Int!): MessageUpdatesInfo!
 }
 
 """
@@ -318,12 +320,12 @@ Represents created and deleted messages, deleted chats, and the subscription cre
 `DeletedMessage`s contain the ID of the message which was previously sent, but has now been deleted.
 """
 union MessageUpdatesInfo =
-  CreatedSubscription
-  | DeletedMessage
-  | DeletionOfEveryMessage
-  | Message
-  | MessageDeletionPoint
-  | UserChatMessagesRemoval
+    CreatedSubscription
+    | DeletedMessage
+    | DeletionOfEveryMessage
+    | Message
+    | MessageDeletionPoint
+    | UserChatMessagesRemoval
 
 """
 Every message in the chat has been deleted.
@@ -332,8 +334,8 @@ This happens in private chats when the user deleted it, or the other user delete
 chats when the last user left the chat.
 """
 type DeletionOfEveryMessage {
-  """Always true."""
-  isDeleted: Boolean!
+    """Always true."""
+    isDeleted: Boolean!
 }
 
 """
@@ -341,24 +343,24 @@ Every message the `userId` sent in the chat has been deleted. This happens when 
 account.
 """
 type UserChatMessagesRemoval {
-  userId: ID!
+    userId: ID!
 }
 
 """
 Indicates that the `Subscription` has been created. This will only be sent only once, and will be the first event sent.
 """
 type CreatedSubscription {
-  """Always `true`."""
-  isCreated: Boolean!
+    """Always `true`."""
+    isCreated: Boolean!
 }
 
 """Indicates that the every message `until` the `DateTime` has been deleted."""
 type MessageDeletionPoint {
-  until: DateTime!
+    until: DateTime!
 }
 
 type DeletedMessage {
-  id: Int!
+    id: Int!
 }
 
 type AccountInfo {
@@ -398,6 +400,7 @@ type PageInfo {
 
 type GroupChat implements Chat {
     id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
     """1-70 characters."""
     title: String!
     """At most 1000 characters."""
@@ -405,85 +408,84 @@ type GroupChat implements Chat {
     """The ID of the admin present who is present in the `users`."""
     adminId: ID!
     users: [AccountInfo!]!
-    messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type PrivateChat implements Chat {
-  id: Int!
+    id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
     """The user being chatted with."""
     user: AccountInfo!
-    messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type Message {
-  id: Int!
-  sender: AccountInfo!
-  text: String!
-  dateTimes: MessageDateTimes!
+    id: Int!
+    sender: AccountInfo!
+    text: String!
+    dateTimes: MessageDateTimes!
 }
 
 type MessageDateTimes {
-  sent: DateTime!
-  statuses: [MessageDateTimeStatus!]!
+    sent: DateTime!
+    statuses: [MessageDateTimeStatus!]!
 }
 
 """The `dateTime` the `user` created the `status`."""
 type MessageDateTimeStatus {
-  user: AccountInfo!
-  dateTime: DateTime!
-  status: MessageStatus!
+    user: AccountInfo!
+    dateTime: DateTime!
+    status: MessageStatus!
 }
 
 enum MessageStatus {
-  DELIVERED
-  READ
+    DELIVERED
+    READ
 }
 
 type TokenSet {
-  accessToken: ID!
-  refreshToken: ID!
+    accessToken: ID!
+    refreshToken: ID!
 }
 
 input NewAccount {
-  """Must be lowercase."""
-  username: String!
-  password: String!
-  emailAddress: String!
-  firstName: String
-  lastName: String
+    """Must be lowercase."""
+    username: String!
+    password: String!
+    emailAddress: String!
+    firstName: String
+    lastName: String
 }
 
 input Login {
-  username: String!
-  password: String!
+    username: String!
+    password: String!
 }
 
 input AccountUpdate {
-  username: String
-  password: String
-  emailAddress: String
-  firstName: String
-  lastName: String
+    username: String
+    password: String
+    emailAddress: String
+    firstName: String
+    lastName: String
 }
 
 input GroupChatUpdate {
-  chatId: Int!
-  """1-70 characters."""
-  title: String
-  """At most 1000 characters."""
-  description: String
-  """The ID of every new user to add."""
-  newUserIdList: [String!]
-  """The ID of every user to remove."""
-  removedUserIdList: [String!]
-  """Transfers the admin status to the specified user ID."""
-  newAdminId: ID
+    chatId: Int!
+    """1-70 characters."""
+    title: String
+    """At most 1000 characters."""
+    description: String
+    """The ID of every new user to add."""
+    newUserIdList: [String!]
+    """The ID of every user to remove."""
+    removedUserIdList: [String!]
+    """Transfers the admin status to the specified user ID."""
+    newAdminId: ID
 }
 
 input NewGroupChat {
-  """1-70 characters."""
-  title: String!
-  """At most 1000 characters."""
-  description: String
-  userIdList: [String!]
+    """1-70 characters."""
+    title: String!
+    """At most 1000 characters."""
+    description: String
+    userIdList: [String!]
 }

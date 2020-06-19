@@ -11,7 +11,7 @@ import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildUpdateGroupChatQuery(): String = """
+const val UPDATE_GROUP_CHAT_QUERY: String = """
     mutation UpdateGroupChat(${"$"}update: GroupChatUpdate!) {
         updateGroupChat(update: ${"$"}update)
     }
@@ -19,7 +19,7 @@ fun buildUpdateGroupChatQuery(): String = """
 
 private fun operateUpdateGroupChat(accessToken: String, update: GroupChatUpdate): GraphQlResponse =
     operateQueryOrMutation(
-        buildUpdateGroupChatQuery(),
+        UPDATE_GROUP_CHAT_QUERY,
         variables = mapOf("update" to update),
         accessToken = accessToken
     )
@@ -32,30 +32,30 @@ class UpdateGroupChatTest : FunSpec(body)
 private val body: FunSpec.() -> Unit = {
     test("Only the supplied fields should be updated") {
         val (admin, user1, user2) = createSignedInUsers(3)
-        val initialUserIdList = setOf(user1.info.id)
+        val initialUserIdList = listOf(user1.info.id)
         val chat = NewGroupChat("Title", "description", initialUserIdList)
         val chatId = createGroupChat(admin.accessToken, chat)
         val update = GroupChatUpdate(
             chatId,
             "New Title",
-            newUserIdList = setOf(user2.info.id),
-            removedUserIdList = setOf(user1.info.id)
+            newUserIdList = listOf(user2.info.id),
+            removedUserIdList = listOf(user1.info.id)
         )
         updateGroupChat(admin.accessToken, update)
         val userIdList = initialUserIdList + admin.info.id + update.newUserIdList - update.removedUserIdList
-        val users = userIdList.map(::findUserById).toSet()
-        val connection = Messages.buildGroupChatConnection(chatId)
+        val users = userIdList.map(::findUserById)
+        val connection = Messages.readGroupChatConnection(chatId)
         val groupChat = GroupChat(chatId, admin.info.id, users, update.title!!, chat.description, connection)
-        GroupChats.read(admin.info.id) shouldBe listOf(groupChat)
+        GroupChats.readUserChats(admin.info.id) shouldBe listOf(groupChat)
     }
 
     test("The chat's new admin should be set") {
         val (firstAdmin, secondAdmin) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(secondAdmin.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(secondAdmin.info.id))
         val chatId = createGroupChat(firstAdmin.accessToken, chat)
         val update = GroupChatUpdate(chatId, newAdminId = secondAdmin.info.id)
         updateGroupChat(firstAdmin.accessToken, update)
-        GroupChats.read(chatId).adminId shouldBe secondAdmin.info.id
+        GroupChats.readChat(chatId).adminId shouldBe secondAdmin.info.id
     }
 
     test("Transferring admin status to a user not in the chat should throw an exception") {
@@ -74,7 +74,7 @@ private val body: FunSpec.() -> Unit = {
 
     test("Updating a chat the user isn't the admin of should throw an exception") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
         val response = operateUpdateGroupChat(user.accessToken, GroupChatUpdate(chatId))
         response.errors!![0].message shouldBe UnauthorizedException.message

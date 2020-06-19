@@ -83,21 +83,21 @@ object MessageStatuses : Table() {
         }.empty()
     }
 
-    /** Deletes all [MessageStatuses] from the [messageIdList]. */
+    /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
     fun delete(messageIdList: List<Int>): Unit = transact {
         deleteWhere { messageId inList messageIdList }
     }
 
-    /** Deletes all [MessageStatuses] from the [messageIdList]. */
+    /** Deletes all [MessageStatuses] from the [messageIdList], ignoring the invalid ones. */
     fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Deletes every status the [userId] created in the [chatId]. */
-    fun delete(chatId: Int, userId: String) = transact {
+    fun deleteUserChatStatuses(chatId: Int, userId: String) = transact {
         deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
     /** Deletes every status the [userId] created. */
-    fun delete(userId: String): Unit = transact {
+    fun deleteUserStatuses(userId: String): Unit = transact {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
@@ -105,5 +105,6 @@ object MessageStatuses : Table() {
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(findUserById(it[userId]), it[dateTime], it[status]) }
+
     }
 }

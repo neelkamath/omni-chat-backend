@@ -3,10 +3,11 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.MessageEdge
+import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.graphql.api.buildMessageEdgeFragment
+import com.neelkamath.omniChat.test.graphql.api.MESSAGE_EDGE_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
 import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.deletePrivateChat
@@ -17,28 +18,47 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
-fun buildSearchChatMessagesQuery(): String = """
-    query SearchChatMessages(${"$"}chatId: Int!, ${"$"}query: String!) {
-        searchChatMessages(chatId: ${"$"}chatId, query: ${"$"}query) {
-            ${buildMessageEdgeFragment()}
+const val SEARCH_CHAT_MESSAGES_FRAGMENT: String = """
+    query SearchChatMessages(${"$"}chatId: Int!, ${"$"}query: String!, ${"$"}last: Int, ${"$"}before: Cursor) {
+        searchChatMessages(chatId: ${"$"}chatId, query: ${"$"}query, last: ${"$"}last, before: ${"$"}before) {
+            $MESSAGE_EDGE_FRAGMENT
         }
     }
 """
 
-private fun operateSearchChatMessages(accessToken: String, chatId: Int, query: String): GraphQlResponse =
-    operateQueryOrMutation(
-        buildSearchChatMessagesQuery(),
-        variables = mapOf("chatId" to chatId, "query" to query),
-        accessToken = accessToken
-    )
+private fun operateSearchChatMessages(
+    accessToken: String,
+    chatId: Int,
+    query: String,
+    pagination: BackwardPagination? = null
+): GraphQlResponse = operateQueryOrMutation(
+    SEARCH_CHAT_MESSAGES_FRAGMENT,
+    variables = mapOf(
+        "chatId" to chatId,
+        "query" to query,
+        "last" to pagination?.last,
+        "before" to pagination?.before?.toString()
+    ),
+    accessToken = accessToken
+)
 
-fun searchChatMessages(accessToken: String, chatId: Int, query: String): List<MessageEdge> {
-    val data = operateSearchChatMessages(accessToken, chatId, query).data!!["searchChatMessages"] as List<*>
+fun searchChatMessages(
+    accessToken: String,
+    chatId: Int,
+    query: String,
+    pagination: BackwardPagination? = null
+): List<MessageEdge> {
+    val data =
+        operateSearchChatMessages(accessToken, chatId, query, pagination).data!!["searchChatMessages"] as List<*>
     return objectMapper.convertValue(data)
 }
 
-fun errSearchChatMessages(accessToken: String, chatId: Int, query: String): String =
-    operateSearchChatMessages(accessToken, chatId, query).errors!![0].message
+fun errSearchChatMessages(
+    accessToken: String,
+    chatId: Int,
+    query: String,
+    pagination: BackwardPagination? = null
+): String = operateSearchChatMessages(accessToken, chatId, query, pagination).errors!![0].message
 
 class SearchChatMessagesTest : FunSpec(body)
 
@@ -74,4 +94,6 @@ private val body: FunSpec.() -> Unit = {
         val chatId = createPrivateChat(user2.accessToken, user3.info.id)
         errSearchChatMessages(user1.accessToken, chatId, "query") shouldBe InvalidChatIdException.message
     }
+
+    test("Messages should be paginated") { testPagination(OperationName.SEARCH_CHAT_MESSAGES) }
 }

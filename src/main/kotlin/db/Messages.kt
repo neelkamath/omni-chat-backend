@@ -77,35 +77,50 @@ object Messages : IntIdTable() {
         pagination: BackwardPagination? = null
     ): List<MessageEdge> = search(readPrivateChat(chatId, userId, pagination), query)
 
-    /** Case-insensitively [query]s [MessageEdge.node]s. Use [searchGroupChat] and [searchPrivateChat] instead. */
+    /**
+     * Case-insensitively [query]s [MessageEdge.node]s.
+     *
+     * @see [searchGroupChat]
+     * @see [searchPrivateChat]
+     */
     private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> =
         edges.filter { it.node.text.contains(query, ignoreCase = true) }
 
     /** Case-insensitively [query]s every text message sent in every chat the [userId] is in. */
-    fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<ChatMessages> =
-        PrivateChats.read(userId, pagination).plus(GroupChats.read(userId, pagination)).map {
+    fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<ChatMessages> {
+        val chats = PrivateChats.readUserChats(userId, pagination) + GroupChats.readUserChats(userId, pagination)
+        return chats.map {
             when (it) {
                 is PrivateChat -> ChatMessages(it, searchPrivateChat(it.id, userId, query, pagination))
                 is GroupChat -> ChatMessages(it, searchGroupChat(it.id, query, pagination))
             }
         }
+    }
 
     /**
      * Returns the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by
      * the [userId].
+     *
+     * @see [readPrivateChatConnection]
      */
     fun readPrivateChat(id: Int, userId: String, pagination: BackwardPagination? = null): List<MessageEdge> {
         val op = PrivateChatDeletions.readLastDeletion(id, userId)?.let { sent greater it }
         return readChat(id, pagination, op)
     }
 
+    /** @see [readGroupChatConnection] */
     fun readGroupChat(id: Int, pagination: BackwardPagination? = null): List<MessageEdge> = readChat(id, pagination)
 
-    /** Returns the [MessageEdge]s in the chat [id]. Use [readPrivateChat] and [readGroupChat] instead. */
+    /**
+     * Returns the [MessageEdge]s in the chat [id].
+     *
+     * @see [readPrivateChat]
+     * @see [readGroupChat]
+     */
     private fun readChat(id: Int, pagination: BackwardPagination? = null, filter: Filter = null): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = chatId eq id
-        op = if (before == null) op else op and (Messages.id less before)
+        if (before != null) op = op and (Messages.id less before)
         if (filter != null) op = op and filter
         return transact {
             select(op)
@@ -132,7 +147,7 @@ object Messages : IntIdTable() {
 
     /**
      * Deletes all [Messages] and [MessageStatuses] in the [chatId]. Clients will be notified of a
-     * [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
+     * [DeletionOfEveryMessage], and then [unsubscribeUserFromMessageUpdates].
      */
     fun deleteChat(chatId: Int) {
         val messageIdList = readMessageIdList(chatId)
@@ -141,11 +156,11 @@ object Messages : IntIdTable() {
             deleteWhere { Messages.chatId eq chatId }
         }
         notifyMessageUpdate(chatId, DeletionOfEveryMessage())
-        unsubscribeFromMessageUpdates(chatId)
+        unsubscribeUsersFromMessageUpdates(chatId)
     }
 
     /** Deletes all [Messages] and [MessageStatuses] in the [chatId] [until] the specified [LocalDateTime]. */
-    fun delete(chatId: Int, until: LocalDateTime) {
+    fun deleteChatMessagesUntil(chatId: Int, until: LocalDateTime) {
         val idList = readMessageIdList(chatId, sent less until)
         MessageStatuses.delete(idList)
         transact {
@@ -157,8 +172,8 @@ object Messages : IntIdTable() {
      * Deletes all [Messages] and [MessageStatuses] the [userId] created in the [chatId]. Clients who have
      * [subscribeToMessageUpdates] will be be notified of the [UserChatMessagesRemoval].
      */
-    fun delete(chatId: Int, userId: String) {
-        MessageStatuses.delete(chatId, userId)
+    fun deleteUserChatMessages(chatId: Int, userId: String) {
+        MessageStatuses.deleteUserChatStatuses(chatId, userId)
         val idList = readMessageIdList(chatId, senderId eq userId)
         MessageStatuses.delete(idList)
         transact {
@@ -171,14 +186,14 @@ object Messages : IntIdTable() {
      * Deletes all [Messages] and [MessageStatuses] the [userId] has. Clients who have [subscribeToMessageUpdates] will
      * be notified of the [UserChatMessagesRemoval].
      */
-    fun delete(userId: String) {
-        MessageStatuses.delete(userId)
+    fun deleteUserMessages(userId: String) {
+        MessageStatuses.deleteUserStatuses(userId)
         val chatMessages = readChatMessages(userId)
         MessageStatuses.delete(chatMessages.map { it.messageId })
         transact {
             deleteWhere { senderId eq userId }
         }
-        chatMessages.map { it.chatId }.toSet().forEach { notifyMessageUpdate(it, UserChatMessagesRemoval(userId)) }
+        chatMessages.map { it.chatId }.forEach { notifyMessageUpdate(it, UserChatMessagesRemoval(userId)) }
     }
 
     /**
@@ -211,9 +226,9 @@ object Messages : IntIdTable() {
         select(op).map { it[Messages.id].value }
     }
 
-    /** Whether the message [id] exists in the [chatId]. */
-    fun exists(id: Int, chatId: Int): Boolean = transact {
-        !select { (Messages.chatId eq chatId) and (Messages.id eq id) }.empty()
+    /** Whether the [messageId] exists in the [chatId]. */
+    fun existsInChat(messageId: Int, chatId: Int): Boolean = transact {
+        !select { (Messages.chatId eq chatId) and (Messages.id eq messageId) }.empty()
     }
 
     fun exists(id: Int): Boolean = transact {
@@ -227,10 +242,10 @@ object Messages : IntIdTable() {
         return Message(id, sender, row[text], dateTimes)
     }
 
-    fun buildGroupChatConnection(chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
+    fun readGroupChatConnection(chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
         MessagesConnection(readGroupChat(chatId, pagination), buildPageInfo(chatId, pagination?.before))
 
-    fun buildPrivateChatConnection(
+    fun readPrivateChatConnection(
         chatId: Int,
         userId: String,
         pagination: BackwardPagination? = null

@@ -14,14 +14,14 @@ import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildCreateGroupChatQuery(): String = """
+const val CREATE_GROUP_CHAT_QUERY: String = """
     mutation CreateGroupChat(${"$"}chat: NewGroupChat!) {
         createGroupChat(chat: ${"$"}chat)
     }
 """
 
 private fun operateCreateGroupChat(accessToken: String, chat: NewGroupChat): GraphQlResponse =
-    operateQueryOrMutation(buildCreateGroupChatQuery(), variables = mapOf("chat" to chat), accessToken = accessToken)
+    operateQueryOrMutation(CREATE_GROUP_CHAT_QUERY, variables = mapOf("chat" to chat), accessToken = accessToken)
 
 fun createGroupChat(accessToken: String, chat: NewGroupChat): Int =
     operateCreateGroupChat(accessToken, chat).data!!["createGroupChat"] as Int
@@ -34,24 +34,22 @@ class CreateGroupChatTest : FunSpec(body)
 private val body: FunSpec.() -> Unit = {
     test("A group chat should be created, ignoring the user's own ID") {
         val (admin, user1, user2) = createSignedInUsers(3)
-        val chat = NewGroupChat("Title", "Description", setOf(admin.info.id, user1.info.id, user2.info.id))
+        val chat = NewGroupChat("Title", "Description", listOf(admin.info.id, user1.info.id, user2.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
-        val userIdList = chat.userIdList + admin.info.id
-        val users = userIdList.map(::findUserById).toSet()
-        GroupChats.read(admin.info.id) shouldBe listOf(
+        GroupChats.readUserChats(admin.info.id) shouldBe listOf(
             GroupChat(
                 chatId,
                 admin.info.id,
-                users,
+                chat.userIdList.map(::findUserById),
                 chat.title,
                 chat.description,
-                Messages.buildGroupChatConnection(chatId)
+                Messages.readGroupChatConnection(chatId)
             )
         )
     }
 
     test("A group chat should not be created when supplied with an invalid user ID") {
-        val chat = NewGroupChat("Title", userIdList = setOf("invalid user ID"))
+        val chat = NewGroupChat("Title", userIdList = listOf("invalid user ID"))
         val token = createSignedInUsers(1)[0].accessToken
         errCreateGroupChat(token, chat) shouldBe InvalidUserIdException.message
     }

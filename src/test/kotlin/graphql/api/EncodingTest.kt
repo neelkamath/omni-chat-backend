@@ -24,7 +24,7 @@ private val body: FunSpec.() -> Unit = {
         val token = createSignedInUsers(1)[0].accessToken
         val title = "Title \uD83D\uDCDA"
         val chatId = createGroupChat(token, NewGroupChat(title))
-        GroupChats.read(chatId).title shouldBe title
+        GroupChats.readChat(chatId).title shouldBe title
     }
 
     fun testMessage(message: String) {

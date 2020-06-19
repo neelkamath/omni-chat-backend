@@ -2,7 +2,7 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.test.graphql.api.buildAccountInfoFragment
+import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.mutations.createContacts
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
@@ -10,16 +10,16 @@ import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildSearchContactsQuery(): String = """
+const val SEARCH_CONTACTS_QUERY: String = """
     query SearchContacts(${"$"}query: String!) {
         searchContacts(query: ${"$"}query) {
-            ${buildAccountInfoFragment()}
+            $ACCOUNT_INFO_FRAGMENT
         }
     }
 """
 
 private fun operateSearchContacts(accessToken: String, query: String): GraphQlResponse =
-    operateQueryOrMutation(buildSearchContactsQuery(), variables = mapOf("query" to query), accessToken = accessToken)
+    operateQueryOrMutation(SEARCH_CONTACTS_QUERY, variables = mapOf("query" to query), accessToken = accessToken)
 
 fun searchContacts(accessToken: String, query: String): List<AccountInfo> {
     val data = operateSearchContacts(accessToken, query).data!!["searchContacts"] as List<*>

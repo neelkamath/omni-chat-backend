@@ -32,15 +32,20 @@ fun subscribeToMessageUpdates(userId: String, chatId: Int): Flowable<MessageUpda
         .toFlowable(BackpressureStrategy.BUFFER)
 }
 
-/** Stops notifications for the specified [userId]'s [chatId] by calling [Observer.onComplete]. */
-fun unsubscribeFromMessageUpdates(userId: String, chatId: Int): Unit =
+/** Stops notifications for the specified [userId] in the [chatId] by calling [Observer.onComplete]. */
+fun unsubscribeUserFromMessageUpdates(userId: String, chatId: Int): Unit =
     unsubscribe { it.userId == userId && it.chatId == chatId }
 
-/** Removes ever [chatId] subscriber by calling [Observer.onComplete]. */
-fun unsubscribeFromMessageUpdates(chatId: Int): Unit = unsubscribe { it.chatId == chatId }
+/** Removes every [chatId] subscriber by calling [Observer.onComplete]. */
+fun unsubscribeUsersFromMessageUpdates(chatId: Int): Unit = unsubscribe { it.chatId == chatId }
 
 /** Depending on the [condition], [notifiers] are removed after calling [Observer.onComplete]. */
 private inline fun unsubscribe(condition: (Notifier) -> Boolean): Unit =
+    /*
+    Another function removes the notifier from the list once it completes. This means we can't write
+    <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException> would
+    get thrown.
+     */
     notifiers.filter(condition).forEach { it.subject.onComplete() }
 
 /** Notifies [subscribeToMessageUpdates]rs of the updated [Message]. */

@@ -90,14 +90,12 @@ fun deleteAccount(env: DataFetchingEnvironment): Boolean {
         deleteUserFromDb(env.userId!!)
         deleteUserFromAuth(env.userId!!)
         true
-    } else {
-        false
-    }
+    } else false
 }
 
 fun deleteContacts(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val userIdList = env.parseArgument<Set<String>>("userIdList")
+    val userIdList = env.getArgument<List<String>>("userIdList")
     Contacts.delete(env.userId!!, userIdList)
     return true
 }
@@ -107,7 +105,7 @@ fun deleteMessage(env: DataFetchingEnvironment): Boolean {
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.exists(messageId, chatId) ||
+    if (!Messages.existsInChat(messageId, chatId) ||
         Messages.read(messageId).sender.id != env.userId!! ||
         !Messages.isVisible(messageId, env.userId!!)
     ) {
@@ -122,7 +120,7 @@ fun deletePrivateChat(env: DataFetchingEnvironment): Boolean {
     val chatId = env.getArgument<Int>("chatId")
     if (chatId !in PrivateChats.readIdList(env.userId!!)) throw InvalidChatIdException
     PrivateChatDeletions.create(chatId, env.userId!!)
-    unsubscribeFromMessageUpdates(env.userId!!, chatId)
+    unsubscribeUserFromMessageUpdates(env.userId!!, chatId)
     return true
 }
 
@@ -139,7 +137,7 @@ fun leaveGroupChat(env: DataFetchingEnvironment): Boolean {
             throw InvalidNewAdminIdException
         else -> {
             if (mustSpecifyNewAdmin.value) GroupChats.setAdmin(chatId, newAdminId!!)
-            val update = GroupChatUpdate(chatId, removedUserIdList = setOf(env.userId!!))
+            val update = GroupChatUpdate(chatId, removedUserIdList = listOf(env.userId!!))
             GroupChats.update(update)
         }
     }

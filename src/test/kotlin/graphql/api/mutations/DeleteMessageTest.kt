@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
+import com.neelkamath.omniChat.test.graphql.api.messageAndReadId
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
@@ -12,14 +13,14 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
-fun buildDeleteMessageQuery(): String = """
+const val DELETE_MESSAGE_QUERY: String = """
     mutation DeleteMessage(${"$"}id: Int!, ${"$"}chatId: Int!) {
         deleteMessage(id: ${"$"}id, chatId: ${"$"}chatId)
     }
 """
 
 private fun operateDeleteMessage(accessToken: String, id: Int, chatId: Int): GraphQlResponse = operateQueryOrMutation(
-    buildDeleteMessageQuery(),
+    DELETE_MESSAGE_QUERY,
     variables = mapOf("id" to id, "chatId" to chatId),
     accessToken = accessToken
 )
@@ -36,7 +37,11 @@ private val body: FunSpec.() -> Unit = {
     test("""Deleting the user's message should return "true"""") {
         val admin = createSignedInUsers(1)[0]
         val chatId = createGroupChat(admin.accessToken, NewGroupChat("Title"))
-        val messageId = messageAndReadId(admin.accessToken, chatId, "text")
+        val messageId = messageAndReadId(
+            admin.accessToken,
+            chatId,
+            "text"
+        )
         deleteMessage(admin.accessToken, messageId, chatId).shouldBeTrue()
         Messages.readGroupChat(chatId).shouldBeEmpty()
     }
@@ -44,7 +49,11 @@ private val body: FunSpec.() -> Unit = {
     test("Deleting another user's message should return an error") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        val messageId = messageAndReadId(user2.accessToken, chatId, "text")
+        val messageId = messageAndReadId(
+            user2.accessToken,
+            chatId,
+            "text"
+        )
         errDeleteMessage(user1.accessToken, messageId, chatId) shouldBe InvalidMessageIdException.message
     }
 
@@ -69,7 +78,11 @@ private val body: FunSpec.() -> Unit = {
         val (user1, user2) = createSignedInUsers(2)
         val create = { createPrivateChat(user1.accessToken, user2.info.id) }
         val chatId = create()
-        val messageId = messageAndReadId(user1.accessToken, chatId, "text")
+        val messageId = messageAndReadId(
+            user1.accessToken,
+            chatId,
+            "text"
+        )
         deletePrivateChat(user1.accessToken, chatId)
         create()
         errDeleteMessage(user1.accessToken, messageId, chatId) shouldBe InvalidMessageIdException.message

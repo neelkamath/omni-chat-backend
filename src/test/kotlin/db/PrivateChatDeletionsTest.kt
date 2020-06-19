@@ -81,7 +81,7 @@ private val body: FunSpec.() -> Unit = {
             val message1Id = Messages.message(chatId, user2Id, "text")
             PrivateChatDeletions.create(chatId, user2Id)
             val message2Id = Messages.message(chatId, user1Id, "text")
-            Messages.readPrivateChat(chatId, user1Id).map { it.node.id } shouldBe listOf(message1Id, message2Id)
+            Messages.readPrivateChat(chatId, user1Id).map { it.cursor } shouldBe listOf(message1Id, message2Id)
         }
     }
 

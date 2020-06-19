@@ -2,11 +2,11 @@ package com.neelkamath.omniChat.test.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.test.graphql.SignedInUser
-import com.neelkamath.omniChat.test.graphql.api.Cursor
-import com.neelkamath.omniChat.test.graphql.api.buildGroupChatFragment
-import com.neelkamath.omniChat.test.graphql.api.buildPrivateChatFragment
+import com.neelkamath.omniChat.test.graphql.api.GROUP_CHAT_FRAGMENT
+import com.neelkamath.omniChat.test.graphql.api.PRIVATE_CHAT_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
 import com.neelkamath.omniChat.test.graphql.api.mutations.deletePrivateChat
@@ -17,20 +17,24 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
-fun buildReadChatsQuery(last: Int?, before: Cursor?): String = """
-    query ReadChats {
+const val READ_CHATS_QUERY: String = """
+    query ReadChats(${"$"}last: Int, ${"$"}before: Cursor) {
         readChats {
-            ${buildGroupChatFragment(last, before)}
-            ${buildPrivateChatFragment(last, before)}
+            $GROUP_CHAT_FRAGMENT
+            $PRIVATE_CHAT_FRAGMENT
         }
     }
 """
 
-private fun operateReadChats(accessToken: String, last: Int? = null, before: Cursor? = null): GraphQlResponse =
-    operateQueryOrMutation(buildReadChatsQuery(last, before), accessToken = accessToken)
+private fun operateReadChats(accessToken: String, pagination: BackwardPagination? = null): GraphQlResponse =
+    operateQueryOrMutation(
+        READ_CHATS_QUERY,
+        variables = mapOf("last" to pagination?.last, "before" to pagination?.before?.toString()),
+        accessToken = accessToken
+    )
 
-fun readChats(accessToken: String, last: Int? = null, before: Cursor? = null): List<Chat> {
-    val chats = operateReadChats(accessToken, last, before).data!!["readChats"] as List<*>
+fun readChats(accessToken: String, pagination: BackwardPagination? = null): List<Chat> {
+    val chats = operateReadChats(accessToken, pagination).data!!["readChats"] as List<*>
     return objectMapper.convertValue(chats)
 }
 
@@ -39,38 +43,38 @@ class ReadChatsTest : FunSpec(body)
 private val body: FunSpec.() -> Unit = {
     fun createAdminGroupChat(admin: SignedInUser): GroupChat {
         val user = createSignedInUsers(1)[0]
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
-        val users = (chat.userIdList + admin.info.id).map(::findUserById).toSet()
+        val users = (chat.userIdList + admin.info.id).map(::findUserById)
         return GroupChat(
             chatId,
             admin.info.id,
             users,
             chat.title,
             chat.description,
-            Messages.buildGroupChatConnection(chatId)
+            Messages.readGroupChatConnection(chatId)
         )
     }
 
     fun createUserGroupChat(admin: SignedInUser): GroupChat {
         val user = createSignedInUsers(1)[0]
-        val chat = NewGroupChat("Title", userIdList = setOf(admin.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(admin.info.id))
         val chatId = createGroupChat(user.accessToken, chat)
-        val users = (chat.userIdList + user.info.id).map(::findUserById).toSet()
+        val users = (chat.userIdList + user.info.id).map(::findUserById)
         return GroupChat(
             chatId,
             user.info.id,
             users,
             chat.title,
             chat.description,
-            Messages.buildGroupChatConnection(chatId)
+            Messages.readGroupChatConnection(chatId)
         )
     }
 
     fun createAdminPrivateChat(admin: SignedInUser): PrivateChat {
         val userId = createSignedInUsers(1)[0].info.id
         val chatId = createPrivateChat(admin.accessToken, userId)
-        return PrivateChat(chatId, findUserById(userId), Messages.buildPrivateChatConnection(chatId, userId))
+        return PrivateChat(chatId, findUserById(userId), Messages.readPrivateChatConnection(chatId, userId))
     }
 
     fun createUserPrivateChat(admin: SignedInUser): PrivateChat {
@@ -79,7 +83,7 @@ private val body: FunSpec.() -> Unit = {
         return PrivateChat(
             chatId,
             findUserById(user.info.id),
-            Messages.buildPrivateChatConnection(chatId, user.info.id)
+            Messages.readPrivateChatConnection(chatId, user.info.id)
         )
     }
 
@@ -104,4 +108,6 @@ private val body: FunSpec.() -> Unit = {
         readChats(user1.accessToken).shouldBeEmpty()
         readChats(user2.accessToken).shouldNotBeEmpty()
     }
+
+    test("Messages should be paginated") { testPagination(OperationName.READ_CHATS) }
 }

@@ -24,12 +24,12 @@ object Contacts : Table() {
     }
 
     /** Returns the user ID list of the contacts saved by the contact owner (denoted by the [userId]). */
-    fun read(userId: String): Set<String> = transact {
-        select { contactOwnerId eq userId }.map { it[contactId] }.toSet()
+    fun read(userId: String): List<String> = transact {
+        select { contactOwnerId eq userId }.map { it[contactId] }
     }
 
     /** Deletes the [ownerId]'s contacts from the [contactIdList], ignoring nonexistent contacts. */
-    fun delete(ownerId: String, contactIdList: Set<String>): Unit = transact {
+    fun delete(ownerId: String, contactIdList: List<String>): Unit = transact {
         deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contactIdList) }
     }
 

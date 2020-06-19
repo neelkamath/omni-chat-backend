@@ -15,14 +15,14 @@ private val body: FunSpec.() -> Unit = {
     fun getScalar(): String {
         val token = createSignedInUsers(1)[0].accessToken
         val chatId = createGroupChat(token, NewGroupChat("Title"))
-        var sent = ""
+        var sent: String? = null
         receiveMessageUpdates(token, chatId) { incoming, _ ->
             createMessage(token, chatId, "text")
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
             sent = dateTimes["sent"] as String
         }
-        return sent
+        return sent!!
     }
 
     test("DateTime scalars should be ISO 8601-compliant") {

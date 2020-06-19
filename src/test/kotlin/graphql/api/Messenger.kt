@@ -1,7 +1,9 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.test.graphql.api
 
 import com.neelkamath.omniChat.Message
 import com.neelkamath.omniChat.test.graphql.SignedInUser
+import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.test.graphql.api.mutations.createPrivateChat
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
 import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
 import com.neelkamath.omniChat.test.graphql.createSignedInUsers
@@ -16,7 +18,7 @@ fun createUtilizedPrivateChat(): UtilizedPrivateChat {
     return UtilizedPrivateChat(messageId, user1, user2)
 }
 
-/** Has the authenticated user sent the [text] in the [chatId], and returns the message's ID. */
+/** Has the user who bears the [accessToken] send a [text] in the [chatId], and returns the message's ID. */
 fun messageAndReadId(accessToken: String, chatId: Int, text: String): Int {
     var id: Int? = null
     receiveMessageUpdates(accessToken, chatId) { incoming, _ ->

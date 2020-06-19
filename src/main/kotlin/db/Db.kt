@@ -116,7 +116,7 @@ inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transac
  */
 fun readChat(id: Int, userId: String, pagination: BackwardPagination? = null): Chat = when (id) {
     in PrivateChats.readIdList(userId) -> PrivateChats.read(id, userId, pagination)
-    in GroupChatUsers.readChatIdList(userId) -> GroupChats.read(id, pagination)
+    in GroupChatUsers.readChatIdList(userId) -> GroupChats.readChat(id, pagination)
     else -> throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $id).")
 }
 
@@ -141,13 +141,13 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * ## Private Chats
  *
  * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and [MessageStatuses].
- * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
+ * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeUserFromMessageUpdates].
  *
  * ## Group Chats
  *
  * The [userId] will be removed from chats they're in. If they're the last user in the chat, the chat will be deleted
  * from [GroupChats], [GroupChatUsers], [Messages], and [MessageStatuses]. Clients will be
- * [unsubscribeFromMessageUpdates].
+ * [unsubscribeUserFromMessageUpdates].
  *
  * ## Messages
  *
@@ -160,7 +160,7 @@ fun deleteUserFromDb(userId: String) {
             "The user's (ID: $userId) data cannot be deleted because they are the admin of a nonempty group chat."
         )
     Contacts.deleteUserEntries(userId)
-    PrivateChats.delete(userId)
-    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, setOf(userId)) }
-    Messages.delete(userId)
+    PrivateChats.deleteUserChats(userId)
+    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, listOf(userId)) }
+    Messages.deleteUserMessages(userId)
 }

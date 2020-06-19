@@ -56,33 +56,36 @@ data class AccountUpdate(
     val lastName: String? = null
 )
 
-data class NewGroupChat(val title: String, val description: String? = null, val userIdList: Set<String> = setOf())
+data class NewGroupChat(val title: String, val description: String? = null, val userIdList: List<String> = listOf())
 
 data class GroupChatUpdate(
     val chatId: Int,
     val title: String? = null,
     val description: String? = null,
-    val newUserIdList: Set<String> = setOf(),
-    val removedUserIdList: Set<String> = setOf(),
+    val newUserIdList: List<String> = listOf(),
+    val removedUserIdList: List<String> = listOf(),
     val newAdminId: String? = null
 )
 
-sealed class Chat
+sealed class Chat {
+    abstract val id: Int
+    abstract val messages: MessagesConnection
+}
 
 data class PrivateChat(
-    val id: Int,
+    override val id: Int,
     /** The user being chatted with. */
     val user: AccountInfo,
-    val messages: MessagesConnection
+    override val messages: MessagesConnection
 ) : Chat()
 
 data class GroupChat(
-    val id: Int,
+    override val id: Int,
     val adminId: String,
-    val users: Set<AccountInfo>,
+    val users: List<AccountInfo>,
     val title: String,
     val description: String? = null,
-    val messages: MessagesConnection
+    override val messages: MessagesConnection
 ) : Chat()
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
@@ -129,16 +132,15 @@ data class UserChatMessagesRemoval(val userId: String) : MessageUpdates()
  *
  * This happens in private chats when the user deletes the chat, or the other user deletes their account. This happens
  * in group chats when the last user leaves the chat.
+ *
+ * @throws [IllegalArgumentException] if [isDeleted] is `false`.
  */
 data class DeletionOfEveryMessage(
-    /**
-     * GraphQL types require at least one field. Hence, we simply state that every message has been deleted. An
-     * [IllegalArgumentException] will be thrown if this is `false`.
-     */
+    /** GraphQL types require at least one field. Hence, we simply state that every message has been deleted. */
     val isDeleted: Boolean = true
 ) : MessageUpdates() {
     init {
-        if (!isDeleted) throw IllegalArgumentException("isDeleted must be true")
+        if (!isDeleted) throw IllegalArgumentException("<isDeleted> must be true.")
     }
 }
 
@@ -154,16 +156,15 @@ data class DeletionOfEveryMessage(
  * another user sent in the chat to be lost during one of the aforementioned delays. Therefore, the client should first
  * subscribe (i.e., await the WebSocket connection to be created), await the [CreatedSubscription] event, and then query
  * for older data if required.
+ *
+ * @throws [IllegalArgumentException] if [isCreated] is `false`.
  */
 data class CreatedSubscription(
-    /**
-     * GraphQL types require at least one field. Hence, we simply state that the subscription has been created. An
-     * [IllegalArgumentException] will be thrown if this is `false`.
-     */
+    /** GraphQL types require at least one field. Hence, we simply state that the subscription has been created. */
     val isCreated: Boolean = true
 ) {
     init {
-        if (!isCreated) throw IllegalArgumentException("isCreated must be true")
+        if (!isCreated) throw IllegalArgumentException("<isCreated> must be true.")
     }
 }
 

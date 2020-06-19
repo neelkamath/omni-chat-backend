@@ -9,14 +9,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 
-fun buildCanDeleteAccountQuery(): String = """
+const val CAN_DELETE_ACCOUNT_QUERY: String = """
     query CanDeleteAccount {
         canDeleteAccount
     }
 """
 
 private fun operateCanDeleteAccount(accessToken: String): GraphQlResponse =
-    operateQueryOrMutation(buildCanDeleteAccountQuery(), accessToken = accessToken)
+    operateQueryOrMutation(CAN_DELETE_ACCOUNT_QUERY, accessToken = accessToken)
 
 fun canDeleteAccount(accessToken: String): Boolean =
     operateCanDeleteAccount(accessToken).data!!["canDeleteAccount"] as Boolean
@@ -32,7 +32,7 @@ private val body: FunSpec.() -> Unit = {
 
     test("An account shouldn't be deletable if the user is the admin of a nonempty group chat") {
         val (admin, user) = createSignedInUsers(2)
-        createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = setOf(user.info.id)))
+        createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = listOf(user.info.id)))
         canDeleteAccount(admin.accessToken).shouldBeFalse()
     }
 }

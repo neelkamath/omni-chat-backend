@@ -16,7 +16,7 @@ private val body: FunSpec.() -> Unit = {
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat = NewGroupChat("Title", userIdList = setOf(userId))
+            val chat = NewGroupChat("Title", userIdList = listOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
             val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED) }
@@ -95,7 +95,7 @@ private val body: FunSpec.() -> Unit = {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chat1Id = createUsedChat(user1Id, user2Id)
             val chat2Id = createUsedChat(user1Id, user3Id)
-            MessageStatuses.delete(chat1Id, user1Id)
+            MessageStatuses.deleteUserChatStatuses(chat1Id, user1Id)
             Messages.readPrivateChat(chat1Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldBeEmpty()
             Messages.readPrivateChat(chat2Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldNotBeEmpty()
         }

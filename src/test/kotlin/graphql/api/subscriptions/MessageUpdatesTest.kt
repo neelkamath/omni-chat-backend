@@ -16,21 +16,21 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.FrameType
 import kotlinx.coroutines.channels.ReceiveChannel
 
-fun buildMessageUpdatesQuery(): String = """
+const val MESSAGE_UPDATES_QUERY: String = """
     subscription MessageUpdates(${"$"}chatId: Int!) {
         messageUpdates(chatId: ${"$"}chatId) {
-            ${buildCreatedSubscriptionFragment()}
-            ${buildMessageFragment()}
-            ${buildDeletedMessageFragment()}
-            ${buildMessageDeletionPointFragment()}
-            ${buildUserChatMessagesRemovalFragment()}
-            ${buildDeletionOfEveryMessageFragment()}
+            $CREATED_SUBSCRIPTION_FRAGMENT
+            $MESSAGE_FRAGMENT
+            $DELETED_MESSAGE_FRAGMENT
+            $MESSAGE_DELETION_POINT_FRAGMENT
+            $USER_CHAT_MESSAGES_REMOVAL_FRAGMENT
+            $DELETION_OF_EVERY_MESSAGE_FRAGMENT
         }
     }
 """
 
 private fun operateMessageUpdates(accessToken: String, chatId: Int, callback: SubscriptionCallback) {
-    val request = GraphQlRequest(buildMessageUpdatesQuery(), variables = mapOf("chatId" to chatId))
+    val request = GraphQlRequest(MESSAGE_UPDATES_QUERY, variables = mapOf("chatId" to chatId))
     subscribe(accessToken, "message-updates", request, callback)
 }
 
@@ -108,7 +108,11 @@ private val body: FunSpec.() -> Unit = {
         val admin = createSignedInUsers(1)[0]
         val chat1Id = createGroupChat(admin.accessToken, NewGroupChat("Title"))
         val chat2Id = createGroupChat(admin.accessToken, NewGroupChat("Title"))
-        val messageId = messageAndReadId(admin.accessToken, chat2Id, "text")
+        val messageId = messageAndReadId(
+            admin.accessToken,
+            chat2Id,
+            "text"
+        )
         receiveMessageUpdates(admin.accessToken, chat1Id) { incoming, _ ->
             deleteMessage(admin.accessToken, messageId, chat2Id)
             incoming.poll().shouldBeNull()
@@ -141,7 +145,7 @@ private val body: FunSpec.() -> Unit = {
         """
     ) {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = setOf(user.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
         createMessage(user.accessToken, chatId, "text")
         receiveMessageUpdates(admin.accessToken, chatId) { incoming, _ ->
@@ -156,6 +160,7 @@ private val body: FunSpec.() -> Unit = {
         incoming.receive().frameType shouldBe FrameType.CLOSE
     }
 
+    // This test is flaky for an unknown reason.
     test("When a user in a private chat deletes their account, both users in the chat should be unsubscribed") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
@@ -192,7 +197,7 @@ private val body: FunSpec.() -> Unit = {
         statusCreator: SignedInUser,
         status: MessageStatus
     ) {
-        val chat = NewGroupChat("Title", userIdList = setOf(sender.info.id, statusCreator.info.id))
+        val chat = NewGroupChat("Title", userIdList = listOf(sender.info.id, statusCreator.info.id))
         val chatId = createGroupChat(subscriber.accessToken, chat)
         receiveMessageUpdates(subscriber.accessToken, chatId) { incoming, _ ->
             createMessage(sender.accessToken, chatId, "text")
@@ -203,8 +208,8 @@ private val body: FunSpec.() -> Unit = {
             }
             if (status == MessageStatus.READ) incoming.poll() // Ignore the "delivered" status.
             // We convert it to a set because in the case of a "read" status, a "delivered" status would also exist.
-            val statuses = parseFrameData<Message>(incoming).dateTimes.statuses.map { it.user.id }.toSet()
-            statuses shouldBe setOf(statusCreator.info.id)
+            parseFrameData<Message>(incoming).dateTimes.statuses.map { it.user.id }.toSet() shouldBe
+                    setOf(statusCreator.info.id)
         }
     }
 

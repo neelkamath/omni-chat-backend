@@ -7,8 +7,73 @@ import com.neelkamath.omniChat.db.*
 import graphql.schema.DataFetchingEnvironment
 import org.keycloak.representations.idm.UserRepresentation
 
-private fun readBackwardPagination(env: DataFetchingEnvironment): BackwardPagination =
-    BackwardPagination(env.parseFieldArgument("messages", "last"), env.parseFieldArgument("messages", "before"))
+sealed class ChatDto(chatId: Int) {
+    val id: Int = chatId
+
+    abstract fun getMessages(env: DataFetchingEnvironment): MessagesConnection
+}
+
+sealed class GroupChatDto(chatId: Int) : ChatDto(chatId) {
+    val title: String
+    val description: String?
+    val adminId: String
+    val users: List<AccountInfo>
+
+    init {
+        val chat = GroupChats.readChat(chatId, BackwardPagination(last = 0))
+        title = chat.title
+        description = chat.description
+        adminId = chat.adminId
+        users = chat.users
+    }
+}
+
+sealed class PrivateChatDto(private val chatId: Int) : ChatDto(chatId) {
+    fun getUser(env: DataFetchingEnvironment): AccountInfo =
+        PrivateChats.read(chatId, env.userId!!, BackwardPagination(last = 0)).user
+}
+
+private class ReadGroupChatDto(private val chatId: Int) : GroupChatDto(chatId) {
+    override fun getMessages(env: DataFetchingEnvironment): MessagesConnection = Messages.readGroupChatConnection(
+        chatId,
+        BackwardPagination(env.getArgument("last"), env.getArgument("before"))
+    )
+}
+
+private class ReadPrivateChatDto(private val chatId: Int) : PrivateChatDto(chatId) {
+    override fun getMessages(env: DataFetchingEnvironment): MessagesConnection = Messages.readPrivateChatConnection(
+        chatId,
+        env.userId!!,
+        BackwardPagination(env.getArgument("last"), env.getArgument("before"))
+    )
+}
+
+sealed class ChatMessagesDto {
+    abstract val chat: ChatDto
+
+    abstract fun getMessages(env: DataFetchingEnvironment): List<MessageEdge>
+}
+
+private class SearchGroupChatMessagesDto(private val chatId: Int, private val query: String) : ChatMessagesDto() {
+    override val chat: ChatDto = ReadGroupChatDto(chatId)
+
+    override fun getMessages(env: DataFetchingEnvironment): List<MessageEdge> = Messages.searchGroupChat(
+        chatId,
+        query,
+        BackwardPagination(env.getArgument("last"), env.getArgument("before"))
+    )
+}
+
+private class SearchPrivateChatMessagesDto(private val chatId: Int, private val query: String) : ChatMessagesDto() {
+    override val chat: ChatDto = ReadPrivateChatDto(chatId)
+
+    override fun getMessages(env: DataFetchingEnvironment): List<MessageEdge> = Messages.searchPrivateChat(
+        chatId,
+        env.userId!!,
+        query,
+        BackwardPagination(env.getArgument("last"), env.getArgument("before"))
+    )
+}
 
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
@@ -27,17 +92,19 @@ fun readAccount(env: DataFetchingEnvironment): AccountInfo {
     return findUserById(env.userId!!)
 }
 
-fun readChat(env: DataFetchingEnvironment): Chat {
+fun readChat(env: DataFetchingEnvironment): ChatDto {
     env.verifyAuth()
-    val chatId = env.getArgument<Int>("id")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    return readChat(chatId, env.userId!!, readBackwardPagination(env))
+    return when (val chatId = env.getArgument<Int>("id")) {
+        in PrivateChats.readIdList(env.userId!!) -> ReadPrivateChatDto(chatId)
+        in GroupChatUsers.readChatIdList(env.userId!!) -> ReadGroupChatDto(chatId)
+        else -> throw InvalidChatIdException
+    }
 }
 
-fun readChats(env: DataFetchingEnvironment): List<Chat> {
+fun readChats(env: DataFetchingEnvironment): List<ChatDto> {
     env.verifyAuth()
-    val pagination = readBackwardPagination(env)
-    return GroupChats.read(env.userId!!, pagination) + PrivateChats.read(env.userId!!, pagination)
+    return GroupChatUsers.readChatIdList(env.userId!!).map(::ReadGroupChatDto) +
+            PrivateChats.readUserChatIdList(env.userId!!).map(::ReadPrivateChatDto)
 }
 
 fun readContacts(env: DataFetchingEnvironment): List<AccountInfo> {
@@ -68,7 +135,7 @@ fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     val query = env.getArgument<String>("query")
-    val pagination = readBackwardPagination(env)
+    val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
     return when (chatId) {
         in PrivateChats.readIdList(env.userId!!) -> Messages.searchPrivateChat(chatId, env.userId!!, query, pagination)
         in GroupChatUsers.readChatIdList(env.userId!!) -> Messages.searchGroupChat(chatId, query, pagination)
@@ -76,11 +143,11 @@ fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
     }
 }
 
-fun searchChats(env: DataFetchingEnvironment): List<Chat> {
+fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    val pagination = readBackwardPagination(env)
-    return PrivateChats.search(env.userId!!, query, pagination) + GroupChats.search(env.userId!!, query, pagination)
+    return PrivateChats.search(env.userId!!, query, BackwardPagination(last = 0)).map { ReadPrivateChatDto(it.id) } +
+            GroupChats.search(env.userId!!, query, BackwardPagination(last = 0)).map { ReadGroupChatDto(it.id) }
 }
 
 fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
@@ -89,15 +156,15 @@ fun searchContacts(env: DataFetchingEnvironment): List<AccountInfo> {
     return Contacts.read(env.userId!!).map(::findUserById).filter { it.matches(query) }
 }
 
-fun searchMessages(env: DataFetchingEnvironment): List<ChatMessages> {
+fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    val pagination = readBackwardPagination(env)
-    return Messages.search(env.userId!!, query, pagination)
+    return GroupChats.queryIdList(env.userId!!, query).map { SearchGroupChatMessagesDto(it, query) } +
+            PrivateChats.queryIdList(env.userId!!, query).map { SearchPrivateChatMessagesDto(it, query) }
 }
 
 /**
- * Case-insensitively [query]s the [UserRepresentation.username], [UserRepresentation.firstName],
+ * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
  * [UserRepresentation.lastName], and [UserRepresentation.email].
  */
 private fun AccountInfo.matches(query: String): Boolean =

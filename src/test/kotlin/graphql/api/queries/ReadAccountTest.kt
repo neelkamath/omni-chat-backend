@@ -4,22 +4,22 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountInfo
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.graphql.api.buildAccountInfoFragment
+import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildReadAccountQuery(): String = """
+const val READ_ACCOUNT_QUERY: String = """
     query ReadAccount {
         readAccount {
-            ${buildAccountInfoFragment()}
+            $ACCOUNT_INFO_FRAGMENT
         }
     }
 """
 
 private fun operateReadAccount(accessToken: String): GraphQlResponse =
-    operateQueryOrMutation(buildReadAccountQuery(), accessToken = accessToken)
+    operateQueryOrMutation(READ_ACCOUNT_QUERY, accessToken = accessToken)
 
 fun readAccount(accessToken: String): AccountInfo {
     val data = operateReadAccount(accessToken).data!!["readAccount"] as Map<*, *>

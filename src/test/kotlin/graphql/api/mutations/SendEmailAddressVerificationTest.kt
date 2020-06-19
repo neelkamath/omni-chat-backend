@@ -8,14 +8,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-fun buildSendEmailAddressVerificationQuery(): String = """
+const val SEND_EMAIL_ADDRESS_VERIFICATION_QUERY: String = """
     mutation SendEmailAddressVerification(${"$"}emailAddress: String!) {
         sendEmailAddressVerification(emailAddress: ${"$"}emailAddress)
     }
 """
 
 private fun operateSendEmailAddressVerification(emailAddress: String): GraphQlResponse =
-    operateQueryOrMutation(buildSendEmailAddressVerificationQuery(), variables = mapOf("emailAddress" to emailAddress))
+    operateQueryOrMutation(SEND_EMAIL_ADDRESS_VERIFICATION_QUERY, variables = mapOf("emailAddress" to emailAddress))
 
 fun sendEmailAddressVerification(emailAddress: String): Boolean =
     operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"] as Boolean

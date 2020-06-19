@@ -5,23 +5,23 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.IncorrectPasswordException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
-import com.neelkamath.omniChat.test.graphql.api.buildTokenSetFragment
+import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
 import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-fun buildRequestTokenSetQuery(): String = """
+const val REQUEST_TOKEN_SET_QUERY: String = """
     query RequestTokenSet(${"$"}login: Login!) {
         requestTokenSet(login: ${"$"}login) {
-            ${buildTokenSetFragment()}
+            $TOKEN_SET_FRAGMENT
         }
     }
 """
 
 private fun operateRequestTokenSet(login: Login): GraphQlResponse =
-    operateQueryOrMutation(buildRequestTokenSetQuery(), variables = mapOf("login" to login))
+    operateQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login))
 
 fun requestTokenSet(login: Login): TokenSet {
     val data = operateRequestTokenSet(login).data!!["requestTokenSet"] as Map<*, *>

@@ -7,7 +7,7 @@ import com.neelkamath.omniChat.test.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 
-fun buildDeleteContactsQuery(): String = """
+const val DELETE_CONTACTS_QUERY: String = """
     mutation DeleteContacts(${"$"}userIdList: [String!]!) {
         deleteContacts(userIdList: ${"$"}userIdList)
     }
@@ -15,7 +15,7 @@ fun buildDeleteContactsQuery(): String = """
 
 private fun operateDeleteContacts(accessToken: String, userIdList: List<String>): GraphQlResponse =
     operateQueryOrMutation(
-        buildDeleteContactsQuery(),
+        DELETE_CONTACTS_QUERY,
         variables = mapOf("userIdList" to userIdList),
         accessToken = accessToken
     )

@@ -2,11 +2,11 @@
 
 ## The Problem
 
-There are way too many chat apps. Every new one tries to implement features another lacks, but in the process don't implement the features they do. The end result is that users are forced to use several apps, none of which do not serve their purpose well. What's more is that certain people will refuse to use certain apps because they're already on too many. Another issue is that you don't know which app to use for which person at what time for a particular type of message.
+There are way too many chat apps. Every new one tries to implement features another lacks, but in the process don't implement the features they do. The end result is that users get forced to use several apps, none of which do not serve their purpose well. What's more is that certain people will refuse to use certain apps because they're already on too many. Another issue is that you don't know which app to use for which person at what time for a particular type of message.
 
 ## The Solution
 
-We'll create a new type of chat app which must render all of the existing ones useless. It is important that we go all the way. Otherwise we'll just be another chat app no one will want to use a few years from now. We'll accomplish this goal by implementing the useful features different apps have, while leaving out the bad stuff. We aim to replace the traditional messaging systems to make email, phone calls, SMS, voicemail, video calls, and just chat in general, manageable for the first time.
+We'll create a new type of chat app which must render all the existing ones useless. It's important we go all the way. Otherwise, we'll just be another chat app no one will want to use a few years from now. We'll accomplish this goal by implementing the useful features different apps have, while leaving out the bad stuff. We aim to replace the traditional messaging systems to make email, phone calls, SMS, voicemail, video calls, and just chat in general, manageable for the first time.
 
 There are other services who share our vision, such as Rocket.Chat. We differentiate ourselves with the following points.
 - Services like Slack, Zulip, and Rocket.Chat only implement a subset of the features people actually require in chat systems. We implement all of them.
@@ -35,6 +35,10 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 - A _private chat_ is a chat between two users which cannot be converted into a group chat. 
 - When a private chat is deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved when requesting their chats. However, the user they were chatting with will still have the chat in the same state it was in before the user deleted it. If the other user sends a message to the user, it will show up as the first message in the user's chat.
+
+### Forum Chats
+
+- Threaded chats like those in Spectrum and Slack.
 
 ### Group Chats
 

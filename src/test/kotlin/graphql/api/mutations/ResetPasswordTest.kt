@@ -8,14 +8,14 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-fun buildResetPasswordQuery(): String = """
+const val RESET_PASSWORD_QUERY: String = """
     mutation ResetPassword(${"$"}emailAddress: String!) {
         resetPassword(emailAddress: ${"$"}emailAddress)
     }
 """
 
 private fun operateResetPassword(emailAddress: String): GraphQlResponse =
-    operateQueryOrMutation(buildResetPasswordQuery(), variables = mapOf("emailAddress" to emailAddress))
+    operateQueryOrMutation(RESET_PASSWORD_QUERY, variables = mapOf("emailAddress" to emailAddress))
 
 fun resetPassword(emailAddress: String): Boolean = operateResetPassword(emailAddress).data!!["resetPassword"] as Boolean
 

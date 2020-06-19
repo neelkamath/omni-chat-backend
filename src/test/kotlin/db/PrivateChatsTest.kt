@@ -36,7 +36,7 @@ private val body: FunSpec.() -> Unit = {
                     chatId, findUserById(otherUserId),
                     emptyMessagesConnection
                 )
-                PrivateChats.read(userId) shouldBe listOf(chat)
+                PrivateChats.readUserChats(userId) shouldBe listOf(chat)
             }
             test(user1Id, user2Id)
             test(user2Id, user1Id)
@@ -50,7 +50,7 @@ private val body: FunSpec.() -> Unit = {
             PrivateChatDeletions.create(chat2Id, user1Id)
             Messages.create(chat2Id, user1Id, "text")
             PrivateChatDeletions.create(chat3Id, user1Id)
-            PrivateChats.read(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
+            PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
         }
     }
 
@@ -68,6 +68,20 @@ private val body: FunSpec.() -> Unit = {
             PrivateChats.create(user2Id, user3Id)
             PrivateChats.exists(user1Id, user3Id).shouldBeFalse()
             PrivateChats.exists(user3Id, user1Id).shouldBeFalse()
+        }
+    }
+
+    context("queryIdList(String, String)") {
+        test("Chats should be queried") {
+            val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
+            val queryText = "hi"
+            val chat1Id = PrivateChats.create(user1Id, user2Id)
+            Messages.create(chat1Id, user1Id, queryText)
+            val chat2Id = PrivateChats.create(user1Id, user3Id)
+            Messages.create(chat2Id, user1Id, queryText)
+            val chat3Id = PrivateChats.create(user1Id, user4Id)
+            Messages.create(chat3Id, user1Id, "bye")
+            PrivateChats.queryIdList(user1Id, queryText) shouldBe listOf(chat1Id, chat2Id)
         }
     }
 
@@ -153,7 +167,7 @@ private val body: FunSpec.() -> Unit = {
             createAndUseChat(user1Id, user2Id)
             val chatId = createAndUseChat(user1Id, user3Id)
             PrivateChatDeletions.delete(chatId)
-            PrivateChats.delete(user1Id)
+            PrivateChats.deleteUserChats(user1Id)
             PrivateChats.count().shouldBeZero()
             PrivateChatDeletions.count().shouldBeZero()
             Messages.count().shouldBeZero()
