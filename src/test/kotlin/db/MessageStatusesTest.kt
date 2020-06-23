@@ -1,12 +1,8 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -17,7 +13,7 @@ class MessageStatusesTest : FunSpec({
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat = NewGroupChat("Title", userIdList = setOf(userId))
+            val chat = NewGroupChat("Title", userIdList = listOf(userId))
             val chatId = GroupChats.create(adminId, chat)
             val messageId = Messages.message(chatId, adminId, "text")
             val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED) }
@@ -50,6 +46,16 @@ class MessageStatusesTest : FunSpec({
                 MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
             }
         }
+
+        test("The user shouldn't be able to create a status on a message sent before they deleted the chat") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val messageId = Messages.message(chatId, user2Id, "text")
+            PrivateChatDeletions.create(chatId, user1Id)
+            shouldThrowExactly<IllegalArgumentException> {
+                MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
+            }
+        }
     }
 
     context("insertAndNotify(Int, String, MessageStatus)") {
@@ -60,7 +66,7 @@ class MessageStatusesTest : FunSpec({
             val messageId = Messages.message(chatId, user1Id, text)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            subscriber.assertValue(Messages.readChat(chatId)[0])
+            subscriber.assertValue(Messages.readPrivateChat(chatId, user1Id)[0].node)
         }
     }
 
@@ -86,9 +92,9 @@ class MessageStatusesTest : FunSpec({
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chat1Id = createUsedChat(user1Id, user2Id)
             val chat2Id = createUsedChat(user1Id, user3Id)
-            MessageStatuses.delete(chat1Id, user1Id)
-            Messages.readChat(chat1Id).flatMap { it.dateTimes.statuses }.shouldBeEmpty()
-            Messages.readChat(chat2Id).flatMap { it.dateTimes.statuses }.shouldNotBeEmpty()
+            MessageStatuses.deleteUserChatStatuses(chat1Id, user1Id)
+            Messages.readPrivateChat(chat1Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldBeEmpty()
+            Messages.readPrivateChat(chat2Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldNotBeEmpty()
         }
     }
 })

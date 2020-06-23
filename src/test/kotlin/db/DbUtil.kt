@@ -1,6 +1,5 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteAll
@@ -12,20 +11,22 @@ private val tables: List<Table> = listOf(
     PrivateChatDeletions,
     PrivateChats,
     MessageStatuses,
-    Messages
+    Messages,
+    Chats,
+    Users
 )
 
+/** Deletes every row from every table created. */
+fun wipeDb(): Unit = transact {
+    tables.forEach { it.deleteAll() }
+}
+
 /** Drops every table and type created. */
-fun tearDownDb(): Unit = transact {
+fun tearDownDb() {
     dropTables()
     dropTypes()
 }
 
-/** Deletes every row from every table created. */
-fun deleteDb(): Unit = transact {
-    tables.forEach { it.deleteAll() }
-}
-
-private fun dropTables(): Unit = SchemaUtils.drop(*tables.toTypedArray())
+private fun dropTables(): Unit = transact { SchemaUtils.drop(*tables.toTypedArray()) }
 
 private fun dropTypes(): Unit = transact { exec("DROP TYPE IF EXISTS message_status;") }

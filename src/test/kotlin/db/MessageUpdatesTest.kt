@@ -1,11 +1,7 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.db.unsubscribeFromMessageUpdates
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
 class MessageUpdatesTest : FunSpec({
@@ -17,7 +13,7 @@ class MessageUpdatesTest : FunSpec({
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             Messages.create(chatId, user2Id, "Hi")
             Messages.create(chatId, user1Id, "How are you?")
-            val messages = Messages.readChat(chatId).drop(1).toTypedArray()
+            val messages = Messages.readPrivateChat(chatId, user1Id).drop(1).map { it.node }.toTypedArray()
             subscriber.assertValues(*messages)
         }
     }
@@ -27,7 +23,7 @@ class MessageUpdatesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
-            unsubscribeFromMessageUpdates(user1Id, chatId)
+            unsubscribeUserFromMessageUpdates(user1Id, chatId)
             subscriber.assertComplete()
         }
     }
@@ -39,7 +35,8 @@ class MessageUpdatesTest : FunSpec({
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = createMessageUpdatesSubscriber(user1Id, chatId)
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            subscriber.assertValue(Messages.readChat(chatId)[0])
+            val message = Messages.readPrivateChat(chatId, user1Id)[0].node
+            subscriber.assertValue(message)
         }
     }
 })

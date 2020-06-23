@@ -14,7 +14,7 @@ repositories { jcenter() }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("com.graphql-java:graphql-java:14.0")
+    implementation("com.graphql-java:graphql-java:15.0")
     implementation("org.postgresql:postgresql:42.2.2")
     implementation("ch.qos.logback:logback-classic:1.2.1")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.0")
@@ -35,14 +35,14 @@ dependencies {
     implementation("io.ktor:ktor-auth-jwt:$ktorVersion")
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    val exposedVersion = "0.24.1"
+    val exposedVersion = "0.25.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
     val keycloakVersion = "9.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
-    val kotestVersion = "4.0.5"
+    val kotestVersion = "4.0.6"
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
 }

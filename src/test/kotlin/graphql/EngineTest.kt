@@ -1,27 +1,26 @@
-package com.neelkamath.omniChat.test.graphql
+package com.neelkamath.omniChat.graphql
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.parseFrameData
-import com.neelkamath.omniChat.test.graphql.api.subscriptions.receiveMessageUpdates
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.api.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.api.subscriptions.receiveMessageUpdates
 import io.kotest.core.spec.style.FunSpec
 import java.time.Instant
 
 class EngineTest : FunSpec({
     /** Returns a GraphQL `DateTime` scalar. */
     fun getScalar(): String {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
-        var sent = ""
-        receiveMessageUpdates(chatId, token) { incoming, _ ->
-            createMessage(chatId, "text", token)
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        var sent: String? = null
+        receiveMessageUpdates(token, chatId) { incoming, _ ->
+            createMessage(token, chatId, "text")
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
             sent = dateTimes["sent"] as String
         }
-        return sent
+        return sent!!
     }
 
     test("DateTime scalars should be ISO 8601-compliant") {

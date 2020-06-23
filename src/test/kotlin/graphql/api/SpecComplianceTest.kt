@@ -1,15 +1,15 @@
-package com.neelkamath.omniChat.test.graphql.api
+package com.neelkamath.omniChat.graphql.api
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.Login
 import com.neelkamath.omniChat.NewAccount
+import com.neelkamath.omniChat.graphql.api.mutations.createAccount
+import com.neelkamath.omniChat.graphql.api.queries.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.graphql.api.queries.REQUEST_TOKEN_SET_QUERY
+import com.neelkamath.omniChat.graphql.api.queries.requestTokenSet
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.test.graphql.api.queries.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.test.graphql.api.queries.REQUEST_TOKEN_SET_QUERY
-import com.neelkamath.omniChat.test.graphql.api.queries.requestTokenSet
-import com.neelkamath.omniChat.test.verifyEmailAddress
+import com.neelkamath.omniChat.verifyEmailAddress
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldNotHaveKey
@@ -31,7 +31,7 @@ class SpecComplianceTest : FunSpec({
     }
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
-        val login = createVerifiedUsers(1)[0].login
+        val login = createSignedInUsers(1)[0].login
         queryOrMutate(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "errors"
     }
 

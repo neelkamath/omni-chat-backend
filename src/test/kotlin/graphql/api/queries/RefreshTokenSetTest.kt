@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.TokenSet
 import com.neelkamath.omniChat.graphql.UnauthorizedException
+import com.neelkamath.omniChat.graphql.api.TOKEN_SET_FRAGMENT
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.TOKEN_SET_FRAGMENT
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -31,12 +31,12 @@ fun errRefreshTokenSet(refreshToken: String): String = operateRefreshTokenSet(re
 
 class RefreshTokenSetTest : FunSpec({
     test("A refresh token should issue a new token set") {
-        val login = createVerifiedUsers(1)[0].login
+        val login = createSignedInUsers(1)[0].login
         val refreshToken = requestTokenSet(login).refreshToken
         refreshTokenSet(refreshToken)
     }
 
     test("An invalid refresh token should throw an exception") {
-        errRefreshTokenSet(refreshToken = "invalid token") shouldBe UnauthorizedException().message
+        errRefreshTokenSet(refreshToken = "invalid token") shouldBe UnauthorizedException.message
     }
 })

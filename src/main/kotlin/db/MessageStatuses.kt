@@ -4,13 +4,12 @@ import com.neelkamath.omniChat.MessageDateTimeStatus
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.USER_ID_LENGTH
 import com.neelkamath.omniChat.findUserById
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import java.time.LocalDateTime
 
 /** When [Messages] were delivered/read. */
-object MessageStatuses : IntIdTable() {
+object MessageStatuses : Table() {
     override val tableName = "message_statuses"
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
     private val status: Column<MessageStatus> = customEnumeration(
@@ -37,11 +36,20 @@ object MessageStatuses : IntIdTable() {
      * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
      * [MessageStatus.DELIVERED] too.
      *
-     * An [IllegalArgumentException] will be thrown if the status has already been recorded, or if the [userId] is the
-     * sender of the [messageId]. You can check if the [status] already [exists].
+     * An [IllegalArgumentException] may be thrown for the following reasons:
+     * - The [messageId] was sent by the [userId].
+     * - The status has already been recorded (you can check if the [status] [exists]).
+     * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
      */
     fun create(messageId: Int, userId: String, status: MessageStatus) {
-        if (Messages.readSender(messageId) == userId)
+        if (!Messages.isVisible(messageId, userId))
+            throw IllegalArgumentException(
+                """
+                The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted 
+                the chat.
+                """.trimIndent()
+            )
+        if (Messages.read(messageId).sender.id == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
         if (exists(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
@@ -75,24 +83,21 @@ object MessageStatuses : IntIdTable() {
         }.empty()
     }
 
-    /** Deletes all [MessageStatuses] from the [messageIdList]. */
+    /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
     fun delete(messageIdList: List<Int>): Unit = transact {
         deleteWhere { messageId inList messageIdList }
     }
 
-    /** Deletes all [MessageStatuses] from the [messageIdList]. */
+    /** Deletes all [MessageStatuses] from the [messageIdList], ignoring the invalid ones. */
     fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Deletes every status the [userId] created in the [chatId]. */
-    fun delete(chatId: Int, userId: String) {
-        val messageIdList = Messages.readChat(chatId).map { it.id }
-        transact {
-            deleteWhere { (messageId inList messageIdList) and (MessageStatuses.userId eq userId) }
-        }
+    fun deleteUserChatStatuses(chatId: Int, userId: String) = transact {
+        deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
     /** Deletes every status the [userId] created. */
-    fun delete(userId: String): Unit = transact {
+    fun deleteUserStatuses(userId: String): Unit = transact {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
@@ -100,5 +105,6 @@ object MessageStatuses : IntIdTable() {
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(findUserById(it[userId]), it[dateTime], it[status]) }
+
     }
 }

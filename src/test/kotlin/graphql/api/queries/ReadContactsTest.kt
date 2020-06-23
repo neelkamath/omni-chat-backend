@@ -1,36 +1,43 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.AccountInfo
+import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.graphql.api.ACCOUNTS_CONNECTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.api.mutations.createContacts
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.ACCOUNT_INFO_FRAGMENT
-import com.neelkamath.omniChat.test.graphql.api.mutations.createContacts
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 const val READ_CONTACTS_QUERY: String = """
-    query ReadContacts {
-        readContacts {
-            $ACCOUNT_INFO_FRAGMENT
+    query ReadContacts(${"$"}first: Int, ${"$"}after: Cursor) {
+        readContacts(first: ${"$"}first, after: ${"$"}after) {
+            $ACCOUNTS_CONNECTION_FRAGMENT
         }
     }
 """
 
-private fun operateReadContacts(accessToken: String): GraphQlResponse =
-    operateQueryOrMutation(READ_CONTACTS_QUERY, accessToken = accessToken)
+private fun operateReadContacts(accessToken: String, pagination: ForwardPagination? = null): GraphQlResponse =
+    operateQueryOrMutation(
+        READ_CONTACTS_QUERY,
+        variables = mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
+        accessToken = accessToken
+    )
 
-fun readContacts(accessToken: String): List<AccountInfo> {
-    val data = operateReadContacts(accessToken).data!!["readContacts"] as List<*>
+fun readContacts(accessToken: String, pagination: ForwardPagination? = null): AccountsConnection {
+    val data = operateReadContacts(accessToken, pagination).data!!["readContacts"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
 
 class ReadContactsTest : FunSpec({
     test("Contacts should be read") {
-        val (admin, contact1, contact2) = createVerifiedUsers(3)
-        createContacts(listOf(contact1.info.id, contact2.info.id), admin.accessToken)
-        readContacts(admin.accessToken) shouldBe listOf(contact1.info, contact2.info)
+        val (owner, contact1, contact2) = createSignedInUsers(3)
+        createContacts(owner.accessToken, listOf(contact1.info.id, contact2.info.id))
+        readContacts(owner.accessToken).edges.map { it.node } shouldBe listOf(contact1.info, contact2.info)
     }
+
+    test("Contacts should be paginated") { testContactsPagination(ContactsOperationName.READ_CONTACTS) }
 })

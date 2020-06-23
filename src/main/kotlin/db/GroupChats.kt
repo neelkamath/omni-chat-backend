@@ -1,16 +1,12 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.GroupChats.adminId
-import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
-/**
- * The [GroupChatUsers] table contains the participants, including the [adminId], of a particular chat. [Messages] holds
- * the messages.
- */
-object GroupChats : IntIdTable() {
+/** The [GroupChatUsers] table contains the participants. [GroupChats] have [Messages]. */
+object GroupChats : Table() {
     override val tableName get() = "group_chats"
+    val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
     private val adminId: Column<String> = varchar("admin_id", USER_ID_LENGTH)
 
     /** Titles cannot exceed this length. */
@@ -35,7 +31,7 @@ object GroupChats : IntIdTable() {
      * isn't in the chat.
      */
     fun setAdmin(chatId: Int, userId: String) {
-        val userIdList = read(chatId).users.map { it.id }
+        val userIdList = GroupChatUsers.readUserIdList(chatId)
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
         transact {
@@ -46,28 +42,39 @@ object GroupChats : IntIdTable() {
     /** Returns the [chat]'s ID after creating it. */
     fun create(adminId: String, chat: NewGroupChat): Int {
         val chatId = transact {
-            insertAndGetId {
+            insert {
+                it[id] = Chats.create()
                 it[this.adminId] = adminId
                 it[title] = chat.title
                 it[description] = chat.description
-            }.value
+            }[GroupChats.id]
         }
         GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
         return chatId
     }
 
-    fun read(chatId: Int): GroupChat {
-        val row = transact {
-            select { GroupChats.id eq chatId }.first()
-        }
-        return buildGroupChat(row, chatId)
-    }
+    /** @param[messagesPagination] pagination for [GroupChat.messages]. */
+    fun readChat(
+        id: Int,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): GroupChat = transact {
+        select { GroupChats.id eq id }.first()
+    }.let { buildGroupChat(it, id, usersPagination, messagesPagination) }
 
     /**
-     * Returns the [userId]'s chats. If you just need the chat IDs, [GroupChatUsers.readChatIdList] is more efficient.
+     * Returns the [userId]'s chats.
+     *
+     * @param[usersPagination] pagination for [GroupChat.users].
+     * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @see [GroupChatUsers.readChatIdList]
      */
-    fun read(userId: String): List<GroupChat> = transact {
-        GroupChatUsers.readChatIdList(userId).map { read(it) }
+    fun readUserChats(
+        userId: String,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): List<GroupChat> = transact {
+        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination) }
     }
 
     /**
@@ -76,7 +83,7 @@ object GroupChats : IntIdTable() {
      * Users in the [GroupChatUpdate.newUserIdList] who are already in the chat are ignored.
      *
      * Users in the [GroupChatUpdate.removedUserIdList] who aren't in the chat are ignored. Removed users will be
-     * [unsubscribeFromMessageUpdates]. The chat is deleted if every user is removed.
+     * [unsubscribeUserFromMessageUpdates]. The chat is deleted if every user is removed.
      *
      * An [IllegalArgumentException] will be thrown if the [GroupChatUpdate.title] is empty.
      */
@@ -97,7 +104,7 @@ object GroupChats : IntIdTable() {
     /**
      * Deletes the [chatId] from [GroupChats]. [Messages], and [MessageStatuses]. Users who have
      * [subscribeToMessageUpdates]rs will be notified of a [DeletionOfEveryMessage], and then
-     * [unsubscribeFromMessageUpdates].
+     * [unsubscribeUserFromMessageUpdates].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
@@ -109,28 +116,59 @@ object GroupChats : IntIdTable() {
             deleteWhere { GroupChats.id eq chatId }
         }
         Messages.deleteChat(chatId)
-        unsubscribeFromMessageUpdates(chatId)
+        unsubscribeUsersFromMessageUpdates(chatId)
     }
 
     /**
-     * Searches the chats the [userId] is in. Returns the chat ID list by searching for the [query] in every chat's
-     * title case-insensitively.
+     * Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in.
+     *
+     * @param[usersPagination] pagination for [GroupChat.messages].
+     * @param[messagesPagination] pagination for [GroupChat.messages].
      */
-    fun search(userId: String, query: String): List<GroupChat> {
-        val chatIdList = GroupChatUsers.readChatIdList(userId)
-        return transact {
-            select { GroupChats.id inList chatIdList }
-                .filter { it[title].contains(query, ignoreCase = true) }
-                .map { buildGroupChat(it, it[GroupChats.id].value) }
-        }
+    fun search(
+        userId: String,
+        query: String,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): List<GroupChat> = transact {
+        select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
+            .map { buildGroupChat(it, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
-    private fun buildGroupChat(row: ResultRow, chatId: Int): GroupChat {
-        val users = GroupChatUsers.readUserIdList(chatId).map(::findUserById).toSet()
-        return GroupChat(chatId, row[adminId], users, row[title], row[description], Messages.readChat(chatId))
-    }
+    /**
+     * Builds the [chatId] from the [row].
+     *
+     * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @param[usersPagination] pagination for [GroupChat.users].
+     */
+    private fun buildGroupChat(
+        row: ResultRow,
+        chatId: Int,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): GroupChat = GroupChat(
+        chatId,
+        row[adminId],
+        GroupChatUsers.readUsers(chatId, usersPagination),
+        row[title],
+        row[description],
+        Messages.readGroupChatConnection(chatId, messagesPagination)
+    )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
-    fun isNonemptyChatAdmin(userId: String): Boolean =
-        userId in read(userId).filter { read(it.id).users.size > 1 }.map { it.adminId }
+    fun isNonemptyChatAdmin(userId: String): Boolean = readUserChats(
+        userId,
+        usersPagination = ForwardPagination(first = 2),
+        messagesPagination = BackwardPagination(last = 0)
+    ).filter { it.users.edges.size > 1 }.map { it.adminId }.contains(userId)
+
+    /**
+     * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
+     * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
+     */
+    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> =
+        GroupChatUsers.readChatIdList(userId)
+            .associateWith { Messages.searchGroupChat(it, query) }
+            .filter { (_, edges) -> edges.isNotEmpty() }
+            .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 }

@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 services:
   auth:
     image: jboss/keycloak:9.0.2

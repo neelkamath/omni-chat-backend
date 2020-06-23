@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.graphql.UnregisteredEmailAddressException
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -23,11 +23,11 @@ fun errResetPassword(emailAddress: String): String = operateResetPassword(emailA
 
 class ResetPasswordTest : FunSpec({
     test("A password reset request should be sent") {
-        val address = createVerifiedUsers(1)[0].info.emailAddress
+        val address = createSignedInUsers(1)[0].info.emailAddress
         resetPassword(address).shouldBeTrue()
     }
 
     test("Requesting a password reset for an unregistered address should throw an exception") {
-        errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException().message
+        errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException.message
     }
 })

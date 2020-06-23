@@ -1,7 +1,5 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -75,7 +73,7 @@ class AuthTest : FunSpec({
             NewAccount(username = "john.rogers", password = "p", emailAddress = "rogers@example.com"),
             NewAccount(username = "anonymous", password = "p", emailAddress = "anon@example.com", firstName = "John")
         ).map {
-            createAccount(it)
+            createUser(it)
             findUserByUsername(it.username).id
         }
 
@@ -94,7 +92,7 @@ class AuthTest : FunSpec({
                 NewAccount(username = "tony_stark", password = "p", emailAddress = "e"),
                 NewAccount("username", "password", "tony@example.com", firstName = "Tony")
             ).map {
-                createAccount(it)
+                createUser(it)
                 findUserByUsername(it.username).id
             }
             searchUsers("tony").map { it.id } shouldBe userIdList

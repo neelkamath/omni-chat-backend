@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.graphql
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import graphql.*
+import graphql.GraphQL.newGraphQL
 import graphql.language.StringValue
 import graphql.schema.Coercing
 import graphql.schema.DataFetchingEnvironment
@@ -20,24 +21,27 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 private val scalarDateTime: GraphQLScalarType =
-    GraphQLScalarType.Builder().name("DateTime").coercing(DateTimeCoercing()).build()
+    GraphQLScalarType.Builder().name("DateTime").coercing(DateTimeCoercing).build()
+
+private val scalarCursor: GraphQLScalarType =
+    GraphQLScalarType.Builder().name("Cursor").coercing(CursorCoercing).build()
 
 val graphQl: GraphQL = run {
-    val schemaInput = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
-    val registry = SchemaParser().parse(schemaInput)
+    val schema = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
+    val registry = SchemaParser().parse(schema)
     val wiring = newRuntimeWiring()
         .scalar(scalarDateTime)
+        .scalar(scalarCursor)
         .type("Chat", ::wireTypeChat)
         .type("MessageUpdatesInfo", ::wireTypeMessageUpdatesInfo)
         .type("Query", ::wireQuery)
         .type("Mutation", ::wireMutation)
         .type("Subscription", ::wireSubscription)
         .build()
-    val schema = SchemaGenerator().makeExecutableSchema(registry, wiring)
-    GraphQL.newGraphQL(schema).build()
+    SchemaGenerator().makeExecutableSchema(registry, wiring).let(::newGraphQL).build()
 }
 
-private class DateTimeCoercing : Coercing<LocalDateTime, String> {
+private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
         LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
 
@@ -47,6 +51,14 @@ private class DateTimeCoercing : Coercing<LocalDateTime, String> {
 
     override fun serialize(dataFetcherResult: Any): String =
         (dataFetcherResult as LocalDateTime).toInstant(ZoneOffset.UTC).toString()
+}
+
+private object CursorCoercing : Coercing<Int, String> {
+    override fun parseValue(input: Any): Int = (input as String).toInt()
+
+    override fun parseLiteral(input: Any): Int = (input as StringValue).value.toInt()
+
+    override fun serialize(dataFetcherResult: Any): String = dataFetcherResult.toString()
 }
 
 /**
@@ -64,7 +76,7 @@ inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
  * pass valid credentials.
  */
 fun DataFetchingEnvironment.verifyAuth() {
-    userId ?: throw UnauthorizedException()
+    userId ?: throw UnauthorizedException
 }
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
@@ -72,6 +84,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("readAccount", ::readAccount)
     .dataFetcher("isUsernameTaken", ::isUsernameTaken)
     .dataFetcher("isEmailAddressTaken", ::isEmailAddressTaken)
+    .dataFetcher("readChat", ::readChat)
     .dataFetcher("readChats", ::readChats)
     .dataFetcher("searchChats", ::searchChats)
     .dataFetcher("readContacts", ::readContacts)
@@ -104,22 +117,23 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     builder.dataFetcher("messageUpdates", ::operateMessageUpdates)
 
 private fun wireTypeChat(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder.typeResolver {
-    when (val obj = it.getObject<Any>()) {
-        is PrivateChat -> it.schema.getObjectType("PrivateChat")
-        is GroupChat -> it.schema.getObjectType("GroupChat")
-        else -> throw Error("$obj was neither a PrivateChat, nor a GroupChat.")
+    val type = when (val obj = it.getObject<Any>()) {
+        is PrivateChat, is PrivateChatDto -> "PrivateChat"
+        is GroupChat, is GroupChatDto -> "GroupChat"
+        else -> throw Error("$obj was neither a PrivateChat nor a GroupChat.")
     }
+    it.schema.getObjectType(type)
 }
 
 private fun wireTypeMessageUpdatesInfo(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
     builder.typeResolver {
-        when (val obj = it.getObject<Any>()) {
-            is CreatedSubscription -> it.schema.getObjectType("CreatedSubscription")
-            is Message -> it.schema.getObjectType("Message")
-            is DeletedMessage -> it.schema.getObjectType("DeletedMessage")
-            is MessageDeletionPoint -> it.schema.getObjectType("MessageDeletionPoint")
-            is UserChatMessagesRemoval -> it.schema.getObjectType("UserChatMessagesRemoval")
-            is DeletionOfEveryMessage -> it.schema.getObjectType("DeletionOfEveryMessage")
+        val type = when (val obj = it.getObject<Any>()) {
+            is CreatedSubscription -> "CreatedSubscription"
+            is Message -> "Message"
+            is DeletedMessage -> "DeletedMessage"
+            is MessageDeletionPoint -> "MessageDeletionPoint"
+            is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
+            is DeletionOfEveryMessage -> "DeletionOfEveryMessage"
             else -> throw Error(
                 """
                 $obj wasn't a CreatedSubscription, Message, DeletedMessage, MessageDeletionPoint, 
@@ -127,6 +141,7 @@ private fun wireTypeMessageUpdatesInfo(builder: TypeRuntimeWiring.Builder): Type
                 """.trimIndent()
             )
         }
+        it.schema.getObjectType(type)
     }
 
 /** If there's a [JWTPrincipal] in the [call], the JWT's `sub` will be saved as the [ExecutionInput.Builder.context]. */

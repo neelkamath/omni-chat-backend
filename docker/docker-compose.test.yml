@@ -1,7 +1,7 @@
-version: '3.7'
+version: '3.8'
 services:
   chat:
-    image: gradle:6.4.0-jdk14
+    image: gradle:6.5.0-jdk14
     command: gradle --no-daemon test
     working_dir: /home/gradle/project
     restart: 'no'

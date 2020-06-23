@@ -1,9 +1,13 @@
 package com.neelkamath.omniChat.db
 
+import com.neelkamath.omniChat.AccountEdge
+import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.USER_ID_LENGTH
+import com.neelkamath.omniChat.findUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
+/** The users in [GroupChats]. */
 object GroupChatUsers : IntIdTable() {
     override val tableName get() = "group_chat_users"
     private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
@@ -13,19 +17,29 @@ object GroupChatUsers : IntIdTable() {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
-    /** Returns the user ID list from the specified [groupChatId]. */
-    fun readUserIdList(groupChatId: Int): Set<String> = transact {
-        select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }.toSet()
+    /**
+     * Returns the user ID list from the specified [groupChatId].
+     *
+     * @see [readUsers]
+     */
+    fun readUserIdList(groupChatId: Int): List<String> = transact {
+        select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }
     }
 
+    private fun readUserCursors(groupChatId: Int): List<AccountEdge> = transact {
+        select { GroupChatUsers.groupChatId eq groupChatId }
+            .map { AccountEdge(findUserById(it[userId]), it[GroupChatUsers.id].value) }
+    }
+
+    /** @see [readUserIdList] */
+    fun readUsers(groupChatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
+        buildAccountsConnection(readUserCursors(groupChatId), pagination)
+
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
-    fun addUsers(groupChatId: Int, userIdList: Set<String>) {
-        val users = userIdList.filterNot { isUserInChat(groupChatId, it) }
-        transact {
-            batchInsert(users) {
-                this[GroupChatUsers.groupChatId] = groupChatId
-                this[userId] = it
-            }
+    fun addUsers(groupChatId: Int, userIdList: List<String>): Unit = transact {
+        batchInsert(userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()) {
+            this[GroupChatUsers.groupChatId] = groupChatId
+            this[userId] = it
         }
     }
 
@@ -34,13 +48,13 @@ object GroupChatUsers : IntIdTable() {
      * user is removed, the [chatId] will be [GroupChats.delete]d.
      *
      * If the chat is deleted, it will be deleted from [GroupChats], [GroupChatUsers], [Messages], and
-     * [MessageStatuses]. Users will be [unsubscribeFromMessageUpdates]d.
+     * [MessageStatuses]. Users will be [unsubscribeUserFromMessageUpdates]d.
      */
-    fun removeUsers(chatId: Int, userIdList: Set<String>) {
+    fun removeUsers(chatId: Int, userIdList: List<String>) {
         transact {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
-        userIdList.forEach { unsubscribeFromMessageUpdates(it, chatId) }
+        userIdList.forEach { unsubscribeUserFromMessageUpdates(it, chatId) }
         if (readUserIdList(chatId).isEmpty()) GroupChats.delete(chatId)
     }
 

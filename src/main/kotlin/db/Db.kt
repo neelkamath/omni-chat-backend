@@ -1,12 +1,17 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.DeletionOfEveryMessage
-import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.UserChatMessagesRemoval
+import com.neelkamath.omniChat.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
+
+data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
+
+data class ForwardPagination(val first: Int? = null, val after: Int? = null)
+
+data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -49,12 +54,14 @@ private fun create(): Unit = transact {
     createTypes()
     SchemaUtils.create(
         Contacts,
+        Chats,
         GroupChats,
         GroupChatUsers,
         PrivateChats,
         PrivateChatDeletions,
         Messages,
-        MessageStatuses
+        MessageStatuses,
+        Users
     )
 }
 
@@ -69,15 +76,16 @@ private fun createTypes() {
  * exist.
  */
 private fun createType(name: String, definition: String) {
-    val exists = TransactionManager
-        .current()
-        .exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$name');") { resultSet ->
-            resultSet.next()
-            val column = "exists"
-            resultSet.getBoolean(column)
-        }!!
-    if (!exists) transact { exec("CREATE TYPE $name AS $definition;") }
+    if (!exists(name)) transact { exec("CREATE TYPE $name AS $definition;") }
 }
+
+/** Whether the [type] has been created. */
+private fun exists(type: String): Boolean =
+    TransactionManager.current().exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
+        resultSet.next()
+        val column = "exists"
+        resultSet.getBoolean(column)
+    }!!
 
 /** Always use this instead of [transaction]. */
 inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transaction {
@@ -85,17 +93,42 @@ inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transac
     statement()
 }
 
+/** Case-insensitively checks if [this] contains the [pattern]. */
+infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"
+
 /**
- * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). If the [userId]
- * deleted the [chatId], and there was no activity after its deletion, it will appear as if the user isn't in the
- * [chatId].
+ * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). Private chats the
+ * [userId] deleted are included.
  */
 fun isUserInChat(userId: String, chatId: Int): Boolean =
-    chatId in PrivateChats.readIdList(userId) || chatId in GroupChatUsers.readChatIdList(userId)
+    chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
+
+/** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
+fun buildAccountsConnection(
+    AccountEdges: List<AccountEdge>,
+    pagination: ForwardPagination? = null
+): AccountsConnection {
+    val (first, after) = pagination ?: ForwardPagination()
+    val accounts = AccountEdges.sortedBy { it.cursor }
+    val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
+    val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
+    val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
+    val pageInfo = PageInfo(
+        hasNextPage = firstAccounts.size < afterAccounts.size,
+        hasPreviousPage = afterAccounts.size < accounts.size,
+        startCursor = accounts.firstOrNull()?.cursor,
+        endCursor = accounts.lastOrNull()?.cursor
+    )
+    return AccountsConnection(edges, pageInfo)
+}
 
 /**
  * Deletes the [userId]'s data. If the [userId] [GroupChats.isNonemptyChatAdmin], an [IllegalArgumentException] will be
  * thrown.
+ *
+ * ## Users
+ *
+ * The [userId] will be deleted from the [Users].
  *
  * ## Contacts
  *
@@ -103,14 +136,14 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  *
  * ## Private Chats
  *
- * Deletes every chat the [userId] is in from [PrivateChats], [PrivateChatDeletions], [Messages], and
- * [MessageStatuses]. Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeFromMessageUpdates].
+ * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and [MessageStatuses].
+ * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeUserFromMessageUpdates].
  *
  * ## Group Chats
  *
  * The [userId] will be removed from chats they're in. If they're the last user in the chat, the chat will be deleted
  * from [GroupChats], [GroupChatUsers], [Messages], and [MessageStatuses]. Clients will be
- * [unsubscribeFromMessageUpdates].
+ * [unsubscribeUserFromMessageUpdates].
  *
  * ## Messages
  *
@@ -122,8 +155,9 @@ fun deleteUserFromDb(userId: String) {
         throw IllegalArgumentException(
             "The user's (ID: $userId) data cannot be deleted because they are the admin of a nonempty group chat."
         )
+    Users.delete(userId)
     Contacts.deleteUserEntries(userId)
-    PrivateChats.delete(userId)
-    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, setOf(userId)) }
-    Messages.delete(userId)
+    PrivateChats.deleteUserChats(userId)
+    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, listOf(userId)) }
+    Messages.deleteUserMessages(userId)
 }

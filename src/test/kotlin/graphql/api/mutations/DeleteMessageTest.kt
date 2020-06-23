@@ -1,59 +1,71 @@
-package com.neelkamath.omniChat.test.graphql.api.mutations
+package com.neelkamath.omniChat.graphql.api.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.messageAndReadId
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
 const val DELETE_MESSAGE_QUERY: String = """
-    mutation DeleteMessage(${"$"}id: Int!, ${"$"}chatId: Int!) {
-        deleteMessage(id: ${"$"}id, chatId: ${"$"}chatId)
+    mutation DeleteMessage(${"$"}id: Int!) {
+        deleteMessage(id: ${"$"}id)
     }
 """
 
-private fun operateDeleteMessage(id: Int, chatId: Int, accessToken: String): GraphQlResponse = operateQueryOrMutation(
-    DELETE_MESSAGE_QUERY,
-    variables = mapOf("id" to id, "chatId" to chatId),
-    accessToken = accessToken
-)
+private fun operateDeleteMessage(accessToken: String, messageId: Int): GraphQlResponse =
+    operateQueryOrMutation(DELETE_MESSAGE_QUERY, variables = mapOf("id" to messageId), accessToken = accessToken)
 
-fun deleteMessage(id: Int, chatId: Int, accessToken: String): Boolean =
-    operateDeleteMessage(id, chatId, accessToken).data!!["deleteMessage"] as Boolean
+fun deleteMessage(accessToken: String, messageId: Int): Boolean =
+    operateDeleteMessage(accessToken, messageId).data!!["deleteMessage"] as Boolean
 
-fun errDeleteMessage(id: Int, chatId: Int, accessToken: String): String =
-    operateDeleteMessage(id, chatId, accessToken).errors!![0].message
+fun errDeleteMessage(accessToken: String, messageId: Int): String =
+    operateDeleteMessage(accessToken, messageId).errors!![0].message
 
 class DeleteMessageTest : FunSpec({
-    test("Deleting the user's message should return true") {
-        val admin = createVerifiedUsers(1)[0]
-        val chatId = createGroupChat(NewGroupChat("Title"), admin.accessToken)
-        val messageId = messageAndReadId(chatId, "text", admin.accessToken)
-        deleteMessage(messageId, chatId, admin.accessToken).shouldBeTrue()
-        Messages.readChat(chatId).shouldBeEmpty()
-    }
-
-    test("Deleting another user's message should return an error") {
-        val (user1, user2) = createVerifiedUsers(2)
-        val chatId = createPrivateChat(user2.info.id, user1.accessToken)
-        val messageId = messageAndReadId(chatId, "text", user2.accessToken)
-        errDeleteMessage(messageId, chatId, user1.accessToken) shouldBe InvalidMessageIdException().message
+    test("""Deleting the user's message should return "true"""") {
+        val admin = createSignedInUsers(1)[0]
+        val chatId = createGroupChat(admin.accessToken, NewGroupChat("Title"))
+        val messageId = messageAndReadId(admin.accessToken, chatId, "text")
+        deleteMessage(admin.accessToken, messageId).shouldBeTrue()
+        Messages.readGroupChat(chatId).shouldBeEmpty()
     }
 
     test("Deleting a nonexistent message should return an error") {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
-        errDeleteMessage(id = 0, chatId = chatId, accessToken = token) shouldBe InvalidMessageIdException().message
+        val token = createSignedInUsers(1)[0].accessToken
+        errDeleteMessage(token, messageId = 0) shouldBe InvalidMessageIdException.message
     }
 
-    test("Deleting a message from a nonexistent chat should throw an exception") {
-        val token = createVerifiedUsers(1)[0].accessToken
-        errDeleteMessage(id = 0, chatId = 0, accessToken = token) shouldBe InvalidChatIdException().message
+    test("Deleting a message from a chat the user isn't in should throw an exception") {
+        val (user1Token, user2Token) = createSignedInUsers(2).map { it.accessToken }
+        val chatId = createGroupChat(user2Token, NewGroupChat("Title"))
+        val messageId = messageAndReadId(user2Token, chatId, "text")
+        errDeleteMessage(user1Token, messageId) shouldBe InvalidMessageIdException.message
+    }
+
+    test("Deleting another user's message should return an error") {
+        val (user1, user2) = createSignedInUsers(2)
+        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val messageId = messageAndReadId(user2.accessToken, chatId, "text")
+        errDeleteMessage(user1.accessToken, messageId) shouldBe InvalidMessageIdException.message
+    }
+
+    test(
+        """
+        Given a user who created a private chat, sent a message, and deleted the chat,
+        when deleting the message,
+        then it should fail
+        """
+    ) {
+        val (user1, user2) = createSignedInUsers(2)
+        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val messageId = messageAndReadId(user1.accessToken, chatId, "text")
+        deletePrivateChat(user1.accessToken, chatId)
+        errDeleteMessage(user1.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }
 })

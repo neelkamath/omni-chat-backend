@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test.graphql.api.subscriptions
+package com.neelkamath.omniChat.graphql.api.subscriptions
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -22,7 +22,7 @@ typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>, outgo
  * Opens a WebSocket connection on the [uri], sends the GraphQL subscription [request], and has the [callback]
  * [ReceiveChannel] and [SendChannel].
  */
-fun subscribe(uri: String, request: GraphQlRequest, accessToken: String, callback: SubscriptionCallback): Unit =
+fun subscribe(accessToken: String, uri: String, request: GraphQlRequest, callback: SubscriptionCallback): Unit =
     withTestApplication(Application::main) {
         handleWebSocketConversation(
             uri,

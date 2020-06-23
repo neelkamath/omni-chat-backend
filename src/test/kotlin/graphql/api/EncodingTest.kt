@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.test.graphql.api
+package com.neelkamath.omniChat.graphql.api
 
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
-import com.neelkamath.omniChat.test.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.api.mutations.createMessage
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -19,17 +19,17 @@ import io.kotest.matchers.shouldBe
  */
 class EncodingTest : FunSpec({
     test("A group chat's title should allow emoji") {
-        val token = createVerifiedUsers(1)[0].accessToken
+        val token = createSignedInUsers(1)[0].accessToken
         val title = "Title \uD83D\uDCDA"
-        val chatId = createGroupChat(NewGroupChat(title), token)
-        GroupChats.read(chatId).title shouldBe title
+        val chatId = createGroupChat(token, NewGroupChat(title))
+        GroupChats.readChat(chatId).title shouldBe title
     }
 
     fun testMessage(message: String) {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
-        createMessage(chatId, message, token)
-        Messages.readChat(chatId)[0].text shouldBe message
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        createMessage(token, chatId, message)
+        Messages.readGroupChat(chatId)[0].node.text shouldBe message
     }
 
     test("A message should allow emoji") { testMessage("message \uD83D\uDCDA") }

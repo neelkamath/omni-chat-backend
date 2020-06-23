@@ -6,12 +6,14 @@ Here is the usual flow for using this service.
 1. Have the user sign up for an account. Pass the info they give you to `Mutatation.createAccount`.
 1. Have the user verify their email.
 1. Have the user log in. Pass the credentials they give you to `Query.requestTokenSet`. This will give you an access token to authenticate their future actions.
-1. Use the access token to authorize requests on behalf of the user (e.g., to use `Query.readChats`).
+1. Use the access token to authorize requests on behalf of the user (e.g., `Query.readChats`).
 1. Periodically request a new token set using `Query.refreshTokenSet`.
 
 ## Notes
 
-- IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages were sent at the same nanosecond, order them by their ID.
+- The base URL is http://localhost:80.
+- IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
+- If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's data when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
 
 ## Security
 
@@ -19,7 +21,7 @@ Here is the usual flow for using this service.
 
 ## GraphQL
 
-The base URL is http://localhost:80.
+The service gets exposed as a [GraphQL](https://graphql.org/) API over the HTTP and WebSocket protocols. 
 
 GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
 
@@ -43,15 +45,29 @@ Here's an example.
 }
 ```
 
-### Docs
+### Schema
 
-Here are the current version's [API docs](../src/main/resources/schema.graphqls).
+Here is the current version's [schema](../src/main/resources/schema.graphqls).
 
-The documentation contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message is returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
+The schema contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message is returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
 
 There are two other types of error messages which could be returned which aren't explicitly documented in the schema because they would be repetitive and irrelevant. They are:
 - Receiving the `"INTERNAL_SERVER_ERROR` `errors[0].message` indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "The service is currently unreachable".
-- If descriptive (long) error messages are returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there is a bug in the client's code, and the programmer consuming the service must fix it. 
+- If descriptive (long) error messages get returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there is a bug in the client's code, and the programmer consuming the service must fix it. 
+
+### Pagination
+
+Pagination follows [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) with the exception that fields are nullable based on what's more logical.
+
+The following points clarify the parts Relay's spec isn't clear on. Although only the `last` and `before` arguments get explained, the `first` and `after` arguments behave similarly.
+
+It's possible that a cursor which was once valid no longer is. For example, you might read five messages, and later attempt to read another five by passing the cursor of the oldest message; but it happens that the oldest message got deleted just before you used its cursor. In such cases, the expected messages will be returned (i.e., it will seem as if the cursor is valid).
+
+The `last` and `before` arguments indicate the number of items to be returned before the cursor. `last` indicates the maximum number of items to retrieve (e.g., if there are two items, and five gets requested, only two will be returned). `before` is the cursor (i.e., only items before this will be returned). Here's the algorithm:
+- If neither `last` nor `before` are `null`, then at most `last` items will be returned from before the cursor.
+- If `last` isn't null but `before` is, then at most `last` items will be returned from the end.
+- If `last` is `null` but `before` isn't, then every item before the cursor will be returned.
+- If both `last` and `before` are `null`, then every item will be returned.
 
 ### `Query`s and `Mutation`s
 
@@ -78,9 +94,11 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3M
 
 ### `Subscription`s
 
-Each `Subscription` has its own endpoint. The endpoint is the operation's name styled using kebab-case. For example, the endpoint for `Subscription.messageUpdates` is `/message-updates`. `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
+Each `Subscription` has its own endpoint. The endpoint is the operation's name styled using kebab-case (e.g., the endpoint for `Subscription.messageUpdates` is `/message-updates`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
+
+The server only accepts the first event you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
 
 An example of using a `Subscription` is shown below using `Subscription.messageUpdates`.
 
@@ -93,7 +111,6 @@ An example of using a `Subscription` is shown below using `Subscription.messageU
     Connection: Upgrade
     
     ```
-
 1. Send the GraphQL document in JSON serialized as text. Here's an example JSON string.
 
     ```json
@@ -104,7 +121,6 @@ An example of using a `Subscription` is shown below using `Subscription.messageU
       }
     }
     ```
-
 1. If the `"query"` in the document you sent was invalid, the error will be returned, and then the connection will be closed. Here's an example of the received GraphQL document (a JSON string).
 
     ```json
@@ -116,7 +132,6 @@ An example of using a `Subscription` is shown below using `Subscription.messageU
       ]
     }
     ```
-   
 1. If there was no error in the document you sent, you will receive events (GraphQL documents in JSON serialized as text). Here's an example event (a JSON string).
 
     ```json
@@ -133,4 +148,4 @@ An example of using a `Subscription` is shown below using `Subscription.messageU
    
 ## Health Check
 
-There is an HTTP API endpoint `/health_check` which accepts the HTTP GET verb. It responds with the HTTP status code of 204 only if the server is "healthy". An example use case of this is a backend developer having the server automatically restart whenever it becomes "unhealthy".
+There is an HTTP API endpoint `/health_check` which accepts the HTTP GET verb. It responds with the HTTP status code of 204 only if the server is "healthy". For example, a backend developer building atop this service can program the server to automatically restart when it becomes "unhealthy".

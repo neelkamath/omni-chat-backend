@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.main
 import io.kotest.core.spec.style.FunSpec

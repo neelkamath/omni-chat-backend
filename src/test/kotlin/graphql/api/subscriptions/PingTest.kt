@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.test.graphql.api.subscriptions
+package com.neelkamath.omniChat.graphql.api.subscriptions
 
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.api.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
@@ -34,9 +34,9 @@ class PingTest : FunSpec({
     }
 
     test("The connection should be closed if the client doesn't ping within the ping period") {
-        val token = createVerifiedUsers(1)[0].accessToken
-        val chatId = createGroupChat(NewGroupChat("Title"), token)
-        receiveMessageUpdates(chatId, token) { incoming, _ ->
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        receiveMessageUpdates(token, chatId) { incoming, _ ->
             val time = measureTimeMillis { awaitClose(incoming) }
             testPingPeriod(time)
         }

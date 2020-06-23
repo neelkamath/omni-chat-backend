@@ -1,7 +1,6 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.Contacts
-import com.neelkamath.omniChat.test.createVerifiedUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -11,7 +10,7 @@ class ContactsTest : FunSpec({
             val (userId, contact1Id, contact2Id, contact3Id) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(userId, setOf(contact1Id, contact2Id))
             Contacts.create(userId, setOf(contact1Id, contact2Id, contact3Id))
-            Contacts.read(userId) shouldBe setOf(contact1Id, contact2Id, contact3Id)
+            Contacts.readIdList(userId) shouldBe listOf(contact1Id, contact2Id, contact3Id)
         }
     }
 })

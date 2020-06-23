@@ -26,8 +26,8 @@ data class Login(val username: String, val password: String)
 
 data class TokenSet(val accessToken: String, val refreshToken: String)
 
+/** An [IllegalArgumentException] will be thrown if the [username] isn't lowercase. */
 data class NewAccount(
-    /** An [IllegalArgumentException] will be thrown if it's not lowercase. */
     val username: String,
     val password: String,
     val emailAddress: String,
@@ -40,7 +40,7 @@ data class NewAccount(
     }
 }
 
-data class AccountInfo(
+data class Account(
     val id: String,
     val username: String,
     val emailAddress: String,
@@ -56,41 +56,48 @@ data class AccountUpdate(
     val lastName: String? = null
 )
 
-data class NewGroupChat(val title: String, val description: String? = null, val userIdList: Set<String> = setOf())
+data class NewGroupChat(val title: String, val description: String? = null, val userIdList: List<String> = listOf())
 
 data class GroupChatUpdate(
     val chatId: Int,
     val title: String? = null,
     val description: String? = null,
-    val newUserIdList: Set<String> = setOf(),
-    val removedUserIdList: Set<String> = setOf(),
+    val newUserIdList: List<String> = listOf(),
+    val removedUserIdList: List<String> = listOf(),
     val newAdminId: String? = null
 )
 
-sealed class Chat
+sealed class Chat {
+    abstract val id: Int
+    abstract val messages: MessagesConnection
+}
 
 data class PrivateChat(
-    val id: Int,
+    override val id: Int,
     /** The user being chatted with. */
-    val user: AccountInfo,
-    val messages: List<Message>
+    val user: Account,
+    override val messages: MessagesConnection
 ) : Chat()
 
 data class GroupChat(
-    val id: Int,
+    override val id: Int,
     val adminId: String,
-    val users: Set<AccountInfo>,
+    val users: AccountsConnection,
     val title: String,
     val description: String? = null,
-    val messages: List<Message>
+    override val messages: MessagesConnection
 ) : Chat()
+
+data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
+
+data class MessageEdge(val node: Message, val cursor: Int)
 
 /** Represents created and deleted messages, and deleted chats. */
 sealed class MessageUpdates
 
 data class Message(
     val id: Int,
-    val sender: AccountInfo,
+    val sender: Account,
     val text: String,
     val dateTimes: MessageDateTimes
 ) : MessageUpdates()
@@ -98,7 +105,7 @@ data class Message(
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
 /** The [dateTime] and [status] the [user] has on a message. */
-data class MessageDateTimeStatus(val user: AccountInfo, val dateTime: LocalDateTime, val status: MessageStatus)
+data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime, val status: MessageStatus)
 
 enum class MessageStatus { DELIVERED, READ }
 
@@ -118,16 +125,15 @@ data class UserChatMessagesRemoval(val userId: String) : MessageUpdates()
  *
  * This happens in private chats when the user deletes the chat, or the other user deletes their account. This happens
  * in group chats when the last user leaves the chat.
+ *
+ * @throws [IllegalArgumentException] if [isDeleted] is `false`.
  */
 data class DeletionOfEveryMessage(
-    /**
-     * GraphQL types require at least one field. Hence, we simply state that every message has been deleted. An
-     * [IllegalArgumentException] will be thrown if this is `false`.
-     */
+    /** GraphQL types require at least one field. Hence, we simply state that every message has been deleted. */
     val isDeleted: Boolean = true
 ) : MessageUpdates() {
     init {
-        if (!isDeleted) throw IllegalArgumentException("isDeleted must be true")
+        if (!isDeleted) throw IllegalArgumentException("<isDeleted> must be true.")
     }
 }
 
@@ -143,18 +149,28 @@ data class DeletionOfEveryMessage(
  * another user sent in the chat to be lost during one of the aforementioned delays. Therefore, the client should first
  * subscribe (i.e., await the WebSocket connection to be created), await the [CreatedSubscription] event, and then query
  * for older data if required.
+ *
+ * @throws [IllegalArgumentException] if [isCreated] is `false`.
  */
 data class CreatedSubscription(
-    /**
-     * GraphQL types require at least one field. Hence, we simply state that the subscription has been created. An
-     * [IllegalArgumentException] will be thrown if this is `false`.
-     */
+    /** GraphQL types require at least one field. Hence, we simply state that the subscription has been created. */
     val isCreated: Boolean = true
 ) {
     init {
-        if (!isCreated) throw IllegalArgumentException("isCreated must be true")
+        if (!isCreated) throw IllegalArgumentException("<isCreated> must be true.")
     }
 }
 
 /** The [chat] the [messages] belong to. */
-data class ChatMessage(val chat: Chat, val messages: List<Message>)
+data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
+
+data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo)
+
+data class AccountEdge(val node: Account, val cursor: Int)
+
+data class PageInfo(
+    val hasNextPage: Boolean,
+    val hasPreviousPage: Boolean,
+    val startCursor: Int? = null,
+    val endCursor: Int? = null
+)

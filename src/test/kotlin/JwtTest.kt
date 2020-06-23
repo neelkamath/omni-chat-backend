@@ -1,7 +1,6 @@
-package com.neelkamath.omniChat.test
+package com.neelkamath.omniChat
 
 import com.auth0.jwt.JWT
-import com.neelkamath.omniChat.buildAuthToken
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.date.shouldBeAfter
 import io.kotest.matchers.date.shouldBeBefore

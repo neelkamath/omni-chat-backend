@@ -1,12 +1,7 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.db.PrivateChatDeletions
-import com.neelkamath.omniChat.db.PrivateChats
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.mutations.createAccount
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -24,16 +19,26 @@ class PrivateChatsTest : FunSpec({
         }
     }
 
-    context("read(String)") {
+    context("read(String, BackwardPagination?)") {
         test("Reading a chat should give the ID of the user being chatted with, and not the user's own ID") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
+            PrivateChats.create(user1Id, user2Id)
             val test = { userId: String, otherUserId: String ->
-                val chat = PrivateChat(chatId, findUserById(otherUserId), messages = listOf())
-                PrivateChats.read(userId) shouldBe listOf(chat)
+                PrivateChats.readUserChats(userId)[0].user.id shouldBe otherUserId
             }
             test(user1Id, user2Id)
             test(user2Id, user1Id)
+        }
+
+        test("Chats which didn't have any activity after their deletion shouldn't be read") {
+            val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
+            val chat1Id = PrivateChats.create(user1Id, user2Id)
+            val chat2Id = PrivateChats.create(user1Id, user3Id)
+            val chat3Id = PrivateChats.create(user1Id, user4Id)
+            PrivateChatDeletions.create(chat2Id, user1Id)
+            Messages.create(chat2Id, user1Id, "text")
+            PrivateChatDeletions.create(chat3Id, user1Id)
+            PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
         }
     }
 
@@ -54,7 +59,23 @@ class PrivateChatsTest : FunSpec({
         }
     }
 
-    context("search(String, String)") {
+    context("queryUserChatEdges(String, String)") {
+        test("Chats should be queried") {
+            val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
+            val queryText = "hi"
+            val (chat1Id, chat2Id) = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }
+            val (message1, message2) = listOf(chat1Id, chat2Id).map {
+                val id = Messages.message(it, user1Id, queryText)
+                MessageEdge(Messages.read(id), cursor = id)
+            }
+            val chat3Id = PrivateChats.create(user1Id, user4Id)
+            Messages.create(chat3Id, user1Id, "bye")
+            PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe
+                    listOf(ChatEdges(chat1Id, listOf(message1)), ChatEdges(chat2Id, listOf(message2)))
+        }
+    }
+
+    context("search(String, String, BackwardPagination?)") {
         test(
             """
             Chats should be searched by case-insensitively querying usernames, email addresses, first names, and last 
@@ -69,12 +90,43 @@ class PrivateChatsTest : FunSpec({
                 NewAccount(username = "leia", password = "p", emailAddress = "leia@example.com", lastName = "Tomas"),
                 NewAccount(username = "steve_rogers", password = "p", emailAddress = "steve@example.com")
             ).map {
-                createAccount(it)
+                createUser(it)
                 val otherUserId = findUserByUsername(it.username).id
                 PrivateChats.create(userId, otherUserId)
                 otherUserId
             }
             PrivateChats.search(userId, "tom").map { it.user.id } shouldBe userIdList.dropLast(1)
+        }
+    }
+
+    context("areInChat(String, String)") {
+        test("Two users should be said to be in a chat") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            PrivateChats.create(user1Id, user2Id)
+            PrivateChats.areInChat(user1Id, user2Id).shouldBeTrue()
+        }
+
+        test("Two users shouldn't be said to be in a chat if one of them deleted the chat") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            PrivateChatDeletions.create(chatId, user1Id)
+            PrivateChats.areInChat(user1Id, user2Id).shouldBeFalse()
+        }
+    }
+
+    context("readChatId(String, String)") {
+        test("""The chat's ID should be read if the "participant" is in the chat but the "user" isn't""") {
+            val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(participantId, userId)
+            PrivateChatDeletions.create(chatId, userId)
+            PrivateChats.readChatId(participantId, userId) shouldBe chatId
+        }
+
+        test("""Reading the ID of a chat the "participant" isn't in but the "user" is should fail""") {
+            val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(participantId, userId)
+            PrivateChatDeletions.create(chatId, participantId)
+            shouldThrowAny { PrivateChats.readChatId(participantId, userId) }
         }
     }
 
@@ -105,7 +157,7 @@ class PrivateChatsTest : FunSpec({
             createAndUseChat(user1Id, user2Id)
             val chatId = createAndUseChat(user1Id, user3Id)
             PrivateChatDeletions.delete(chatId)
-            PrivateChats.delete(user1Id)
+            PrivateChats.deleteUserChats(user1Id)
             PrivateChats.count().shouldBeZero()
             PrivateChatDeletions.count().shouldBeZero()
             Messages.count().shouldBeZero()

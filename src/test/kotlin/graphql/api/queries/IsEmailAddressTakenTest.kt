@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -23,7 +23,7 @@ class IsEmailTakenTest : FunSpec({
     test("The email shouldn't be taken") { isEmailTaken("username@example.com").shouldBeFalse() }
 
     test("The email should be taken") {
-        val address = createVerifiedUsers(1)[0].info.emailAddress
+        val address = createSignedInUsers(1)[0].info.emailAddress
         isEmailTaken(address).shouldBeTrue()
     }
 })

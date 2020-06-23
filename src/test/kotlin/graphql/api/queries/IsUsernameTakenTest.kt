@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.test.graphql.api.queries
+package com.neelkamath.omniChat.graphql.api.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.graphql.UsernameNotLowercaseException
-import com.neelkamath.omniChat.test.createVerifiedUsers
-import com.neelkamath.omniChat.test.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.api.operateQueryOrMutation
+import com.neelkamath.omniChat.graphql.createSignedInUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -26,11 +26,11 @@ class IsUsernameTakenTest : FunSpec({
     test("The username shouldn't be taken") { isUsernameTaken("username").shouldBeFalse() }
 
     test("The username should be taken") {
-        val username = createVerifiedUsers(1)[0].info.username
+        val username = createSignedInUsers(1)[0].info.username
         isUsernameTaken(username).shouldBeTrue()
     }
 
     test("Checking if a non-lowercase username has been taken should return an error") {
-        errIsUsernameTake("Username") shouldBe UsernameNotLowercaseException().message
+        errIsUsernameTake("Username") shouldBe UsernameNotLowercaseException.message
     }
 })

@@ -1,7 +1,5 @@
-package com.neelkamath.omniChat.test.db
+package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.MessageStatuses
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
 
 /** Returns the number of saved statuses. */

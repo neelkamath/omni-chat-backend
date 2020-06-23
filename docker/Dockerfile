@@ -1,4 +1,4 @@
-FROM gradle:6.4.0-jdk14 AS builder
+FROM gradle:6.5.0-jdk14 AS builder
 WORKDIR /home/gradle/project
 COPY build.gradle.kts gradle.properties settings.gradle.kts ./
 RUN gradle --no-daemon -i shadowJar
@@ -11,5 +11,5 @@ COPY --from=builder /home/gradle/project/build/libs/omni-chat-all.jar .
 COPY docker/dockerize docker/dockerize
 EXPOSE 80/tcp
 HEALTHCHECK --timeout=5s --start-period=5s --retries=1 \
-    CMD wget -q http://localhost:80/health_check || exit 1
+    CMD curl -f http://localhost:80/health_check
 CMD java -server -jar omni-chat-all.jar
