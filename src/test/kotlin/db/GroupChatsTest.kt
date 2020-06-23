@@ -8,22 +8,13 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
-class GroupChatsTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class GroupChatsTest : FunSpec({
     context("create(String, NewGroupChat") {
         test("A chat should be created which includes the admin in the list of users") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chat = NewGroupChat("Title", userIdList = listOf(userId))
             val chatId = GroupChats.create(adminId, chat)
-            GroupChats.readChat(chatId) shouldBe GroupChat(
-                chatId,
-                adminId,
-                (chat.userIdList + adminId).map(::findUserById),
-                chat.title,
-                chat.description,
-                emptyMessagesConnection
-            )
+            GroupChats.readChat(chatId).users.edges.map { it.node.id } shouldBe chat.userIdList + adminId
         }
     }
 
@@ -143,14 +134,18 @@ private val body: FunSpec.() -> Unit = {
         }
     }
 
-    context("queryIdList(String, String)") {
+    context("queryUserChatEdges(String, String)") {
         test("Chats should be queried") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(adminId, NewGroupChat("Title")) }
             val queryText = "hi"
-            listOf(chat1Id, chat2Id).map { Messages.create(it, adminId, queryText) }
+            val (message1, message2) = listOf(chat1Id, chat2Id).map {
+                val id = Messages.message(it, adminId, queryText)
+                MessageEdge(Messages.read(id), cursor = id)
+            }
             Messages.create(chat3Id, adminId, "bye")
-            GroupChats.queryIdList(adminId, queryText) shouldBe listOf(chat1Id, chat2Id)
+            GroupChats.queryUserChatEdges(adminId, queryText) shouldBe
+                    listOf(ChatEdges(chat1Id, listOf(message1)), ChatEdges(chat2Id, listOf(message2)))
         }
     }
 
@@ -164,3 +159,4 @@ private val body: FunSpec.() -> Unit = {
         }
     }
 }
+)

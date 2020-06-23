@@ -25,10 +25,8 @@ fun updateAccount(accessToken: String, update: AccountUpdate): Boolean =
 fun errUpdateAccount(accessToken: String, update: AccountUpdate): String =
     operateUpdateAccount(accessToken, update).errors!![0].message
 
-class UpdateAccountTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
-    fun testAccountInfo(accountBeforeUpdate: AccountInfo, accountAfterUpdate: AccountUpdate) {
+class UpdateAccountTest : FunSpec({
+    fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
         isUsernameTaken(accountBeforeUpdate.username).shouldBeFalse()
         with(findUserByUsername(accountAfterUpdate.username!!)) {
             username shouldBe accountAfterUpdate.username
@@ -43,7 +41,7 @@ private val body: FunSpec.() -> Unit = {
         val user = createSignedInUsers(1)[0]
         val update = AccountUpdate(username = "john_roger", emailAddress = "john.roger@example.com", lastName = "Roger")
         updateAccount(user.accessToken, update)
-        testAccountInfo(user.info, update)
+        testAccount(user.info, update)
     }
 
     test("The password should be updated") {
@@ -65,4 +63,4 @@ private val body: FunSpec.() -> Unit = {
         errUpdateAccount(user1.accessToken, AccountUpdate(emailAddress = user2.info.emailAddress)) shouldBe
                 EmailAddressTakenException.message
     }
-}
+})

@@ -12,14 +12,14 @@ fun createAccount(env: DataFetchingEnvironment): Boolean {
     when {
         isUsernameTaken(account.username) -> throw UsernameTakenException
         emailAddressExists(account.emailAddress) -> throw EmailAddressTakenException
-        else -> createUser(account)
+        else -> Users.create(userId = createUser(account))
     }
     return true
 }
 
 fun createContacts(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val saved = Contacts.read(env.userId!!)
+    val saved = Contacts.readIdList(env.userId!!)
     val userIdList = env.getArgument<List<String>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
     if (!userIdList.all { userIdExists(it) }) throw InvalidContactException
     Contacts.create(env.userId!!, userIdList)
@@ -45,7 +45,7 @@ private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): B
  */
 private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
     if (!Messages.exists(messageId) || !Messages.isVisible(messageId, userId)) throw InvalidMessageIdException
-    val chatId = Messages.findChatFromMessage(messageId)
+    val chatId = Messages.readChatFromMessage(messageId)
     if (!isUserInChat(userId, chatId) || Messages.read(messageId).sender.id == userId) throw InvalidMessageIdException
     if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException
 }
@@ -102,10 +102,11 @@ fun deleteContacts(env: DataFetchingEnvironment): Boolean {
 
 fun deleteMessage(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.existsInChat(messageId, chatId) ||
+    if (!Messages.exists(messageId)) throw InvalidMessageIdException
+    val chatId = Messages.readChatFromMessage(messageId)
+    if (!isUserInChat(env.userId!!, chatId) ||
+        !Messages.existsInChat(messageId, chatId) ||
         Messages.read(messageId).sender.id != env.userId!! ||
         !Messages.isVisible(messageId, env.userId!!)
     ) {
@@ -128,19 +129,13 @@ fun leaveGroupChat(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     val newAdminId = env.getArgument<String?>("newAdminId")
-    val mustSpecifyNewAdmin =
-        lazy { GroupChats.isAdmin(env.userId!!, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1 }
-    when {
-        chatId !in GroupChatUsers.readChatIdList(env.userId!!) -> throw InvalidChatIdException
-        mustSpecifyNewAdmin.value && newAdminId == null -> throw MissingNewAdminIdException
-        mustSpecifyNewAdmin.value && newAdminId !in GroupChatUsers.readUserIdList(chatId) ->
-            throw InvalidNewAdminIdException
-        else -> {
-            if (mustSpecifyNewAdmin.value) GroupChats.setAdmin(chatId, newAdminId!!)
-            val update = GroupChatUpdate(chatId, removedUserIdList = listOf(env.userId!!))
-            GroupChats.update(update)
-        }
-    }
+    if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) throw InvalidChatIdException
+    val mustSpecifyNewAdmin = GroupChats.isAdmin(env.userId!!, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1
+    if (mustSpecifyNewAdmin && newAdminId == null) throw MissingNewAdminIdException
+    if (mustSpecifyNewAdmin && newAdminId !in GroupChatUsers.readUserIdList(chatId)) throw InvalidNewAdminIdException
+    if (mustSpecifyNewAdmin) GroupChats.setAdmin(chatId, newAdminId!!)
+    val update = GroupChatUpdate(chatId, removedUserIdList = listOf(env.userId!!))
+    GroupChats.update(update)
     return true
 }
 

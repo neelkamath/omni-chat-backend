@@ -31,9 +31,7 @@ fun createReadStatus(accessToken: String, messageId: Int): Boolean =
 fun errCreateReadStatus(accessToken: String, messageId: Int): String =
     operateCreateReadStatus(accessToken, messageId).errors!![0].message
 
-class CreateReadStatusTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreateReadStatusTest : FunSpec({
     test("""Creating a status should return "true"""") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createReadStatus(user1.accessToken, messageId).shouldBeTrue()
@@ -102,4 +100,4 @@ private val body: FunSpec.() -> Unit = {
         deletePrivateChat(user2.accessToken, chatId)
         errCreateReadStatus(user2.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }
-}
+})

@@ -1,10 +1,14 @@
 package com.neelkamath.omniChat.db
 
+import com.neelkamath.omniChat.AccountEdge
+import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.USER_ID_LENGTH
+import com.neelkamath.omniChat.findUserById
+import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
 /** The users in [GroupChats]. */
-object GroupChatUsers : Table() {
+object GroupChatUsers : IntIdTable() {
     override val tableName get() = "group_chat_users"
     private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
     private val groupChatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)
@@ -13,10 +17,23 @@ object GroupChatUsers : Table() {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
-    /** Returns the user ID list from the specified [groupChatId]. */
+    /**
+     * Returns the user ID list from the specified [groupChatId].
+     *
+     * @see [readUsers]
+     */
     fun readUserIdList(groupChatId: Int): List<String> = transact {
         select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }
     }
+
+    private fun readUserCursors(groupChatId: Int): List<AccountEdge> = transact {
+        select { GroupChatUsers.groupChatId eq groupChatId }
+            .map { AccountEdge(findUserById(it[userId]), it[GroupChatUsers.id].value) }
+    }
+
+    /** @see [readUserIdList] */
+    fun readUsers(groupChatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
+        buildAccountsConnection(readUserCursors(groupChatId), pagination)
 
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
     fun addUsers(groupChatId: Int, userIdList: List<String>): Unit = transact {

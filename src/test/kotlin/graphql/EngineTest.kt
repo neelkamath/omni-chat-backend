@@ -8,9 +8,7 @@ import com.neelkamath.omniChat.graphql.api.subscriptions.receiveMessageUpdates
 import io.kotest.core.spec.style.FunSpec
 import java.time.Instant
 
-class EngineTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class EngineTest : FunSpec({
     /** Returns a GraphQL `DateTime` scalar. */
     fun getScalar(): String {
         val token = createSignedInUsers(1)[0].accessToken
@@ -28,4 +26,4 @@ private val body: FunSpec.() -> Unit = {
     test("DateTime scalars should be ISO 8601-compliant") {
         Instant.parse(getScalar()) // Successfully parsing verifies the format.
     }
-}
+})

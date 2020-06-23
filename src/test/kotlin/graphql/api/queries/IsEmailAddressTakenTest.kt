@@ -19,13 +19,11 @@ private fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
 fun isEmailTaken(emailAddress: String): Boolean =
     operateIsEmailAddressTaken(emailAddress).data!!["isEmailAddressTaken"] as Boolean
 
-class IsEmailTakenTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class IsEmailTakenTest : FunSpec({
     test("The email shouldn't be taken") { isEmailTaken("username@example.com").shouldBeFalse() }
 
     test("The email should be taken") {
         val address = createSignedInUsers(1)[0].info.emailAddress
         isEmailTaken(address).shouldBeTrue()
     }
-}
+})

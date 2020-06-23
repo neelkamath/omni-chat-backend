@@ -32,9 +32,7 @@ fun createDeliveredStatus(accessToken: String, messageId: Int): Boolean =
 fun errCreateDeliveredStatus(accessToken: String, messageId: Int): String =
     operateCreateDeliveredStatus(accessToken, messageId).errors!![0].message
 
-class CreateDeliveredStatusTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreateDeliveredStatusTest : FunSpec({
     test("""A status should be created returning "true"""") {
         val (messageId, user1) = createUtilizedPrivateChat()
         createDeliveredStatus(user1.accessToken, messageId).shouldBeTrue()
@@ -94,4 +92,4 @@ private val body: FunSpec.() -> Unit = {
         deletePrivateChat(user2.accessToken, chatId)
         errCreateDeliveredStatus(user2.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }
-}
+})

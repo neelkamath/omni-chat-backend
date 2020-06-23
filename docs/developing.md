@@ -26,7 +26,6 @@ Here's what a standard project iteration looks like.
         1. Create a function which asserts the `com.neelkamath.omniChat.graphql.ClientException` received (e.g., `"INVALID_CHAT_ID"`), and asserts that the connection gets closed. Name it using the format `err<OPERATION>` (e.g., `errMessageUpdates`).
     1. Create a class named using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
     1. Write a load test (e.g., retrieving a chat with many messages) if required.
-    1. If the operation supports backward pagination, write a test using `last` and `before`. If the operation supports forward pagination, write a test using `first` and `after`. Exactly one test needs to be written for each type of pagination supported because the intricacies of how pagination arguments interact with each other have already been tested (i.e., pagination gets tested once to verify that the operation makes use of it, but the actual pagination logic needn't be tested because that'd result in duplicated efforts). You can use `com.neelkamath.omniChat.graphql.api.queries.testPagination()`.
 1. Implement the feature. For `Query`s and `Mutation`s, name the resolver the same as the GraphQL operation (e.g., `readChats`). For `Subscription`s, name the resolver named using the format `operate<OPERATION>` (e.g., `routeMessageUpdates`).
 1. Mark the feature as completed in the [spec](spec.md).
 1. Create a new release.
@@ -39,20 +38,29 @@ Here's what a standard project iteration looks like.
 - We need to test both the HTTP/WebSocket interface, and the GraphQL operations. The HTTP/WebSocket interface provides a wrapper for the GraphQL operations which is light enough to be easily used as a substitute for the GraphQL engine (i.e., `graphql.GraphQL`) while still providing the same functionality we require from the engine. Hence, we only test GraphQL operations through the HTTP/WebSocket interface so that we needn't write the same test twice (i.e., a unit test for the GraphQL engine, and an integration test for the HTTP/WebSocket interface). For example, if you are testing `Subscription.messageUpdates`, and need to use `Mutation.createMessage` in the test, use the HTTP interface for `Mutation.createMessage` instead of the GraphQL engine directly.
 - Unit tests must never use the HTTP/WebSocket interface.
 - Integration tests (i.e., tests in `com.neelkamath.omniChat.graphql`) must only use the HTTP/WebSocket interface. If required, assertions may directly use the under-the-hood functions (i.e., APIs in `com.neelkamath.omniChat.db`, `com.neelkamath.omniChat.db`, etc.).
-- Always move the spec's [lambda outside the constructor](https://github.com/kotest/kotest/issues/1473).
+- These are the test cases which must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
 
 ## Style Guide
 
-- GraphQL uses 2 spaces for query indentation. We use 4 spaces to indent GraphQL queries in Kotlin files for maintainability.
-- Use `io.kotest.core.spec.style.FunSpec` for test suites.
-- Ignore this point if you're writing functional tests (e.g., tests in `com.neelkamath.omniChat.graphql.api`). Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to `context` must be the function's signature without the packages and top-level namespace. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested.
+- Here are conventions for writing GraphQL API tests:
+    - Variables for arguments to the operation name should be named the same as the argument itself. For example, if an operation `Query.readChat` takes an argument `id`, the argument's corresponding variable should be named `id`.
+    - Use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables in fragments. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
+- Only use `io.kotest.core.spec.style.FunSpec` for test suites.
+- Ignore this point if you're writing functional tests (e.g., [`ReadChatTest.kt`](../src/test/kotlin/graphql/api/queries/ReadChatTest.kt)). Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to `context` must be the function's signature without the packages and top-level namespace. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested.
 
 ## DB
 
 - Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) (e.g., [`Messages.kt`](../src/main/kotlin/db/Messages.kt)) and its mirror files in [`src/test/kotlin/db/`](../src/test/kotlin/db)) (e.g., [`MessagesUtil.kt`](../src/test/kotlin/db/MessagesUtil.kt)) instead of directly operating on the DB.
 - The abstraction layer doesn't check whether the user IDs it's asked to store exist in the auth system because the DB couldn't know when the user deletes their account. Therefore, the validation of user IDs getting stored is done in the wrapping level (i.e., the GraphQL API level).
 - It's possible that the nanosecond a user deletes a private chat, the other user sends a message. Thus, chat deletions delete messages _until_, and not _up to_, the time of deletion.
-- The GraphQL API requires chat messages to be paginated using a cursor. A message's ID is its primary key in the `messages` table. The ID is an integer which never repeats (i.e., even if a message gets deleted, its primary key will never exist in the table again). Therefore, the cursor for a message is its ID. When a cursor gets requested for a chat sans messages, the cursor will be `null`.
+
+## Auth
+
+- Usernames must be lowercase because the auth service saves them as such.
+- The auth system disallows two users from having the same registered email address.
+- The auth system strips leading and trailing whitespace for usernames, first names, and last names.
+- There is an [admin panel](auth_admin_panel.md).
+- Always use the [`src/main/kotlin/Auth.kt`](../src/main/kotlin/Auth.kt) and [`src/test/kotlin/AuthUtil.kt`](../src/test/kotlin/AuthUtil.kt) abstraction layers instead of directly using Keycloak's API.
 
 ## Server
 
@@ -71,7 +79,7 @@ Here's what a standard project iteration looks like.
 
 ### Testing
 
-1. Spin up the services:
+1. It takes a minute to start the services. You should spin them up once by running:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -80,7 +88,7 @@ Here's what a standard project iteration looks like.
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Since the testing environment disables the sending of emails, the [`.example.env`](.example.env) file will suffice. Enter the shell:
+1. Since the testing environment disables the sending of emails, the [`.example.env`](.example.env) file will suffice. You should enter the shell to run tests. It takes a negligible amount of time to enter the shell if the services have started. You can enter the shell any number of times you want by running:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -95,16 +103,17 @@ Here's what a standard project iteration looks like.
         1. Wait for `Listening for transport dt_socket at address: 5005` to be printed.
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 
-1. `exit`
+1. Once you're done with the shell, run `exit` to shut it down.
+1. Once you are finished testing, spin down the services:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.test.yml \
+        -p test \
+        --project-directory . \
+        down
+    ```
 
 ### [Production](production.md)
-
-## Auth
-
-- Usernames must be lowercase because the auth service saves them as such.
-- The auth system disallows two users from having the same registered email address.
-- The auth system strips leading and trailing whitespace for usernames, first names, and last names.
-- There is an [admin panel](auth_admin_panel.md).
-- Always use the [`src/main/kotlin/Auth.kt`](../src/main/kotlin/Auth.kt) and [`src/test/kotlin/AuthUtil.kt`](../src/test/kotlin/AuthUtil.kt) abstraction layers instead of directly using Keycloak's API.
 
 ## [Spec](spec.md)

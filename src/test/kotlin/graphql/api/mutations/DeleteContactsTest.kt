@@ -23,14 +23,12 @@ private fun operateDeleteContacts(accessToken: String, userIdList: List<String>)
 fun deleteContacts(accessToken: String, userIdList: List<String>): Boolean =
     operateDeleteContacts(accessToken, userIdList).data!!["deleteContacts"] as Boolean
 
-class DeleteContactsTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class DeleteContactsTest : FunSpec({
     test("Contacts should be deleted, ignoring invalid ones") {
         val (owner, user1, user2) = createSignedInUsers(3)
         val userIdList = listOf(user1.info.id, user2.info.id)
         createContacts(owner.accessToken, userIdList)
         deleteContacts(owner.accessToken, userIdList + "invalid user id")
-        Contacts.read(owner.info.id).shouldBeEmpty()
+        Contacts.readIdList(owner.info.id).shouldBeEmpty()
     }
-}
+})

@@ -21,9 +21,7 @@ fun resetPassword(emailAddress: String): Boolean = operateResetPassword(emailAdd
 
 fun errResetPassword(emailAddress: String): String = operateResetPassword(emailAddress).errors!![0].message
 
-class ResetPasswordTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class ResetPasswordTest : FunSpec({
     test("A password reset request should be sent") {
         val address = createSignedInUsers(1)[0].info.emailAddress
         resetPassword(address).shouldBeTrue()
@@ -32,4 +30,4 @@ private val body: FunSpec.() -> Unit = {
     test("Requesting a password reset for an unregistered address should throw an exception") {
         errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException.message
     }
-}
+})

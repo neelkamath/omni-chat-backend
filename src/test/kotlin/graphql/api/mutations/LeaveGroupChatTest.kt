@@ -34,9 +34,7 @@ fun leaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null)
 fun errLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): String =
     operateLeaveGroupChat(accessToken, chatId, newAdminId).errors!![0].message
 
-class LeaveGroupChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class LeaveGroupChatTest : FunSpec({
     test("A non-admin should leave the chat") {
         val (admin, user) = createSignedInUsers(2)
         val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
@@ -98,10 +96,10 @@ private val body: FunSpec.() -> Unit = {
         then the admin shouldn't be changed
         """
     ) {
-        val (user1, user2, user3) = createSignedInUsers(2)
+        val (user1, user2, user3) = createSignedInUsers(3)
         val chat = NewGroupChat("Title", userIdList = listOf(user2.info.id, user3.info.id))
         val chatId = createGroupChat(user1.accessToken, chat)
         leaveGroupChat(user2.accessToken, chatId, user3.info.id)
         GroupChats.isAdmin(user1.info.id, chatId).shouldBeTrue()
     }
-}
+})

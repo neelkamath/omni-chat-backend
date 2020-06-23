@@ -30,9 +30,7 @@ private fun operateDeleteAccount(accessToken: String): GraphQlResponse =
 
 fun deleteAccount(accessToken: String): Boolean = operateDeleteAccount(accessToken).data!!["deleteAccount"] as Boolean
 
-class DeleteAccountTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class DeleteAccountTest : FunSpec({
     test("An account should be able to be deleted if the user is the admin of an empty group chat") {
         val token = createSignedInUsers(1)[0].accessToken
         createGroupChat(token, NewGroupChat("Title"))
@@ -56,8 +54,8 @@ private val body: FunSpec.() -> Unit = {
         createContacts(user1.accessToken, listOf(user2.info.id))
         createContacts(user2.accessToken, listOf(user1.info.id))
         deleteAccount(user1.accessToken)
-        Contacts.read(user1.info.id).shouldBeEmpty()
-        Contacts.read(user2.info.id).shouldBeEmpty()
+        Contacts.readIdList(user1.info.id).shouldBeEmpty()
+        Contacts.readIdList(user2.info.id).shouldBeEmpty()
     }
 
     test("The user whose account is deleted should be removed from group chats") {
@@ -114,4 +112,4 @@ private val body: FunSpec.() -> Unit = {
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
     }
-}
+})

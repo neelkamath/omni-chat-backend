@@ -5,9 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 
-class GroupChatUsersTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class GroupChatUsersTest : FunSpec({
     context("addUsers(Int, Set<String>)") {
         test("Users should be added to the chat, ignoring the ones already in it") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
@@ -31,4 +29,4 @@ private val body: FunSpec.() -> Unit = {
             subscriber.assertComplete()
         }
     }
-}
+})

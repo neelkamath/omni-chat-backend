@@ -29,9 +29,7 @@ fun refreshTokenSet(refreshToken: String): TokenSet {
 
 fun errRefreshTokenSet(refreshToken: String): String = operateRefreshTokenSet(refreshToken).errors!![0].message
 
-class RefreshTokenSetTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class RefreshTokenSetTest : FunSpec({
     test("A refresh token should issue a new token set") {
         val login = createSignedInUsers(1)[0].login
         val refreshToken = requestTokenSet(login).refreshToken
@@ -41,4 +39,4 @@ private val body: FunSpec.() -> Unit = {
     test("An invalid refresh token should throw an exception") {
         errRefreshTokenSet(refreshToken = "invalid token") shouldBe UnauthorizedException.message
     }
-}
+})

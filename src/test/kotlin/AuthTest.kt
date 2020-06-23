@@ -6,9 +6,7 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-class AuthTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class AuthTest : FunSpec({
     context("isValidLogin(Login)") {
         test("An incorrect login should be invalid") { isValidLogin(Login("username", "password")).shouldBeFalse() }
 
@@ -137,4 +135,4 @@ private val body: FunSpec.() -> Unit = {
             """
         ) { assertEmailAddressUpdate(changeAddress = false) }
     }
-}
+})

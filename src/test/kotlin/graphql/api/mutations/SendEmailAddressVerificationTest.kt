@@ -23,9 +23,7 @@ fun sendEmailAddressVerification(emailAddress: String): Boolean =
 fun errSendEmailVerification(emailAddress: String): String =
     operateSendEmailAddressVerification(emailAddress).errors!![0].message
 
-class SendEmailAddressVerificationTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class SendEmailAddressVerificationTest : FunSpec({
     test("A verification email should be sent") {
         val address = "username@example.com"
         val account = NewAccount("username", "password", address)
@@ -36,4 +34,4 @@ private val body: FunSpec.() -> Unit = {
     test("Sending a verification email to an unregistered address should throw an exception") {
         errSendEmailVerification("username@example.com") shouldBe UnregisteredEmailAddressException.message
     }
-}
+})

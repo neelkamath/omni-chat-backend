@@ -86,17 +86,6 @@ object Messages : IntIdTable() {
     private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> =
         edges.filter { it.node.text.contains(query, ignoreCase = true) }
 
-    /** Case-insensitively [query]s every text message sent in every chat the [userId] is in. */
-    fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<ChatMessages> {
-        val chats = PrivateChats.readUserChats(userId, pagination) + GroupChats.readUserChats(userId, pagination)
-        return chats.map {
-            when (it) {
-                is PrivateChat -> ChatMessages(it, searchPrivateChat(it.id, userId, query, pagination))
-                is GroupChat -> ChatMessages(it, searchGroupChat(it.id, query, pagination))
-            }
-        }
-    }
-
     /**
      * Returns the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by
      * the [userId].
@@ -140,8 +129,12 @@ object Messages : IntIdTable() {
         select { Messages.id eq id }.first().let(::buildMessage)
     }
 
-    /** Returns the ID of the chat which contains the [messageId]. */
-    fun findChatFromMessage(messageId: Int): Int = transact {
+    /**
+     * Returns the ID of the chat which contains the [messageId].
+     *
+     * @see [Messages.exists]
+     */
+    fun readChatFromMessage(messageId: Int): Int = transact {
         select { Messages.id eq messageId }.first()[chatId]
     }
 
@@ -202,7 +195,7 @@ object Messages : IntIdTable() {
      */
     fun delete(id: Int) {
         MessageStatuses.delete(id)
-        val chatId = findChatFromMessage(id)
+        val chatId = readChatFromMessage(id)
         transact {
             deleteWhere { Messages.id eq id }
         }
@@ -302,7 +295,7 @@ object Messages : IntIdTable() {
      * deleted the chat, and `true` otherwise.
      */
     fun isVisible(id: Int, userId: String): Boolean {
-        val deletion = PrivateChatDeletions.readLastDeletion(findChatFromMessage(id), userId) ?: return true
+        val deletion = PrivateChatDeletions.readLastDeletion(readChatFromMessage(id), userId) ?: return true
         return read(id).dateTimes.sent >= deletion
     }
 }

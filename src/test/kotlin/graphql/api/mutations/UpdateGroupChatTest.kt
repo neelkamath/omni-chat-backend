@@ -1,8 +1,9 @@
 package com.neelkamath.omniChat.graphql.api.mutations
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.GroupChatUpdate
+import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.GroupChats
-import com.neelkamath.omniChat.db.Messages
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
 import com.neelkamath.omniChat.graphql.UnauthorizedException
@@ -27,9 +28,7 @@ private fun operateUpdateGroupChat(accessToken: String, update: GroupChatUpdate)
 fun updateGroupChat(accessToken: String, update: GroupChatUpdate): Boolean =
     operateUpdateGroupChat(accessToken, update).data!!["updateGroupChat"] as Boolean
 
-class UpdateGroupChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class UpdateGroupChatTest : FunSpec({
     test("Only the supplied fields should be updated") {
         val (admin, user1, user2) = createSignedInUsers(3)
         val initialUserIdList = listOf(user1.info.id)
@@ -42,11 +41,13 @@ private val body: FunSpec.() -> Unit = {
             removedUserIdList = listOf(user1.info.id)
         )
         updateGroupChat(admin.accessToken, update)
-        val userIdList = initialUserIdList + admin.info.id + update.newUserIdList - update.removedUserIdList
-        val users = userIdList.map(::findUserById)
-        val connection = Messages.readGroupChatConnection(chatId)
-        val groupChat = GroupChat(chatId, admin.info.id, users, update.title!!, chat.description, connection)
-        GroupChats.readUserChats(admin.info.id) shouldBe listOf(groupChat)
+        with(GroupChats.readUserChats(admin.info.id)[0]) {
+            adminId shouldBe admin.info.id
+            users.edges.map { it.node.id } shouldBe
+                    initialUserIdList + admin.info.id + update.newUserIdList - update.removedUserIdList
+            title shouldBe update.title
+            description shouldBe chat.description
+        }
     }
 
     test("The chat's new admin should be set") {
@@ -79,4 +80,4 @@ private val body: FunSpec.() -> Unit = {
         val response = operateUpdateGroupChat(user.accessToken, GroupChatUpdate(chatId))
         response.errors!![0].message shouldBe UnauthorizedException.message
     }
-}
+})

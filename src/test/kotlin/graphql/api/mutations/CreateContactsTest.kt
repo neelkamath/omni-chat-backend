@@ -28,19 +28,17 @@ fun createContacts(accessToken: String, userIdList: List<String>): Boolean =
 fun errCreateContacts(accessToken: String, userIdList: List<String>): String =
     operateCreateContacts(accessToken, userIdList).errors!![0].message
 
-class CreateContactsTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreateContactsTest : FunSpec({
     test("Trying to save the user's own contact should be ignored") {
         val (owner, user) = createSignedInUsers(2)
         createContacts(owner.accessToken, listOf(owner.info.id, user.info.id))
-        Contacts.read(owner.info.id) shouldBe listOf(user.info.id)
+        Contacts.readIdList(owner.info.id) shouldBe listOf(user.info.id)
     }
 
     test("If one of the contacts to be saved is invalid, then none of them should be saved") {
         val (owner, user) = createSignedInUsers(2)
         val contacts = listOf(user.info.id, "invalid user ID")
         errCreateContacts(owner.accessToken, contacts) shouldBe InvalidContactException.message
-        Contacts.read(owner.info.id).shouldBeEmpty()
+        Contacts.readIdList(owner.info.id).shouldBeEmpty()
     }
-}
+})

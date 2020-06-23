@@ -1,9 +1,11 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.db.Users
+
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0
 
-data class VerifiedUser(val info: AccountInfo, val password: String) {
+data class VerifiedUser(val info: Account, val password: String) {
     val login = Login(info.username, password)
 }
 
@@ -14,7 +16,7 @@ data class VerifiedUser(val info: AccountInfo, val password: String) {
  * email, first name, and last name use the format `username<INTEGER>`, `password<INTEGER>`, `<USERNAME>@example.com`,
  * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
  */
-fun createVerifiedUsers(count: Int): List<VerifiedUser> = (0..count).map {
+fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
     val account = NewAccount(
         "username${++userCount}",
         "password$userCount",
@@ -22,8 +24,14 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (0..count).map {
         "firstName$userCount",
         "lastName$userCount"
     )
-    createUser(account)
+    val userId = createUser(account)
+    Users.create(userId)
     verifyEmailAddress(account.username)
-    val userId = findUserByUsername(account.username).id
-    with(account) { VerifiedUser(AccountInfo(userId, username, emailAddress, firstName, lastName), password) }
+    with(account) { VerifiedUser(Account(userId, username, emailAddress, firstName, lastName), password) }
+}
+
+/** Deletes the user [id] from the DB and auth system. */
+fun deleteUser(id: String) {
+    Users.delete(id)
+    deleteUserFromAuth(id)
 }

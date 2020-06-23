@@ -9,9 +9,7 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
-class PrivateChatDeletionsTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class PrivateChatDeletionsTest : FunSpec({
     context("isDeleted(String, Int)") {
         test("The chat shouldn't be deleted if the user never deleted it") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -130,4 +128,4 @@ private val body: FunSpec.() -> Unit = {
             PrivateChats.count() shouldBe 1
         }
     }
-}
+})

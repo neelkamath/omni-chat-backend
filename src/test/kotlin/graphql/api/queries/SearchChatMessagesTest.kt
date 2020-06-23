@@ -60,9 +60,7 @@ fun errSearchChatMessages(
     pagination: BackwardPagination? = null
 ): String = operateSearchChatMessages(accessToken, chatId, query, pagination).errors!![0].message
 
-class SearchChatMessagesTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class SearchChatMessagesTest : FunSpec({
     test("Messages should be searched case-insensitively") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
@@ -95,5 +93,5 @@ private val body: FunSpec.() -> Unit = {
         errSearchChatMessages(user1.accessToken, chatId, "query") shouldBe InvalidChatIdException.message
     }
 
-    test("Messages should be paginated") { testPagination(OperationName.SEARCH_CHAT_MESSAGES) }
-}
+    test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES) }
+})

@@ -12,9 +12,9 @@ schema {
 
 type Query {
     """
-    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
-    admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
-    as the admin.
+    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
+    the admin of a group chat containing users other than themselves. In this case, they must first appoint a different
+    user as the admin.
 
     You must send an access token with this request.
     """
@@ -43,7 +43,7 @@ type Query {
 
     You must send an access token with this request.
     """
-    readAccount: AccountInfo!
+    readAccount: Account!
 
     """
     Returns whether the `username` has been taken.
@@ -85,14 +85,14 @@ type Query {
 
     You must send an access token with this request.
     """
-    readContacts: [AccountInfo!]!
+    readContacts(first: Int, after: Cursor): AccountsConnection!
 
     """
     Case-insensitively searches contacts using the `query`.
 
     You must send an access token with this request.
     """
-    searchContacts(query: String!): [AccountInfo!]!
+    searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
 
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
@@ -110,10 +110,10 @@ type Query {
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
     """
-    Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names, and
-    last names. Returns the users found.
+    Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names,
+    and last names. Returns the users found.
     """
-    searchUsers(query: String!): [AccountInfo!]!
+    searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
 }
 
 type Mutation {
@@ -268,15 +268,15 @@ type Mutation {
     ): Boolean!
 
     """
-    Deletes the message `id` from the `chatId`. The user can only delete their own messages.
+    Deletes the message `id` from the chat it's from. The user can only delete their own messages.
 
     `true` will be returned if the message was deleted. Otherwise, an error will be returned. Returned
-    `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or `"INVALID_MESSAGE_ID"` (i.e.,
-    the message doesn't exist, or the message isn't the user's own).
+    `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message isn't in a chat the user is in, the message
+    isn't visible to the user because they deleted the private chat, or the message isn't the user's own).
 
     You must send an access token with this request.
     """
-    deleteMessage(id: Int!, chatId: Int!): Boolean!
+    deleteMessage(id: Int!): Boolean!
 
     """
     Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored. `true` will always
@@ -363,7 +363,17 @@ type DeletedMessage {
     id: Int!
 }
 
-type AccountInfo {
+type AccountsConnection {
+    edges: [AccountEdge!]!
+    pageInfo: PageInfo!
+}
+
+type AccountEdge {
+    node: Account!
+    cursor: Cursor!
+}
+
+type Account {
     id: ID!
     username: String!
     emailAddress: String!
@@ -407,19 +417,19 @@ type GroupChat implements Chat {
     description: String
     """The ID of the admin present who is present in the `users`."""
     adminId: ID!
-    users: [AccountInfo!]!
+    users(first: Int, after: Cursor): AccountsConnection!
 }
 
 type PrivateChat implements Chat {
     id: Int!
     messages(last: Int, before: Cursor): MessagesConnection!
     """The user being chatted with."""
-    user: AccountInfo!
+    user: Account!
 }
 
 type Message {
     id: Int!
-    sender: AccountInfo!
+    sender: Account!
     text: String!
     dateTimes: MessageDateTimes!
 }
@@ -431,7 +441,7 @@ type MessageDateTimes {
 
 """The `dateTime` the `user` created the `status`."""
 type MessageDateTimeStatus {
-    user: AccountInfo!
+    user: Account!
     dateTime: DateTime!
     status: MessageStatus!
 }

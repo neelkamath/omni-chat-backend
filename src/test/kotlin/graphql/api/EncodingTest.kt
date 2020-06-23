@@ -17,9 +17,7 @@ import io.kotest.matchers.shouldBe
  * tests not existed, such an encoding problem may not have been found until technical debt from the tool at fault
  * had already accumulated.
  */
-class EncodingTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class EncodingTest : FunSpec({
     test("A group chat's title should allow emoji") {
         val token = createSignedInUsers(1)[0].accessToken
         val title = "Title \uD83D\uDCDA"
@@ -37,4 +35,4 @@ private val body: FunSpec.() -> Unit = {
     test("A message should allow emoji") { testMessage("message \uD83D\uDCDA") }
 
     test("A message should allow using multiple languages") { testMessage("Japanese: 日 Chinese: 传/傳 Kannada: ಘ") }
-}
+})

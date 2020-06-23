@@ -9,9 +9,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
-class MessageStatusesTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class MessageStatusesTest : FunSpec({
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
@@ -99,4 +97,4 @@ private val body: FunSpec.() -> Unit = {
             Messages.readPrivateChat(chat2Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldNotBeEmpty()
         }
     }
-}
+})

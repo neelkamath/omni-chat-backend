@@ -57,15 +57,17 @@ There are two other types of error messages which could be returned which aren't
 
 ### Pagination
 
-Pagination uses [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) except that fields are only nullable based on what's more logical. Below is the explanation for the `last` and `before` arguments. The `first` and `after` arguments behave similarly.
+Pagination follows [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) with the exception that fields are nullable based on what's more logical.
 
-The `last` and `before` arguments indicate the number of items to be returned before the cursor. `last` indicates the maximum number of items to retrieve (e.g., if there are two items, and five gets requested, only two will be returned). `before` is the cursor (i.e., only items before this will be returned). Here's the algorithm for retrieving items:
+The following points clarify the parts Relay's spec isn't clear on. Although only the `last` and `before` arguments get explained, the `first` and `after` arguments behave similarly.
+
+It's possible that a cursor which was once valid no longer is. For example, you might read five messages, and later attempt to read another five by passing the cursor of the oldest message; but it happens that the oldest message got deleted just before you used its cursor. In such cases, the expected messages will be returned (i.e., it will seem as if the cursor is valid).
+
+The `last` and `before` arguments indicate the number of items to be returned before the cursor. `last` indicates the maximum number of items to retrieve (e.g., if there are two items, and five gets requested, only two will be returned). `before` is the cursor (i.e., only items before this will be returned). Here's the algorithm:
 - If neither `last` nor `before` are `null`, then at most `last` items will be returned from before the cursor.
 - If `last` isn't null but `before` is, then at most `last` items will be returned from the end.
 - If `last` is `null` but `before` isn't, then every item before the cursor will be returned.
 - If both `last` and `before` are `null`, then every item will be returned.
-
-It's possible that a cursor which was once valid no longer is. For example, you might read five messages, and later attempt to read another five by passing the cursor of the oldest message; but it happens that the oldest message got deleted just before you used its cursor. In such cases, the expected messages will be returned (i.e., it will seem as if the cursor is valid).
 
 ### `Query`s and `Mutation`s
 

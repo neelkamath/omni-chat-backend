@@ -9,9 +9,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 
-class PrivateChatsTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class PrivateChatsTest : FunSpec({
     context("create(String, String)") {
         test("Creating an existing chat should throw an exception") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -24,10 +22,9 @@ private val body: FunSpec.() -> Unit = {
     context("read(String, BackwardPagination?)") {
         test("Reading a chat should give the ID of the user being chatted with, and not the user's own ID") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
+            PrivateChats.create(user1Id, user2Id)
             val test = { userId: String, otherUserId: String ->
-                val chat = PrivateChat(chatId, findUserById(otherUserId), emptyMessagesConnection)
-                PrivateChats.readUserChats(userId) shouldBe listOf(chat)
+                PrivateChats.readUserChats(userId)[0].user.id shouldBe otherUserId
             }
             test(user1Id, user2Id)
             test(user2Id, user1Id)
@@ -62,17 +59,19 @@ private val body: FunSpec.() -> Unit = {
         }
     }
 
-    context("queryIdList(String, String)") {
+    context("queryUserChatEdges(String, String)") {
         test("Chats should be queried") {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             val queryText = "hi"
-            val chat1Id = PrivateChats.create(user1Id, user2Id)
-            Messages.create(chat1Id, user1Id, queryText)
-            val chat2Id = PrivateChats.create(user1Id, user3Id)
-            Messages.create(chat2Id, user1Id, queryText)
+            val (chat1Id, chat2Id) = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }
+            val (message1, message2) = listOf(chat1Id, chat2Id).map {
+                val id = Messages.message(it, user1Id, queryText)
+                MessageEdge(Messages.read(id), cursor = id)
+            }
             val chat3Id = PrivateChats.create(user1Id, user4Id)
             Messages.create(chat3Id, user1Id, "bye")
-            PrivateChats.queryIdList(user1Id, queryText) shouldBe listOf(chat1Id, chat2Id)
+            PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe
+                    listOf(ChatEdges(chat1Id, listOf(message1)), ChatEdges(chat2Id, listOf(message2)))
         }
     }
 
@@ -173,4 +172,4 @@ private val body: FunSpec.() -> Unit = {
             PrivateChats.readUsers(chatId) shouldBe listOf(user1Id, user2Id)
         }
     }
-}
+})

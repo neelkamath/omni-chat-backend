@@ -12,9 +12,7 @@ import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import java.time.LocalDateTime
 
-class MessagesTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class MessagesTest : FunSpec({
     data class CreatedMessage(val creator: String, val message: String)
 
     context("isVisible(Int, String)") {
@@ -458,4 +456,4 @@ private val body: FunSpec.() -> Unit = {
             }
         }
     }
-}
+})

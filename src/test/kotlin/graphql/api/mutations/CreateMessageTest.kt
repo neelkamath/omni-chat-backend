@@ -31,9 +31,7 @@ fun createMessage(accessToken: String, chatId: Int, text: String): Boolean =
 fun errCreateMessage(accessToken: String, chatId: Int, text: String): String =
     operateCreateMessage(accessToken, chatId, text).errors!![0].message
 
-class CreateMessageTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreateMessageTest : FunSpec({
     /** Asserts that [messages] has exactly one [MessageEdge], which is a [text] sent by the [userId]. */
     fun testMessages(messages: List<MessageEdge>, userId: String, text: String) {
         messages shouldHaveSize 1
@@ -79,4 +77,4 @@ private val body: FunSpec.() -> Unit = {
         deletePrivateChat(user1.accessToken, chatId)
         createMessage(user1.accessToken, chatId, "text")
     }
-}
+})

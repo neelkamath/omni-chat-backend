@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.Chat
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
+import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.api.GROUP_CHAT_FRAGMENT
 import com.neelkamath.omniChat.graphql.api.PRIVATE_CHAT_FRAGMENT
@@ -18,7 +19,15 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 const val READ_CHAT_QUERY: String = """
-    query ReadChat(${"$"}id: Int!, ${"$"}last: Int, ${"$"}before: Cursor) {
+    query ReadChat(
+        ${"$"}id: Int!
+        ${"$"}groupChat_messages_last: Int
+        ${"$"}groupChat_messages_before: Cursor
+        ${"$"}privateChat_messages_last: Int
+        ${"$"}privateChat_messages_before: Cursor
+        ${"$"}groupChat_users_first: Int
+        ${"$"}groupChat_users_after: Cursor
+    ) {
         readChat(id: ${"$"}id) {
             $PRIVATE_CHAT_FRAGMENT
             $GROUP_CHAT_FRAGMENT
@@ -26,24 +35,43 @@ const val READ_CHAT_QUERY: String = """
     }
 """
 
-private fun operateReadChat(accessToken: String, id: Int, pagination: BackwardPagination? = null): GraphQlResponse =
-    operateQueryOrMutation(
-        READ_CHAT_QUERY,
-        variables = mapOf("id" to id, "last" to pagination?.last, "before" to pagination?.before?.toString()),
-        accessToken = accessToken
-    )
+private fun operateReadChat(
+    accessToken: String,
+    id: Int,
+    usersPagination: ForwardPagination? = null,
+    messagesPagination: BackwardPagination? = null
+): GraphQlResponse = operateQueryOrMutation(
+    READ_CHAT_QUERY,
+    variables = mapOf(
+        "id" to id,
+        "groupChat_messages_last" to messagesPagination?.last,
+        "groupChat_messages_before" to messagesPagination?.before?.toString(),
+        "privateChat_messages_last" to messagesPagination?.last,
+        "privateChat_messages_before" to messagesPagination?.before?.toString(),
+        "groupChat_users_first" to usersPagination?.first,
+        "groupChat_users_after" to usersPagination?.after?.toString()
+    ),
+    accessToken = accessToken
+)
 
-fun readChat(accessToken: String, id: Int, pagination: BackwardPagination? = null): Chat {
-    val data = operateReadChat(accessToken, id, pagination).data!!["readChat"] as Map<*, *>
+fun readChat(
+    accessToken: String,
+    id: Int,
+    usersPagination: ForwardPagination? = null,
+    messagesPagination: BackwardPagination? = null
+): Chat {
+    val data = operateReadChat(accessToken, id, usersPagination, messagesPagination).data!!["readChat"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
 
-fun errReadChat(accessToken: String, id: Int, pagination: BackwardPagination? = null): String =
-    operateReadChat(accessToken, id, pagination).errors!![0].message
+fun errReadChat(
+    accessToken: String,
+    id: Int,
+    usersPagination: ForwardPagination? = null,
+    messagesPagination: BackwardPagination? = null
+): String = operateReadChat(accessToken, id, usersPagination, messagesPagination).errors!![0].message
 
-class ReadChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class ReadChatTest : FunSpec({
     test("The chat should be read") {
         val token = createSignedInUsers(1)[0].accessToken
         val chatId = createGroupChat(token, NewGroupChat("Title"))
@@ -62,5 +90,9 @@ private val body: FunSpec.() -> Unit = {
         readChat(user1.accessToken, chatId)
     }
 
-    test("Messages should be paginated") { testPagination(OperationName.READ_CHAT) }
-}
+    test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.READ_CHAT) }
+
+    test("Group chat users should be paginated") {
+        testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHAT)
+    }
+})

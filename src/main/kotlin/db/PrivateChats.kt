@@ -70,7 +70,11 @@ object PrivateChats : Table() {
         select { PrivateChats.id eq id }.first()
     }.let { buildPrivateChat(it, userId, pagination) }
 
-    private fun buildPrivateChat(row: ResultRow, userId: String, pagination: BackwardPagination? = null): PrivateChat {
+    private fun buildPrivateChat(
+        row: ResultRow,
+        userId: String,
+        pagination: BackwardPagination? = null
+    ): PrivateChat {
         val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
         return PrivateChat(
             row[id],
@@ -83,17 +87,19 @@ object PrivateChats : Table() {
      * Returns the ID list of the [userId]'s chats, including deleted chat IDs.
      *
      * @see [readUserChats]
-     * @see [queryIdList]
      */
     fun readIdList(userId: String): List<Int> = transact {
         select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }
     }
 
-    /** Returns the chat ID the [userId] is in by case-insensitively [query]ing chat messages. */
-    fun queryIdList(userId: String, query: String): List<Int> = readUserChatIdList(userId)
+    /**
+     * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
+     * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
+     */
+    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = readUserChatIdList(userId)
         .associateWith { Messages.searchPrivateChat(it, userId, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
-        .map { (id, _) -> id }
+        .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 
     /**
      * Whether [user1Id] and [user2Id] are in a chat with each other (i.e., a chat [PrivateChats.exists] between them,
@@ -159,7 +165,7 @@ object PrivateChats : Table() {
      * Checks if this user's [UserRepresentation.username], [UserRepresentation.firstName], or
      * [UserRepresentation.lastName] case-insensitively match the [query].
      */
-    private fun AccountInfo.matches(query: String): Boolean = containsQuery(username, query)
+    private fun Account.matches(query: String): Boolean = containsQuery(username, query)
             || containsQuery(emailAddress, query)
             || containsQuery(firstName, query)
             || containsQuery(lastName, query)

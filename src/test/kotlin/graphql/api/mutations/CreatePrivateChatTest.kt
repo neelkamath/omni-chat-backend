@@ -27,9 +27,7 @@ fun createPrivateChat(accessToken: String, userId: String): Int =
 fun errCreatePrivateChat(accessToken: String, userId: String): String =
     operateCreatePrivateChat(accessToken, userId).errors!![0].message
 
-class CreatePrivateChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreatePrivateChatTest : FunSpec({
     test("A chat should be created") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
@@ -64,4 +62,4 @@ private val body: FunSpec.() -> Unit = {
         val user = createSignedInUsers(1)[0]
         errCreatePrivateChat(user.accessToken, user.info.id) shouldBe InvalidUserIdException.message
     }
-}
+})

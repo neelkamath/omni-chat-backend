@@ -12,9 +12,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import java.time.Duration
 import kotlin.system.measureTimeMillis
 
-class PingTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class PingTest : FunSpec({
     /** Returns once the [channel] sends a [FrameType.CLOSE]. */
     suspend fun awaitClose(channel: ReceiveChannel<Frame>) {
         for (frame in channel)
@@ -43,4 +41,4 @@ private val body: FunSpec.() -> Unit = {
             testPingPeriod(time)
         }
     }
-}
+})

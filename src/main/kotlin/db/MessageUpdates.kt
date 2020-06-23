@@ -50,7 +50,7 @@ private inline fun unsubscribe(condition: (Notifier) -> Boolean): Unit =
 
 /** Notifies [subscribeToMessageUpdates]rs of the updated [Message]. */
 fun notifyMessageUpdate(messageId: Int) {
-    val chatId = Messages.findChatFromMessage(messageId)
+    val chatId = Messages.readChatFromMessage(messageId)
     notifyMessageUpdate(chatId, Messages.read(messageId))
 }
 

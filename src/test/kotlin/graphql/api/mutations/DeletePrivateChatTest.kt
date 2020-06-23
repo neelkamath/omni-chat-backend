@@ -29,9 +29,7 @@ fun deletePrivateChat(accessToken: String, chatId: Int): Boolean =
 fun errDeletePrivateChat(accessToken: String, chatId: Int): String =
     operateDeletePrivateChat(accessToken, chatId).errors!![0].message
 
-class DeletePrivateChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class DeletePrivateChatTest : FunSpec({
     test("A chat should be deleted") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
@@ -58,4 +56,4 @@ private val body: FunSpec.() -> Unit = {
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         repeat(2) { deletePrivateChat(user1.accessToken, chatId) }
     }
-}
+})

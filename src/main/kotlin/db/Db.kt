@@ -1,34 +1,17 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.Chat
-import com.neelkamath.omniChat.DeletionOfEveryMessage
-import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.UserChatMessagesRemoval
+import com.neelkamath.omniChat.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
 
-/**
- * Pagination uses [Relay](https://relay.dev)'s
- * [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) except that fields are only
- * nullable based on what's more logical.
- */
-sealed class Pagination
+data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
 
-/**
- * The [last] and [before] arguments indicate the number of items to be returned before the cursor.
- *
- * [last] indicates the maximum number of items to retrieve (e.g., if there are two items, and five gets requested, only
- * two will be returned). [before] is the cursor (i.e., only items before this will be returned). Here is the algorithm
- * for retrieving items:
- * - If neither [last] nor [before] are `null`, then at most [last] items will be returned from before the cursor.
- * - If [last] isn't null but [before] is, then at most [last] items will be returned from the end.
- * - If [last] is `null` but [before] isn't, then every item before the cursor will be returned.
- * - If both [last] and [before] are `null`, then every item will be returned.
- */
-data class BackwardPagination(val last: Int? = null, val before: Int? = null) : Pagination()
+data class ForwardPagination(val first: Int? = null, val after: Int? = null)
+
+data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -77,7 +60,8 @@ private fun create(): Unit = transact {
         PrivateChats,
         PrivateChatDeletions,
         Messages,
-        MessageStatuses
+        MessageStatuses,
+        Users
     )
 }
 
@@ -109,17 +93,6 @@ inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transac
     statement()
 }
 
-/**
- * Throws an [IllegalArgumentException] if the [userId] isn't in the chat [id] (chats include deleted private chats).
- *
- * @see [isUserInChat]
- */
-fun readChat(id: Int, userId: String, pagination: BackwardPagination? = null): Chat = when (id) {
-    in PrivateChats.readIdList(userId) -> PrivateChats.read(id, userId, pagination)
-    in GroupChatUsers.readChatIdList(userId) -> GroupChats.readChat(id, pagination)
-    else -> throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $id).")
-}
-
 /** Case-insensitively checks if [this] contains the [pattern]. */
 infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"
 
@@ -130,9 +103,32 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
 fun isUserInChat(userId: String, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
+/** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
+fun buildAccountsConnection(
+    AccountEdges: List<AccountEdge>,
+    pagination: ForwardPagination? = null
+): AccountsConnection {
+    val (first, after) = pagination ?: ForwardPagination()
+    val accounts = AccountEdges.sortedBy { it.cursor }
+    val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
+    val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
+    val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
+    val pageInfo = PageInfo(
+        hasNextPage = firstAccounts.size < afterAccounts.size,
+        hasPreviousPage = afterAccounts.size < accounts.size,
+        startCursor = accounts.firstOrNull()?.cursor,
+        endCursor = accounts.lastOrNull()?.cursor
+    )
+    return AccountsConnection(edges, pageInfo)
+}
+
 /**
  * Deletes the [userId]'s data. If the [userId] [GroupChats.isNonemptyChatAdmin], an [IllegalArgumentException] will be
  * thrown.
+ *
+ * ## Users
+ *
+ * The [userId] will be deleted from the [Users].
  *
  * ## Contacts
  *
@@ -159,6 +155,7 @@ fun deleteUserFromDb(userId: String) {
         throw IllegalArgumentException(
             "The user's (ID: $userId) data cannot be deleted because they are the admin of a nonempty group chat."
         )
+    Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, listOf(userId)) }

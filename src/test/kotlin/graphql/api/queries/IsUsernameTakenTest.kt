@@ -22,9 +22,7 @@ fun isUsernameTaken(username: String): Boolean = operateIsUsernameTaken(username
 
 fun errIsUsernameTake(username: String): String = operateIsUsernameTaken(username).errors!![0].message
 
-class IsUsernameTakenTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class IsUsernameTakenTest : FunSpec({
     test("The username shouldn't be taken") { isUsernameTaken("username").shouldBeFalse() }
 
     test("The username should be taken") {
@@ -35,4 +33,4 @@ private val body: FunSpec.() -> Unit = {
     test("Checking if a non-lowercase username has been taken should return an error") {
         errIsUsernameTake("Username") shouldBe UsernameNotLowercaseException.message
     }
-}
+})

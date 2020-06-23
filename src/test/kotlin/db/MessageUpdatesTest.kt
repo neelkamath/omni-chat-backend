@@ -4,9 +4,7 @@ import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.core.spec.style.FunSpec
 
-class MessageUpdatesTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class MessageUpdatesTest : FunSpec({
     context("subscribeToMessageUpdates(String, Int)") {
         test("Notifications for message updates made before subscribing shouldn't be sent") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -41,4 +39,4 @@ private val body: FunSpec.() -> Unit = {
             subscriber.assertValue(message)
         }
     }
-}
+})

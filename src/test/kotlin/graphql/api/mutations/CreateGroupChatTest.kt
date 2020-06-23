@@ -3,9 +3,9 @@ package com.neelkamath.omniChat.graphql.api.mutations
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.db.GroupChatUsers
 import com.neelkamath.omniChat.db.GroupChats
 import com.neelkamath.omniChat.db.Messages
-import com.neelkamath.omniChat.findUserById
 import com.neelkamath.omniChat.graphql.InvalidDescriptionLengthException
 import com.neelkamath.omniChat.graphql.InvalidTitleLengthException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
@@ -29,9 +29,7 @@ fun createGroupChat(accessToken: String, chat: NewGroupChat): Int =
 fun errCreateGroupChat(accessToken: String, chat: NewGroupChat): String =
     operateCreateGroupChat(accessToken, chat).errors!![0].message
 
-class CreateGroupChatTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CreateGroupChatTest : FunSpec({
     test("A group chat should be created, ignoring the user's own ID") {
         val (admin, user1, user2) = createSignedInUsers(3)
         val chat = NewGroupChat("Title", "Description", listOf(admin.info.id, user1.info.id, user2.info.id))
@@ -40,7 +38,7 @@ private val body: FunSpec.() -> Unit = {
             GroupChat(
                 chatId,
                 admin.info.id,
-                chat.userIdList.map(::findUserById),
+                GroupChatUsers.readUsers(chatId),
                 chat.title,
                 chat.description,
                 Messages.readGroupChatConnection(chatId)
@@ -73,4 +71,4 @@ private val body: FunSpec.() -> Unit = {
         val token = createSignedInUsers(1)[0].accessToken
         errCreateGroupChat(token, chat) shouldBe InvalidDescriptionLengthException.message
     }
-}
+})

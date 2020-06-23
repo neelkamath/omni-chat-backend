@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.db.Users
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
@@ -97,11 +98,17 @@ fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }
 
 fun emailAddressExists(email: String): Boolean = email in realm.users().list().map { it.email }
 
-/** Creates a new account, and sends the user a verification email. */
-fun createUser(account: NewAccount) {
+/**
+ * Creates a new account in the auth system, and sends the user a verification email.
+ *
+ * @return the user ID.
+ * @see [Users.create]
+ */
+fun createUser(account: NewAccount): String {
     realm.users().create(createUserRepresentation(account))
     val userId = findUserByUsername(account.username).id
     sendEmailAddressVerification(userId)
+    return userId
 }
 
 /** Sends an email to the user to verify their email address. */
@@ -122,33 +129,32 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
     isEnabled = true
 }
 
-private fun buildAccountInfo(user: UserRepresentation): AccountInfo =
-    with(user) { AccountInfo(id, username, email, firstName, lastName) }
+private fun buildAccount(user: UserRepresentation): Account =
+    with(user) { Account(id, username, email, firstName, lastName) }
 
-fun findUserByUsername(username: String): AccountInfo =
-    realm.users().search(username).first { it.username == username }.let(::buildAccountInfo)
+fun findUserByUsername(username: String): Account =
+    realm.users().search(username).first { it.username == username }.let(::buildAccount)
 
 fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
 
-fun findUserById(userId: String): AccountInfo = buildAccountInfo(readUser(userId))
+fun findUserById(userId: String): Account = buildAccount(readUser(userId))
 
 private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
-private fun findUserByEmail(email: String): AccountInfo =
-    realm.users().list().first { it.email == email }.let(::buildAccountInfo)
+private fun findUserByEmail(email: String): Account =
+    realm.users().list().first { it.email == email }.let(::buildAccount)
 
 /**
- * Case-insensitively [query] the users.
+ * Case-insensitively [query]s every user's username, first name, last name, and email address.
  *
- * The [query] is matched against the [UserRepresentation.username], [UserRepresentation.firstName],
- * [UserRepresentation.lastName], and [UserRepresentation.email].
+ * @see [Users.search]
  */
-fun searchUsers(query: String): List<AccountInfo> = with(realm.users()) {
+fun searchUsers(query: String): List<Account> = with(realm.users()) {
     searchBy(username = query) +
             searchBy(firstName = query) +
             searchBy(lastName = query) +
             searchBy(emailAddress = query)
-}.distinctBy { it.id }.map(::buildAccountInfo)
+}.distinctBy { it.id }.map(::buildAccount)
 
 /** Convenience function for [UsersResource.search] which provides only the relevant parameters with names. */
 private fun UsersResource.searchBy(
@@ -172,6 +178,7 @@ fun isUsernameTaken(username: String): Boolean {
     return results.isNotEmpty() && results.any { it.username == username }
 }
 
+/** @see [Users.delete] */
 fun deleteUserFromAuth(id: String) {
     realm.users().delete(id)
 }

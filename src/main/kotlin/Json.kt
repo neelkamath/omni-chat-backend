@@ -40,7 +40,7 @@ data class NewAccount(
     }
 }
 
-data class AccountInfo(
+data class Account(
     val id: String,
     val username: String,
     val emailAddress: String,
@@ -75,14 +75,14 @@ sealed class Chat {
 data class PrivateChat(
     override val id: Int,
     /** The user being chatted with. */
-    val user: AccountInfo,
+    val user: Account,
     override val messages: MessagesConnection
 ) : Chat()
 
 data class GroupChat(
     override val id: Int,
     val adminId: String,
-    val users: List<AccountInfo>,
+    val users: AccountsConnection,
     val title: String,
     val description: String? = null,
     override val messages: MessagesConnection
@@ -92,19 +92,12 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Int)
 
-data class PageInfo(
-    val hasNextPage: Boolean,
-    val hasPreviousPage: Boolean,
-    val startCursor: Int? = null,
-    val endCursor: Int? = null
-)
-
 /** Represents created and deleted messages, and deleted chats. */
 sealed class MessageUpdates
 
 data class Message(
     val id: Int,
-    val sender: AccountInfo,
+    val sender: Account,
     val text: String,
     val dateTimes: MessageDateTimes
 ) : MessageUpdates()
@@ -112,7 +105,7 @@ data class Message(
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
 /** The [dateTime] and [status] the [user] has on a message. */
-data class MessageDateTimeStatus(val user: AccountInfo, val dateTime: LocalDateTime, val status: MessageStatus)
+data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime, val status: MessageStatus)
 
 enum class MessageStatus { DELIVERED, READ }
 
@@ -170,3 +163,14 @@ data class CreatedSubscription(
 
 /** The [chat] the [messages] belong to. */
 data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
+
+data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo)
+
+data class AccountEdge(val node: Account, val cursor: Int)
+
+data class PageInfo(
+    val hasNextPage: Boolean,
+    val hasPreviousPage: Boolean,
+    val startCursor: Int? = null,
+    val endCursor: Int? = null
+)

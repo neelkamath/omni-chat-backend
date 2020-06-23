@@ -46,9 +46,7 @@ fun errMessageUpdates(accessToken: String, chatId: Int, exception: ClientExcepti
         incoming.receive().frameType shouldBe FrameType.CLOSE
     }
 
-class MessageUpdatesTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class MessageUpdatesTest : FunSpec({
     /**
      * Creates a message in a private chat, and asserts that it was received. If the [senderIsSubscriber], the
      * subscriber will send the message. Otherwise, the other user will send it.
@@ -91,7 +89,7 @@ private val body: FunSpec.() -> Unit = {
             val user = if (deleterIsSubscriber) user1 else user2
             createMessage(user.accessToken, chatId, "text")
             val messageId = parseFrameData<Message>(incoming).id
-            deleteMessage(user.accessToken, messageId, chatId)
+            deleteMessage(user.accessToken, messageId)
             parseFrameData<DeletedMessage>(incoming) shouldBe DeletedMessage(messageId)
         }
     }
@@ -114,7 +112,7 @@ private val body: FunSpec.() -> Unit = {
             "text"
         )
         receiveMessageUpdates(admin.accessToken, chat1Id) { incoming, _ ->
-            deleteMessage(admin.accessToken, messageId, chat2Id)
+            deleteMessage(admin.accessToken, messageId)
             incoming.poll().shouldBeNull()
         }
     }
@@ -257,4 +255,4 @@ private val body: FunSpec.() -> Unit = {
     `the subscriber should be notified when they create a status a user's message`(MessageStatus.READ)
 
     `the subscriber should be notified when a user creates a status on another user's message`(MessageStatus.READ)
-}
+})

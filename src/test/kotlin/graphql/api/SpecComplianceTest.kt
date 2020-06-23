@@ -24,9 +24,7 @@ import io.kotest.matchers.maps.shouldNotHaveKey
  * 1. Data is serialized as JSON using the [objectMapper]. The [objectMapper] which may remove `null` fields if
  * incorrectly configured. The spec mandates that requested fields be returned even if they're `null`.
  */
-class SpecComplianceTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class SpecComplianceTest : FunSpec({
     test("""The "data" key shouldn't be returned if there was no data to be received""") {
         val variables = mapOf("login" to Login("username", "password"))
         queryOrMutate(REQUEST_TOKEN_SET_QUERY, variables) shouldNotHaveKey "data"
@@ -46,4 +44,4 @@ private val body: FunSpec.() -> Unit = {
         val response = queryOrMutate(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
         objectMapper.convertValue<Map<String, Any>>(response["readAccount"]!!) shouldContain Pair("firstName", null)
     }
-}
+})

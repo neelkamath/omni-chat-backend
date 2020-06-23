@@ -53,17 +53,28 @@ object GroupChats : Table() {
         return chatId
     }
 
-    fun readChat(id: Int, pagination: BackwardPagination? = null): GroupChat = transact {
+    /** @param[messagesPagination] pagination for [GroupChat.messages]. */
+    fun readChat(
+        id: Int,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): GroupChat = transact {
         select { GroupChats.id eq id }.first()
-    }.let { buildGroupChat(it, id, pagination) }
+    }.let { buildGroupChat(it, id, usersPagination, messagesPagination) }
 
     /**
      * Returns the [userId]'s chats.
      *
+     * @param[usersPagination] pagination for [GroupChat.users].
+     * @param[messagesPagination] pagination for [GroupChat.messages].
      * @see [GroupChatUsers.readChatIdList]
      */
-    fun readUserChats(userId: String, pagination: BackwardPagination? = null): List<GroupChat> = transact {
-        GroupChatUsers.readChatIdList(userId).map { readChat(it, pagination) }
+    fun readUserChats(
+        userId: String,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): List<GroupChat> = transact {
+        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination) }
     }
 
     /**
@@ -108,31 +119,56 @@ object GroupChats : Table() {
         unsubscribeUsersFromMessageUpdates(chatId)
     }
 
-    /** Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in. */
-    fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<GroupChat> = transact {
+    /**
+     * Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in.
+     *
+     * @param[usersPagination] pagination for [GroupChat.messages].
+     * @param[messagesPagination] pagination for [GroupChat.messages].
+     */
+    fun search(
+        userId: String,
+        query: String,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): List<GroupChat> = transact {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
-            .map { buildGroupChat(it, it[GroupChats.id], pagination) }
-
+            .map { buildGroupChat(it, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
-    /** Builds the [chatId] from the [row]. */
-    private fun buildGroupChat(row: ResultRow, chatId: Int, pagination: BackwardPagination? = null): GroupChat =
-        GroupChat(
-            chatId,
-            row[adminId],
-            GroupChatUsers.readUserIdList(chatId).map(::findUserById),
-            row[title],
-            row[description],
-            Messages.readGroupChatConnection(chatId, pagination)
-        )
+    /**
+     * Builds the [chatId] from the [row].
+     *
+     * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @param[usersPagination] pagination for [GroupChat.users].
+     */
+    private fun buildGroupChat(
+        row: ResultRow,
+        chatId: Int,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): GroupChat = GroupChat(
+        chatId,
+        row[adminId],
+        GroupChatUsers.readUsers(chatId, usersPagination),
+        row[title],
+        row[description],
+        Messages.readGroupChatConnection(chatId, messagesPagination)
+    )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
-    fun isNonemptyChatAdmin(userId: String): Boolean =
-        userId in readUserChats(userId, BackwardPagination(last = 0)).filter { it.users.size > 1 }.map { it.adminId }
+    fun isNonemptyChatAdmin(userId: String): Boolean = readUserChats(
+        userId,
+        usersPagination = ForwardPagination(first = 2),
+        messagesPagination = BackwardPagination(last = 0)
+    ).filter { it.users.edges.size > 1 }.map { it.adminId }.contains(userId)
 
-    /** Returns the chat IDs the [userId] is in by case-insensitively [query]ing messages. */
-    fun queryIdList(userId: String, query: String): List<Int> = GroupChatUsers.readChatIdList(userId)
-        .associateWith { Messages.searchGroupChat(it, query) }
-        .filter { (_, edges) -> edges.isNotEmpty() }
-        .map { (id, _) -> id }
+    /**
+     * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
+     * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
+     */
+    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> =
+        GroupChatUsers.readChatIdList(userId)
+            .associateWith { Messages.searchGroupChat(it, query) }
+            .filter { (_, edges) -> edges.isNotEmpty() }
+            .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 }

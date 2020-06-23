@@ -69,14 +69,6 @@ inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
     objectMapper.convertValue(getArgument(arg))
 
 /**
- * Replacement for `selectionSet.getField(field).arguments[arg] as T`.
- *
- * @return [T] if the [arg] was supplied to the [field], and `null` if the [field] or [arg] weren't supplied.
- */
-inline fun <reified T> DataFetchingEnvironment.parseFieldArgument(field: String, arg: String): T? =
-    selectionSet.getField(field)?.arguments?.get(arg)?.let(objectMapper::convertValue)
-
-/**
  * Throws an [UnauthorizedException] if the user isn't authenticated.
  *
  * You should call this at the beginning of a [DataFetchingEnvironment] which requires authentication so that you know

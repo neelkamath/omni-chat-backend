@@ -21,9 +21,7 @@ private fun operateCanDeleteAccount(accessToken: String): GraphQlResponse =
 fun canDeleteAccount(accessToken: String): Boolean =
     operateCanDeleteAccount(accessToken).data!!["canDeleteAccount"] as Boolean
 
-class CanDeleteAccountTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class CanDeleteAccountTest : FunSpec({
     test("An account should be deletable if the user is the admin of an empty group chat") {
         val token = createSignedInUsers(1)[0].accessToken
         createGroupChat(token, NewGroupChat("Title"))
@@ -35,4 +33,4 @@ private val body: FunSpec.() -> Unit = {
         createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = listOf(user.info.id)))
         canDeleteAccount(admin.accessToken).shouldBeFalse()
     }
-}
+})

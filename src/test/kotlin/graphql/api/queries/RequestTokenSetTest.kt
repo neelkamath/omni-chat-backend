@@ -30,9 +30,7 @@ fun requestTokenSet(login: Login): TokenSet {
 
 fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
 
-class RequestTokenSetTest : FunSpec(body)
-
-private val body: FunSpec.() -> Unit = {
+class RequestTokenSetTest : FunSpec({
     test("The access token should work") {
         val login = createSignedInUsers(1)[0].login
         val token = requestTokenSet(login).accessToken
@@ -53,4 +51,4 @@ private val body: FunSpec.() -> Unit = {
         val login = createSignedInUsers(1)[0].login
         errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException.message
     }
-}
+})

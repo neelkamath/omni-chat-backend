@@ -12,7 +12,8 @@ private val tables: List<Table> = listOf(
     PrivateChats,
     MessageStatuses,
     Messages,
-    Chats
+    Chats,
+    Users
 )
 
 /** Deletes every row from every table created. */
