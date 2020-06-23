@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.graphql.api
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.neelkamath.omniChat.GraphQlRequest
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.objectMapper
@@ -35,7 +36,7 @@ fun queryOrMutate(
     handleRequest(HttpMethod.Post, "graphql") {
         if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-        val body = mapOf("query" to query, "variables" to variables)
+        val body = GraphQlRequest(query, variables)
         setBody(objectMapper.writeValueAsString(body))
     }
 }.response.content!!.let(objectMapper::readValue)
