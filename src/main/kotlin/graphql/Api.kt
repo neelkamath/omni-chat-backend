@@ -4,9 +4,11 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
 import graphql.ExecutionResult
+import graphql.execution.UnknownOperationException
 import io.ktor.application.call
 import io.ktor.application.log
 import io.ktor.auth.authenticate
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.close
@@ -31,12 +33,17 @@ data class GraphQlSubscription(
     val completionReason: CloseReason
 )
 
+/** Adds the HTTP POST `/graphql` endpoint to the [context], which deals with every GraphQL query and mutation. */
 fun routeGraphQl(context: Routing): Unit = with(context) {
     authenticate(optional = true) {
         post("graphql") {
             val builder = buildExecutionInput(call.receive(), call)
-            val result = graphQl.execute(builder)
-            call.respond(buildSpecification(result))
+            try {
+                val result = graphQl.execute(builder)
+                call.respond(buildSpecification(result))
+            } catch (_: UnknownOperationException) {
+                call.respond(HttpStatusCode.BadRequest)
+            }
         }
     }
 }

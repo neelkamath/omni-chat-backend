@@ -13,17 +13,17 @@ Here's what a standard project iteration looks like.
 1. Write tests.
 
     If you're writing tests for the GraphQL API, perform the following steps (see [`RefreshTokenSetTest.kt`](../src/test/kotlin/graphql/api/queries/RefreshTokenSetTest.kt) for an example on queries and mutations, and [`MessageUpdatesTest.kt`](../src/test/kotlin/graphql/api/subscriptions/MessageUpdatesTest.kt) for an example on subscriptions):
-    1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>_FRAGMENT` (e.g., `PRIVATE_CHAT_DELETION_FRAGMENT`).
+    1. Create inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/api/Fragments.kt) named using the format `<TYPE>_FRAGMENT` (e.g., `PRIVATE_CHAT_DELETION_FRAGMENT`). Use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables in fragments. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
     1. Create a file named using the format `<OPERATION>Test.kt` (e.g., `DeleteAccountTest.kt`).
-    1. Create a constant `String` value for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES_QUERY`). The query should be named using the operation (e.g., the operation `searchMessages` would have its query named `SearchMessages`).
+    1. Create a constant `String` value for the GraphQL document's query named using the format `<OPERATION>_QUERY` (e.g., `MESSAGE_UPDATES_QUERY`). The query should be named using the operation (e.g., the operation `searchMessages` would have its query named `SearchMessages`). Variables for arguments to the operation name should be named the same as the argument itself. For example, if an operation `Query.readChat` takes an argument `id`, the argument's corresponding variable should be named `id`.
     1. Follow these steps for `Query`s and `Mutation`s. If the function takes an access token, it must be the first parameter.
         1. Create a private function which deals with the HTTP request (the "operator function"). Name it using the format `operate<OPERATION>` (e.g., `operateReadChats`), and have it return a `com.neelkamath.omniChat.graphql.GraphQlResponse`.
-        1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<com.neelkamath.omniChat.Chat>`).
-        1. create a function which deals with the HTTP response's `com.neelkamath.omniChat.graphql.ClientException` (e.g., `"INVALID_CHAT_ID"`). Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.graphql.GraphQlResponse.errors[0].message`.
+        1. Create a function which deals with the HTTP response's data. Name it the GraphQL operation (e.g., `readChats`). It must return the operator function's `com.neelkamath.omniChat.graphql.GraphQlResponse.data` mapped to a Kotlin type (e.g., `List<Chat>`).
+        1. create a function which deals with the HTTP response's `ClientException` (e.g., `"INVALID_CHAT_ID"`). Name it using the format `err<OPERATION>` (e.g., `errCreateAccount`). It must return the operator function's `com.neelkamath.omniChat.graphql.GraphQlResponse.errors[0].message`.
     1. Follow these steps for `Subscription`s. If the function takes an access token, it must be the first parameter.
         1. Create a private function which deals with opening the WebSocket connection (the "operator function"). Name it using the format `operate<OPERAION>` (e.g., `operateMessageUpdates`).
-        1. Create a function which deals with the `com.neelkamath.omniChat.CreatedSubscription`, and receives the events. Name the function `receive<OPERATION>` (e.g., `receiveMessageUpdates`).
-        1. Create a function which asserts the `com.neelkamath.omniChat.graphql.ClientException` received (e.g., `"INVALID_CHAT_ID"`), and asserts that the connection gets closed. Name it using the format `err<OPERATION>` (e.g., `errMessageUpdates`).
+        1. Create a function which deals with the `CreatedSubscription`, and receives the events. Name the function `receive<OPERATION>` (e.g., `receiveMessageUpdates`).
+        1. Create a function which asserts the `ClientException` received (e.g., `"INVALID_CHAT_ID"`), and asserts that the connection gets closed. Name it using the format `err<OPERATION>` (e.g., `errMessageUpdates`).
     1. Create a class named using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
     1. Write a load test (e.g., retrieving a chat with many messages) if required.
 1. Implement the feature. For `Query`s and `Mutation`s, name the resolver the same as the GraphQL operation (e.g., `readChats`). For `Subscription`s, name the resolver named using the format `operate<OPERATION>` (e.g., `routeMessageUpdates`).
@@ -42,9 +42,6 @@ Here's what a standard project iteration looks like.
 
 ## Style Guide
 
-- Here are conventions for writing GraphQL API tests:
-    - Variables for arguments to the operation name should be named the same as the argument itself. For example, if an operation `Query.readChat` takes an argument `id`, the argument's corresponding variable should be named `id`.
-    - Use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables in fragments. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
 - Only use `io.kotest.core.spec.style.FunSpec` for test suites.
 - Ignore this point if you're writing functional tests (e.g., [`ReadChatTest.kt`](../src/test/kotlin/graphql/api/queries/ReadChatTest.kt)). Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to `context` must be the function's signature without the packages and top-level namespace. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested.
 

@@ -52,7 +52,7 @@ type Query {
     """
     isUsernameTaken(username: String!): Boolean!
 
-    """Returns whether the `address` has been taken."""
+    """Returns whether the `emailAddress` has been taken."""
     isEmailAddressTaken(emailAddress: String!): Boolean!
 
     """
@@ -104,8 +104,8 @@ type Query {
     requestTokenSet(login: Login!): TokenSet!
 
     """
-    The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by passing
-    the `refreshToken` to this operation to request a new set of tokens.
+    The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
+    passing the `refreshToken` to this operation to request a new set of tokens.
     """
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
@@ -118,8 +118,8 @@ type Query {
 
 type Mutation {
     """
-    Deletes the user's account. Returns whether the account was deleted. Use `Query.canDeleteAccount` to check if you can
-    delete the account.
+    Deletes the user's account. Returns whether the account was deleted. Use `Query.canDeleteAccount` to check if you
+    can delete the account.
 
     You must send an access token with this request.
     """
@@ -129,9 +129,9 @@ type Mutation {
     Lets the server know that the user has had the `messageId` delivered to them.
 
     If the status was created, `true` will be returned. Otherwise, an error will be returned. Returned
-    `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or the
-    the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has had
-    the message delivered to them).
+    `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is in, or
+    the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user has
+    had the message delivered to them).
 
     You must send an access token with this request.
     """

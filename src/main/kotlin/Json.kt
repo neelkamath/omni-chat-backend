@@ -14,7 +14,7 @@ val objectMapper: ObjectMapper = jacksonObjectMapper()
 data class GraphQlRequest(
     /** GraphQL document (e.g., a mutation). */
     val query: String,
-    val variables: Map<String, Any>? = null,
+    val variables: Map<String, Any?>? = null,
     val operationName: String? = null
 )
 
