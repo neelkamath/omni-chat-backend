@@ -158,7 +158,6 @@ class MessageUpdatesTest : FunSpec({
         incoming.receive().frameType shouldBe FrameType.CLOSE
     }
 
-    // This test is flaky for an unknown reason.
     test("When a user in a private chat deletes their account, both users in the chat should be unsubscribed") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)

@@ -161,12 +161,10 @@ fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
 fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
-    val groupChats = GroupChats
-        .queryUserChatEdges(env.userId!!, query)
-        .map { SearchGroupChatMessagesDto(it.chatId, it.edges) }
-    val privateChats = PrivateChats
-        .queryUserChatEdges(env.userId!!, query)
-        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
+    val groupChats =
+        GroupChats.queryUserChatEdges(env.userId!!, query).map { SearchGroupChatMessagesDto(it.chatId, it.edges) }
+    val privateChats =
+        PrivateChats.queryUserChatEdges(env.userId!!, query).map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
     return groupChats + privateChats
 }
 
