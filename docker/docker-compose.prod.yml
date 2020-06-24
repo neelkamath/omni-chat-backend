@@ -7,3 +7,4 @@ services:
       dockerfile: docker/Dockerfile
       context: .
     ports: [80:80]
+    command: java -server -jar omni-chat-all.jar

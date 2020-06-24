@@ -15,10 +15,11 @@ The [spec](docs/spec.md) explains how Omni Chat differentiates itself from exist
 
 ## Usage
 
-- Branding assets are in [`branding/`](branding). 
+Note that we use the term "auth" to refer to "authentication and authorization".
+
+- [Branding assets](branding)
 - [Changelog](docs/CHANGELOG.md)
-- Older versions can be found in the [releases](https://github.com/neelkamath/omni-chat/releases).
-- We use the term "auth" to refer to "authentication and authorization".
+- [Releases](https://github.com/neelkamath/omni-chat/releases)
 
 ### [Running the App](docs/production.md)
 

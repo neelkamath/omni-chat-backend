@@ -12,4 +12,3 @@ COPY docker/dockerize docker/dockerize
 EXPOSE 80/tcp
 HEALTHCHECK --timeout=5s --start-period=5s --retries=1 \
     CMD curl -f http://localhost:80/health_check
-CMD java -server -jar omni-chat-all.jar
