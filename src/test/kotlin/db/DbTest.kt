@@ -3,6 +3,10 @@ package com.neelkamath.omniChat.db
 import com.neelkamath.omniChat.AccountEdge
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.chats.GroupChats
+import com.neelkamath.omniChat.db.chats.PrivateChatDeletions
+import com.neelkamath.omniChat.db.chats.PrivateChats
+import com.neelkamath.omniChat.db.chats.count
 import com.neelkamath.omniChat.deleteUser
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec

@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.graphql
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.api.mutations.createAccount
-import com.neelkamath.omniChat.graphql.api.queries.requestTokenSet
+import graphql.operations.mutations.createAccount
+import graphql.operations.queries.requestTokenSet
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0
@@ -29,6 +29,6 @@ fun createSignedInUsers(count: Int): List<SignedInUser> = (1..count).map {
     )
     createAccount(account)
     verifyEmailAddress(account.username)
-    val userId = findUserByUsername(account.username).id
+    val userId = readUserByUsername(account.username).id
     with(account) { SignedInUser(Account(userId, username, emailAddress, firstName, lastName), password) }
 }

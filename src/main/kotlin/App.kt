@@ -1,9 +1,8 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.setUpDb
-import com.neelkamath.omniChat.graphql.GraphQlSubscription
-import com.neelkamath.omniChat.graphql.routeGraphQl
-import com.neelkamath.omniChat.graphql.routeSubscription
+import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
+import com.neelkamath.omniChat.graphql.routing.routeQueriesAndMutations
 import graphql.schema.DataFetchingEnvironment
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -17,7 +16,6 @@ import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.cio.websocket.CloseReason
 import io.ktor.http.cio.websocket.pingPeriod
 import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
@@ -26,6 +24,9 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.websocket.WebSockets
 import java.time.Duration
+
+object UnauthorizedException :
+    Exception("The user didn't supply an auth token, supplied an invalid one, or is unauthorized.")
 
 /** On authenticated calls, this will be the user's ID. */
 val ApplicationCall.userId: String? get() = authentication.principal<JWTPrincipal>()?.payload?.subject
@@ -58,13 +59,6 @@ private fun buildJwtConfig(context: Authentication.Configuration): Unit = with(c
 /** Registers every route. */
 private fun route(context: Routing): Unit = with(context) {
     get("health-check") { call.respond(HttpStatusCode.NoContent) }
-    routeGraphQl(context)
-    routeMessageUpdates(context)
-}
-
-/** Routes the GraphQL `Subscription.messageUpdates`. */
-private fun routeMessageUpdates(context: Routing): Unit = with(context) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "Chat deleted")
-    val subscription = GraphQlSubscription("messageUpdates", completionReason)
-    routeSubscription(context, "message-updates", subscription)
+    routeQueriesAndMutations(context)
+    routeGraphQlSubscriptions(context)
 }

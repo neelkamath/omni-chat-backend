@@ -61,7 +61,7 @@ class AuthTest : FunSpec({
     context("findUserByUsername(String)") {
         test("Finding a user by their username should yield that user") {
             val username = createVerifiedUsers(1)[0].info.username
-            findUserByUsername(username).username shouldBe username
+            readUserByUsername(username).username shouldBe username
         }
     }
 
@@ -74,7 +74,7 @@ class AuthTest : FunSpec({
             NewAccount(username = "anonymous", password = "p", emailAddress = "anon@example.com", firstName = "John")
         ).map {
             createUser(it)
-            findUserByUsername(it.username).id
+            readUserByUsername(it.username).id
         }
 
         test("Users should be searched case-insensitively") {
@@ -93,7 +93,7 @@ class AuthTest : FunSpec({
                 NewAccount("username", "password", "tony@example.com", firstName = "Tony")
             ).map {
                 createUser(it)
-                findUserByUsername(it.username).id
+                readUserByUsername(it.username).id
             }
             searchUsers("tony").map { it.id } shouldBe userIdList
         }
@@ -104,7 +104,7 @@ class AuthTest : FunSpec({
             val user = createVerifiedUsers(1)[0]
             val update = AccountUpdate("updated username", firstName = "updated first name")
             updateUser(user.info.id, update)
-            with(findUserById(user.info.id)) {
+            with(readUserById(user.info.id)) {
                 username shouldBe update.username
                 emailAddress shouldBe user.info.emailAddress
                 firstName shouldBe update.firstName

@@ -1,6 +1,8 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.Users
+import com.neelkamath.omniChat.db.contacts.notifyOfUpdatedContact
+import com.neelkamath.omniChat.db.contacts.subscribeToContactUpdates
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
@@ -106,7 +108,7 @@ fun emailAddressExists(email: String): Boolean = email in realm.users().list().m
  */
 fun createUser(account: NewAccount): String {
     realm.users().create(createUserRepresentation(account))
-    val userId = findUserByUsername(account.username).id
+    val userId = readUserByUsername(account.username).id
     sendEmailAddressVerification(userId)
     return userId
 }
@@ -116,7 +118,7 @@ fun sendEmailAddressVerification(userId: String): Unit = realm.users().get(userI
 
 /** Sends an email for the user to reset their password. */
 fun resetPassword(email: String) {
-    val userId = findUserByEmail(email).id
+    val userId = readUserByEmail(email).id
     realm.users().get(userId).executeActionsEmail(listOf("UPDATE_PASSWORD"))
 }
 
@@ -132,16 +134,16 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
 private fun buildAccount(user: UserRepresentation): Account =
     with(user) { Account(id, username, email, firstName, lastName) }
 
-fun findUserByUsername(username: String): Account =
+fun readUserByUsername(username: String): Account =
     realm.users().search(username).first { it.username == username }.let(::buildAccount)
 
 fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
 
-fun findUserById(userId: String): Account = buildAccount(readUser(userId))
+fun readUserById(userId: String): Account = buildAccount(readUser(userId))
 
 private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
-private fun findUserByEmail(email: String): Account =
+private fun readUserByEmail(email: String): Account =
     realm.users().list().first { it.email == email }.let(::buildAccount)
 
 /**
@@ -164,11 +166,13 @@ private fun UsersResource.searchBy(
     emailAddress: String? = null
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
+/** Notifies [subscribeToContactUpdates] of the user's [update]. */
 fun updateUser(id: String, update: AccountUpdate) {
     val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     updateUserRepresentation(user, update)
     realm.users().get(id).update(user)
+    notifyOfUpdatedContact(id)
 }
 
 /** Throws an [IllegalArgumentException] if the [username] isn't lowercase. */

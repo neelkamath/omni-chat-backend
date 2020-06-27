@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.LocalDateTime
 
+object Placeholder
+
 /** Project-wide Jackson config. */
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
@@ -40,13 +42,51 @@ data class NewAccount(
     }
 }
 
+interface AccountData {
+    val id: String
+    val username: String
+    val emailAddress: String
+    val firstName: String?
+    val lastName: String?
+}
+
 data class Account(
-    val id: String,
-    val username: String,
-    val emailAddress: String,
-    val firstName: String? = null,
-    val lastName: String? = null
-)
+    override val id: String,
+    override val username: String,
+    override val emailAddress: String,
+    override val firstName: String? = null,
+    override val lastName: String? = null
+) : AccountData
+
+sealed class ContactUpdate
+
+data class NewContact(
+    override val id: String,
+    override val username: String,
+    override val emailAddress: String,
+    override val firstName: String? = null,
+    override val lastName: String? = null
+) : AccountData, ContactUpdate() {
+    companion object {
+        fun buildFromUserId(userId: String): NewContact =
+            with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName) }
+    }
+}
+
+data class UpdatedContact(
+    override val id: String,
+    override val username: String,
+    override val emailAddress: String,
+    override val firstName: String? = null,
+    override val lastName: String? = null
+) : AccountData, ContactUpdate() {
+    companion object {
+        fun buildFromUserId(userId: String): UpdatedContact =
+            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName) }
+    }
+}
+
+data class DeletedContact(val id: String) : ContactUpdate()
 
 data class AccountUpdate(
     val username: String? = null,
@@ -67,9 +107,9 @@ data class GroupChatUpdate(
     val newAdminId: String? = null
 )
 
-sealed class Chat {
-    abstract val id: Int
-    abstract val messages: MessagesConnection
+interface Chat {
+    val id: Int
+    val messages: MessagesConnection
 }
 
 data class PrivateChat(
@@ -77,7 +117,7 @@ data class PrivateChat(
     /** The user being chatted with. */
     val user: Account,
     override val messages: MessagesConnection
-) : Chat()
+) : Chat
 
 data class GroupChat(
     override val id: Int,
@@ -86,21 +126,21 @@ data class GroupChat(
     val title: String,
     val description: String? = null,
     override val messages: MessagesConnection
-) : Chat()
+) : Chat
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
 data class MessageEdge(val node: Message, val cursor: Int)
 
 /** Represents created and deleted messages, and deleted chats. */
-sealed class MessageUpdates
+sealed class MessageUpdate
 
 data class Message(
     val id: Int,
     val sender: Account,
     val text: String,
     val dateTimes: MessageDateTimes
-) : MessageUpdates()
+) : MessageUpdate()
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
@@ -109,36 +149,29 @@ data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime,
 
 enum class MessageStatus { DELIVERED, READ }
 
-data class DeletedMessage(val id: Int) : MessageUpdates()
+data class DeletedMessage(val id: Int) : MessageUpdate()
 
 /** Every message [until] the [LocalDateTime] has been deleted. */
-data class MessageDeletionPoint(val until: LocalDateTime) : MessageUpdates()
+data class MessageDeletionPoint(val until: LocalDateTime) : MessageUpdate()
 
 /**
  * Every message the [userId] sent in the chat has been deleted. This happens when a group chat's member deletes their
  * account.
  */
-data class UserChatMessagesRemoval(val userId: String) : MessageUpdates()
+data class UserChatMessagesRemoval(val userId: String) : MessageUpdate()
 
 /**
- * Every message in the chat has been deleted.]
+ * Every message in the chat has been deleted.
  *
  * This happens in private chats when the user deletes the chat, or the other user deletes their account. This happens
  * in group chats when the last user leaves the chat.
- *
- * @throws [IllegalArgumentException] if [isDeleted] is `false`.
  */
-data class DeletionOfEveryMessage(
-    /** GraphQL types require at least one field. Hence, we simply state that every message has been deleted. */
-    val isDeleted: Boolean = true
-) : MessageUpdates() {
-    init {
-        if (!isDeleted) throw IllegalArgumentException("<isDeleted> must be true.")
-    }
+object DeletionOfEveryMessage : MessageUpdate() {
+    val placeholder = Placeholder
 }
 
 /**
- * Lets clients know that the GraphQL subscription [isCreated]. It's to be sent only once, and will be the first event
+ * Lets clients know that the GraphQL subscription is created. It's to be sent only once, and will be the first event
  * sent.
  *
  * Subscriptions are handled using WebSockets. It takes a small amount of time for the WebSocket connection to be
@@ -149,16 +182,9 @@ data class DeletionOfEveryMessage(
  * another user sent in the chat to be lost during one of the aforementioned delays. Therefore, the client should first
  * subscribe (i.e., await the WebSocket connection to be created), await the [CreatedSubscription] event, and then query
  * for older data if required.
- *
- * @throws [IllegalArgumentException] if [isCreated] is `false`.
  */
-data class CreatedSubscription(
-    /** GraphQL types require at least one field. Hence, we simply state that the subscription has been created. */
-    val isCreated: Boolean = true
-) {
-    init {
-        if (!isCreated) throw IllegalArgumentException("<isCreated> must be true.")
-    }
+object CreatedSubscription {
+    val placeholder = Placeholder
 }
 
 /** The [chat] the [messages] belong to. */

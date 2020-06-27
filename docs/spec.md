@@ -27,7 +27,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 ### Accounts
 
 - The same email address cannot be registered twice.
-- Deleting your account results in all your data (e.g., every message you've ever sent) to be wiped.
+- Deleting your account results in all your db (e.g., every message you've ever sent) to be wiped.
 
 - A message can have one of three states. A _sent_ message has been uploaded to the server. A _delivered_ message has been downloaded by the other user. A _read_ message has been seen by the other user.
 
@@ -147,7 +147,7 @@ Certain systems (e.g., Twitter DMs) will exist even if our app is a success beca
 
 ### Privacy
 
-- [ ] Share as much, or as little, information as you want. You can share your address, phone, email, profile photo, etc. You can choose who can see what info. If a bot is messaging you, it'll have to ask for permissions for every type of data it wants to access.
+- [ ] Share as much, or as little, information as you want. You can share your address, phone, email, profile photo, etc. You can choose who can see what info. If a bot is messaging you, it'll have to ask for permissions for every type of db it wants to access.
 - [ ] Chat without an account.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
 - [ ] Incognito chats whose messages automatically disappear after a set amount of time, or shortly after the user reads them.

@@ -1,6 +1,13 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.chats.*
+import com.neelkamath.omniChat.db.contacts.Contacts
+import com.neelkamath.omniChat.db.contacts.subscribeToContactUpdates
+import com.neelkamath.omniChat.db.messages.MessageStatuses
+import com.neelkamath.omniChat.db.messages.Messages
+import com.neelkamath.omniChat.db.messages.subscribeToMessageUpdates
+import com.neelkamath.omniChat.db.messages.unsubscribeUserFromMessageUpdates
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -132,7 +139,8 @@ fun buildAccountsConnection(
  *
  * ## Contacts
  *
- * The user's contacts will be deleted. Everyone's contacts of the user will be deleted.
+ * The user's contacts will be deleted. Everyone's contacts of the user will be deleted. Clients who have
+ * [subscribeToContactUpdates], and have the [userId] in their contacts, will be notified of the [DeletedContact].
  *
  * ## Private Chats
  *
