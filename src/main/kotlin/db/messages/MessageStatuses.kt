@@ -59,22 +59,9 @@ object MessageStatuses : Table() {
                 "The message (ID: $messageId) has already been $text the user (ID: $userId)."
             )
         }
-        if (status == MessageStatus.READ && !exists(
-                messageId,
-                userId,
-                MessageStatus.DELIVERED
-            )
-        )
-            insertAndNotify(
-                messageId,
-                userId,
-                MessageStatus.DELIVERED
-            )
-        insertAndNotify(
-            messageId,
-            userId,
-            status
-        )
+        if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERED))
+            insertAndNotify(messageId, userId, MessageStatus.DELIVERED)
+        insertAndNotify(messageId, userId, status)
     }
 
     /** Inserts the status into the DB, and notifies clients who have [subscribeToMessageUpdates]. */
@@ -109,11 +96,7 @@ object MessageStatuses : Table() {
 
     /** Deletes every status the [userId] created in the [chatId]. */
     fun deleteUserChatStatuses(chatId: Int, userId: String) = transact {
-        deleteWhere {
-            (messageId inList Messages.readIdList(
-                chatId
-            )) and (MessageStatuses.userId eq userId)
-        }
+        deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
     /** Deletes every status the [userId] created. */
@@ -124,13 +107,7 @@ object MessageStatuses : Table() {
     /** Returns the [MessageDateTimeStatus]es for the [messageId]. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
-            .map {
-                MessageDateTimeStatus(
-                    readUserById(it[userId]),
-                    it[dateTime],
-                    it[status]
-                )
-            }
+            .map { MessageDateTimeStatus(readUserById(it[userId]), it[dateTime], it[status]) }
 
     }
 }

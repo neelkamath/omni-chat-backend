@@ -90,10 +90,8 @@ fun isValidLogin(login: Login): Boolean = try {
     possible that a Bad Request is returned due to a bug on Omni Chat's server (i.e., the login is valid). However,
     were this to occur, every request would be invalid, and it would be obvious that there's a bug.
      */
-    if (exception.statusCode in listOf(HttpStatusCode.Unauthorized.value, HttpStatusCode.BadRequest.value))
-        false
-    else
-        throw exception
+    if (exception.statusCode in listOf(HttpStatusCode.Unauthorized.value, HttpStatusCode.BadRequest.value)) false
+    else throw exception
 }
 
 fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }

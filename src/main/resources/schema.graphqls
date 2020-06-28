@@ -313,20 +313,13 @@ type Subscription {
     contactUpdates: ContactUpdate!
 }
 
-"""
-Represents created and deleted messages, deleted chats, and the subscription creation status.
-
-`Message`s represent newly created messages if its `Message.id` doesn't exist in the chat.
-
-`Message`s represent updated messages if its `Message.id` exists in the chat.
-
-`DeletedMessage`s contain the ID of the message which was previously sent, but has now been deleted.
-"""
+"""Represents created and deleted messages, deleted chats, and the subscription creation status."""
 union MessageUpdate =
     CreatedSubscription
     | DeletedMessage
     | DeletionOfEveryMessage
-    | Message
+    | NewMessage
+    | UpdatedMessage
     | MessageDeletionPoint
     | UserChatMessagesRemoval
 
@@ -473,7 +466,29 @@ type PrivateChat implements Chat {
     user: Account!
 }
 
+interface MessageData {
+    id: Int!
+    sender: Account!
+    text: String!
+    dateTimes: MessageDateTimes!
+}
+
 type Message {
+    id: Int!
+    sender: Account!
+    text: String!
+    dateTimes: MessageDateTimes!
+}
+
+type NewMessage implements MessageData {
+    id: Int!
+    sender: Account!
+    text: String!
+    dateTimes: MessageDateTimes!
+}
+
+"""A message which was previously sent was updated."""
+type UpdatedMessage implements MessageData {
     id: Int!
     sender: Account!
     text: String!

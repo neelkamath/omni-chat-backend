@@ -15,19 +15,13 @@ object GroupChats : Table() {
     const val MAX_TITLE_LENGTH = 70
 
     /** Can have at most [MAX_TITLE_LENGTH]. */
-    private val title: Column<String> = varchar(
-        "title",
-        MAX_TITLE_LENGTH
-    )
+    private val title: Column<String> = varchar("title", MAX_TITLE_LENGTH)
 
     /** Descriptions cannot exceed this length. */
     const val MAX_DESCRIPTION_LENGTH = 1000
 
     /** Can have at most [MAX_DESCRIPTION_LENGTH]. */
-    private val description: Column<String?> = varchar(
-        "description",
-        MAX_DESCRIPTION_LENGTH
-    ).nullable()
+    private val description: Column<String?> = varchar("description", MAX_DESCRIPTION_LENGTH).nullable()
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
     fun isAdmin(userId: String, chatId: Int): Boolean = transact {
@@ -43,9 +37,7 @@ object GroupChats : Table() {
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
         transact {
-            update({ GroupChats.id eq chatId }) {
-                it[adminId] = userId
-            }
+            update({ GroupChats.id eq chatId }) { it[adminId] = userId }
         }
     }
 
@@ -70,14 +62,7 @@ object GroupChats : Table() {
         messagesPagination: BackwardPagination? = null
     ): GroupChat = transact {
         select { GroupChats.id eq id }.first()
-    }.let {
-        buildGroupChat(
-            it,
-            id,
-            usersPagination,
-            messagesPagination
-        )
-    }
+    }.let { buildGroupChat(it, id, usersPagination, messagesPagination) }
 
     /**
      * Returns the [userId]'s chats.
@@ -91,13 +76,7 @@ object GroupChats : Table() {
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transact {
-        GroupChatUsers.readChatIdList(userId).map {
-            readChat(
-                it,
-                usersPagination,
-                messagesPagination
-            )
-        }
+        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination) }
     }
 
     /**
@@ -115,32 +94,13 @@ object GroupChats : Table() {
             throw IllegalArgumentException("""The title ("${update.title}") is empty.""")
         transact {
             update({ GroupChats.id eq update.chatId }) { statement ->
-                update.title?.let {
-                    statement[title] = it
-                }
-                update.description?.let {
-                    statement[description] = it
-                }
+                update.title?.let { statement[title] = it }
+                update.description?.let { statement[description] = it }
             }
         }
-        update.newUserIdList.let {
-            GroupChatUsers.addUsers(
-                update.chatId,
-                it
-            )
-        }
-        update.removedUserIdList.let {
-            GroupChatUsers.removeUsers(
-                update.chatId,
-                it
-            )
-        }
-        update.newAdminId?.let {
-            setAdmin(
-                update.chatId,
-                update.newAdminId
-            )
-        }
+        update.newUserIdList.let { GroupChatUsers.addUsers(update.chatId, it) }
+        update.removedUserIdList.let { GroupChatUsers.removeUsers(update.chatId, it) }
+        update.newAdminId?.let { setAdmin(update.chatId, update.newAdminId) }
     }
 
     /**
@@ -173,19 +133,8 @@ object GroupChats : Table() {
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transact {
-        select {
-            (GroupChats.id inList GroupChatUsers.readChatIdList(
-                userId
-            )) and (title iLike query)
-        }
-            .map {
-                buildGroupChat(
-                    it,
-                    it[GroupChats.id],
-                    usersPagination,
-                    messagesPagination
-                )
-            }
+        select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
+            .map { buildGroupChat(it, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
     /**

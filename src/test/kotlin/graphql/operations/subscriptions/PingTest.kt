@@ -16,8 +16,7 @@ import kotlin.system.measureTimeMillis
 class PingTest : FunSpec({
     /** Returns once the [channel] sends a [FrameType.CLOSE]. */
     suspend fun awaitClose(channel: ReceiveChannel<Frame>) {
-        for (frame in channel)
-            if (frame is Frame.Close) return
+        for (frame in channel) if (frame is Frame.Close) return
     }
 
     /**

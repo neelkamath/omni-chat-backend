@@ -3,6 +3,8 @@ package com.neelkamath.omniChat.db.messages
 import com.neelkamath.omniChat.MessageStatus
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.chats.PrivateChats
+import com.neelkamath.omniChat.toNewMessage
+import com.neelkamath.omniChat.toUpdatedMessage
 import io.kotest.core.spec.style.FunSpec
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
@@ -15,8 +17,8 @@ class MessageUpdatesTest : FunSpec({
             val subscriber = subscribeToMessageUpdates(user1Id, chatId).subscribeWith(TestSubscriber())
             Messages.create(chatId, user2Id, "Hi")
             Messages.create(chatId, user1Id, "How are you?")
-            val messages = Messages.readPrivateChat(chatId, user1Id).drop(1).map { it.node }.toTypedArray()
-            subscriber.assertValues(*messages)
+            val messages = Messages.readPrivateChat(chatId, user1Id).drop(1).map { it.node.toNewMessage() }
+            subscriber.assertValueSequence(messages)
         }
     }
 
@@ -37,7 +39,7 @@ class MessageUpdatesTest : FunSpec({
             val messageId = Messages.message(chatId, user1Id, "text")
             val subscriber = subscribeToMessageUpdates(user1Id, chatId).subscribeWith(TestSubscriber())
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            val message = Messages.readPrivateChat(chatId, user1Id)[0].node
+            val message = Messages.readPrivateChat(chatId, user1Id)[0].node.toUpdatedMessage()
             subscriber.assertValue(message)
         }
     }

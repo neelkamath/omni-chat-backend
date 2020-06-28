@@ -42,10 +42,7 @@ object PrivateChats : Table() {
      * can check if the [PrivateChats.exists].
      */
     fun readChatId(participantId: String, userId: String): Int =
-        readUserChats(
-            participantId,
-            BackwardPagination(last = 0)
-        ).first { it.user.id == userId }.id
+        readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
@@ -55,13 +52,7 @@ object PrivateChats : Table() {
      * @see [readUserChatIdList]
      */
     fun readUserChats(userId: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChatsRows(userId).map {
-            buildPrivateChat(
-                it,
-                userId,
-                pagination
-            )
-        }
+        readUserChatsRows(userId).map { buildPrivateChat(it, userId, pagination) }
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
@@ -70,9 +61,7 @@ object PrivateChats : Table() {
      * @see [readIdList]
      * @see [readUserChats]
      */
-    fun readUserChatIdList(userId: String): List<Int> = readUserChatsRows(
-        userId
-    ).map { it[id] }
+    fun readUserChatIdList(userId: String): List<Int> = readUserChatsRows(userId).map { it[id] }
 
     /**
      * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
@@ -81,12 +70,7 @@ object PrivateChats : Table() {
     private fun readUserChatsRows(userId: String): List<ResultRow> =
         transact {
             select { (user1Id eq userId) or (user2Id eq userId) }
-                .filterNot {
-                    PrivateChatDeletions.isDeleted(
-                        userId,
-                        it[PrivateChats.id]
-                    )
-                }
+                .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
         }
 
     fun read(id: Int, userId: String, pagination: BackwardPagination? = null): PrivateChat = transact {
@@ -119,9 +103,7 @@ object PrivateChats : Table() {
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
-    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = readUserChatIdList(
-        userId
-    )
+    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = readUserChatIdList(userId)
         .associateWith { Messages.searchPrivateChat(it, userId, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
@@ -132,10 +114,7 @@ object PrivateChats : Table() {
      */
     fun areInChat(user1Id: String, user2Id: String): Boolean {
         val hasChatWith = { firstUserId: String, secondUserId: String ->
-            readUserChats(
-                firstUserId,
-                BackwardPagination(last = 0)
-            ).any { it.user.id == secondUserId }
+            readUserChats(firstUserId, BackwardPagination(last = 0)).any { it.user.id == secondUserId }
         }
         return hasChatWith(user1Id, user2Id) && hasChatWith(user2Id, user1Id)
     }
@@ -146,8 +125,7 @@ object PrivateChats : Table() {
      * @see [areInChat]
      */
     fun exists(user1Id: String, user2Id: String): Boolean = transact {
-        val where =
-            { userId: String -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
+        val where = { userId: String -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
         !select { where(user1Id) and where(user2Id) }.empty()
     }
 
@@ -187,20 +165,14 @@ object PrivateChats : Table() {
      */
     fun readUsers(chatId: Int): List<String> = transact {
         val row = select { PrivateChats.id eq chatId }.first()
-        listOf(
-            row[user1Id],
-            row[user2Id]
-        )
+        listOf(row[user1Id], row[user2Id])
     }
 
     /**
      * Checks if this user's [UserRepresentation.username], [UserRepresentation.firstName], or
      * [UserRepresentation.lastName] case-insensitively match the [query].
      */
-    private fun Account.matches(query: String): Boolean = containsQuery(
-        username,
-        query
-    )
+    private fun Account.matches(query: String): Boolean = containsQuery(username, query)
             || containsQuery(emailAddress, query)
             || containsQuery(firstName, query)
             || containsQuery(lastName, query)

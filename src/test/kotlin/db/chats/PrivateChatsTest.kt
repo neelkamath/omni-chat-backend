@@ -75,11 +75,9 @@ class PrivateChatsTest : FunSpec({
             }
             val chat3Id = PrivateChats.create(user1Id, user4Id)
             Messages.create(chat3Id, user1Id, "bye")
-            PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe
-                    listOf(
-                        ChatEdges(chat1Id, listOf(message1)),
-                        ChatEdges(chat2Id, listOf(message2))
-                    )
+            val chat1Edges = ChatEdges(chat1Id, listOf(message1))
+            val chat2Edges = ChatEdges(chat2Id, listOf(message2))
+            PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe listOf(chat1Edges, chat2Edges)
         }
     }
 

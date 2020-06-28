@@ -77,10 +77,8 @@ class SpecComplianceTest : FunSpec({
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
         val login = createSignedInUsers(1)[0].login
-        callGraphQlQueryOrMutation(
-            REQUEST_TOKEN_SET_QUERY,
-            variables = mapOf("login" to login)
-        ) shouldNotHaveKey "errors"
+        callGraphQlQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey
+                "errors"
     }
 
     test("""null fields in the "data" key should be returned""") {

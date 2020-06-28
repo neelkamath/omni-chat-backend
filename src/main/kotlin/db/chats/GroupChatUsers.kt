@@ -39,20 +39,11 @@ object GroupChatUsers : IntIdTable() {
 
     /** @see [readUserIdList] */
     fun readUsers(groupChatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        buildAccountsConnection(
-            readUserCursors(
-                groupChatId
-            ), pagination
-        )
+        buildAccountsConnection(readUserCursors(groupChatId), pagination)
 
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
     fun addUsers(groupChatId: Int, userIdList: List<String>): Unit = transact {
-        batchInsert(userIdList.filterNot {
-            isUserInChat(
-                groupChatId,
-                it
-            )
-        }.toSet()) {
+        batchInsert(userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()) {
             this[GroupChatUsers.groupChatId] = groupChatId
             this[userId] = it
         }

@@ -25,7 +25,8 @@ const val MESSAGE_UPDATES_QUERY = """
     subscription MessageUpdates(${"$"}chatId: Int!) {
         messageUpdates(chatId: ${"$"}chatId) {
             $CREATED_SUBSCRIPTION_FRAGMENT
-            $MESSAGE_FRAGMENT
+            $NEW_MESSAGE_FRAGMENT
+            $UPDATED_MESSAGE_FRAGMENT
             $DELETED_MESSAGE_FRAGMENT
             $MESSAGE_DELETION_POINT_FRAGMENT
             $USER_CHAT_MESSAGES_REMOVAL_FRAGMENT

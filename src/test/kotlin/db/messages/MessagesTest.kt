@@ -59,8 +59,8 @@ class MessagesTest : FunSpec({
             val user1Subscriber = subscribeToMessageUpdates(user1Id, chatId).subscribeWith(TestSubscriber())
             val user2Subscriber = subscribeToMessageUpdates(user2Id, chatId).subscribeWith(TestSubscriber())
             repeat(3) { Messages.create(chatId, listOf(adminId, user1Id, user2Id).random(), "text") }
-            val updates = Messages.readGroupChat(chatId).map { it.node }.toTypedArray()
-            listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { it.assertValues(*updates) }
+            val updates = Messages.readGroupChat(chatId).map { it.node.toNewMessage() }
+            listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { it.assertValueSequence(updates) }
         }
 
         test("An exception should be thrown if the user isn't in the chat") {
@@ -99,9 +99,7 @@ class MessagesTest : FunSpec({
             Messages.message(chatId, user2Id, "text")
             PrivateChatDeletions.create(chatId, user1Id)
             val messageId = Messages.message(chatId, user2Id, "text")
-            Messages.readPrivateChat(chatId, user1Id).map { it.node } shouldBe listOf(
-                Messages.read(messageId)
-            )
+            Messages.readPrivateChat(chatId, user1Id).map { it.node } shouldBe listOf(Messages.read(messageId))
         }
     }
 
@@ -327,13 +325,7 @@ class MessagesTest : FunSpec({
             val last = 3
             val cursorIndex = 7
             Messages
-                .readGroupChat(
-                    chatId,
-                    BackwardPagination(
-                        last,
-                        before = messageIdList[cursorIndex]
-                    )
-                )
+                .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]))
                 .map { it.cursor }
                 .shouldBe(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last))
         }
@@ -366,10 +358,7 @@ class MessagesTest : FunSpec({
             val messageIdList = (1..messages).map { Messages.message(chatId, adminId, "text") }
             val index = 3
             val cursor = messageIdList[index]
-            Messages.readGroupChat(
-                chatId,
-                BackwardPagination(before = cursor)
-            ).map { it.cursor } shouldBe
+            Messages.readGroupChat(chatId, BackwardPagination(before = cursor)).map { it.cursor } shouldBe
                     messageIdList.dropLast(messages - index)
         }
 
@@ -382,10 +371,7 @@ class MessagesTest : FunSpec({
             Messages.delete(deletedMessageId)
             val last = 3
             Messages
-                .readGroupChat(
-                    chatId,
-                    BackwardPagination(last, before = deletedMessageId)
-                )
+                .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId))
                 .map { it.cursor } shouldBe messageIdList.subList(index - last, index)
         }
     }
@@ -417,10 +403,7 @@ class MessagesTest : FunSpec({
 
         test("There shouldn't be messages before the first message") {
             val (chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(
-                chatId,
-                BackwardPagination(before = firstMessageId)
-            )
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId))
                 .pageInfo
                 .hasPreviousPage
                 .shouldBeFalse()
@@ -428,10 +411,7 @@ class MessagesTest : FunSpec({
 
         test("There shouldn't be messages after the last message") {
             val (chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(
-                chatId,
-                BackwardPagination(before = lastMessageId)
-            )
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId))
                 .pageInfo
                 .hasNextPage
                 .shouldBeFalse()
@@ -439,10 +419,7 @@ class MessagesTest : FunSpec({
 
         test("There should be messages before the last message") {
             val (chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(
-                chatId,
-                BackwardPagination(last = 0, before = lastMessageId)
-            )
+            Messages.readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId))
                 .pageInfo
                 .hasPreviousPage
                 .shouldBeTrue()
@@ -450,10 +427,7 @@ class MessagesTest : FunSpec({
 
         test("There should be messages after the first message") {
             val (chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(
-                chatId,
-                BackwardPagination(before = firstMessageId)
-            )
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId))
                 .pageInfo
                 .hasNextPage
                 .shouldBeTrue()

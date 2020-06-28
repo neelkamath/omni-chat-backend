@@ -65,6 +65,32 @@ const val MESSAGE_FRAGMENT = """
     }
 """
 
+const val NEW_MESSAGE_FRAGMENT = """
+    ... on NewMessage {
+        id
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        text
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+    }
+"""
+
+const val UPDATED_MESSAGE_FRAGMENT = """
+    ... on UpdatedMessage {
+        id
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        text
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+    }
+"""
+
 const val MESSAGE_EDGE_FRAGMENT = """
     ... on MessageEdge {
         node {

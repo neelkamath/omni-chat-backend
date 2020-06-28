@@ -132,15 +132,39 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Int)
 
-/** Represents created and deleted messages, and deleted chats. */
-sealed class MessageUpdate
+interface MessageData {
+    val id: Int
+    val sender: Account
+    val text: String
+    val dateTimes: MessageDateTimes
+}
 
 data class Message(
-    val id: Int,
-    val sender: Account,
-    val text: String,
-    val dateTimes: MessageDateTimes
-) : MessageUpdate()
+    override val id: Int,
+    override val sender: Account,
+    override val text: String,
+    override val dateTimes: MessageDateTimes
+) : MessageData
+
+fun Message.toNewMessage(): NewMessage = NewMessage(id, sender, text, dateTimes)
+
+fun Message.toUpdatedMessage(): UpdatedMessage = UpdatedMessage(id, sender, text, dateTimes)
+
+sealed class MessageUpdate
+
+data class NewMessage(
+    override val id: Int,
+    override val sender: Account,
+    override val text: String,
+    override val dateTimes: MessageDateTimes
+) : MessageData, MessageUpdate()
+
+data class UpdatedMessage(
+    override val id: Int,
+    override val sender: Account,
+    override val text: String,
+    override val dateTimes: MessageDateTimes
+) : MessageData, MessageUpdate()
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 

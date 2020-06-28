@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.chats.GroupChats
 import com.neelkamath.omniChat.db.chats.PrivateChatDeletions
 import com.neelkamath.omniChat.db.chats.PrivateChats
+import com.neelkamath.omniChat.toUpdatedMessage
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -70,7 +71,7 @@ class MessageStatusesTest : FunSpec({
             val messageId = Messages.message(chatId, user1Id, text)
             val subscriber = subscribeToMessageUpdates(user1Id, chatId).subscribeWith(TestSubscriber())
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            subscriber.assertValue(Messages.readPrivateChat(chatId, user1Id)[0].node)
+            subscriber.assertValue(Messages.readPrivateChat(chatId, user1Id)[0].node.toUpdatedMessage())
         }
     }
 

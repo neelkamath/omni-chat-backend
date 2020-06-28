@@ -125,8 +125,7 @@ class DbTest : FunSpec({
         ) {
             val edges = createAccountEdges(5)
             val first = 3
-            buildAccountsConnection(edges, ForwardPagination(first)).edges shouldBe
-                    edges.subList(0, first)
+            buildAccountsConnection(edges, ForwardPagination(first)).edges shouldBe edges.subList(0, first)
         }
 
         test(
@@ -148,10 +147,8 @@ class DbTest : FunSpec({
                 .map { (user, cursor) -> AccountEdge(user.info, cursor) }
             val first = 3
             val index = 5
-            buildAccountsConnection(
-                edges.shuffled(),
-                ForwardPagination(first, edges[index].cursor)
-            ).edges shouldBe edges.subList(index + 1, index + 1 + first)
+            buildAccountsConnection(edges.shuffled(), ForwardPagination(first, edges[index].cursor)).edges shouldBe
+                    edges.subList(index + 1, index + 1 + first)
         }
     }
 })

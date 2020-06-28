@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db.messages
 
 import com.neelkamath.omniChat.Message
 import com.neelkamath.omniChat.MessageUpdate
+import com.neelkamath.omniChat.toUpdatedMessage
 import com.neelkamath.omniChat.userId
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
@@ -50,7 +51,7 @@ private inline fun unsubscribe(condition: (Notifier) -> Boolean): Unit =
 /** Notifies [subscribeToMessageUpdates]rs of the updated [Message]. */
 fun notifyMessageUpdate(messageId: Int) {
     val chatId = Messages.readChatFromMessage(messageId)
-    notifyMessageUpdate(chatId, Messages.read(messageId))
+    notifyMessageUpdate(chatId, Messages.read(messageId).toUpdatedMessage())
 }
 
 /** Sends the [chatId]'s [update] to the [notifiers]. */

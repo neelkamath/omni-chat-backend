@@ -46,7 +46,7 @@ Here's what a standard project iteration looks like.
 
 ## DB
 
-- Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) (e.g., [`Messages.kt`](../src/main/kotlin/db/messages/Messages.kt)) and its mirror files in [`src/test/kotlin/db/`](../src/test/kotlin/db)) (e.g., [`MessagesUtil.kt`](../src/test/kotlin/db/messages/MessagesUtil.kt)) instead of directly operating on the DB.
+- Always use the abstraction layer ([`src/main/kotlin/db/`](../src/main/kotlin/db) (e.g., [`Messages.kt`](../src/main/kotlin/db/messages/Messages.kt)) and its mirror `*Util.kt`s in [`src/test/kotlin/db/`](../src/test/kotlin/db)) (e.g., [`MessagesUtil.kt`](../src/test/kotlin/db/messages/MessagesUtil.kt)) instead of directly operating on the DB.
 - The abstraction layer doesn't check whether the user IDs it's asked to store exist in the auth system because the DB couldn't know when the user deletes their account. Therefore, the validation of user IDs getting stored is done in the wrapping level (i.e., the GraphQL API level).
 - It's possible that the nanosecond a user deletes a private chat, the other user sends a message. Thus, chat deletions delete messages _until_, and not _up to_, the time of deletion.
 

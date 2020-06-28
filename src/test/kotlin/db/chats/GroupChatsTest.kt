@@ -147,11 +147,9 @@ class GroupChatsTest : FunSpec({
                 MessageEdge(Messages.read(id), cursor = id)
             }
             Messages.create(chat3Id, adminId, "bye")
-            GroupChats.queryUserChatEdges(adminId, queryText) shouldBe
-                    listOf(
-                        ChatEdges(chat1Id, listOf(message1)),
-                        ChatEdges(chat2Id, listOf(message2))
-                    )
+            val chat1Edges = ChatEdges(chat1Id, listOf(message1))
+            val chat2Edges = ChatEdges(chat2Id, listOf(message2))
+            GroupChats.queryUserChatEdges(adminId, queryText) shouldBe listOf(chat1Edges, chat2Edges)
         }
     }
 
