@@ -3,11 +3,11 @@ package com.neelkamath.omniChat.graphql.operations.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.Users
-import com.neelkamath.omniChat.db.read
+import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.db.tables.read
+import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import graphql.operations.mutations.createAccount
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
@@ -34,9 +34,9 @@ fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsC
 class SearchUsersTest : FunSpec({
     test("Users should be searched") {
         val accounts = listOf(
-            NewAccount(username = "iron_man", password = "p", emailAddress = "tony@example.com"),
-            NewAccount(username = "iron_fist", password = "p", emailAddress = "iron_fist@example.com"),
-            NewAccount(username = "hulk", password = "p", emailAddress = "bruce@example.com")
+            NewAccount(Username("iron_man"), Password("p"), "tony@example.com"),
+            NewAccount(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
+            NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
         ).map {
             createAccount(it)
             val id = readUserByUsername(it.username).id
@@ -47,14 +47,14 @@ class SearchUsersTest : FunSpec({
 
     fun createAccounts(): List<NewAccount> {
         val accounts = listOf(
-            NewAccount(username = "iron_man", password = "p", emailAddress = "iron.man@example.com"),
-            NewAccount(username = "tony_hawk", password = "p", emailAddress = "tony.hawk@example.com"),
-            NewAccount(username = "lol", password = "p", emailAddress = "iron.fist@example.com"),
-            NewAccount(username = "another_one", password = "p", emailAddress = "another_one@example.com"),
-            NewAccount(username = "jo_mama", password = "p", emailAddress = "mama@example.com", firstName = "Iron"),
-            NewAccount(username = "nope", password = "p", emailAddress = "nope@example.com", lastName = "Irony"),
-            NewAccount(username = "black_widow", password = "p", emailAddress = "black.widow@example.com"),
-            NewAccount(username = "iron_spider", password = "p", emailAddress = "iron.spider@example.com")
+            NewAccount(Username("iron_man"), Password("p"), "iron.man@example.com"),
+            NewAccount(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
+            NewAccount(Username("lol"), Password("p"), "iron.fist@example.com"),
+            NewAccount(Username("another_one"), Password("p"), "another_one@example.com"),
+            NewAccount(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
+            NewAccount(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
+            NewAccount(Username("black_widow"), Password("p"), "black.widow@example.com"),
+            NewAccount(Username("iron_spider"), Password("p"), "iron.spider@example.com")
         )
         accounts.forEach { createAccount(it) }
         return accounts

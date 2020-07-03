@@ -1,9 +1,12 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.db.contacts.Contacts
+import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 
@@ -20,8 +23,10 @@ private fun operateDeleteContacts(accessToken: String, userIdList: List<String>)
         accessToken = accessToken
     )
 
-fun deleteContacts(accessToken: String, userIdList: List<String>) =
-    operateDeleteContacts(accessToken, userIdList).data!!["deleteContacts"]
+fun deleteContacts(accessToken: String, userIdList: List<String>): Placeholder {
+    val data = operateDeleteContacts(accessToken, userIdList).data!!["deleteContacts"] as String
+    return objectMapper.convertValue(data)
+}
 
 class DeleteContactsTest : FunSpec({
     test("Contacts should be deleted, ignoring invalid ones") {

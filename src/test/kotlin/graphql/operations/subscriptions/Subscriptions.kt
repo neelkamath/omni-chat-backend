@@ -1,4 +1,4 @@
-package graphql.operations.subscriptions
+package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -16,7 +16,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 
-typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>, outgoing: SendChannel<Frame>) -> Unit
+typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
 
 /**
  * Opens a WebSocket connection on the [uri], sends the GraphQL subscription [request], and has the [callback]
@@ -36,7 +36,7 @@ fun operateGraphQlSubscription(
             val json = objectMapper.writeValueAsString(request)
             outgoing.send(Frame.Text(json))
         }.join()
-        callback(incoming, outgoing)
+        callback(incoming)
     }
 }
 

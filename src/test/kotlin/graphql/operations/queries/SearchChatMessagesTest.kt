@@ -1,18 +1,19 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.MessageEdge
 import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.messages.Messages
+import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.MESSAGE_EDGE_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
+import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
-import graphql.operations.MESSAGE_EDGE_FRAGMENT
-import graphql.operations.mutations.createMessage
-import graphql.operations.mutations.createPrivateChat
-import graphql.operations.mutations.deletePrivateChat
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -64,9 +65,9 @@ class SearchChatMessagesTest : FunSpec({
     test("Messages should be searched case-insensitively") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        createMessage(user1.accessToken, chatId, "Hey!")
-        createMessage(user2.accessToken, chatId, ":) hey")
-        createMessage(user1.accessToken, chatId, "How are you?")
+        createMessage(user1.accessToken, chatId, TextMessage("Hey!"))
+        createMessage(user2.accessToken, chatId, TextMessage(":) hey"))
+        createMessage(user1.accessToken, chatId, TextMessage("How are you?"))
         searchChatMessages(user1.accessToken, chatId, "hey") shouldBe
                 Messages.readPrivateChat(chatId, user1.info.id).dropLast(1)
     }
@@ -81,7 +82,7 @@ class SearchChatMessagesTest : FunSpec({
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         val text = "text"
-        createMessage(user1.accessToken, chatId, text)
+        createMessage(user1.accessToken, chatId, TextMessage(text))
         deletePrivateChat(user1.accessToken, chatId)
         searchChatMessages(user1.accessToken, chatId, text).shouldBeEmpty()
         searchChatMessages(user2.accessToken, chatId, text).shouldNotBeEmpty()

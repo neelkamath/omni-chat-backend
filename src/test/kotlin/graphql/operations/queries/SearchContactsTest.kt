@@ -1,13 +1,13 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
+import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import graphql.operations.mutations.createAccount
-import graphql.operations.mutations.createContacts
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -37,10 +37,10 @@ fun searchContacts(accessToken: String, query: String, pagination: ForwardPagina
 class SearchContactsTest : FunSpec({
     test("Contacts should be searched case-insensitively") {
         val accounts = listOf(
-            NewAccount(username = "john_doe", password = "p", emailAddress = "john.doe@example.com"),
-            NewAccount(username = "john_roger", password = "p", emailAddress = "john.roger@example.com"),
-            NewAccount(username = "nick_bostrom", password = "p", emailAddress = "nick.bostrom@example.com"),
-            NewAccount(username = "iron_man", password = "p", emailAddress = "roger@example.com", firstName = "John")
+            NewAccount(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
+            NewAccount(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
+            NewAccount(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
+            NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
         ).map {
             createAccount(it)
             val userId = readUserByUsername(it.username).id

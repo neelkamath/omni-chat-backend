@@ -1,18 +1,19 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.ChatMessages
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.CHAT_MESSAGES_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId
+import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
+import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
-import graphql.operations.CHAT_MESSAGES_FRAGMENT
-import graphql.operations.mutations.createMessage
-import graphql.operations.mutations.createPrivateChat
-import graphql.operations.mutations.deletePrivateChat
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -71,13 +72,13 @@ class SearchMessagesTest : FunSpec({
     test("Messages should be search case-insensitively only across chats the user is in") {
         val (user1, user2, user3) = createSignedInUsers(3)
         val chat1Id = createPrivateChat(user1.accessToken, user2.info.id)
-        val message1Id = messageAndReadId(user1.accessToken, chat1Id, "Hey!")
+        val message1Id = messageAndReadId(user1.accessToken, chat1Id, TextMessage("Hey!"))
         val chat2Id = createPrivateChat(user1.accessToken, user3.info.id)
-        createMessage(user1.accessToken, chat2Id, "hiii")
-        val message2Id = messageAndReadId(user3.accessToken, chat2Id, "hey, what's up?")
-        createMessage(user1.accessToken, chat2Id, "sitting, wbu?")
+        createMessage(user1.accessToken, chat2Id, TextMessage("hiii"))
+        val message2Id = messageAndReadId(user3.accessToken, chat2Id, TextMessage("hey, what's up?"))
+        createMessage(user1.accessToken, chat2Id, TextMessage("sitting, wbu?"))
         val chat3Id = createPrivateChat(user2.accessToken, user3.info.id)
-        createMessage(user2.accessToken, chat3Id, "hey")
+        createMessage(user2.accessToken, chat3Id, TextMessage("hey"))
         searchMessages(user1.accessToken, "hey").flatMap { it.messages }.map { it.cursor } shouldBe
                 listOf(message1Id, message2Id)
     }
@@ -86,7 +87,7 @@ class SearchMessagesTest : FunSpec({
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         val text = "text"
-        messageAndReadId(user1.accessToken, chatId, text)
+        messageAndReadId(user1.accessToken, chatId, TextMessage(text))
         deletePrivateChat(user1.accessToken, chatId)
         searchMessages(user1.accessToken, text).shouldBeEmpty()
     }
@@ -101,7 +102,7 @@ class SearchMessagesTest : FunSpec({
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         val text = "text"
-        messageAndReadId(user1.accessToken, chatId, text)
+        messageAndReadId(user1.accessToken, chatId, TextMessage(text))
         deletePrivateChat(user1.accessToken, chatId)
         searchMessages(user1.accessToken, text).shouldBeEmpty()
     }

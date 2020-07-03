@@ -1,7 +1,7 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.NewAccount
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.UnregisteredEmailAddressException
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -18,8 +18,10 @@ private fun operateSendEmailAddressVerification(emailAddress: String): GraphQlRe
     variables = mapOf("emailAddress" to emailAddress)
 )
 
-fun sendEmailAddressVerification(emailAddress: String) =
-    operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"]
+fun sendEmailAddressVerification(emailAddress: String): Placeholder {
+    val data = operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errSendEmailVerification(emailAddress: String): String =
     operateSendEmailAddressVerification(emailAddress).errors!![0].message
@@ -27,7 +29,7 @@ fun errSendEmailVerification(emailAddress: String): String =
 class SendEmailAddressVerificationTest : FunSpec({
     test("A verification email should be sent") {
         val address = "username@example.com"
-        val account = NewAccount("username", "password", address)
+        val account = NewAccount(Username("username"), Password("password"), address)
         createAccount(account)
         sendEmailAddressVerification(address)
     }

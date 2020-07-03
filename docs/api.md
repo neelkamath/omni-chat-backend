@@ -12,12 +12,13 @@ Here is the usual flow for using this service.
 ## Notes
 
 - The base URL is http://localhost:80.
+- Unless explicitly states, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
 
 ## Security
 
-[JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/message-updates` endpoint for `Subscription.messageUpdates`, the `/graphql` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
+[JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/subscribe-to-messages` endpoint for `Subscription.subscribeToMessages`, the `/graphql` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
 
 ## GraphQL
 
@@ -97,17 +98,17 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 ### `Subscription`s
 
-Each `Subscription` has its own endpoint. The endpoint is the operation's name styled using kebab-case (e.g., the endpoint for `Subscription.messageUpdates` is `/message-updates`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
+Each `Subscription` has its own endpoint. The endpoint is the operation's name styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/subscribe-to-messages`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older db if required.
 
 The server only accepts the first event you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
 
-Here's an example of a `Subscription` using `Subscription.messageUpdates`:
+Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
 1. Open the WebSocket connection. Note that if you supply an invalid access token, the connection will not be opened. Here's an example WebSocket handshake request:
 
     ```http request
-    GET http://localhost:80/message-updates HTTP/1.1
+    GET http://localhost:80/subscribe-to-messages HTTP/1.1
     Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YjNhNzRhZi03Y2M4LTRjZTMtYTg2ZC05YzI4ZmNlZTAzODciLCJleHAiOjE1ODg3NTE0MjR9.JuVC92_Zz6Cnb5p2ZQ_lMKU_9lfIfAP7PcLkVVKnMkU
     Upgrade: websocket
     Connection: Upgrade

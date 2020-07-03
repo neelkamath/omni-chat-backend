@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.graphql.routing
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.graphql.UnauthorizedException
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl
@@ -32,29 +33,51 @@ private data class GraphQlSubscription(
 )
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
-fun routeGraphQlSubscriptions(context: Routing): Unit = with(context) {
-    routeMessageUpdates(context)
-    routeContactUpdates(context)
+fun routeGraphQlSubscriptions(context: Routing) {
+    routeSubscribeToMessages(context)
+    routeSubscribeToContacts(context)
+    routeSubscribeToPrivateChatInfo(context)
+    routeSubscribeToGroupChatInfo(context)
 }
 
-/** Routes the GraphQL `Subscription.messageUpdates`. */
-private fun routeMessageUpdates(context: Routing): Unit = with(context) {
+/** Routes the GraphQL `Subscription.subscribeToMessages`. */
+private fun routeSubscribeToMessages(context: Routing): Unit = with(context) {
     val completionReason =
         CloseReason(CloseReason.Codes.NORMAL, "Either the chat was deleted, or the user deleted their account.")
     routeSubscription(
         context,
-        path = "message-updates",
-        subscription = GraphQlSubscription("messageUpdates", completionReason)
+        path = "subscribe-to-messages",
+        subscription = GraphQlSubscription("subscribeToMessages", completionReason)
     )
 }
 
-/** Routes the GraphQL `Subscription.contactUpdates`. */
-private fun routeContactUpdates(context: Routing): Unit = with(context) {
+/** Routes the GraphQL `Subscription.subscribeToContacts`. */
+private fun routeSubscribeToContacts(context: Routing): Unit = with(context) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     routeSubscription(
         context,
-        path = "contact-updates",
-        subscription = GraphQlSubscription("contactUpdates", completionReason)
+        path = "subscribe-to-contacts",
+        subscription = GraphQlSubscription("subscribeToContacts", completionReason)
+    )
+}
+
+/** Routes the GraphQL `Subscription.subscribeToPrivateChatInfo`. */
+private fun routeSubscribeToPrivateChatInfo(context: Routing): Unit = with(context) {
+    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "One of the users in chat deleted their account.")
+    routeSubscription(
+        context,
+        path = "subscribe-to-private-chat-info",
+        subscription = GraphQlSubscription("subscribeToPrivateChatInfo", completionReason)
+    )
+}
+
+/** Routes the GraphQL `Subscription.subscribeToGroupChatInfo`. */
+private fun routeSubscribeToGroupChatInfo(context: Routing): Unit = with(context) {
+    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user left the chat, or deleted their account.")
+    routeSubscription(
+        context,
+        path = "subscribe-to-group-chat-info",
+        subscription = GraphQlSubscription("subscribeToGroupChatInfo", completionReason)
     )
 }
 

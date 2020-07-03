@@ -1,8 +1,9 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.Users
-import com.neelkamath.omniChat.db.contacts.notifyOfUpdatedContact
-import com.neelkamath.omniChat.db.contacts.subscribeToContactUpdates
+import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.tables.Contacts
+import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.db.tables.Users
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
@@ -82,7 +83,7 @@ private fun createClient() {
 
 /** Returns whether the [login] is valid. */
 fun isValidLogin(login: Login): Boolean = try {
-    AuthzClient.create(config).obtainAccessToken(login.username, login.password)
+    AuthzClient.create(config).obtainAccessToken(login.username.value, login.password.value)
     true
 } catch (exception: HttpResponseException) {
     /*
@@ -121,7 +122,7 @@ fun resetPassword(email: String) {
 }
 
 private fun createUserRepresentation(account: NewAccount): UserRepresentation = UserRepresentation().apply {
-    username = account.username
+    username = account.username.value
     credentials = createCredentials(account.password)
     email = account.emailAddress
     firstName = account.firstName
@@ -130,10 +131,10 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
 }
 
 private fun buildAccount(user: UserRepresentation): Account =
-    with(user) { Account(id, username, email, firstName, lastName) }
+    with(user) { Account(id, Username(username), email, firstName, lastName) }
 
-fun readUserByUsername(username: String): Account =
-    realm.users().search(username).first { it.username == username }.let(::buildAccount)
+fun readUserByUsername(username: Username): Account =
+    realm.users().search(username.value).first { it.username == username.value }.let(::buildAccount)
 
 fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
 
@@ -164,23 +165,30 @@ private fun UsersResource.searchBy(
     emailAddress: String? = null
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
-/** Notifies [subscribeToContactUpdates] of the user's [update]. */
+/**
+ * Clients who have [Broker.subscribe]d via [contactsBroker], [groupChatInfoBroker],
+ * and [privateChatInfoBroker] will be notified of the user's [update].
+ */
 fun updateUser(id: String, update: AccountUpdate) {
     val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     updateUserRepresentation(user, update)
     realm.users().get(id).update(user)
-    notifyOfUpdatedContact(id)
+    contactsBroker.notify(UpdatedContact.fromUserId(id)) { id in Contacts.readIdList(it.userId) }
+    val account = UpdatedAccount.fromUserId(id)
+    privateChatInfoBroker.notify(account) { it.userId == id }
+    groupChatInfoBroker.notify(account) { id in GroupChatUsers.readUserIdList(it.chatId) }
 }
 
-/** Throws an [IllegalArgumentException] if the [username] isn't lowercase. */
-fun isUsernameTaken(username: String): Boolean {
-    if (username.toLowerCase() != username) throw IllegalArgumentException()
-    val results = realm.users().search(username)
-    return results.isNotEmpty() && results.any { it.username == username }
+fun isUsernameTaken(username: Username): Boolean {
+    val results = realm.users().search(username.value)
+    return results.isNotEmpty() && results.any { it.username == username.value }
 }
 
-/** @see [Users.delete] */
+/**
+ * @see [Users.delete]
+ * @see [deleteUserFromDb]
+ */
 fun deleteUserFromAuth(id: String) {
     realm.users().delete(id)
 }
@@ -188,7 +196,7 @@ fun deleteUserFromAuth(id: String) {
 /** [update]s the [user] in-place. */
 private fun updateUserRepresentation(user: UserRepresentation, update: AccountUpdate) {
     user.apply {
-        update.username?.let { username = it }
+        update.username?.let { username = it.value }
         update.password?.let { credentials = createCredentials(update.password) }
         update.emailAddress?.let { email = it }
         update.firstName?.let { firstName = it }
@@ -196,9 +204,9 @@ private fun updateUserRepresentation(user: UserRepresentation, update: AccountUp
     }
 }
 
-private fun createCredentials(password: String): List<CredentialRepresentation> = listOf(
+private fun createCredentials(password: Password): List<CredentialRepresentation> = listOf(
     CredentialRepresentation().apply {
         type = CredentialRepresentation.PASSWORD
-        value = password
+        value = password.value
     }
 )

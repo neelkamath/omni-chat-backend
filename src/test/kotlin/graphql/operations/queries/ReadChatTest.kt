@@ -1,4 +1,4 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.Chat
@@ -6,15 +6,17 @@ import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.tables.GroupChatDescription
+import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.PRIVATE_CHAT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
-import graphql.operations.GROUP_CHAT_FRAGMENT
-import graphql.operations.PRIVATE_CHAT_FRAGMENT
-import graphql.operations.mutations.createGroupChat
-import graphql.operations.mutations.createPrivateChat
-import graphql.operations.mutations.deletePrivateChat
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -74,7 +76,8 @@ fun errReadChat(
 class ReadChatTest : FunSpec({
     test("The chat should be read") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
+        val chatId = createGroupChat(token, chat)
         readChat(token, chatId).id shouldBe chatId
     }
 

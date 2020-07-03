@@ -1,8 +1,23 @@
-"""A `String` conforming to ISO 8601."""
+"""Complies with ISO 8601."""
 scalar DateTime
 
-"""An `ID` representing a cursor for pagination."""
+"""A cursor for pagination."""
 scalar Cursor
+
+"""A username which has non-whitespace characters, is less than 256 characters, and is lowercase."""
+scalar Username
+
+"""A password which contains non-whitespace characters."""
+scalar Password
+
+"""1-70 characters, of which at least one isn't whitespace."""
+scalar GroupChatTitle
+
+"""At most 1,000 characters. An empty string corresponds to no description."""
+scalar GroupChatDescription
+
+"""1-10,000 characters, of which at least one isn't whitespace."""
+scalar TextMessage
 
 """
 GraphQL mandates data be returned for every operation, and data be present in every type. However, certain operations
@@ -51,12 +66,8 @@ type Query {
     """
     readAccount: Account!
 
-    """
-    Returns whether the `username` has been taken.
-
-    Returned `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`.
-    """
-    isUsernameTaken(username: String!): Boolean!
+    """Returns whether the `username` has been taken."""
+    isUsernameTaken(username: Username!): Boolean!
 
     """Returns whether the `emailAddress` has been taken."""
     isEmailAddressTaken(emailAddress: String!): Boolean!
@@ -102,7 +113,7 @@ type Query {
 
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-    authenticate the user by passing their `username` and `password` to this operation.
+    authenticate the user by passing their `Login` to this operation.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
@@ -169,11 +180,11 @@ type Mutation {
     updateAccount(update: AccountUpdate!): Placeholder!
 
     """
-    Creates an account, and sends the user a verification email. The username must be lowercase. The user will not be
-    allowed to log in until they verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken`
-    to see whether you can use the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
+    Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
+    verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
+    the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-    Returned `errors[0].message`s could be `"USERNAME_NOT_LOWERCASE"`, `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
     """
     createAccount(account: NewAccount!): Placeholder!
 
@@ -187,9 +198,9 @@ type Mutation {
     sendEmailAddressVerification(emailAddress: String!): Placeholder!
 
     """
-    Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the supplied
-    `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update their
-    password, you should use `Mutation.updateAccount` instead.
+    Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the
+    supplied `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update
+    their password, you should use `Mutation.updateAccount` instead.
 
     Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
     """
@@ -198,26 +209,20 @@ type Mutation {
     """
     Leaves the group chat.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat),
-    `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat), or `"MISSING_NEW_ADMIN_ID"`.
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+    `"ADMIN_CANNOT_LEAVE"` (i.e., the user is the admin, and they aren't the last user in the chat, so they can't leave
+    without transferring the admin status first).
 
     You must send an access token with this request.
     """
-    leaveGroupChat(
-        chatId: Int!
-        """
-        If the user is the group's admin and isn't the last user in the chat, then this must be specified as the ID of
-        another user in the chat who will become the new admin. If this is supplied and the user isn't the admin, it'll be
-        ignored.
-        """
-        newAdminId: ID
-    ): Placeholder!
+    leaveGroupChat(chatId: Int!): Placeholder!
 
     """
     Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), or
-    `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"INVALID_GROUP_CHAT"`
+    (i.e., the lists of users to add and remove both contained the same user ID) or `"INVALID_NEW_ADMIN_ID"` (i.e., the
+    to-be admin isn't in the chat).
 
     You must send an access token with this request.
     """
@@ -226,8 +231,7 @@ type Mutation {
     """
     Creates a group chat. Returns the new chat's ID.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist),
-    `"INVALID_TITLE_LENGTH"`, or `"INVALID_DESCRIPTION_LENGTH"`.
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist).
 
     You must send an access token with this request.
     """
@@ -253,18 +257,14 @@ type Mutation {
     createPrivateChat(userId: ID!): Int!
 
     """
-    Sends a message in a chat. Use `Subscription.messageUpdates` to get the message's ID and sending `scalar.DateTime`.
+    Sends a message in a chat. Use `Subscription.subscribeToMessages` to get the message's ID and sending
+    `scalar.DateTime`.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"INVALID_MESSAGE_LENGTH"`.
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
     You must send an access token with this request.
     """
-    createMessage(
-        chatId: Int!
-        """At most 10,000 characters."""
-        text: String!
-    ): Placeholder!
+    createMessage(chatId: Int!, text: TextMessage!): Placeholder!
 
     """
     Deletes the message `id` from the chat it's from. The user can only delete their own messages.
@@ -296,26 +296,46 @@ type Mutation {
 
 type Subscription {
     """
-    Returns created and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the
+    Yields created and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the
     chat was deleted, or the user deleted their account.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
     You must send an access token with this request.
     """
-    messageUpdates(chatId: Int!): MessageUpdate!
+    subscribeToMessages(chatId: Int!): MessagesSubscription!
 
     """
-    Returns updates on the user's contacts. The subscription will be stopped if the user deletes their account.
+    Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
+    subscription will be stopped if the user deletes their account.
 
     You must send an access token with this request.
     """
-    contactUpdates: ContactUpdate!
+    subscribeToContacts: ContactsSubscription!
+
+    """
+    Yields the other user's account when they update it. The subscription will be stopped if one of the users in the
+    chat deletes their account.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    subscribeToPrivateChatInfo(chatId: Int!): PrivateChatInfoSubscription!
+
+    """
+    Yields updates on a group chat's metadata. The subscription will be stopped if the user deletes their account, or
+    leaves the chat.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    subscribeToGroupChatInfo(chatId: Int!): GroupChatInfoSubscription!
 }
 
 """Represents created and deleted messages, deleted chats, and the subscription creation status."""
-union MessageUpdate =
-    CreatedSubscription
+union MessagesSubscription = CreatedSubscription
     | DeletedMessage
     | DeletionOfEveryMessage
     | NewMessage
@@ -323,7 +343,35 @@ union MessageUpdate =
     | MessageDeletionPoint
     | UserChatMessagesRemoval
 
-union ContactUpdate = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
+union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
+
+"""An `UpdatedAccount` represents the account of the other user in the chat when it's updated."""
+union PrivateChatInfoSubscription = CreatedSubscription | UpdatedAccount
+
+"""
+An `UpdatedAccount` represents the account of a user in the chat which has been updated. The subscriber's account
+updates will also be included.
+"""
+union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount
+
+type UpdatedAccount {
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+}
+
+"""
+A group chat which had its metadata updated. null fields haven't been updated. The previous data may be sent again
+(e.g., `adminId` may still be the previous admin's ID).
+"""
+type UpdatedGroupChat {
+    title: GroupChatTitle
+    description: GroupChatDescription
+    newUsers: [Account!]
+    removedUsers: [Account!]
+    adminId: String
+}
 
 """
 Every message in the chat has been deleted.
@@ -371,7 +419,7 @@ type AccountEdge {
 
 interface AccountData {
     id: ID!
-    username: String!
+    username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
@@ -379,25 +427,23 @@ interface AccountData {
 
 type Account implements AccountData {
     id: ID!
-    username: String!
+    username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
 }
 
-"""A contact the user added."""
 type NewContact implements AccountData {
     id: ID!
-    username: String!
+    username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
 }
 
-"""When a user updates their account, users who have them in their contacts will receive this update."""
 type UpdatedContact implements AccountData {
     id: ID!
-    username: String!
+    username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
@@ -413,8 +459,8 @@ type DeletedContact {
 
 input NewAccount {
     """Must be lowercase."""
-    username: String!
-    password: String!
+    username: Username!
+    password: Password!
     emailAddress: String!
     firstName: String
     lastName: String
@@ -450,10 +496,8 @@ type PageInfo {
 type GroupChat implements Chat {
     id: Int!
     messages(last: Int, before: Cursor): MessagesConnection!
-    """1-70 characters."""
-    title: String!
-    """At most 1000 characters."""
-    description: String
+    title: GroupChatTitle!
+    description: GroupChatDescription
     """The ID of the admin present who is present in the `users`."""
     adminId: ID!
     users(first: Int, after: Cursor): AccountsConnection!
@@ -469,21 +513,21 @@ type PrivateChat implements Chat {
 interface MessageData {
     id: Int!
     sender: Account!
-    text: String!
+    text: TextMessage!
     dateTimes: MessageDateTimes!
 }
 
 type Message {
     id: Int!
     sender: Account!
-    text: String!
+    text: TextMessage!
     dateTimes: MessageDateTimes!
 }
 
 type NewMessage implements MessageData {
     id: Int!
     sender: Account!
-    text: String!
+    text: TextMessage!
     dateTimes: MessageDateTimes!
 }
 
@@ -491,7 +535,7 @@ type NewMessage implements MessageData {
 type UpdatedMessage implements MessageData {
     id: Int!
     sender: Account!
-    text: String!
+    text: TextMessage!
     dateTimes: MessageDateTimes!
 }
 
@@ -518,13 +562,13 @@ type TokenSet {
 }
 
 input Login {
-    username: String!
-    password: String!
+    username: Username!
+    password: Password!
 }
 
 input AccountUpdate {
-    username: String
-    password: String
+    username: Username
+    password: Password
     emailAddress: String
     firstName: String
     lastName: String
@@ -532,10 +576,8 @@ input AccountUpdate {
 
 input GroupChatUpdate {
     chatId: Int!
-    """1-70 characters."""
-    title: String
-    """At most 1000 characters."""
-    description: String
+    title: GroupChatTitle
+    description: GroupChatDescription
     """The ID of every new user to add."""
     newUserIdList: [String!]
     """The ID of every user to remove."""
@@ -545,9 +587,7 @@ input GroupChatUpdate {
 }
 
 input NewGroupChat {
-    """1-70 characters."""
-    title: String!
-    """At most 1000 characters."""
-    description: String
-    userIdList: [String!]
+    title: GroupChatTitle!
+    description: GroupChatDescription!
+    userIdList: [String!]!
 }

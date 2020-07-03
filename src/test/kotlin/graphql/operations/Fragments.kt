@@ -1,4 +1,4 @@
-package graphql.operations
+package com.neelkamath.omniChat.graphql.operations
 
 const val ACCOUNT_FRAGMENT = """
     ... on Account {
@@ -7,6 +7,29 @@ const val ACCOUNT_FRAGMENT = """
         emailAddress
         firstName
         lastName
+    }
+"""
+
+const val UPDATED_ACCOUNT_FRAGMENT = """
+    ... on UpdatedAccount {
+        username
+        emailAddress
+        firstName
+        lastName
+    }
+"""
+
+const val UPDATED_GROUP_CHAT_FRAGMENT = """
+    ... on UpdatedGroupChat {
+        title
+        description
+        newUsers {
+            $ACCOUNT_FRAGMENT
+        }
+        removedUsers {
+            $ACCOUNT_FRAGMENT
+        }
+        adminId
     }
 """
 
@@ -19,13 +42,19 @@ const val PAGE_INFO_FRAGMENT = """
     }
 """
 
+const val ACCOUNT_EDGE_FRAGMENT = """
+    ... on AccountEdge {
+        node {
+            $ACCOUNT_FRAGMENT
+        }
+        cursor
+    }
+"""
+
 const val ACCOUNTS_CONNECTION_FRAGMENT = """
     ... on AccountsConnection {
         edges {
-            node {
-                $ACCOUNT_FRAGMENT
-            }
-            cursor
+            $ACCOUNT_EDGE_FRAGMENT
         }
         pageInfo {
             $PAGE_INFO_FRAGMENT
@@ -199,7 +228,7 @@ const val NEW_CONTACT_FRAGMENT = """
 """
 
 const val UPDATED_CONTACT_FRAGMENT = """
-        ... on UpdatedContact {
+    ... on UpdatedContact {
         id
         username
         emailAddress

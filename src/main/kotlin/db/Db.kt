@@ -1,13 +1,7 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.chats.*
-import com.neelkamath.omniChat.db.contacts.Contacts
-import com.neelkamath.omniChat.db.contacts.subscribeToContactUpdates
-import com.neelkamath.omniChat.db.messages.MessageStatuses
-import com.neelkamath.omniChat.db.messages.Messages
-import com.neelkamath.omniChat.db.messages.subscribeToMessageUpdates
-import com.neelkamath.omniChat.db.messages.unsubscribeUserFromMessageUpdates
+import com.neelkamath.omniChat.db.tables.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -130,42 +124,59 @@ fun buildAccountsConnection(
 }
 
 /**
- * Deletes the [userId]'s data. If the [userId] [GroupChats.isNonemptyChatAdmin], an [IllegalArgumentException] will be
- * thrown.
+ * Deletes the [userId]'s data from the DB.
  *
  * ## Users
  *
- * The [userId] will be deleted from the [Users].
+ * - The [userId] will be deleted from the [Users].
+ * - Clients who have [Broker.subscribe]d to the [PrivateChatInfoAsset.userId]'s [UpdatedAccount]s via
+ *   [privateChatInfoBroker] will be [Broker.unsubscribe]d.
+ * - If the [userId] has subscribed to [UpdatedAccount]s via [privateChatInfoBroker], they'll be
+ *   [Broker.unsubscribe]d.
  *
  * ## Contacts
  *
- * The user's contacts will be deleted. Everyone's contacts of the user will be deleted. Clients who have
- * [subscribeToContactUpdates], and have the [userId] in their contacts, will be notified of the [DeletedContact].
+ * - The user's [Contacts] will be deleted.
+ * - Everyone's [Contacts] of the user will be deleted.
+ * - Clients who have [Broker.subscribe]d to [ContactsSubscription]s via the [contactsBroker], and have the
+ *   [userId] in their [Contacts], will be notified of this [DeletedContact].
+ * - The [userId] will be [Broker.unsubscribe]d from [ContactsSubscription]s if they've [Broker.subscribe]d via
+ *   the [contactsBroker].
  *
  * ## Private Chats
  *
- * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and [MessageStatuses].
- * Clients will be notified of a [DeletionOfEveryMessage], and then [unsubscribeUserFromMessageUpdates].
+ * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
+ * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a
+ *   [DeletionOfEveryMessage], and then [Broker.unsubscribe]d.
  *
  * ## Group Chats
  *
- * The [userId] will be removed from chats they're in. If they're the last user in the chat, the chat will be deleted
- * from [GroupChats], [GroupChatUsers], [Messages], and [MessageStatuses]. Clients will be
- * [unsubscribeUserFromMessageUpdates].
+ * - The [userId] will be removed from [GroupChats] they're in.
+ * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
+ *   [Messages], and [MessageStatuses].
+ * - Clients will be [Broker.unsubscribe]d via [groupChatInfoBroker].
  *
  * ## Messages
  *
- * Deletes all [Messages] and [MessageStatuses] the [userId] has sent. Clients who have [subscribeToMessageUpdates] will
- * be notified of the [UserChatMessagesRemoval].
+ * - Clients who have [Broker.subscribe]d to [MessagesAsset]s will be notified of the [UserChatMessagesRemoval].
+ * - Deletes all [Messages] and [MessageStatuses] the [userId] has sent.
+ * - Clients will be [Broker.unsubscribe]d via [messagesBroker].
+ *
+ * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
+ * @see [deleteUserFromAuth]
  */
 fun deleteUserFromDb(userId: String) {
     if (GroupChats.isNonemptyChatAdmin(userId))
         throw IllegalArgumentException(
-            "The user's (ID: $userId) data cannot be deleted because they are the admin of a nonempty group chat."
+            "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
+    contactsBroker.unsubscribe { it.userId == userId }
+    privateChatInfoBroker.unsubscribe { it.subscriberId == userId || it.userId == userId }
+    val chatIdList = GroupChatUsers.readChatIdList(userId)
+    groupChatInfoBroker.unsubscribe { it.userId == userId && it.chatId in chatIdList }
     Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
-    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, listOf(userId)) }
+    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, userId) }
     Messages.deleteUserMessages(userId)
 }

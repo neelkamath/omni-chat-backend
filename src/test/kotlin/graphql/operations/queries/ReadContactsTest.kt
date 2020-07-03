@@ -1,14 +1,14 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
-import graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import graphql.operations.mutations.createContacts
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

@@ -47,7 +47,7 @@ fun callGraphQlQueryOrMutation(
     requestGraphQlQueryOrMutation(query, variables, accessToken).content!!.let(objectMapper::readValue)
 
 /**
- * Executes a GraphQL queries and mutations.
+ * Executes GraphQL queries and mutations.
  *
  * @param[query] GraphQL document.
  * @param[variables] GraphQL variables for the [query].

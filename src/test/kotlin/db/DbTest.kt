@@ -1,12 +1,8 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.AccountEdge
-import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.chats.GroupChats
-import com.neelkamath.omniChat.db.chats.PrivateChatDeletions
-import com.neelkamath.omniChat.db.chats.PrivateChats
-import com.neelkamath.omniChat.db.chats.count
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.deleteUser
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -15,13 +11,13 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 
 class DbTest : FunSpec({
     context("deleteUserFromDb(String)") {
         test("An exception should be thrown when the admin of a nonempty group chat deletes their data") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat = NewGroupChat("Title", userIdList = listOf(userId))
-            GroupChats.create(adminId, chat)
+            GroupChats.create(adminId, listOf(userId))
             shouldThrowExactly<IllegalArgumentException> { deleteUserFromDb(adminId) }
         }
 
@@ -33,6 +29,36 @@ class DbTest : FunSpec({
             PrivateChatDeletions.create(chatId, user1Id)
             deleteUserFromDb(user1Id)
             PrivateChats.count().shouldBeZero()
+        }
+
+        test("The deleted user should be unsubscribed from contact updates") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val subscriber =
+                contactsBroker.subscribe(ContactsAsset(userId)).subscribeWith(TestSubscriber())
+            deleteUserFromDb(userId)
+            subscriber.assertComplete()
+        }
+
+        test("The deleted subscriber should be unsubscribed from account updates") {
+            val (subscriberId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val subscriber = privateChatInfoBroker
+                .subscribe(PrivateChatInfoAsset(subscriberId, userId))
+                .subscribeWith(TestSubscriber())
+            deleteUserFromDb(subscriberId)
+            subscriber.assertComplete()
+        }
+
+        test("Only the deleted subscriber should be unsubscribed from group chat updates") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(adminId, listOf(userId))
+            val (adminSubscriber, userSubscriber) = listOf(adminId, userId).map {
+                groupChatInfoBroker
+                    .subscribe(GroupChatInfoAsset(chatId, it))
+                    .subscribeWith(TestSubscriber())
+            }
+            deleteUserFromDb(userId)
+            adminSubscriber.assertNoValues()
+            userSubscriber.assertComplete()
         }
     }
 

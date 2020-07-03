@@ -1,14 +1,17 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.db.messages.MessageStatuses
+import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.db.tables.MessageStatuses
+import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.DuplicateStatusException
 import com.neelkamath.omniChat.graphql.InvalidMessageIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId
-import com.neelkamath.omniChat.graphql.operations.mutations.createUtilizedPrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -26,8 +29,10 @@ private fun operateCreateDeliveredStatus(accessToken: String, messageId: Int): G
         accessToken = accessToken
     )
 
-fun createDeliveredStatus(accessToken: String, messageId: Int) =
-    operateCreateDeliveredStatus(accessToken, messageId).data!!["createDeliveredStatus"]
+fun createDeliveredStatus(accessToken: String, messageId: Int): Placeholder {
+    val data = operateCreateDeliveredStatus(accessToken, messageId).data!!["createDeliveredStatus"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errCreateDeliveredStatus(accessToken: String, messageId: Int): String =
     operateCreateDeliveredStatus(accessToken, messageId).errors!![0].message
@@ -66,7 +71,7 @@ class CreateDeliveredStatusTest : FunSpec({
     test("Creating a status in a private chat the user deleted should fail") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        val messageId = messageAndReadId(user1.accessToken, chatId, "text")
+        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("text"))
         deletePrivateChat(user1.accessToken, chatId)
         errCreateDeliveredStatus(user1.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }
@@ -80,7 +85,7 @@ class CreateDeliveredStatusTest : FunSpec({
     ) {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        val messageId = messageAndReadId(user1.accessToken, chatId, "text")
+        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("text"))
         deletePrivateChat(user2.accessToken, chatId)
         errCreateDeliveredStatus(user2.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }

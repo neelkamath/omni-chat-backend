@@ -1,9 +1,6 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.db.chats.*
-import com.neelkamath.omniChat.db.contacts.Contacts
-import com.neelkamath.omniChat.db.messages.MessageStatuses
-import com.neelkamath.omniChat.db.messages.Messages
+import com.neelkamath.omniChat.db.tables.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteAll

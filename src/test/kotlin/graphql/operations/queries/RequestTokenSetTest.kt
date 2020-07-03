@@ -1,4 +1,4 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
@@ -6,9 +6,9 @@ import com.neelkamath.omniChat.graphql.IncorrectPasswordException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.TOKEN_SET_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import graphql.operations.TOKEN_SET_FRAGMENT
-import graphql.operations.mutations.createAccount
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -38,17 +38,19 @@ class RequestTokenSetTest : FunSpec({
     }
 
     test("A token set shouldn't be created for a nonexistent user") {
-        errRequestTokenSet(Login("username", "password")) shouldBe NonexistentUserException.message
+        val login = Login(Username("username"), Password("password"))
+        errRequestTokenSet(login) shouldBe NonexistentUserException.message
     }
 
     test("A token set shouldn't be created for a user who hasn't verified their email") {
-        val login = Login("username", "password")
+        val login = Login(Username("username"), Password("password"))
         createAccount(NewAccount(login.username, login.password, "username@example.com"))
         errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException.message
     }
 
     test("A token set shouldn't be created for an incorrect password") {
         val login = createSignedInUsers(1)[0].login
-        errRequestTokenSet(login.copy(password = "incorrect password")) shouldBe IncorrectPasswordException.message
+        val invalidLogin = login.copy(password = Password("incorrect password"))
+        errRequestTokenSet(invalidLogin) shouldBe IncorrectPasswordException.message
     }
 })

@@ -1,31 +1,21 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Users
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.chats.GroupChats
-import com.neelkamath.omniChat.db.chats.PrivateChatDeletions
-import com.neelkamath.omniChat.db.chats.PrivateChats
-import com.neelkamath.omniChat.db.contacts.Contacts
 import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messages.MessageStatuses
-import com.neelkamath.omniChat.db.messages.Messages
-import com.neelkamath.omniChat.db.messages.unsubscribeUserFromMessageUpdates
+import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import graphql.schema.DataFetchingEnvironment
 
-fun createAccount(env: DataFetchingEnvironment): Boolean {
-    val args = env.arguments["account"] as Map<*, *>
-    val username = args["username"] as String
-    if (username != username.toLowerCase()) throw UsernameNotLowercaseException
+fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<NewAccount>("account")
     if (isUsernameTaken(account.username)) throw UsernameTakenException
     if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
     Users.create(userId = createUser(account))
-    return true
+    return Placeholder
 }
 
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
@@ -66,9 +56,6 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
     val chat = env.parseArgument<NewGroupChat>("chat")
     val userIdList = chat.userIdList.filter { it != env.userId!! }
     if (!userIdList.all { userIdExists(it) }) throw InvalidUserIdException
-    if (chat.title.isEmpty() || chat.title.length > GroupChats.MAX_TITLE_LENGTH) throw InvalidTitleLengthException
-    if (chat.description != null && chat.description.length > GroupChats.MAX_DESCRIPTION_LENGTH)
-        throw InvalidDescriptionLengthException
     return GroupChats.create(env.userId!!, chat)
 }
 
@@ -76,8 +63,7 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    val message = env.getArgument<String>("text")
-    if (message.length > Messages.MAX_TEXT_LENGTH) throw InvalidMessageLengthException
+    val message = env.parseArgument<TextMessage>("text")
     Messages.create(chatId, env.userId!!, message)
     return Placeholder
 }
@@ -127,21 +113,17 @@ fun deletePrivateChat(env: DataFetchingEnvironment): Placeholder {
     val chatId = env.getArgument<Int>("chatId")
     if (chatId !in PrivateChats.readIdList(env.userId!!)) throw InvalidChatIdException
     PrivateChatDeletions.create(chatId, env.userId!!)
-    unsubscribeUserFromMessageUpdates(env.userId!!, chatId)
+    messagesBroker.unsubscribe { it.userId == env.userId!! && it.chatId == chatId }
     return Placeholder
 }
 
 fun leaveGroupChat(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    val newAdminId = env.getArgument<String?>("newAdminId")
     if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) throw InvalidChatIdException
-    val mustSpecifyNewAdmin = GroupChats.isAdmin(env.userId!!, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1
-    if (mustSpecifyNewAdmin && newAdminId == null) throw MissingNewAdminIdException
-    if (mustSpecifyNewAdmin && newAdminId !in GroupChatUsers.readUserIdList(chatId)) throw InvalidNewAdminIdException
-    if (mustSpecifyNewAdmin) GroupChats.setAdmin(chatId, newAdminId!!)
-    val update = GroupChatUpdate(chatId, removedUserIdList = listOf(env.userId!!))
-    GroupChats.update(update)
+    if (GroupChats.isAdmin(env.userId!!, chatId) && GroupChatUsers.readUserIdList(chatId).size > 1)
+        throw AdminCannotLeaveException
+    GroupChatUsers.removeUsers(chatId, env.userId!!)
     return Placeholder
 }
 
@@ -161,7 +143,7 @@ fun updateAccount(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-private fun wantsTakenUsername(userId: String, wantedUsername: String?): Boolean =
+private fun wantsTakenUsername(userId: String, wantedUsername: Username?): Boolean =
     wantedUsername != null && readUserById(userId).username != wantedUsername && isUsernameTaken(wantedUsername)
 
 private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
@@ -169,11 +151,17 @@ private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
 
 fun updateGroupChat(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
+    val args = env.arguments["update"] as Map<*, *>
+    val chatId = args["chatId"] as Int
+    if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) throw InvalidChatIdException
+    if (!GroupChats.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    val newAdminId = args["newAdminId"] as String?
+    if (newAdminId != null && newAdminId !in GroupChatUsers.readUserIdList(chatId)) throw InvalidNewAdminIdException
+    val newUserIdList = args["newUserIdList"] as List<*>?
+    val removedUserIdList = args["removedUserIdList"] as List<*>?
+    if (newUserIdList != null && removedUserIdList != null && newUserIdList.intersect(removedUserIdList).isNotEmpty())
+        throw InvalidGroupChatUsersException
     val update = env.parseArgument<GroupChatUpdate>("update")
-    if (update.chatId !in GroupChatUsers.readChatIdList(env.userId!!)) throw InvalidChatIdException
-    if (!GroupChats.isAdmin(env.userId!!, update.chatId)) throw UnauthorizedException
-    if (update.newAdminId != null && update.newAdminId !in GroupChatUsers.readUserIdList(update.chatId))
-        throw InvalidNewAdminIdException
     GroupChats.update(update)
     return Placeholder
 }

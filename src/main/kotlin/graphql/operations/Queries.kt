@@ -5,12 +5,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.Users
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.chats.GroupChats
-import com.neelkamath.omniChat.db.chats.PrivateChats
-import com.neelkamath.omniChat.db.contacts.Contacts
-import com.neelkamath.omniChat.db.messages.Messages
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
@@ -24,8 +19,8 @@ interface ChatDto {
 
 class GroupChatDto(chatId: Int) : ChatDto {
     override val id: Int = chatId
-    val title: String
-    val description: String?
+    val title: GroupChatTitle
+    val description: GroupChatDescription?
     val adminId: String
 
     init {
@@ -84,11 +79,12 @@ fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     return !GroupChats.isNonemptyChatAdmin(env.userId!!)
 }
 
-fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean = emailAddressExists(env.getArgument("emailAddress"))
+fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean =
+    emailAddressExists(env.getArgument("emailAddress"))
 
 fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
-    val username = env.getArgument<String>("username")
-    return if (username == username.toLowerCase()) isUsernameTaken(username) else throw UsernameNotLowercaseException
+    val username = env.parseArgument<Username>("username")
+    return isUsernameTaken(username)
 }
 
 fun readAccount(env: DataFetchingEnvironment): Account {

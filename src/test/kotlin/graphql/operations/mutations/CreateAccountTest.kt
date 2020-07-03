@@ -1,14 +1,12 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.NewAccount
-import com.neelkamath.omniChat.db.Users
-import com.neelkamath.omniChat.db.count
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.db.tables.count
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
-import com.neelkamath.omniChat.graphql.UsernameNotLowercaseException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import com.neelkamath.omniChat.readUserByUsername
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -21,13 +19,16 @@ const val CREATE_ACCOUNT_QUERY = """
 private fun operateCreateAccount(account: NewAccount): GraphQlResponse =
     operateGraphQlQueryOrMutation(CREATE_ACCOUNT_QUERY, variables = mapOf("account" to account))
 
-fun createAccount(account: NewAccount) = operateCreateAccount(account).data!!["createAccount"]
+fun createAccount(account: NewAccount): Placeholder {
+    val data = operateCreateAccount(account).data!!["createAccount"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errCreateAccount(account: NewAccount): String = operateCreateAccount(account).errors!![0].message
 
 class CreateAccountTest : FunSpec({
     test("Creating an account should save it to the auth system, and the DB") {
-        val account = NewAccount("username", "password", "username@example.com")
+        val account = NewAccount(Username("username"), Password("password"), "username@example.com")
         createAccount(account)
         with(readUserByUsername(account.username)) {
             username shouldBe account.username
@@ -37,26 +38,16 @@ class CreateAccountTest : FunSpec({
     }
 
     test("An account with a taken username shouldn't be created") {
-        val account = NewAccount("username", "password", "username@example.com")
+        val account = NewAccount(Username("username"), Password("password"), "username@example.com")
         createAccount(account)
         errCreateAccount(account) shouldBe UsernameTakenException.message
     }
 
     test("An account with a taken email shouldn't be created") {
         val address = "username@example.com"
-        createAccount(NewAccount("username1", "password", address))
-        errCreateAccount(NewAccount("username2", "password", address)) shouldBe EmailAddressTakenException.message
-    }
-
-    test("Attempting to create an account with a non-lowercase username should throw an exception") {
-        val account = mapOf("username" to "Username", "password" to "password", "emailAddress" to "user@example.com")
-        operateGraphQlQueryOrMutation(
-            """
-            mutation CreateAccount(${"$"}account: NewAccount!) {
-                createAccount(account: ${"$"}account)
-            }
-            """,
-            variables = mapOf("account" to account)
-        ).errors!![0].message shouldBe UsernameNotLowercaseException.message
+        val account = NewAccount(Username("username1"), Password("password"), address)
+        createAccount(account)
+        val duplicateAccount = NewAccount(Username("username2"), Password("password"), address)
+        errCreateAccount(duplicateAccount) shouldBe EmailAddressTakenException.message
     }
 })

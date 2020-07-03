@@ -1,14 +1,22 @@
 package com.neelkamath.omniChat
 
-import io.kotest.assertions.throwables.shouldThrowExactly
+import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.tables.Contacts
+import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.create
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 
 class AuthTest : FunSpec({
     context("isValidLogin(Login)") {
-        test("An incorrect login should be invalid") { isValidLogin(Login("username", "password")).shouldBeFalse() }
+        test("An incorrect login should be invalid") {
+            val login = Login(Username("username"), Password("password"))
+            isValidLogin(login).shouldBeFalse()
+        }
 
         test("A correct login should be valid") {
             val login = createVerifiedUsers(1)[0].login
@@ -25,11 +33,8 @@ class AuthTest : FunSpec({
             """
         ) {
             val username = createVerifiedUsers(1)[0].info.username
-            isUsernameTaken(username.dropLast(1)).shouldBeFalse()
-        }
-
-        test("Checking if a non-lowercase username is taken should throw an exception") {
-            shouldThrowExactly<IllegalArgumentException> { isUsernameTaken("Username") }
+            val similarUsername = Username(username.value.dropLast(1))
+            isUsernameTaken(similarUsername).shouldBeFalse()
         }
 
         test("An existing username should be said to exist") {
@@ -68,10 +73,10 @@ class AuthTest : FunSpec({
     context("searchUsers(String)") {
         /** Creates users, and returns their IDs. */
         fun createUsers(): List<String> = listOf(
-            NewAccount(username = "tony", password = "p", emailAddress = "tony@example.com", firstName = "Tony"),
-            NewAccount(username = "johndoe", password = "p", emailAddress = "john@example.com", firstName = "John"),
-            NewAccount(username = "john.rogers", password = "p", emailAddress = "rogers@example.com"),
-            NewAccount(username = "anonymous", password = "p", emailAddress = "anon@example.com", firstName = "John")
+            NewAccount(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
+            NewAccount(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
+            NewAccount(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
+            NewAccount(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", firstName = "John")
         ).map {
             createUser(it)
             readUserByUsername(it.username).id
@@ -89,8 +94,8 @@ class AuthTest : FunSpec({
 
         test("Searching users shouldn't include duplicate results") {
             val userIdList = listOf(
-                NewAccount(username = "tony_stark", password = "p", emailAddress = "e"),
-                NewAccount("username", "password", "tony@example.com", firstName = "Tony")
+                NewAccount(Username("tony_stark"), Password("p"), emailAddress = "e"),
+                NewAccount(Username("username"), Password("p"), "tony@example.com", firstName = "Tony")
             ).map {
                 createUser(it)
                 readUserByUsername(it.username).id
@@ -99,10 +104,55 @@ class AuthTest : FunSpec({
         }
     }
 
-    context("updateUser(String, AccountUpdate)") {
+    context("updateUser(String, UpdatedAccount)") {
+        test("Updating an account should trigger a notification for the contact owner, but not the contact") {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            Contacts.create(ownerId, setOf(contactId))
+            val (ownerSubscriber, contactSubscriber) = listOf(ownerId, contactId).map {
+                contactsBroker.subscribe(ContactsAsset(it)).subscribeWith(TestSubscriber())
+            }
+            updateUser(contactId, AccountUpdate())
+            ownerSubscriber.assertValue(UpdatedContact.fromUserId(contactId))
+            contactSubscriber.assertNoValues()
+        }
+
+        test(
+            """
+            Given user 1 in group chat 1, and user 2 in group chats 1 and 2,
+            when user 1 updates their account,
+            then user 1 should be notified, and user 2 should be notified only in group chat 1 
+            """
+        ) {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chat1Id = GroupChats.create(adminId = user1Id, userIdList = listOf(user2Id))
+            val chat2Id = GroupChats.create(adminId = user2Id)
+            val (user1Subscriber, user2Chat1Subscriber, user2Chat2Subscriber) =
+                listOf(user1Id to chat1Id, user2Id to chat1Id, user2Id to chat2Id).map { (userId, chatId) ->
+                    groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, userId)).subscribeWith(TestSubscriber())
+                }
+            updateUser(user1Id, AccountUpdate())
+            val update = UpdatedAccount.fromUserId(user1Id)
+            user1Subscriber.assertValue(update)
+            user2Chat1Subscriber.assertValue(update)
+            user2Chat2Subscriber.assertNoValues()
+        }
+
+        test("Updating an account should notify the subscriber of the update but not the user") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val (user1Subscriber, user2Subscriber) = mapOf(user1Id to user2Id, user2Id to user1Id)
+                .map { (subscriberId, userId) ->
+                    privateChatInfoBroker
+                        .subscribe(PrivateChatInfoAsset(subscriberId, userId))
+                        .subscribeWith(TestSubscriber())
+                }
+            updateUser(user2Id, AccountUpdate())
+            user1Subscriber.assertValue(UpdatedAccount.fromUserId(user2Id))
+            user2Subscriber.assertNoValues()
+        }
+
         test("Updating an account should update only the specified fields") {
             val user = createVerifiedUsers(1)[0]
-            val update = AccountUpdate("updated username", firstName = "updated first name")
+            val update = AccountUpdate(Username("updated username"), firstName = "updated first name")
             updateUser(user.info.id, update)
             with(readUserById(user.info.id)) {
                 username shouldBe update.username
@@ -116,7 +166,7 @@ class AuthTest : FunSpec({
             val (userId, _, emailAddress) = createVerifiedUsers(1)[0].info
             val address = if (changeAddress) "updated address" else emailAddress
             updateUser(userId, AccountUpdate(emailAddress = address))
-            isEmailVerified(userId) shouldBe !changeAddress
+            isEmailVerified(userId) shouldNotBe changeAddress
         }
 
         test(

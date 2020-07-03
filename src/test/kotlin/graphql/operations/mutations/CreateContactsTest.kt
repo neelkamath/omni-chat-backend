@@ -1,10 +1,13 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.db.contacts.Contacts
+import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.InvalidContactException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -22,8 +25,10 @@ private fun operateCreateContacts(accessToken: String, userIdList: List<String>)
         accessToken = accessToken
     )
 
-fun createContacts(accessToken: String, userIdList: List<String>) =
-    operateCreateContacts(accessToken, userIdList).data!!["createContacts"]
+fun createContacts(accessToken: String, userIdList: List<String>): Placeholder {
+    val data = operateCreateContacts(accessToken, userIdList).data!!["createContacts"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errCreateContacts(accessToken: String, userIdList: List<String>): String =
     operateCreateContacts(accessToken, userIdList).errors!![0].message

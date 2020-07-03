@@ -1,10 +1,13 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.db.chats.PrivateChatDeletions
+import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -21,8 +24,10 @@ private fun operateDeletePrivateChat(accessToken: String, chatId: Int): GraphQlR
     accessToken = accessToken
 )
 
-fun deletePrivateChat(accessToken: String, chatId: Int) =
-    operateDeletePrivateChat(accessToken, chatId).data!!["deletePrivateChat"]
+fun deletePrivateChat(accessToken: String, chatId: Int): Placeholder {
+    val data = operateDeletePrivateChat(accessToken, chatId).data!!["deletePrivateChat"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errDeletePrivateChat(accessToken: String, chatId: Int): String =
     operateDeletePrivateChat(accessToken, chatId).errors!![0].message

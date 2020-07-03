@@ -1,13 +1,9 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.chats.GroupChats
-import com.neelkamath.omniChat.db.messages.Messages
-import com.neelkamath.omniChat.graphql.InvalidDescriptionLengthException
-import com.neelkamath.omniChat.graphql.InvalidTitleLengthException
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
@@ -30,9 +26,13 @@ fun errCreateGroupChat(accessToken: String, chat: NewGroupChat): String =
     operateCreateGroupChat(accessToken, chat).errors!![0].message
 
 class CreateGroupChatTest : FunSpec({
-    test("A group chat should be created, ignoring the user's own ID") {
+    test("A group chat should be created, ignoring the user's own ID, and keeping whitespace intact") {
         val (admin, user1, user2) = createSignedInUsers(3)
-        val chat = NewGroupChat("Title", "Description", listOf(admin.info.id, user1.info.id, user2.info.id))
+        val chat = NewGroupChat(
+            GroupChatTitle(" Title  "),
+            GroupChatDescription("  Description "),
+            listOf(admin.info.id, user1.info.id, user2.info.id)
+        )
         val chatId = createGroupChat(admin.accessToken, chat)
         GroupChats.readUserChats(admin.info.id) shouldBe listOf(
             GroupChat(
@@ -46,29 +46,9 @@ class CreateGroupChatTest : FunSpec({
         )
     }
 
-    test("A group chat should not be created when supplied with an invalid user ID") {
-        val chat = NewGroupChat("Title", userIdList = listOf("invalid user ID"))
+    test("A group chat shouldn't be created when supplied with an invalid user ID") {
+        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf("invalid user ID"))
         val token = createSignedInUsers(1)[0].accessToken
         errCreateGroupChat(token, chat) shouldBe InvalidUserIdException.message
-    }
-
-    test("A group chat should not be created if an empty title is supplied") {
-        val chat = NewGroupChat(title = "")
-        val token = createSignedInUsers(1)[0].accessToken
-        errCreateGroupChat(token, chat) shouldBe InvalidTitleLengthException.message
-    }
-
-    test("A group chat should not be created if the title is too long") {
-        val title = CharArray(GroupChats.MAX_TITLE_LENGTH + 1) { 'a' }.joinToString("")
-        val chat = NewGroupChat(title)
-        val token = createSignedInUsers(1)[0].accessToken
-        errCreateGroupChat(token, chat) shouldBe InvalidTitleLengthException.message
-    }
-
-    test("A group chat should not be created if the description has an invalid length") {
-        val description = CharArray(GroupChats.MAX_DESCRIPTION_LENGTH + 1) { 'a' }.joinToString("")
-        val chat = NewGroupChat("Title", description)
-        val token = createSignedInUsers(1)[0].accessToken
-        errCreateGroupChat(token, chat) shouldBe InvalidDescriptionLengthException.message
     }
 })

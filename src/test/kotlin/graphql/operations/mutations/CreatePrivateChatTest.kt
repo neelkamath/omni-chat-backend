@@ -1,7 +1,7 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.db.chats.PrivateChats
+import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.graphql.ChatExistsException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers

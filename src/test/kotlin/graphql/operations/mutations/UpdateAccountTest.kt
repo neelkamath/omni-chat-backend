@@ -1,11 +1,12 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import graphql.operations.queries.requestTokenSet
+import com.neelkamath.omniChat.graphql.operations.queries.requestTokenSet
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.shouldBe
@@ -23,8 +24,10 @@ private fun operateUpdateAccount(accessToken: String, update: AccountUpdate): Gr
         accessToken = accessToken
     )
 
-fun updateAccount(accessToken: String, update: AccountUpdate) =
-    operateUpdateAccount(accessToken, update).data!!["updateAccount"]
+fun updateAccount(accessToken: String, update: AccountUpdate): Placeholder {
+    val data = operateUpdateAccount(accessToken, update).data!!["updateAccount"] as String
+    return objectMapper.convertValue(data)
+}
 
 fun errUpdateAccount(accessToken: String, update: AccountUpdate): String =
     operateUpdateAccount(accessToken, update).errors!![0].message
@@ -43,17 +46,19 @@ class UpdateAccountTest : FunSpec({
 
     test("Only the specified fields should be updated") {
         val user = createSignedInUsers(1)[0]
-        val update = AccountUpdate(username = "john_roger", emailAddress = "john.roger@example.com", lastName = "Roger")
+        val update =
+            AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = "Roger")
         updateAccount(user.accessToken, update)
         testAccount(user.info, update)
     }
 
     test("The password should be updated") {
         val user = createSignedInUsers(1)[0]
-        val newPassword = "new password"
-        updateAccount(user.accessToken, AccountUpdate(password = newPassword))
+        val newPassword = Password("new password")
+        val update = AccountUpdate(password = newPassword)
+        updateAccount(user.accessToken, update)
         val login = user.login.copy(password = newPassword)
-        requestTokenSet(login) // Successfully requesting a JWT tests the password update.
+        requestTokenSet(login)
     }
 
     test("Updating a username to one already taken shouldn't allow the account to be updated") {

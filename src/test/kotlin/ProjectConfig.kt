@@ -1,10 +1,5 @@
 package com.neelkamath.omniChat
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.module.SimpleModule
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.db.tearDownDb
 import com.neelkamath.omniChat.db.wipeDb
@@ -27,20 +22,6 @@ object ProjectConfig : AbstractProjectConfig() {
     override fun afterAll() {
         tearDownDb()
         tearDownAuth()
-    }
-}
-
-/** Updates the [objectMapper] to provide the extra functionality the test source set needs. */
-private fun configureObjectMapper() {
-    val module = SimpleModule().addDeserializer(Chat::class.java, ChatDeserializer)
-    objectMapper.registerModule(module)
-}
-
-private object ChatDeserializer : JsonDeserializer<Chat>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): Chat {
-        val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz = if (node.has("users")) GroupChat::class else PrivateChat::class
-        return parser.codec.treeToValue(node, clazz.java)
     }
 }
 

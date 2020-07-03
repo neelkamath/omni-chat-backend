@@ -1,5 +1,8 @@
 package com.neelkamath.omniChat
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
 import com.neelkamath.omniChat.graphql.routing.routeQueriesAndMutations
@@ -25,8 +28,11 @@ import io.ktor.routing.routing
 import io.ktor.websocket.WebSockets
 import java.time.Duration
 
-object UnauthorizedException :
-    Exception("The user didn't supply an auth token, supplied an invalid one, or is unauthorized.")
+/** Project-wide Jackson config. */
+val objectMapper: ObjectMapper = jacksonObjectMapper()
+    .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .findAndRegisterModules()
 
 /** On authenticated calls, this will be the user's ID. */
 val ApplicationCall.userId: String? get() = authentication.principal<JWTPrincipal>()?.payload?.subject

@@ -1,4 +1,4 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.graphql.createSignedInUsers

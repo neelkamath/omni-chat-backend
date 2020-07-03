@@ -1,19 +1,21 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.messages.Messages
+import com.neelkamath.omniChat.db.tables.GroupChatDescription
+import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.PRIVATE_CHAT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
+import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
+import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import graphql.operations.GROUP_CHAT_FRAGMENT
-import graphql.operations.PRIVATE_CHAT_FRAGMENT
-import graphql.operations.mutations.createAccount
-import graphql.operations.mutations.createGroupChat
-import graphql.operations.mutations.createPrivateChat
-import graphql.operations.mutations.deletePrivateChat
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -67,9 +69,9 @@ fun searchChats(
 
 class SearchChatsTest : FunSpec({
     fun createPrivateChats(accessToken: String): List<PrivateChat> = listOf(
-        NewAccount(username = "iron man", password = "malibu", emailAddress = "tony@example.com", firstName = "Tony"),
-        NewAccount(username = "iron fist", password = "monk", emailAddress = "iron.fist@example.org"),
-        NewAccount(username = "chris tony", password = "pass", emailAddress = "chris@example.com", lastName = "Tony")
+        NewAccount(Username("iron man"), Password("malibu"), "tony@example.com", firstName = "Tony"),
+        NewAccount(Username("iron fist"), Password("monk"), "iron.fist@example.org"),
+        NewAccount(Username("chris tony"), Password("pass"), "chris@example.com", lastName = "Tony")
     ).map {
         createAccount(it)
         val userId = readUserByUsername(it.username).id
@@ -78,10 +80,10 @@ class SearchChatsTest : FunSpec({
     }
 
     fun createGroupChats(accessToken: String, adminId: String): List<GroupChat> = listOf(
-        NewGroupChat("Iron Man Fan Club"),
-        NewGroupChat("Language Class"),
-        NewGroupChat("Programming Languages"),
-        NewGroupChat("Tony's Birthday")
+        NewGroupChat(GroupChatTitle("Iron Man Fan Club"), GroupChatDescription("")),
+        NewGroupChat(GroupChatTitle("Language Class"), GroupChatDescription("")),
+        NewGroupChat(GroupChatTitle("Programming Languages"), GroupChatDescription("")),
+        NewGroupChat(GroupChatTitle("Tony's Birthday"), GroupChatDescription(""))
     ).map {
         val chatId = createGroupChat(accessToken, it)
         GroupChat(
@@ -110,12 +112,12 @@ class SearchChatsTest : FunSpec({
     test("A query which matches the user shouldn't return every chat they're in") {
         val accounts = listOf(
             NewAccount(
-                username = "john_doe",
-                password = "pass",
+                Username("john_doe"),
+                Password("pass"),
                 emailAddress = "john.doe@example.com",
                 firstName = "John"
             ),
-            NewAccount("username", "password", "username@example.com")
+            NewAccount(Username("username"), Password("password"), "username@example.com")
         )
         accounts.forEach { createAccount(it) }
         val response = with(accounts[0]) {
@@ -130,7 +132,7 @@ class SearchChatsTest : FunSpec({
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         deletePrivateChat(user1.accessToken, chatId)
-        searchChats(user1.accessToken, user2.info.username).shouldBeEmpty()
+        searchChats(user1.accessToken, user2.info.username.value).shouldBeEmpty()
     }
 
     test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_CHATS) }

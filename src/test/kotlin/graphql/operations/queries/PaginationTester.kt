@@ -1,16 +1,15 @@
-package graphql.operations.queries
+package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.chats.read
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId
-import graphql.operations.mutations.createContacts
-import graphql.operations.mutations.createGroupChat
-import graphql.operations.mutations.createMessage
+import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
+import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
 import io.kotest.matchers.shouldBe
 
 /** The name of a GraphQL operation which is concerned with the pagination of messages. */
@@ -58,21 +57,21 @@ enum class GroupChatUsersOperationName {
 /** Asserts that the [operation] paginates correctly. */
 fun testMessagesPagination(operation: MessagesOperationName) {
     val adminToken = createSignedInUsers(1)[0].accessToken
-    val title = "Title"
-    val chatId = createGroupChat(adminToken, NewGroupChat(title))
-    val text = "text"
+    val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
+    val chatId = createGroupChat(adminToken, chat)
+    val text = TextMessage("text")
     val messageIdList = (1..10).map { messageAndReadId(adminToken, chatId, text) }
     val last = 4
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
     when (operation) {
-        MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(adminToken, chatId, text, pagination)
+        MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(adminToken, chatId, text.value, pagination)
         MessagesOperationName.SEARCH_MESSAGES ->
-            searchMessages(adminToken, text, messagesPagination = pagination).flatMap { it.messages }
+            searchMessages(adminToken, text.value, messagesPagination = pagination).flatMap { it.messages }
         MessagesOperationName.READ_CHATS -> readChats(adminToken, messagesPagination = pagination)[0].messages.edges
         MessagesOperationName.READ_CHAT -> readChat(adminToken, chatId, messagesPagination = pagination).messages.edges
         MessagesOperationName.SEARCH_CHATS ->
-            searchChats(adminToken, title, messagesPagination = pagination)[0].messages.edges
+            searchChats(adminToken, chat.title.value, messagesPagination = pagination)[0].messages.edges
     }.map { it.cursor } shouldBe messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last)
 }
 
@@ -99,10 +98,10 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val admin = createSignedInUsers(1)[0]
     val users = createSignedInUsers(10)
     val userIdList = users.map { it.info.id }
-    val groupChat = NewGroupChat("Title", userIdList = userIdList)
+    val groupChat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), userIdList)
     val chatId = createGroupChat(admin.accessToken, groupChat)
     val text = "text"
-    createMessage(admin.accessToken, chatId, text)
+    createMessage(admin.accessToken, chatId, TextMessage(text))
     val first = 3
     val userCursors = GroupChatUsers.read()
     val index = 5
@@ -110,7 +109,7 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val chat = when (operationName) {
         GroupChatUsersOperationName.READ_CHAT -> readChat(admin.accessToken, chatId, pagination)
         GroupChatUsersOperationName.READ_CHATS -> readChats(admin.accessToken, pagination)[0]
-        GroupChatUsersOperationName.SEARCH_CHATS -> searchChats(admin.accessToken, groupChat.title, pagination)[0]
+        GroupChatUsersOperationName.SEARCH_CHATS -> searchChats(admin.accessToken, groupChat.title.value, pagination)[0]
         GroupChatUsersOperationName.SEARCH_MESSAGES -> searchMessages(admin.accessToken, text, pagination)[0].chat
     } as GroupChat
     chat.users.edges.map { it.cursor } shouldBe userCursors.subList(index + 1, index + 1 + first).map { it }

@@ -1,11 +1,13 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.tables.GroupChatDescription
+import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.mutations.UPDATE_GROUP_CHAT_QUERY
+import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.operations.queries.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
-import graphql.operations.mutations.createGroupChat
-import graphql.operations.queries.READ_ACCOUNT_QUERY
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -77,7 +79,8 @@ class QueriesAndMutationsTest : FunSpec({
             """
         ) {
             val (admin, user) = createSignedInUsers(2)
-            val chatId = createGroupChat(admin.accessToken, NewGroupChat("Title", userIdList = listOf(user.info.id)))
+            val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
+            val chatId = createGroupChat(admin.accessToken, chat)
             val variables = mapOf("update" to GroupChatUpdate(chatId))
             requestGraphQlQueryOrMutation(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
                 .shouldHaveUnauthorizedStatus()

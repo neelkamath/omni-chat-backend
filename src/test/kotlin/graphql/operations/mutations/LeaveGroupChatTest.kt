@@ -1,93 +1,65 @@
-package graphql.operations.mutations
+package com.neelkamath.omniChat.graphql.operations.mutations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.chats.GroupChatUsers
-import com.neelkamath.omniChat.db.chats.GroupChats
+import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.db.tables.GroupChatDescription
+import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.graphql.AdminCannotLeaveException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
-import com.neelkamath.omniChat.graphql.MissingNewAdminIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
 const val LEAVE_GROUP_CHAT_QUERY = """
-    mutation LeaveGroupChat(${"$"}chatId: Int!, ${"$"}newAdminId: ID) {
-        leaveGroupChat(chatId: ${"$"}chatId, newAdminId: ${"$"}newAdminId)
+    mutation LeaveGroupChat(${"$"}chatId: Int!) {
+        leaveGroupChat(chatId: ${"$"}chatId)
     }
 """
 
-private fun operateLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): GraphQlResponse =
-    operateGraphQlQueryOrMutation(
-        LEAVE_GROUP_CHAT_QUERY,
-        variables = mapOf("chatId" to chatId, "newAdminId" to newAdminId),
-        accessToken = accessToken
-    )
+private fun operateLeaveGroupChat(accessToken: String, chatId: Int): GraphQlResponse = operateGraphQlQueryOrMutation(
+    LEAVE_GROUP_CHAT_QUERY,
+    variables = mapOf("chatId" to chatId),
+    accessToken = accessToken
+)
 
-fun leaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null) =
-    operateLeaveGroupChat(accessToken, chatId, newAdminId).data!!["leaveGroupChat"]
+fun leaveGroupChat(accessToken: String, chatId: Int): Placeholder {
+    val data = operateLeaveGroupChat(accessToken, chatId).data!!["leaveGroupChat"] as String
+    return objectMapper.convertValue(data)
+}
 
-fun errLeaveGroupChat(accessToken: String, chatId: Int, newAdminId: String? = null): String =
-    operateLeaveGroupChat(accessToken, chatId, newAdminId).errors!![0].message
+fun errLeaveGroupChat(accessToken: String, chatId: Int): String =
+    operateLeaveGroupChat(accessToken, chatId).errors!![0].message
 
 class LeaveGroupChatTest : FunSpec({
     test("A non-admin should leave the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
+        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
         leaveGroupChat(user.accessToken, chatId)
         GroupChatUsers.readUserIdList(chatId) shouldBe listOf(admin.info.id)
     }
 
-    test("The admin should leave the chat after specifying the new admin if there are users left in the chat") {
-        val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
-        leaveGroupChat(admin.accessToken, chatId, newAdminId = user.info.id)
-        GroupChatUsers.readUserIdList(chatId) shouldBe listOf(user.info.id)
-    }
-
-    test("The admin should leave the chat without specifying a new admin if they are the only user") {
+    test("The admin should leave the chat if they're the only user") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
+        val chatId = createGroupChat(token, chat)
         leaveGroupChat(token, chatId)
     }
 
-    fun testBadUserId(supplyingId: Boolean) {
+    test("The admin shouldn't be allowed to leave if there are other users in the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat("Title", userIdList = listOf(user.info.id))
+        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
         val chatId = createGroupChat(admin.accessToken, chat)
-        val newAdminId = if (supplyingId) "invalid new admin ID" else null
-        val exception = if (supplyingId) InvalidNewAdminIdException else MissingNewAdminIdException
-        errLeaveGroupChat(admin.accessToken, chatId, newAdminId) shouldBe exception.message
-    }
-
-    test("The admin shouldn't be allowed to leave without specifying a new admin if there are users left") {
-        testBadUserId(supplyingId = false)
-    }
-
-    test("The admin shouldn't be allowed to leave the chat if the new admin's user ID is invalid") {
-        testBadUserId(supplyingId = true)
+        errLeaveGroupChat(admin.accessToken, chatId) shouldBe AdminCannotLeaveException.message
     }
 
     test("Leaving a group chat the user is not in should throw an exception") {
         val token = createSignedInUsers(1)[0].accessToken
         errLeaveGroupChat(token, chatId = 1) shouldBe InvalidChatIdException.message
-    }
-
-    test(
-        """
-        Given a non-admin leaving the chat,
-        when they specify a new admin,
-        then the admin shouldn't be changed
-        """
-    ) {
-        val (user1, user2, user3) = createSignedInUsers(3)
-        val chat = NewGroupChat("Title", userIdList = listOf(user2.info.id, user3.info.id))
-        val chatId = createGroupChat(user1.accessToken, chat)
-        leaveGroupChat(user2.accessToken, chatId, user3.info.id)
-        GroupChats.isAdmin(user1.info.id, chatId).shouldBeTrue()
     }
 })

@@ -7,9 +7,11 @@ import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
+    .type("MessagesSubscription", ::wireMessagesSubscription)
+    .type("ContactsSubscription", ::wireContactsSubscription)
+    .type("PrivateChatInfoSubscription", ::wirePrivateChatInfoSubscription)
+    .type("GroupChatInfoSubscription", ::wireGroupChatInfoSubscription)
     .type("Chat", ::wireChat)
-    .type("MessageUpdate", ::wireMessageUpdate)
-    .type("ContactUpdate", ::wireContactUpdate)
     .type("AccountData", ::wireAccountData)
     .type("MessageData", ::wireMessageData)
 
@@ -22,7 +24,7 @@ private fun wireChat(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Buil
     it.schema.getObjectType(type)
 }
 
-private fun wireMessageUpdate(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
+private fun wireMessagesSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
     builder.typeResolver {
         val type = when (val obj = it.getObject<Any>()) {
             is CreatedSubscription -> "CreatedSubscription"
@@ -42,7 +44,28 @@ private fun wireMessageUpdate(builder: TypeRuntimeWiring.Builder): TypeRuntimeWi
         it.schema.getObjectType(type)
     }
 
-private fun wireContactUpdate(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
+private fun wirePrivateChatInfoSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
+    builder.typeResolver {
+        val type = when (val obj = it.getObject<Any>()) {
+            is CreatedSubscription -> "CreatedSubscription"
+            is UpdatedAccount -> "UpdatedAccount"
+            else -> throw Error("$obj wasn't a CreatedSubscription or UpdatedAccount.")
+        }
+        it.schema.getObjectType(type)
+    }
+
+private fun wireGroupChatInfoSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
+    builder.typeResolver {
+        val type = when (val obj = it.getObject<Any>()) {
+            is CreatedSubscription -> "CreatedSubscription"
+            is UpdatedGroupChat -> "UpdatedGroupChat"
+            is UpdatedAccount -> "UpdatedAccount"
+            else -> throw Error("$obj wasn't a CreatedSubscription or UpdatedGroupChat.")
+        }
+        it.schema.getObjectType(type)
+    }
+
+private fun wireContactsSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
     builder.typeResolver {
         val type = when (val obj = it.getObject<Any>()) {
             is CreatedSubscription -> "CreatedSubscription"

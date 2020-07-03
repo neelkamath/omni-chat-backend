@@ -1,11 +1,14 @@
 package com.neelkamath.omniChat.graphql.engine
 
 import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.db.tables.GroupChatDescription
+import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
-import com.neelkamath.omniChat.graphql.operations.subscriptions.receiveMessageUpdates
-import graphql.operations.mutations.createGroupChat
-import graphql.operations.mutations.createMessage
-import graphql.operations.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
+import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
+import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.operations.subscriptions.subscribeToMessages
 import io.kotest.core.spec.style.FunSpec
 import java.time.Instant
 
@@ -13,10 +16,11 @@ class DateTimeCoercingTest : FunSpec({
     /** Returns a GraphQL `DateTime` scalar. */
     fun getScalar(): String {
         val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, NewGroupChat("Title"))
+        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
+        val chatId = createGroupChat(token, chat)
         var sent: String? = null
-        receiveMessageUpdates(token, chatId) { incoming, _ ->
-            createMessage(token, chatId, "text")
+        subscribeToMessages(token, chatId) { incoming ->
+            createMessage(token, chatId, TextMessage("text"))
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
             sent = dateTimes["sent"] as String
