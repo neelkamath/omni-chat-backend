@@ -19,6 +19,12 @@ const val UPDATED_ACCOUNT_FRAGMENT = """
     }
 """
 
+const val EXITED_USER_FRAGMENT = """
+    ... on ExitedUser {
+        id
+    }
+"""
+
 const val UPDATED_GROUP_CHAT_FRAGMENT = """
     ... on UpdatedGroupChat {
         title

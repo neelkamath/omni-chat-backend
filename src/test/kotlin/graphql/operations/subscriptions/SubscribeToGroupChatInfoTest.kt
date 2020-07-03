@@ -7,6 +7,7 @@ import com.neelkamath.omniChat.graphql.GraphQlDocDataException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.EXITED_USER_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATED_ACCOUNT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATED_GROUP_CHAT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.mutations.*
@@ -20,6 +21,7 @@ const val SUBSCRIBE_TO_GROUP_CHAT_INFO_QUERY = """
             $CREATED_SUBSCRIPTION_FRAGMENT
             $UPDATED_GROUP_CHAT_FRAGMENT
             $UPDATED_ACCOUNT_FRAGMENT
+            $EXITED_USER_FRAGMENT
         }
     }
 """
@@ -88,6 +90,19 @@ class SubscribeToGroupChatInfoTest : FunSpec({
                 parseFrameData<UpdatedAccount>(userIncoming) shouldBe user.info.toUpdatedAccount()
             }
             parseFrameData<UpdatedAccount>(adminIncoming) shouldBe user.info.toUpdatedAccount()
+        }
+    }
+
+    test("When a user leaves, only the other user should be notified of such") {
+        val (admin, user) = createSignedInUsers(2)
+        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
+        val chatId = createGroupChat(admin.accessToken, chat)
+        subscribeToGroupChatInfo(admin.accessToken, chatId) { adminIncoming ->
+            subscribeToGroupChatInfo(user.accessToken, chatId) { userIncoming ->
+                leaveGroupChat(user.accessToken, chatId)
+                userIncoming.receive().frameType shouldBe FrameType.CLOSE
+            }
+            parseFrameData<ExitedUser>(adminIncoming) shouldBe ExitedUser(user.info.id)
         }
     }
 

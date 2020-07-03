@@ -351,8 +351,15 @@ union PrivateChatInfoSubscription = CreatedSubscription | UpdatedAccount
 """
 An `UpdatedAccount` represents the account of a user in the chat which has been updated. The subscriber's account
 updates will also be included.
+
+An `ExitedUser` will not be sent if the subscriber has exited.
 """
-union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount
+union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
+
+"""The `id` of a user who left the group chat."""
+type ExitedUser {
+    id: ID!
+}
 
 type UpdatedAccount {
     username: Username!

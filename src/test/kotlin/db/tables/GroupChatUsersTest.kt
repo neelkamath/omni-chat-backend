@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.ExitedUser
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.GroupChatInfoAsset
 import com.neelkamath.omniChat.db.MessagesAsset
@@ -26,9 +27,7 @@ class GroupChatUsersTest : FunSpec({
         test("A user who leaves the chat should have their subscription removed") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, listOf(userId))
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(userId, chatId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = messagesBroker.subscribe(MessagesAsset(userId, chatId)).subscribeWith(TestSubscriber())
             GroupChatUsers.removeUsers(chatId, userId)
             subscriber.assertComplete()
         }
@@ -36,11 +35,8 @@ class GroupChatUsersTest : FunSpec({
         test("Removed users should be unsubscribed only from the chat they were removed from") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(adminId, listOf(userId)) }
-            val (chat1Subscriber, chat2Subscriber) = listOf(chat1Id, chat2Id).map {
-                messagesBroker
-                    .subscribe(MessagesAsset(userId, it))
-                    .subscribeWith(TestSubscriber())
-            }
+            val (chat1Subscriber, chat2Subscriber) = listOf(chat1Id, chat2Id)
+                .map { messagesBroker.subscribe(MessagesAsset(userId, it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chat1Id, userId)
             chat1Subscriber.assertComplete()
             chat2Subscriber.assertNotComplete()
@@ -49,11 +45,20 @@ class GroupChatUsersTest : FunSpec({
         test("Removed users should be unsubscribed from group chat updates") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, listOf(userId))
-            val subscriber = groupChatInfoBroker
-                .subscribe(GroupChatInfoAsset(chatId, userId))
-                .subscribeWith(TestSubscriber())
+            val subscriber =
+                groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, userId)).subscribeWith(TestSubscriber())
             GroupChatUsers.removeUsers(chatId, userId)
             subscriber.assertComplete()
+        }
+
+        test("When a user leaves, a notification should be sent only to the other user in the chat") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(adminId, listOf(userId))
+            val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
+                .map { groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, it)).subscribeWith(TestSubscriber()) }
+            GroupChatUsers.removeUsers(chatId, userId)
+            adminSubscriber.assertValue(ExitedUser(userId))
+            userSubscriber.assertNoValues()
         }
     }
 })

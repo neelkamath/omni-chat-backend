@@ -249,6 +249,8 @@ data class MessageDeletionPoint(val until: LocalDateTime) : MessagesSubscription
  */
 data class UserChatMessagesRemoval(val userId: String) : MessagesSubscription
 
+data class ExitedUser(val id: String) : GroupChatInfoSubscription
+
 interface PrivateChatInfoSubscription
 
 /**

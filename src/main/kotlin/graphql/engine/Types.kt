@@ -60,7 +60,8 @@ private fun wireGroupChatInfoSubscription(builder: TypeRuntimeWiring.Builder): T
             is CreatedSubscription -> "CreatedSubscription"
             is UpdatedGroupChat -> "UpdatedGroupChat"
             is UpdatedAccount -> "UpdatedAccount"
-            else -> throw Error("$obj wasn't a CreatedSubscription or UpdatedGroupChat.")
+            is ExitedUser -> "ExitedUser"
+            else -> throw Error("$obj wasn't a CreatedSubscription, UpdatedGroupChat, UpdatedAccount, or ExitedUser.")
         }
         it.schema.getObjectType(type)
     }

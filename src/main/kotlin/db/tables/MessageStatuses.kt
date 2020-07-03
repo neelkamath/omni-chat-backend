@@ -94,9 +94,8 @@ object MessageStatuses : Table() {
         deleteWhere { messageId inList messageIdList }
     }
 
-    /** Deletes all [MessageStatuses] from the [messageIdList], ignoring the invalid ones. */
-    fun delete(vararg messageIdList: Int): Unit =
-        delete(messageIdList.toList())
+    /** Convenience function for [delete]. */
+    fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Deletes every status the [userId] created in the [chatId]. */
     fun deleteUserChatStatuses(chatId: Int, userId: String) = transact {
