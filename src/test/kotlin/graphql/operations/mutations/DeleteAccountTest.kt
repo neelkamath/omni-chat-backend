@@ -33,8 +33,7 @@ fun errDeleteAccount(accessToken: String): String = operateDeleteAccount(accessT
 class DeleteAccountTest : FunSpec({
     test("An account shouldn't be allowed to be deleted if the user is the admin of a nonempty group chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        createGroupChat(admin.accessToken, chat)
+        createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         errDeleteAccount(admin.accessToken) shouldBe CannotDeleteAccountException.message
     }
 
@@ -55,18 +54,16 @@ class DeleteAccountTest : FunSpec({
 
     test("The user whose account is deleted should be removed from group chats") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         deleteAccount(user.accessToken)
         GroupChatUsers.readUserIdList(chatId) shouldBe listOf(admin.info.id)
     }
 
     test("Group chat messages and message statuses from a deleted account should be deleted") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
-        val adminMessageId = messageAndReadId(admin.accessToken, chatId, TextMessage("text"))
-        messageAndReadId(user.accessToken, chatId, TextMessage("text"))
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+        val adminMessageId = messageAndReadId(admin.accessToken, chatId, TextMessage("t"))
+        messageAndReadId(user.accessToken, chatId, TextMessage("t"))
         createReadStatus(user.accessToken, adminMessageId)
         deleteAccount(user.accessToken)
         val messages = Messages.readGroupChat(chatId)

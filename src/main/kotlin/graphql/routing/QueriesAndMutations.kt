@@ -13,10 +13,12 @@ import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.routing.post
 
-/** Adds the HTTP POST `/graphql` endpoint to the [context], which deals with every GraphQL query and mutation. */
+/**
+ * Adds the HTTP POST `/query-or-mutation` endpoint to the [context], which deals with every GraphQL query and mutation.
+ */
 fun routeQueriesAndMutations(context: Routing): Unit = with(context) {
     authenticate(optional = true) {
-        post("graphql") {
+        post("query-or-mutation") {
             val builder = buildExecutionInput(call.receive(), call)
             try {
                 val result = graphQl.execute(builder)

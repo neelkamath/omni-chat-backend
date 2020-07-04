@@ -69,3 +69,8 @@ val privateChatInfoBroker = Broker<PrivateChatInfoAsset, PrivateChatInfoSubscrip
 data class GroupChatInfoAsset(val chatId: Int, val userId: String)
 
 val groupChatInfoBroker = Broker<GroupChatInfoAsset, GroupChatInfoSubscription>()
+
+/** The [userId] who is to be notified of group chats they have been added to. */
+data class NewGroupChatsAsset(val userId: String)
+
+val newGroupChatsBroker = Broker<NewGroupChatsAsset, NewGroupChatsSubscription>()

@@ -64,7 +64,10 @@ object GroupChats : Table() {
         }
     }
 
-    /** Returns the [chat]'s ID after creating it. */
+    /**
+     * @return the [chat]'s ID after creating it, and [Broker.notify]s the [NewGroupChat.userIdList] of the
+     *         [NewGroupChat] via [newGroupChatsBroker].
+     */
     fun create(adminId: String, chat: NewGroupChat): Int {
         val chatId = transact {
             insert {
@@ -74,7 +77,9 @@ object GroupChats : Table() {
                 it[description] = chat.description.value
             }[GroupChats.id]
         }
-        GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
+        val userIdList = chat.userIdList + adminId
+        GroupChatUsers.addUsers(chatId, userIdList)
+        newGroupChatsBroker.notify(readChat(chatId)) { it.userId in userIdList }
         return chatId
     }
 
@@ -111,19 +116,57 @@ object GroupChats : Table() {
      * [Broker.unsubscribe]d via [messagesBroker] and [groupChatInfoBroker]. The chat is deleted if
      * every user is removed.
      *
-     * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [groupChatInfoBroker].
+     * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [groupChatInfoBroker]. Clients who have
+     * [Broker.subscribe]d via [newGroupChatsBroker] will be [Broker.notify]d of the [GroupChat].
+     *
+     * @see [GroupChatUsers.addUsers]
+     * @see [GroupChatUsers.removeUsers]
+     * @see [updateTitleAndDescription]
      */
     fun update(update: GroupChatUpdate) {
-        transact {
-            update({ GroupChats.id eq update.chatId }) { statement ->
-                update.title?.let { statement[title] = it.value }
-                update.description?.let { statement[description] = it.value }
-            }
+        val existingUserIdList =
+            readChat(update.chatId, messagesPagination = BackwardPagination(last = 0)).users.edges.map { it.node.id }
+        val removedUserIdList =
+            if (update.removedUserIdList == null) null
+            else update.removedUserIdList.intersect(existingUserIdList).toList()
+        if (removedUserIdList != null) {
+            GroupChatUsers.removeUsers(update.chatId, removedUserIdList)
+            if (removedUserIdList.containsAll(existingUserIdList)) return
         }
-        update.newUserIdList?.let { GroupChatUsers.addUsers(update.chatId, it) }
-        update.removedUserIdList?.let { GroupChatUsers.removeUsers(update.chatId, it) }
-        update.newAdminId?.let { setAdmin(update.chatId, update.newAdminId) }
-        groupChatInfoBroker.notify(update.toUpdatedGroupChat()) { it.chatId == update.chatId }
+        updateTitleAndDescription(update)
+        with(update) { if (newAdminId != null) setAdmin(chatId, newAdminId) }
+        val newUserIdList = if (update.newUserIdList == null) null else update.newUserIdList - existingUserIdList
+        if (newUserIdList != null) {
+            GroupChatUsers.addUsers(update.chatId, newUserIdList)
+            newGroupChatsBroker.notify(readChat(update.chatId)) { it.userId in newUserIdList }
+        }
+        operateInfoBroker(update.copy(newUserIdList = newUserIdList, removedUserIdList = removedUserIdList))
+    }
+
+    /**
+     * [update]s the [GroupChatUpdate.chatId]'s title and description if they aren't `null`.
+     *
+     * @see [GroupChats.update]
+     */
+    private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transact {
+        update({ GroupChats.id eq update.chatId }) { statement ->
+            if (update.title != null) statement[title] = update.title.value
+            if (update.description != null) statement[description] = update.description.value
+        }
+    }
+
+    /** [Broker.notify]s users in the [GroupChatUpdate.chatId] of the [UpdatedGroupChat] via [groupChatInfoBroker]. */
+    private fun operateInfoBroker(update: GroupChatUpdate) {
+        val updatedChat = with(update) {
+            UpdatedGroupChat(
+                title,
+                description,
+                newUserIdList?.map(::readUserById),
+                removedUserIdList?.map(::readUserById),
+                newAdminId
+            )
+        }
+        groupChatInfoBroker.notify(updatedChat) { it.chatId == update.chatId }
     }
 
     /**

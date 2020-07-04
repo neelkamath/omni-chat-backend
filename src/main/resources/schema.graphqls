@@ -221,8 +221,8 @@ type Mutation {
     Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"INVALID_GROUP_CHAT"`
-    (i.e., the lists of users to add and remove both contained the same user ID) or `"INVALID_NEW_ADMIN_ID"` (i.e., the
-    to-be admin isn't in the chat).
+    (i.e., the lists of users to add and remove both contained the same user ID), `"INVALID_USER_ID"` (i.e., a user to
+    be added to the chat doesn't exist), or `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat).
 
     You must send an access token with this request.
     """
@@ -315,7 +315,7 @@ type Subscription {
 
     """
     Yields the other user's account when they update it. The subscription will be stopped if one of the users in the
-    chat deletes their account.
+    chat deletes their account, or if the user deletes the chat.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
@@ -332,6 +332,13 @@ type Subscription {
     You must send an access token with this request.
     """
     subscribeToGroupChatInfo(chatId: Int!): GroupChatInfoSubscription!
+
+    """
+    Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
+
+    You must send an access token with this request.
+    """
+    subscribeToNewGroupChats: NewGroupChatsSubscription!
 }
 
 """Represents created and deleted messages, deleted chats, and the subscription creation status."""
@@ -355,6 +362,9 @@ updates will also be included.
 An `ExitedUser` will not be sent if the subscriber has exited.
 """
 union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
+
+"""A `GroupChat` represents a chat the user was added to, including a chat the user just made."""
+union NewGroupChatsSubscription = CreatedSubscription | GroupChat
 
 """The `id` of a user who left the group chat."""
 type ExitedUser {

@@ -3,7 +3,6 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -124,8 +123,8 @@ class AuthTest : FunSpec({
             """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chat1Id = GroupChats.create(adminId = user1Id, userIdList = listOf(user2Id))
-            val chat2Id = GroupChats.create(adminId = user2Id)
+            val chat1Id = GroupChats.create(adminId = user1Id, chat = buildNewGroupChat(user2Id))
+            val chat2Id = GroupChats.create(adminId = user2Id, chat = buildNewGroupChat())
             val (user1Subscriber, user2Chat1Subscriber, user2Chat2Subscriber) =
                 listOf(user1Id to chat1Id, user2Id to chat1Id, user2Id to chat2Id).map { (userId, chatId) ->
                     groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, userId)).subscribeWith(TestSubscriber())

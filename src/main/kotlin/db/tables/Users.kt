@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.buildAccountsConnection
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -33,7 +32,7 @@ object Users : IntIdTable() {
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val users = searchUsers(query)
             .map { AccountEdge(it, readPrimaryKey(it.id)) }
-        return buildAccountsConnection(users, pagination)
+        return AccountsConnection.build(users, pagination)
     }
 
     /**

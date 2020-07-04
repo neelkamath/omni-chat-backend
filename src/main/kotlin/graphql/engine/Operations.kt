@@ -47,3 +47,4 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToContacts", ::subscribeToContacts)
     .dataFetcher("subscribeToPrivateChatInfo", ::subscribeToPrivateChatInfo)
     .dataFetcher("subscribeToGroupChatInfo", ::subscribeToGroupChatInfo)
+    .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)

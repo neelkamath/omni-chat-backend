@@ -34,50 +34,64 @@ private data class GraphQlSubscription(
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
 fun routeGraphQlSubscriptions(context: Routing) {
-    routeSubscribeToMessages(context)
-    routeSubscribeToContacts(context)
-    routeSubscribeToPrivateChatInfo(context)
-    routeSubscribeToGroupChatInfo(context)
+    routeMessagesSubscription(context)
+    routeContactsSubscription(context)
+    routePrivateChatInfoSubscription(context)
+    routeGroupChatInfoSubscription(context)
+    routeNewGroupChatsSubscription(context)
 }
 
 /** Routes the GraphQL `Subscription.subscribeToMessages`. */
-private fun routeSubscribeToMessages(context: Routing): Unit = with(context) {
+private fun routeMessagesSubscription(context: Routing): Unit = with(context) {
     val completionReason =
         CloseReason(CloseReason.Codes.NORMAL, "Either the chat was deleted, or the user deleted their account.")
     routeSubscription(
         context,
-        path = "subscribe-to-messages",
+        path = "messages-subscription",
         subscription = GraphQlSubscription("subscribeToMessages", completionReason)
     )
 }
 
 /** Routes the GraphQL `Subscription.subscribeToContacts`. */
-private fun routeSubscribeToContacts(context: Routing): Unit = with(context) {
+private fun routeContactsSubscription(context: Routing): Unit = with(context) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     routeSubscription(
         context,
-        path = "subscribe-to-contacts",
+        path = "contacts-subscription",
         subscription = GraphQlSubscription("subscribeToContacts", completionReason)
     )
 }
 
 /** Routes the GraphQL `Subscription.subscribeToPrivateChatInfo`. */
-private fun routeSubscribeToPrivateChatInfo(context: Routing): Unit = with(context) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "One of the users in chat deleted their account.")
+private fun routePrivateChatInfoSubscription(context: Routing): Unit = with(context) {
+    val completionReason = CloseReason(
+        CloseReason.Codes.NORMAL,
+        "One of the users in chat deleted their account, or the user deleted the chat."
+    )
     routeSubscription(
         context,
-        path = "subscribe-to-private-chat-info",
+        path = "private-chat-info-subscription",
         subscription = GraphQlSubscription("subscribeToPrivateChatInfo", completionReason)
     )
 }
 
 /** Routes the GraphQL `Subscription.subscribeToGroupChatInfo`. */
-private fun routeSubscribeToGroupChatInfo(context: Routing): Unit = with(context) {
+private fun routeGroupChatInfoSubscription(context: Routing): Unit = with(context) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user left the chat, or deleted their account.")
     routeSubscription(
         context,
-        path = "subscribe-to-group-chat-info",
+        path = "group-chat-info-subscription",
         subscription = GraphQlSubscription("subscribeToGroupChatInfo", completionReason)
+    )
+}
+
+/** Routes the GraphQL `Subscription.subscribeToNewGroupChats`. */
+private fun routeNewGroupChatsSubscription(context: Routing): Unit = with(context) {
+    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
+    routeSubscription(
+        context,
+        path = "new-group-chats-subscription",
+        subscription = GraphQlSubscription("subscribeToNewGroupChats", completionReason)
     )
 }
 

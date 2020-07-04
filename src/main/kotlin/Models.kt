@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChatDescription
 import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.TextMessage
@@ -191,7 +192,7 @@ data class GroupChat(
     val title: GroupChatTitle,
     val description: GroupChatDescription? = null,
     override val messages: MessagesConnection
-) : Chat
+) : Chat, NewGroupChatsSubscription
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
@@ -251,6 +252,8 @@ data class UserChatMessagesRemoval(val userId: String) : MessagesSubscription
 
 data class ExitedUser(val id: String) : GroupChatInfoSubscription
 
+interface NewGroupChatsSubscription
+
 interface PrivateChatInfoSubscription
 
 /**
@@ -280,7 +283,8 @@ object CreatedSubscription :
     MessagesSubscription,
     ContactsSubscription,
     PrivateChatInfoSubscription,
-    GroupChatInfoSubscription {
+    GroupChatInfoSubscription,
+    NewGroupChatsSubscription {
 
     val placeholder = Placeholder
 }
@@ -288,7 +292,25 @@ object CreatedSubscription :
 /** The [chat] the [messages] belong to. */
 data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
-data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo)
+data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {
+    companion object {
+        /** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
+        fun build(AccountEdges: List<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
+            val (first, after) = pagination ?: ForwardPagination()
+            val accounts = AccountEdges.sortedBy { it.cursor }
+            val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
+            val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
+            val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
+            val pageInfo = PageInfo(
+                hasNextPage = firstAccounts.size < afterAccounts.size,
+                hasPreviousPage = afterAccounts.size < accounts.size,
+                startCursor = accounts.firstOrNull()?.cursor,
+                endCursor = accounts.lastOrNull()?.cursor
+            )
+            return AccountsConnection(edges, pageInfo)
+        }
+    }
+}
 
 data class AccountEdge(val node: Account, val cursor: Cursor)
 

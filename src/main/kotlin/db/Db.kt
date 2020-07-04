@@ -104,25 +104,6 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
 fun isUserInChat(userId: String, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
-/** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
-fun buildAccountsConnection(
-    AccountEdges: List<AccountEdge>,
-    pagination: ForwardPagination? = null
-): AccountsConnection {
-    val (first, after) = pagination ?: ForwardPagination()
-    val accounts = AccountEdges.sortedBy { it.cursor }
-    val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
-    val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
-    val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
-    val pageInfo = PageInfo(
-        hasNextPage = firstAccounts.size < afterAccounts.size,
-        hasPreviousPage = afterAccounts.size < accounts.size,
-        startCursor = accounts.firstOrNull()?.cursor,
-        endCursor = accounts.lastOrNull()?.cursor
-    )
-    return AccountsConnection(edges, pageInfo)
-}
-
 /**
  * Deletes the [userId]'s data from the DB.
  *
@@ -154,7 +135,7 @@ fun buildAccountsConnection(
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Broker.unsubscribe]d via [groupChatInfoBroker].
+ * - Clients will be [Broker.unsubscribe]d via [groupChatInfoBroker] and [newGroupChatsBroker].
  *
  * ## Messages
  *
@@ -174,6 +155,7 @@ fun deleteUserFromDb(userId: String) {
     privateChatInfoBroker.unsubscribe { it.subscriberId == userId || it.userId == userId }
     val chatIdList = GroupChatUsers.readChatIdList(userId)
     groupChatInfoBroker.unsubscribe { it.userId == userId && it.chatId in chatIdList }
+    newGroupChatsBroker.unsubscribe { it.userId == userId }
     Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)

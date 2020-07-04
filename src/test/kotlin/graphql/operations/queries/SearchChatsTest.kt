@@ -23,16 +23,16 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 const val SEARCH_CHATS_QUERY = """
     query SearchChats(
         ${"$"}query: String!
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor 
         ${"$"}privateChat_messages_last: Int
-        ${"$"}privateChat_messages_before: Cursor 
+        ${"$"}privateChat_messages_before: Cursor
         ${"$"}groupChat_users_first: Int
         ${"$"}groupChat_users_after: Cursor
+        ${"$"}groupChat_messages_last: Int
+        ${"$"}groupChat_messages_before: Cursor
     ) {
         searchChats(query: ${"$"}query) {
-            $GROUP_CHAT_FRAGMENT
             $PRIVATE_CHAT_FRAGMENT
+            $GROUP_CHAT_FRAGMENT
         }
     }
 """
@@ -40,18 +40,19 @@ const val SEARCH_CHATS_QUERY = """
 private fun operateSearchChats(
     accessToken: String,
     query: String,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): GraphQlResponse = operateGraphQlQueryOrMutation(
     SEARCH_CHATS_QUERY,
     variables = mapOf(
         "query" to query,
-        "groupChat_messages_last" to messagesPagination?.last,
-        "groupChat_messages_before" to messagesPagination?.before?.toString(),
-        "privateChat_messages_last" to messagesPagination?.last,
-        "privateChat_messages_before" to messagesPagination?.before?.toString(),
+        "privateChat_messages_last" to privateChatMessagesPagination?.last,
+        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
         "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString()
+        "groupChat_users_after" to usersPagination?.after?.toString(),
+        "groupChat_messages_last" to groupChatMessagesPagination?.last,
+        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
     ),
     accessToken = accessToken
 )
@@ -59,11 +60,17 @@ private fun operateSearchChats(
 fun searchChats(
     accessToken: String,
     query: String,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): List<Chat> {
-    val chats = operateSearchChats(accessToken, query, usersPagination, messagesPagination)
-        .data!!["searchChats"] as List<*>
+    val chats = operateSearchChats(
+        accessToken,
+        query,
+        privateChatMessagesPagination,
+        usersPagination,
+        groupChatMessagesPagination
+    ).data!!["searchChats"] as List<*>
     return objectMapper.convertValue(chats)
 }
 

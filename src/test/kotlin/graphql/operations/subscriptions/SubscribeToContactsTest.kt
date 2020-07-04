@@ -27,7 +27,7 @@ const val SUBSCRIBE_TO_CONTACTS_QUERY = """
 
 private fun operateSubscribeToContacts(accessToken: String, callback: SubscriptionCallback): Unit =
     operateGraphQlSubscription(
-        uri = "subscribe-to-contacts",
+        uri = "contacts-subscription",
         request = GraphQlRequest(SUBSCRIBE_TO_CONTACTS_QUERY),
         accessToken = accessToken,
         callback = callback

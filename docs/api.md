@@ -18,7 +18,7 @@ Here is the usual flow for using this service.
 
 ## Security
 
-[JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/subscribe-to-messages` endpoint for `Subscription.subscribeToMessages`, the `/graphql` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
+[JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/messages-subscription` endpoint for `Subscription.subscribeToMessages`, the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
 
 ## GraphQL
 
@@ -73,12 +73,12 @@ The `last` and `before` arguments indicate the number of items to be returned be
 
 ### `Query`s and `Mutation`s
 
-Send the GraphQL query in an HTTP POST request to the `/graphql` endpoint.
+Send the GraphQL query in an HTTP POST request to the `/query-or-mutation` endpoint.
 
 Here's an example request for `Query.updateAccount`.
 
 ```http request
-POST http://localhost:80/graphql HTTP/1.1
+POST http://localhost:80/query-or-mutation HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM
 
@@ -98,7 +98,7 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 ### `Subscription`s
 
-Each `Subscription` has its own endpoint. The endpoint is the operation's name styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/subscribe-to-messages`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
+Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older db if required.
 
@@ -108,7 +108,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
 1. Open the WebSocket connection. Note that if you supply an invalid access token, the connection will not be opened. Here's an example WebSocket handshake request:
 
     ```http request
-    GET http://localhost:80/subscribe-to-messages HTTP/1.1
+    GET http://localhost:80/messages-subscription HTTP/1.1
     Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YjNhNzRhZi03Y2M4LTRjZTMtYTg2ZC05YzI4ZmNlZTAzODciLCJleHAiOjE1ODg3NTE0MjR9.JuVC92_Zz6Cnb5p2ZQ_lMKU_9lfIfAP7PcLkVVKnMkU
     Upgrade: websocket
     Connection: Upgrade

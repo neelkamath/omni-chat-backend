@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.MessageStatus
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesBroker
@@ -15,8 +16,8 @@ class MessageStatusesTest : FunSpec({
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
-            val messageId = Messages.message(chatId, adminId, TextMessage("text"))
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val messageId = Messages.message(chatId, adminId, TextMessage("t"))
             val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED) }
             createStatus()
             shouldThrowExactly<IllegalArgumentException>(createStatus)
@@ -25,7 +26,7 @@ class MessageStatusesTest : FunSpec({
         test("""Recording a "read" status shouldn't create a "delivered" status if one was already recorded""") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
             MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
             MessageStatuses.count() shouldBe 2
@@ -34,7 +35,7 @@ class MessageStatusesTest : FunSpec({
         test(""""Recording a "read" status should automatically record a "delivered" status if there wasn't one""") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
             MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
             MessageStatuses.count() shouldBe 2
         }
@@ -42,7 +43,7 @@ class MessageStatusesTest : FunSpec({
         test("Creating a status for the user on their own message should throw an exception") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
             shouldThrowExactly<IllegalArgumentException> {
                 MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
             }
@@ -51,7 +52,7 @@ class MessageStatusesTest : FunSpec({
         test("The user shouldn't be able to create a status on a message sent before they deleted the chat") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user2Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
             PrivateChatDeletions.create(chatId, user1Id)
             shouldThrowExactly<IllegalArgumentException> {
                 MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
@@ -63,7 +64,7 @@ class MessageStatusesTest : FunSpec({
         test("A subscriber should be notified of updated statuses") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
             val subscriber = messagesBroker
                 .subscribe(MessagesAsset(user1Id, chatId))
                 .subscribeWith(TestSubscriber())
@@ -79,7 +80,7 @@ class MessageStatusesTest : FunSpec({
          */
         fun createUsedChat(user1Id: String, user2Id: String): Int {
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user2Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
             MessageStatuses.create(messageId, user1Id, MessageStatus.DELIVERED)
             return chatId
         }

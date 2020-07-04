@@ -4,7 +4,7 @@
 
 Here's what a standard project iteration looks like.
 
-1. Pick a feature to work on using the [project board](https://github.com/neelkamath/omni-chat/projects/1).
+1. Pick a feature to work on using the [project board](https://github.com/neelkamath/omni-chat/projects/1). Remember that resources might need to be created, read, updated, deleted, searched, and notified. For example, a messaging feature should allow users to create a message, read a message, update a message (i.e., display which users have read the message), delete a message, search for the message, and be notified of a created message.
 1. Update the [GraphQL schema](../src/main/resources/schema.graphqls).
     - An operation which is a subscription must be named using the format `subscribeTo<UPDATE>` (e.g., `subscribeToMessages`).
     - An operation which is a subscription must return a `union` whose name's suffixed with `Subscription` which includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
@@ -22,9 +22,6 @@ Here's what a standard project iteration looks like.
     |`scalar`|A `data class`, `typealias`, predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
     
     Since GraphQL only has lists, you mustn't use `Set`s when converting between GraphQL and Kotlin types. Instead, use something like an `init` block to assert uniqueness. 
-1. When updating the DB, keep in mind the following.
-    - This data may need to be wiped when an account gets deleted. For example, the user's messages must be deleted when they delete their account.
-    - Subscribers may need to be notified whenever this data gets created. For example, deleting a chat requires notifying subscribers of such.
 1. Write tests.
 
     If you're writing tests for the GraphQL API, perform the following steps (see [`RefreshTokenSetTest.kt`](../src/test/kotlin/graphql/operations/queries/RefreshTokenSetTest.kt) for an example on queries and mutations, and [`SubscribeToMessagesTest.kt`](../src/test/kotlin/graphql/operations/subscriptions/SubscribeToMessagesTest.kt) for an example on subscriptions):
@@ -41,7 +38,7 @@ Here's what a standard project iteration looks like.
         1. Create a function which asserts the `ClientException` received (e.g., `"INVALID_CHAT_ID"`), and asserts that the connection gets closed. Name it using the format `err<OPERATION>` (e.g., `errSubscribeToMessages`).
     1. Create a class named using the format `<OPERATION>Test` (e.g., `ReadChatsTest`).
     1. Write load tests if required. For example, you might want to test that searching messages from a populated DB is fast.
-1. Implement the feature. Name the data fetcher the same as the GraphQL operation (e.g., `subscribeToMessages`).
+1. Implement the feature. Name the data fetcher the same as the GraphQL operation (e.g., `subscribeToMessages`). When adding a route for a subscription in `com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions`, name the function using the format `route<SUBSCRIPTION>` where `<SUBSCRIPTION>` is the operation's return type (e.g., the operation `Subscription.subscribeToMessages` has its router named `routeMessagesSubscription()` because it returns a `MessagesSubscription`).
 1. When updating [`db/Brokers.kt`](../src/main/kotlin/db/Brokers.kt), name the instance of `com.neelkamath.omniChat.Broker` using the format `<SUBSCRIPTION>Broker`, and name the `data class` used as the `T` supplied to `com.neelkamath.omniChat.Broker` using the format `<SUBSCRIPTION>Asset`, where `<SUBSCRIPTION>` is the operation's return type without the `Subscription` suffix. For example, if a GraphQL operation `Subscription.subscribeToPrivateChatInfo` returns a `PrivateChatInfoSubscription`, its broker and `data class` are named `privateChatInfoBroker` and `PrivateChatInfoAsset` respectively.
 1. Mark the feature as completed in the [spec](spec.md).
 1. Create a new release.

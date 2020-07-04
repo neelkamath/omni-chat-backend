@@ -35,7 +35,7 @@ const val SUBSCRIBE_TO_MESSAGES_QUERY = """
 private fun operateSubscribeToMessages(accessToken: String, chatId: Int, callback: SubscriptionCallback) {
     val request = GraphQlRequest(SUBSCRIBE_TO_MESSAGES_QUERY, variables = mapOf("chatId" to chatId))
     operateGraphQlSubscription(
-        uri = "subscribe-to-messages",
+        uri = "messages-subscription",
         request = request,
         accessToken = accessToken,
         callback = callback
@@ -64,7 +64,7 @@ class SubscribeToMessagesTest : FunSpec({
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         subscribeToMessages(user1.accessToken, chatId) { incoming ->
             val user = if (senderIsSubscriber) user1 else user2
-            createMessage(user.accessToken, chatId, TextMessage("text"))
+            createMessage(user.accessToken, chatId, TextMessage("t"))
             parseFrameData<Message>(incoming) shouldBe Messages.readPrivateChat(chatId, user1.info.id).last().node
         }
     }
@@ -77,20 +77,17 @@ class SubscribeToMessagesTest : FunSpec({
 
     test("A message created in another chat shouldn't be received") {
         val (admin1, admin2) = createSignedInUsers(2)
-        val chat1 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chat1Id = createGroupChat(admin1.accessToken, chat1)
-        val chat2 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chat2Id = createGroupChat(admin2.accessToken, chat2)
+        val chat1Id = createGroupChat(admin1.accessToken, buildNewGroupChat())
+        val chat2Id = createGroupChat(admin2.accessToken, buildNewGroupChat())
         subscribeToMessages(admin1.accessToken, chat1Id) { incoming ->
-            createMessage(admin2.accessToken, chat2Id, TextMessage("text"))
+            createMessage(admin2.accessToken, chat2Id, TextMessage("t"))
             incoming.poll().shouldBeNull()
         }
     }
 
     test("The user should be unsubscribed from the chat's message updates when they leave the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         subscribeToMessages(user.accessToken, chatId) { incoming ->
             leaveGroupChat(user.accessToken, chatId)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -99,8 +96,7 @@ class SubscribeToMessagesTest : FunSpec({
 
     test("Deleting a user should delete their message update subscriptions for group chats") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         subscribeToMessages(token, chatId) { incoming ->
             deleteAccount(token)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -126,7 +122,7 @@ class SubscribeToMessagesTest : FunSpec({
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         subscribeToMessages(user1.accessToken, chatId) { incoming ->
             val user = if (deleterIsSubscriber) user1 else user2
-            createMessage(user.accessToken, chatId, TextMessage("text"))
+            createMessage(user.accessToken, chatId, TextMessage("t"))
             val messageId = parseFrameData<Message>(incoming).id
             deleteMessage(user.accessToken, messageId)
             parseFrameData<DeletedMessage>(incoming) shouldBe DeletedMessage(messageId)
@@ -143,11 +139,9 @@ class SubscribeToMessagesTest : FunSpec({
 
     test("A message deleted in another chat shouldn't be received") {
         val admin = createSignedInUsers(1)[0]
-        val chat1 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chat1Id = createGroupChat(admin.accessToken, chat1)
-        val chat2 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chat2Id = createGroupChat(admin.accessToken, chat2)
-        val messageId = messageAndReadId(admin.accessToken, chat2Id, TextMessage("text"))
+        val chat1Id = createGroupChat(admin.accessToken, buildNewGroupChat())
+        val chat2Id = createGroupChat(admin.accessToken, buildNewGroupChat())
+        val messageId = messageAndReadId(admin.accessToken, chat2Id, TextMessage("t"))
         subscribeToMessages(admin.accessToken, chat1Id) { incoming ->
             deleteMessage(admin.accessToken, messageId)
             incoming.poll().shouldBeNull()
@@ -165,8 +159,7 @@ class SubscribeToMessagesTest : FunSpec({
 
     test("The user should be unsubscribed when they leave a group chat") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         subscribeToMessages(token, chatId) { incoming ->
             leaveGroupChat(token, chatId)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -181,9 +174,8 @@ class SubscribeToMessagesTest : FunSpec({
         """
     ) {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
-        createMessage(user.accessToken, chatId, TextMessage("text"))
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+        createMessage(user.accessToken, chatId, TextMessage("t"))
         subscribeToMessages(admin.accessToken, chatId) { incoming ->
             deleteAccount(user.accessToken)
             parseFrameData<UserChatMessagesRemoval>(incoming) shouldBe UserChatMessagesRemoval(user.info.id)
@@ -233,13 +225,13 @@ class SubscribeToMessagesTest : FunSpec({
         status: MessageStatus
     ) {
         val chat = NewGroupChat(
-            GroupChatTitle("Title"),
+            GroupChatTitle("T"),
             GroupChatDescription(""),
             listOf(sender.info.id, statusCreator.info.id)
         )
         val chatId = createGroupChat(subscriber.accessToken, chat)
         subscribeToMessages(subscriber.accessToken, chatId) { incoming ->
-            createMessage(sender.accessToken, chatId, TextMessage("text"))
+            createMessage(sender.accessToken, chatId, TextMessage("t"))
             val messageId = parseFrameData<Message>(incoming).id
             when (status) {
                 MessageStatus.DELIVERED -> createDeliveredStatus(statusCreator.accessToken, messageId)

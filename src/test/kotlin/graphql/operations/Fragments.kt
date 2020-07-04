@@ -170,7 +170,6 @@ const val CREATED_SUBSCRIPTION_FRAGMENT = """
     }
 """
 
-
 const val DELETED_MESSAGE_FRAGMENT = """
     ... on DeletedMessage {
         id

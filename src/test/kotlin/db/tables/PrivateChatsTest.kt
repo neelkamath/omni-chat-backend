@@ -37,7 +37,7 @@ class PrivateChatsTest : FunSpec({
             val chat2Id = PrivateChats.create(user1Id, user3Id)
             val chat3Id = PrivateChats.create(user1Id, user4Id)
             PrivateChatDeletions.create(chat2Id, user1Id)
-            Messages.create(chat2Id, user1Id, TextMessage("text"))
+            Messages.create(chat2Id, user1Id, TextMessage("t"))
             PrivateChatDeletions.create(chat3Id, user1Id)
             PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
         }
@@ -139,7 +139,7 @@ class PrivateChatsTest : FunSpec({
          */
         fun createAndUseChat(user1Id: String, user2Id: String): Int {
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("text"))
+            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
             MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
             return chatId
         }
@@ -167,11 +167,20 @@ class PrivateChatsTest : FunSpec({
         }
     }
 
-    context("readUsers(Int)") {
+    context("readUserIdList(Int)") {
         test("Retrieving the user IDs of a chat should return them") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            PrivateChats.readUsers(chatId) shouldBe listOf(user1Id, user2Id)
+            PrivateChats.readUserIdList(chatId) shouldBe listOf(user1Id, user2Id)
+        }
+    }
+
+    context("readOtherUserId(Int, String)") {
+        test("The other user ID should be returned") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            PrivateChats.readOtherUserId(chatId, user1Id) shouldBe user2Id
+            PrivateChats.readOtherUserId(chatId, user2Id) shouldBe user1Id
         }
     }
 })

@@ -8,6 +8,7 @@ import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATED_ACCOUNT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
 import com.neelkamath.omniChat.graphql.operations.mutations.deleteAccount
+import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.mutations.updateAccount
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
@@ -26,7 +27,7 @@ const val SUBSCRIBE_TO_PRIVATE_INFO_QUERY = """
 private fun operateSubscribeToPrivateChatInfo(accessToken: String, chatId: Int, callback: SubscriptionCallback) {
     val request = GraphQlRequest(SUBSCRIBE_TO_PRIVATE_INFO_QUERY, variables = mapOf("chatId" to chatId))
     operateGraphQlSubscription(
-        uri = "subscribe-to-private-chat-info",
+        uri = "private-chat-info-subscription",
         request = request,
         accessToken = accessToken,
         callback = callback
@@ -82,6 +83,15 @@ class SubscribeToPrivateChatInfoTest : FunSpec({
 
     test("The subscription should be stopped if the other user deletes their account") {
         testAccountDeletion(shouldDeleteSubscriber = false)
+    }
+
+    test("The subscription should be stopped if the user deletes the chat") {
+        val (user1, user2) = createSignedInUsers(2)
+        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        subscribeToPrivateChatInfo(user1.accessToken, chatId) { incoming ->
+            deletePrivateChat(user1.accessToken, chatId)
+            incoming.receive().frameType shouldBe FrameType.CLOSE
+        }
     }
 
     test("An error should be returned if an invalid chat ID is supplied") {

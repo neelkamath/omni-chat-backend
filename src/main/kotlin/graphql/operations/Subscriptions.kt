@@ -24,7 +24,7 @@ fun subscribeToPrivateChatInfo(env: DataFetchingEnvironment): Publisher<PrivateC
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    val users = PrivateChats.readUsers(chatId)
+    val users = PrivateChats.readUserIdList(chatId)
     val userId = if (users[0] == env.userId!!) users[1] else users[0]
     return privateChatInfoBroker
         .subscribe(PrivateChatInfoAsset(subscriberId = env.userId!!, userId = userId))
@@ -35,4 +35,9 @@ fun subscribeToGroupChatInfo(env: DataFetchingEnvironment): Publisher<GroupChatI
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     return groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, env.userId!!))
+}
+
+fun subscribeToNewGroupChats(env: DataFetchingEnvironment): Publisher<NewGroupChatsSubscription> {
+    env.verifyAuth()
+    return newGroupChatsBroker.subscribe(NewGroupChatsAsset(env.userId!!))
 }

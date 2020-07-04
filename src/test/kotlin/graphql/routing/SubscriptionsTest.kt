@@ -2,9 +2,7 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.CreatedSubscription
 import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
@@ -104,11 +102,10 @@ class SubscriptionsTest : FunSpec({
             """
         ) {
             val token = createSignedInUsers(1)[0].accessToken
-            val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-            val chatId = createGroupChat(token, chat)
+            val chatId = createGroupChat(token, buildNewGroupChat())
             subscribeToMessages(token, chatId) { incoming -> for (frame in incoming) if (frame is Frame.Close) break }
             subscribeToMessages(token, chatId) { incoming ->
-                createMessage(token, chatId, TextMessage("text"))
+                createMessage(token, chatId, TextMessage("t"))
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }

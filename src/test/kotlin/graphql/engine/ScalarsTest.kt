@@ -1,8 +1,6 @@
 package com.neelkamath.omniChat.graphql.engine
 
-import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
@@ -16,11 +14,10 @@ class DateTimeCoercingTest : FunSpec({
     /** Returns a GraphQL `DateTime` scalar. */
     fun getScalar(): String {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         var sent: String? = null
         subscribeToMessages(token, chatId) { incoming ->
-            createMessage(token, chatId, TextMessage("text"))
+            createMessage(token, chatId, TextMessage("t"))
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
             sent = dateTimes["sent"] as String

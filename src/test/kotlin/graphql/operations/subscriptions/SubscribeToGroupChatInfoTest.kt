@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
 import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.GraphQlDocDataException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
@@ -29,7 +28,7 @@ const val SUBSCRIBE_TO_GROUP_CHAT_INFO_QUERY = """
 private fun operateSubscribeToGroupChatInfo(accessToken: String, chatId: Int, callback: SubscriptionCallback) {
     val request = GraphQlRequest(SUBSCRIBE_TO_GROUP_CHAT_INFO_QUERY, variables = mapOf("chatId" to chatId))
     operateGraphQlSubscription(
-        uri = "subscribe-to-group-chat-info",
+        uri = "group-chat-info-subscription",
         request = request,
         accessToken = accessToken,
         callback = callback
@@ -51,8 +50,7 @@ fun errSubscribeToGroupChatInfo(accessToken: String, chatId: Int, exception: Gra
 class SubscribeToGroupChatInfoTest : FunSpec({
     test("A notification should be received when the chat is updated") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
         val update = GroupChatUpdate(chatId, GroupChatTitle("New Title"), newUserIdList = listOf(user.info.id))
         subscribeToGroupChatInfo(admin.accessToken, chatId) { incoming ->
             updateGroupChat(admin.accessToken, update)
@@ -62,8 +60,7 @@ class SubscribeToGroupChatInfoTest : FunSpec({
 
     test("The subscription should be stopped if the user deletes their account even if the chat still exists") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         subscribeToGroupChatInfo(user.accessToken, chatId) { incoming ->
             deleteAccount(user.accessToken)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -72,8 +69,7 @@ class SubscribeToGroupChatInfoTest : FunSpec({
 
     test("The subscription should be stopped if the user leaves the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         subscribeToGroupChatInfo(user.accessToken, chatId) { incoming ->
             leaveGroupChat(user.accessToken, chatId)
             incoming.receive().frameType shouldBe FrameType.CLOSE
@@ -82,8 +78,7 @@ class SubscribeToGroupChatInfoTest : FunSpec({
 
     test("Updating an account should notify the updater and the other user in the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         subscribeToGroupChatInfo(admin.accessToken, chatId) { adminIncoming ->
             subscribeToGroupChatInfo(user.accessToken, chatId) { userIncoming ->
                 updateAccount(user.accessToken, AccountUpdate())
@@ -95,8 +90,7 @@ class SubscribeToGroupChatInfoTest : FunSpec({
 
     test("When a user leaves, only the other user should be notified of such") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         subscribeToGroupChatInfo(admin.accessToken, chatId) { adminIncoming ->
             subscribeToGroupChatInfo(user.accessToken, chatId) { userIncoming ->
                 leaveGroupChat(user.accessToken, chatId)

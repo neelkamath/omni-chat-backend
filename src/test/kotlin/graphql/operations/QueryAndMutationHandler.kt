@@ -59,7 +59,7 @@ fun requestGraphQlQueryOrMutation(
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
 ): TestApplicationResponse = withTestApplication(Application::main) {
-    handleRequest(HttpMethod.Post, "graphql") {
+    handleRequest(HttpMethod.Post, "query-or-mutation") {
         if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         val body = GraphQlRequest(query, variables)

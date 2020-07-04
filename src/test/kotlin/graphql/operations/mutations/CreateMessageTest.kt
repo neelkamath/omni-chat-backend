@@ -2,8 +2,6 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
@@ -54,8 +52,7 @@ class CreateMessageTest : FunSpec({
 
     test("A message should be sent in a group chat") {
         val user = createSignedInUsers(1)[0]
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(user.accessToken, chat)
+        val chatId = createGroupChat(user.accessToken, buildNewGroupChat())
         val text = "Hi"
         createMessage(user.accessToken, chatId, TextMessage(text))
         testMessages(Messages.readGroupChat(chatId), user.info.id, TextMessage(text))
@@ -63,17 +60,15 @@ class CreateMessageTest : FunSpec({
 
     test("Messaging in a chat the user isn't in should throw an exception") {
         val (user1, user2) = createSignedInUsers(2)
-        val chat1 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chat1Id = createGroupChat(user1.accessToken, chat1)
-        val chat2 = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        createGroupChat(user2.accessToken, chat2)
-        errCreateMessage(user2.accessToken, chat1Id, TextMessage("message")) shouldBe InvalidChatIdException.message
+        val chatId = createGroupChat(user1.accessToken, buildNewGroupChat())
+        createGroupChat(user2.accessToken, buildNewGroupChat())
+        errCreateMessage(user2.accessToken, chatId, TextMessage("t")) shouldBe InvalidChatIdException.message
     }
 
     test("The user should be able to create a message in a private chat they just deleted") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         deletePrivateChat(user1.accessToken, chatId)
-        createMessage(user1.accessToken, chatId, TextMessage("text"))
+        createMessage(user1.accessToken, chatId, TextMessage("t"))
     }
 })
