@@ -9,8 +9,7 @@ import graphql.schema.idl.TypeRuntimeWiring
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
     .type("MessagesSubscription", ::wireMessagesSubscription)
     .type("ContactsSubscription", ::wireContactsSubscription)
-    .type("PrivateChatInfoSubscription", ::wirePrivateChatInfoSubscription)
-    .type("GroupChatInfoSubscription", ::wireGroupChatInfoSubscription)
+    .type("UpdatedChatsSubscription", ::wireUpdatedChatsSubscription)
     .type("NewGroupChatsSubscription", ::wireNewGroupChatsSubscription)
     .type("Chat", ::wireChat)
     .type("AccountData", ::wireAccountData)
@@ -45,17 +44,7 @@ private fun wireMessagesSubscription(builder: TypeRuntimeWiring.Builder): TypeRu
         it.schema.getObjectType(type)
     }
 
-private fun wirePrivateChatInfoSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
-    builder.typeResolver {
-        val type = when (val obj = it.getObject<Any>()) {
-            is CreatedSubscription -> "CreatedSubscription"
-            is UpdatedAccount -> "UpdatedAccount"
-            else -> throw Error("$obj wasn't a CreatedSubscription or UpdatedAccount.")
-        }
-        it.schema.getObjectType(type)
-    }
-
-private fun wireGroupChatInfoSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
+private fun wireUpdatedChatsSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder =
     builder.typeResolver {
         val type = when (val obj = it.getObject<Any>()) {
             is CreatedSubscription -> "CreatedSubscription"

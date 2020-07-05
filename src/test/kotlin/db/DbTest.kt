@@ -44,19 +44,11 @@ class DbTest : FunSpec({
             subscriber.assertComplete()
         }
 
-        test("The deleted subscriber should be unsubscribed from private chat info updates") {
-            val userId = createVerifiedUsers(1)[0].info.id
-            val subscriber =
-                privateChatInfoBroker.subscribe(PrivateChatInfoAsset(userId)).subscribeWith(TestSubscriber())
-            deleteUserFromDb(userId)
-            subscriber.assertComplete()
-        }
-
-        test("Only the deleted subscriber should be unsubscribed from group chat info updates") {
+        test("Only the deleted subscriber should be unsubscribed from updated chats") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { groupChatInfoBroker.subscribe(GroupChatInfoAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             deleteUserFromDb(userId)
             adminSubscriber.assertValue(ExitedUser(chatId, userId))
             userSubscriber.assertComplete()

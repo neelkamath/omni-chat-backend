@@ -115,9 +115,9 @@ object GroupChats : Table() {
      * Users in the [GroupChatUpdate.newUserIdList] who are already in the chat are ignored.
      *
      * Users in the [GroupChatUpdate.removedUserIdList] who aren't in the chat are ignored. Removed users will be
-     * [Broker.unsubscribe]d via [groupChatInfoBroker]. The chat is deleted if every user is removed.
+     * [Broker.unsubscribe]d via [updatedChatsBroker]. The chat is deleted if every user is removed.
      *
-     * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [groupChatInfoBroker]. Clients who have
+     * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [updatedChatsBroker]. Clients who have
      * [Broker.subscribe]d via [newGroupChatsBroker] will be [Broker.notify]d of the [GroupChat].
      *
      * @see [GroupChatUsers.addUsers]
@@ -156,7 +156,7 @@ object GroupChats : Table() {
         }
     }
 
-    /** [Broker.notify]s users in the [GroupChatUpdate.chatId] of the [UpdatedGroupChat] via [groupChatInfoBroker]. */
+    /** [Broker.notify]s users in the [GroupChatUpdate.chatId] of the [UpdatedGroupChat] via [updatedChatsBroker]. */
     private fun operateInfoBroker(update: GroupChatUpdate): Unit = with(update) {
         val updatedChat = UpdatedGroupChat(
             chatId,
@@ -166,7 +166,7 @@ object GroupChats : Table() {
             removedUserIdList?.map(::readUserById),
             newAdminId
         )
-        groupChatInfoBroker.notify(updatedChat) { isUserInChat(it.userId, chatId) }
+        updatedChatsBroker.notify(updatedChat) { isUserInChat(it.userId, chatId) }
     }
 
     /**

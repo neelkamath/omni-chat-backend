@@ -83,7 +83,7 @@ class GroupChatsTest : FunSpec({
         test("A subscriber should be notified when the chat is updated") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat())
-            val subscriber = groupChatInfoBroker.subscribe(GroupChatInfoAsset(adminId)).subscribeWith(TestSubscriber())
+            val subscriber = updatedChatsBroker.subscribe(UpdatedChatsAsset(adminId)).subscribeWith(TestSubscriber())
             val update = GroupChatUpdate(chatId, GroupChatTitle("New Title"), newUserIdList = listOf(userId))
             GroupChats.update(update)
             subscriber.assertValue(update.toUpdatedGroupChat())

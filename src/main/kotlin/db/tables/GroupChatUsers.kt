@@ -3,8 +3,8 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.groupChatInfoBroker
 import com.neelkamath.omniChat.db.transact
+import com.neelkamath.omniChat.db.updatedChatsBroker
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
@@ -54,15 +54,15 @@ object GroupChatUsers : IntIdTable() {
      * user is removed, the [chatId] will be [GroupChats.delete]d.
      *
      * If the chat is deleted, it will be deleted from [GroupChats], [GroupChatUsers], [Messages], and
-     * [MessageStatuses]. Clients excluding the [userIdList] who have [Broker.subscribe]d via [groupChatInfoBroker] will
-     * be [Broker.notify]d of the [ExitedUser]s.
+     * [MessageStatuses]. Clients, excluding the [userIdList], who have [Broker.subscribe]d via [updatedChatsBroker]
+     * will be [Broker.notify]d of the [ExitedUser]s.
      */
     fun removeUsers(chatId: Int, userIdList: List<String>) {
         transact {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         userIdList.forEach { userId ->
-            groupChatInfoBroker.notify(ExitedUser(chatId, userId)) { isUserInChat(chatId, it.userId) }
+            updatedChatsBroker.notify(ExitedUser(chatId, userId)) { isUserInChat(chatId, it.userId) }
         }
         if (readUserIdList(chatId).isEmpty()) GroupChats.delete(chatId)
     }

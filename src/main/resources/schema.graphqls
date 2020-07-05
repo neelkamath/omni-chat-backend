@@ -313,20 +313,14 @@ type Subscription {
     subscribeToContacts: ContactsSubscription!
 
     """
-    Yields updated accounts of users the user has private chats with. Updates will be sent for private chats the user
-    has deleted because it's possible that the user recreated the chat but hasn't finished sending a message in it yet.
-    The subscription will be stopped if the user deletes their account.
+    Yields updated accounts of users the user has private chats with, and metadata updates on group chats the user is
+    in. Updates will be sent for private chats the user has deleted because it's possible that the user recreated the
+    chat but hasn't finished sending a message in it yet. The subscription will be stopped if the user deletes their
+    account.
 
     You must send an access token with this request.
     """
-    subscribeToPrivateChatInfo: PrivateChatInfoSubscription!
-
-    """
-    Yields updates on a group chat's metadata. The subscription will be stopped if the user deletes their account.
-
-    You must send an access token with this request.
-    """
-    subscribeToGroupChatInfo: GroupChatInfoSubscription!
+    subscribeToUpdatedChats: UpdatedChatsSubscription!
 
     """
     Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
@@ -347,17 +341,13 @@ union MessagesSubscription = CreatedSubscription
 
 union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
 
-"""An `UpdatedAccount` represents the account of the other user in the chat when it's updated."""
-union PrivateChatInfoSubscription = CreatedSubscription | UpdatedAccount
-
 """
-An `UpdatedAccount` represents the account of a user in the chat which has been updated. The subscriber's account
-updates will not be included.
+An `UpdatedAccount` represents the account of a user which was updated. The subscriber's account updates will not be
+included.
 
-An `ExitedUser` will not be sent if the subscriber has exited. If the subscriber leaves the chat, they won't receive
-their own `ExitedUser` message.
+If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
 """
-union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
+union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
 """
 A `GroupChatId` is the ID of the chat the user was added to, excluding a chat the user just created themselves.
@@ -368,7 +358,7 @@ type GroupChatId {
     id: Int!
 }
 
-"""The `id` of a user who left the group chat."""
+"""The user who left the group chat."""
 type ExitedUser {
     chatId: Int!
     userId: ID!

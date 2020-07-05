@@ -110,9 +110,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
- * - Clients who have [Broker.subscribe]d via [privateChatInfoBroker] will be [Broker.unsubscribe]d.
- * - If the [userId] has subscribed to [UpdatedAccount]s via [privateChatInfoBroker], they'll be
- *   [Broker.unsubscribe]d.
+ * - Clients who have [Broker.subscribe]d via [updatedChatsBroker] will be [Broker.unsubscribe]d.
  *
  * ## Contacts
  *
@@ -133,7 +131,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Broker.unsubscribe]d via [groupChatInfoBroker] and [newGroupChatsBroker].
+ * - Clients will be [Broker.unsubscribe]d via [updatedChatsBroker].
  *
  * ## Messages
  *
@@ -150,8 +148,7 @@ fun deleteUserFromDb(userId: String) {
             "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
     contactsBroker.unsubscribe { it.userId == userId }
-    privateChatInfoBroker.unsubscribe { it.userId == userId }
-    groupChatInfoBroker.unsubscribe { it.userId == userId }
+    updatedChatsBroker.unsubscribe { it.userId == userId }
     newGroupChatsBroker.unsubscribe { it.userId == userId }
     Users.delete(userId)
     Contacts.deleteUserEntries(userId)

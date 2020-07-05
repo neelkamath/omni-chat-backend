@@ -1,10 +1,13 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.contactsBroker
+import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.db.updatedChatsBroker
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
@@ -167,8 +170,8 @@ private fun UsersResource.searchBy(
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
 /**
- * Clients who have [Broker.subscribe]d via [contactsBroker], [groupChatInfoBroker], and [privateChatInfoBroker] will be
- * [Broker.notify]d of the user's [update].
+ * Clients who have [Broker.subscribe]d via [contactsBroker] and [updatedChatsBroker] will be [Broker.notify]d of the
+ * user's [update].
  */
 fun updateUser(id: String, update: AccountUpdate) {
     val user = readUser(id)
@@ -176,9 +179,10 @@ fun updateUser(id: String, update: AccountUpdate) {
     updateUserRepresentation(user, update)
     realm.users().get(id).update(user)
     contactsBroker.notify(UpdatedContact.fromUserId(id)) { id in Contacts.readIdList(it.userId) }
-    val account = UpdatedAccount.fromUserId(id)
-    privateChatInfoBroker.notify(account) { id in PrivateChats.readOtherUserIdList(it.userId) }
-    groupChatInfoBroker.notify(account) { it.userId != id && GroupChatUsers.areInSameChat(it.userId, id) }
+    updatedChatsBroker.notify(UpdatedAccount.fromUserId(id)) {
+        val shareChat = id in PrivateChats.readOtherUserIdList(it.userId) || GroupChatUsers.areInSameChat(it.userId, id)
+        it.userId != id && shareChat
+    }
 }
 
 fun isUsernameTaken(username: Username): Boolean {

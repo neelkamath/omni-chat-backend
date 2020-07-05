@@ -1,6 +1,9 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.ContactsSubscription
+import com.neelkamath.omniChat.MessagesSubscription
+import com.neelkamath.omniChat.NewGroupChatsSubscription
+import com.neelkamath.omniChat.UpdatedChatsSubscription
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observer
@@ -58,13 +61,9 @@ data class ContactsAsset(val userId: String)
 
 val contactsBroker = Broker<ContactsAsset, ContactsSubscription>()
 
-data class PrivateChatInfoAsset(val userId: String)
+data class UpdatedChatsAsset(val userId: String)
 
-val privateChatInfoBroker = Broker<PrivateChatInfoAsset, PrivateChatInfoSubscription>()
-
-data class GroupChatInfoAsset(val userId: String)
-
-val groupChatInfoBroker = Broker<GroupChatInfoAsset, GroupChatInfoSubscription>()
+val updatedChatsBroker = Broker<UpdatedChatsAsset, UpdatedChatsSubscription>()
 
 data class NewGroupChatsAsset(val userId: String)
 

@@ -3,8 +3,8 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.ExitedUser
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.GroupChatInfoAsset
-import com.neelkamath.omniChat.db.groupChatInfoBroker
+import com.neelkamath.omniChat.db.UpdatedChatsAsset
+import com.neelkamath.omniChat.db.updatedChatsBroker
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -44,7 +44,7 @@ class GroupChatUsersTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { groupChatInfoBroker.subscribe(GroupChatInfoAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId)
             adminSubscriber.assertValue(ExitedUser(chatId, userId))
             userSubscriber.assertNoValues()

@@ -16,14 +16,9 @@ fun subscribeToContacts(env: DataFetchingEnvironment): Publisher<ContactsSubscri
     return contactsBroker.subscribe(ContactsAsset(env.userId!!))
 }
 
-fun subscribeToPrivateChatInfo(env: DataFetchingEnvironment): Publisher<PrivateChatInfoSubscription> {
+fun subscribeToUpdatedChats(env: DataFetchingEnvironment): Publisher<UpdatedChatsSubscription> {
     env.verifyAuth()
-    return privateChatInfoBroker.subscribe(PrivateChatInfoAsset(env.userId!!))
-}
-
-fun subscribeToGroupChatInfo(env: DataFetchingEnvironment): Publisher<GroupChatInfoSubscription> {
-    env.verifyAuth()
-    return groupChatInfoBroker.subscribe(GroupChatInfoAsset(env.userId!!))
+    return updatedChatsBroker.subscribe(UpdatedChatsAsset(env.userId!!))
 }
 
 fun subscribeToNewGroupChats(env: DataFetchingEnvironment): Publisher<NewGroupChatsSubscription> {

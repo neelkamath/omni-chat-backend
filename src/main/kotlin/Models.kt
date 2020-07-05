@@ -125,7 +125,7 @@ private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?)
     }
 }
 
-interface GroupChatInfoSubscription
+interface UpdatedChatsSubscription
 
 /** @throws [IllegalArgumentException] if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(
@@ -135,7 +135,7 @@ data class UpdatedGroupChat(
     val newUsers: List<Account>? = null,
     val removedUsers: List<Account>? = null,
     val adminId: String? = null
-) : GroupChatInfoSubscription {
+) : UpdatedChatsSubscription {
     init {
         verifyGroupChatUsers(newUsers, removedUsers)
     }
@@ -147,7 +147,7 @@ data class UpdatedAccount(
     val emailAddress: String,
     val firstName: String? = null,
     val lastName: String? = null
-) : PrivateChatInfoSubscription, GroupChatInfoSubscription {
+) : UpdatedChatsSubscription {
     companion object {
         fun fromUserId(userId: String): UpdatedAccount =
             with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName) }
@@ -256,21 +256,18 @@ data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : Mes
 
 data class UserChatMessagesRemoval(val chatId: Int, val userId: String) : MessagesSubscription
 
-data class ExitedUser(val chatId: Int, val userId: String) : GroupChatInfoSubscription
+data class ExitedUser(val chatId: Int, val userId: String) : UpdatedChatsSubscription
 
 interface NewGroupChatsSubscription
 
 data class GroupChatId(val id: Int) : NewGroupChatsSubscription
-
-interface PrivateChatInfoSubscription
 
 data class DeletionOfEveryMessage(val chatId: Int) : MessagesSubscription
 
 object CreatedSubscription :
     MessagesSubscription,
     ContactsSubscription,
-    PrivateChatInfoSubscription,
-    GroupChatInfoSubscription,
+    UpdatedChatsSubscription,
     NewGroupChatsSubscription {
 
     val placeholder = Placeholder
