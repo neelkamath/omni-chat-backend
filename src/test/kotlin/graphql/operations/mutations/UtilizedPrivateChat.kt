@@ -11,6 +11,6 @@ data class UtilizedPrivateChat(val messageId: Int, val user1: SignedInUser, val 
 fun createUtilizedPrivateChat(): UtilizedPrivateChat {
     val (user1, user2) = createSignedInUsers(2)
     val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-    val messageId = messageAndReadId(user2.accessToken, chatId, TextMessage("text"))
+    val messageId = messageAndReadId(user2.accessToken, chatId, TextMessage("t"))
     return UtilizedPrivateChat(messageId, user1, user2)
 }

@@ -1,7 +1,10 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.transact
+import com.neelkamath.omniChat.db.updatedChatsBroker
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
@@ -14,6 +17,10 @@ object GroupChatUsers : IntIdTable() {
     private fun isUserInChat(groupChatId: Int, userId: String): Boolean = transact {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
+
+    /** @return whether [user1Id] and [user2Id] have at least one chat in common. */
+    fun areInSameChat(user1Id: String, user2Id: String): Boolean =
+        user1Id in readChatIdList(user2Id).flatMap { readUserIdList(it) }
 
     /**
      * Returns the user ID list from the specified [groupChatId].
@@ -31,11 +38,12 @@ object GroupChatUsers : IntIdTable() {
 
     /** @see [readUserIdList] */
     fun readUsers(groupChatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        buildAccountsConnection(readUserCursors(groupChatId), pagination)
+        AccountsConnection.build(readUserCursors(groupChatId), pagination)
 
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
     fun addUsers(groupChatId: Int, userIdList: List<String>): Unit = transact {
-        batchInsert(userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()) {
+        val users = userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()
+        batchInsert(users) {
             this[GroupChatUsers.groupChatId] = groupChatId
             this[userId] = it
         }
@@ -46,8 +54,7 @@ object GroupChatUsers : IntIdTable() {
      * user is removed, the [chatId] will be [GroupChats.delete]d.
      *
      * If the chat is deleted, it will be deleted from [GroupChats], [GroupChatUsers], [Messages], and
-     * [MessageStatuses]. Users in the [userIdList] will be [Broker.unsubscribe]d via [messagesBroker] and
-     * [groupChatInfoBroker]. Clients who have [Broker.subscribe]d via [groupChatInfoBroker], excluding [userIdList]
+     * [MessageStatuses]. Clients, excluding the [userIdList], who have [Broker.subscribe]d via [updatedChatsBroker]
      * will be [Broker.notify]d of the [ExitedUser]s.
      */
     fun removeUsers(chatId: Int, userIdList: List<String>) {
@@ -55,9 +62,7 @@ object GroupChatUsers : IntIdTable() {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         userIdList.forEach { userId ->
-            messagesBroker.unsubscribe { it.userId == userId && it.chatId == chatId }
-            groupChatInfoBroker.unsubscribe { it.chatId == chatId && it.userId == userId }
-            groupChatInfoBroker.notify(ExitedUser(userId)) { it.chatId == chatId }
+            updatedChatsBroker.notify(ExitedUser(chatId, userId)) { isUserInChat(chatId, it.userId) }
         }
         if (readUserIdList(chatId).isEmpty()) GroupChats.delete(chatId)
     }

@@ -2,10 +2,8 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.NewGroupChat
 import com.neelkamath.omniChat.Placeholder
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.graphql.AdminCannotLeaveException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
@@ -38,23 +36,20 @@ fun errLeaveGroupChat(accessToken: String, chatId: Int): String =
 class LeaveGroupChatTest : FunSpec({
     test("A non-admin should leave the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         leaveGroupChat(user.accessToken, chatId)
         GroupChatUsers.readUserIdList(chatId) shouldBe listOf(admin.info.id)
     }
 
     test("The admin should leave the chat if they're the only user") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         leaveGroupChat(token, chatId)
     }
 
     test("The admin shouldn't be allowed to leave if there are other users in the chat") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""), listOf(user.info.id))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
         errLeaveGroupChat(admin.accessToken, chatId) shouldBe AdminCannotLeaveException.message
     }
 

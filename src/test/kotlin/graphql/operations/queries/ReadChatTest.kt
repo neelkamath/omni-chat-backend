@@ -3,11 +3,9 @@ package com.neelkamath.omniChat.graphql.operations.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.Chat
 import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
@@ -23,12 +21,12 @@ import io.kotest.matchers.shouldBe
 const val READ_CHAT_QUERY = """
     query ReadChat(
         ${"$"}id: Int!
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
         ${"$"}privateChat_messages_last: Int
         ${"$"}privateChat_messages_before: Cursor
         ${"$"}groupChat_users_first: Int
         ${"$"}groupChat_users_after: Cursor
+        ${"$"}groupChat_messages_last: Int
+        ${"$"}groupChat_messages_before: Cursor
     ) {
         readChat(id: ${"$"}id) {
             $PRIVATE_CHAT_FRAGMENT
@@ -40,18 +38,19 @@ const val READ_CHAT_QUERY = """
 private fun operateReadChat(
     accessToken: String,
     id: Int,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): GraphQlResponse = operateGraphQlQueryOrMutation(
     READ_CHAT_QUERY,
     variables = mapOf(
         "id" to id,
-        "groupChat_messages_last" to messagesPagination?.last,
-        "groupChat_messages_before" to messagesPagination?.before?.toString(),
-        "privateChat_messages_last" to messagesPagination?.last,
-        "privateChat_messages_before" to messagesPagination?.before?.toString(),
+        "privateChat_messages_last" to privateChatMessagesPagination?.last,
+        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
         "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString()
+        "groupChat_users_after" to usersPagination?.after?.toString(),
+        "groupChat_messages_last" to groupChatMessagesPagination?.last,
+        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
     ),
     accessToken = accessToken
 )
@@ -59,25 +58,38 @@ private fun operateReadChat(
 fun readChat(
     accessToken: String,
     id: Int,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): Chat {
-    val data = operateReadChat(accessToken, id, usersPagination, messagesPagination).data!!["readChat"] as Map<*, *>
+    val data = operateReadChat(
+        accessToken,
+        id,
+        privateChatMessagesPagination,
+        usersPagination,
+        groupChatMessagesPagination
+    ).data!!["readChat"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
 
 fun errReadChat(
     accessToken: String,
     id: Int,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
-): String = operateReadChat(accessToken, id, usersPagination, messagesPagination).errors!![0].message
+    groupChatMessagesPagination: BackwardPagination? = null
+): String = operateReadChat(
+    accessToken,
+    id,
+    privateChatMessagesPagination,
+    usersPagination,
+    groupChatMessagesPagination
+).errors!![0].message
 
 class ReadChatTest : FunSpec({
     test("The chat should be read") {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         readChat(token, chatId).id shouldBe chatId
     }
 

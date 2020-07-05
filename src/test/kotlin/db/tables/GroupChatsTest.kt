@@ -41,144 +41,110 @@ class GroupChatsTest : FunSpec({
     context("create(String, NewGroupChat") {
         test("A chat should be created which includes the admin in the list of users") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             GroupChats.readChat(chatId).users.edges.map { it.node.id } shouldContainExactlyInAnyOrder
                     listOf(adminId, userId)
+        }
+
+        test("Creating a chat should notify only non-admins in the chat, even if the admin is in the user ID list") {
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+                .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(adminId, user1Id))
+            user1Subscriber.assertValue(GroupChatId(chatId))
+            listOf(adminSubscriber, user2Subscriber).forEach { it.assertNoValues() }
         }
     }
 
     context("setAdmin(Int, String)") {
         test("The new admin should be set") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             GroupChats.setAdmin(chatId, userId)
             GroupChats.isAdmin(userId, chatId).shouldBeTrue()
         }
 
         test("Setting the admin to a user who isn't in the chat should throw an exception") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(adminId, buildNewGroupChat())
             shouldThrowExactly<IllegalArgumentException> { GroupChats.setAdmin(chatId, "new admin ID") }
         }
     }
 
-    context("update(UpdatedGroupChat)") {
-        test("When a user leaves a group chat, their subscription to it should be removed") {
-            val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(adminId, chatId))
-                .subscribeWith(TestSubscriber())
-            val update = GroupChatUpdate(chatId, removedUserIdList = listOf(adminId))
-            GroupChats.update(update)
-            subscriber.assertComplete()
-        }
-
+    context("update(GroupChatUpdate)") {
         test("The chat should be deleted once every user has left it") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val userIdList = listOf(user1Id, user2Id)
-            val chatId = GroupChats.create(adminId, userIdList)
-            val update = GroupChatUpdate(chatId, removedUserIdList = userIdList + adminId)
-            GroupChats.update(update)
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userIdList))
+            GroupChats.update(GroupChatUpdate(chatId, removedUserIdList = userIdList + adminId))
             GroupChats.count().shouldBeZero()
         }
 
         test("A subscriber should be notified when the chat is updated") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId)
-            val subscriber = groupChatInfoBroker
-                .subscribe(GroupChatInfoAsset(chatId, adminId))
-                .subscribeWith(TestSubscriber())
+            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val subscriber = updatedChatsBroker.subscribe(UpdatedChatsAsset(adminId)).subscribeWith(TestSubscriber())
             val update = GroupChatUpdate(chatId, GroupChatTitle("New Title"), newUserIdList = listOf(userId))
             GroupChats.update(update)
             subscriber.assertValue(update.toUpdatedGroupChat())
         }
+
+        test("Only the new users in the update should be notified they were added") {
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id))
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+                .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            GroupChats.update(GroupChatUpdate(chatId, newUserIdList = listOf(user1Id, user2Id)))
+            listOf(adminSubscriber, user1Subscriber).forEach { it.assertNoValues() }
+            user2Subscriber.assertValue(GroupChatId(chatId))
+        }
     }
 
     context("removeUsers(Int, List<String>)") {
-        test("Subscriptions should be removed for deleted chats") {
-            val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(adminId, chatId))
-                .subscribeWith(TestSubscriber())
-            GroupChatUsers.removeUsers(chatId, adminId)
-            subscriber.assertComplete()
-        }
-
         test("Messages from a user who left should be retained") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
-            val messageId = Messages.message(chatId, userId, TextMessage("text"))
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val messageId = Messages.message(chatId, userId, TextMessage("t"))
             GroupChatUsers.removeUsers(chatId, userId)
             Messages.readIdList(chatId) shouldBe listOf(messageId)
-        }
-
-        test("When the user leaves the chat they were accessing on two devices, both subscriptions should be removed") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
-            val (phoneSubscriber, laptopSubscriber) = (1..2).map {
-                messagesBroker
-                    .subscribe(MessagesAsset(userId, chatId))
-                    .subscribeWith(TestSubscriber())
-            }
-            GroupChatUsers.removeUsers(chatId, userId)
-            phoneSubscriber.assertComplete()
-            laptopSubscriber.assertComplete()
         }
     }
 
     context("delete(Int)") {
         test("Deleting a nonempty chat should throw an exception") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(adminId, buildNewGroupChat())
             shouldThrowExactly<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
 
         test("Deleting a chat should delete it along with its messages and messages statuses") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, listOf(userId))
-            val messageId = Messages.message(chatId, adminId, TextMessage("text"))
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val messageId = Messages.message(chatId, adminId, TextMessage("t"))
             MessageStatuses.create(messageId, userId, MessageStatus.READ)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
             GroupChats.count().shouldBeZero()
             Messages.count().shouldBeZero()
             MessageStatuses.count().shouldBeZero()
         }
-
-        test("Deleting a chat should unsubscribe subscribers only for that chat") {
-            val (admin1Id, userId, admin2Id) = createVerifiedUsers(3).map { it.info.id }
-            val chat1Id = GroupChats.create(admin1Id, listOf(userId))
-            val chat2Id = GroupChats.create(admin2Id)
-            val (admin1Subscriber, userSubscriber, admin2Subscriber) =
-                mapOf(admin1Id to chat1Id, userId to chat1Id, admin2Id to chat2Id).map { (userId, chatId) ->
-                    messagesBroker
-                        .subscribe(MessagesAsset(userId, chatId))
-                        .subscribeWith(TestSubscriber())
-                }
-            GroupChatUsers.removeUsers(chat1Id, admin1Id, userId)
-            admin1Subscriber.assertComplete()
-            userSubscriber.assertComplete()
-            admin2Subscriber.assertNotComplete()
-        }
     }
 
     context("isNonemptyChatAdmin(String)") {
         test("A non-admin shouldn't be the admin of a nonempty group chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, listOf(userId))
+            GroupChats.create(adminId, buildNewGroupChat(userId))
             GroupChats.isNonemptyChatAdmin(userId).shouldBeFalse()
         }
 
         test("An admin of an empty group chat shouldn't be the admin of a nonempty group chat") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(adminId)
+            GroupChats.create(adminId, buildNewGroupChat())
             GroupChats.isNonemptyChatAdmin(adminId).shouldBeFalse()
         }
 
         test("An admin of a nonempty group chat should be the admin of a nonempty group chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, listOf(userId))
+            GroupChats.create(adminId, buildNewGroupChat(userId))
             GroupChats.isNonemptyChatAdmin(adminId).shouldBeTrue()
         }
     }
@@ -186,9 +152,7 @@ class GroupChatsTest : FunSpec({
     context("queryUserChatEdges(String, String)") {
         test("Chats should be queried") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val (chat1Id, chat2Id, chat3Id) = (1..3).map {
-                GroupChats.create(adminId)
-            }
+            val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(adminId, buildNewGroupChat()) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
                 val id = Messages.message(it, adminId, TextMessage(queryText))

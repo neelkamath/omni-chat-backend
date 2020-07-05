@@ -1,8 +1,6 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.mutations.UPDATE_GROUP_CHAT_QUERY
 import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
@@ -22,7 +20,7 @@ class QueriesAndMutationsTest : FunSpec({
     context("routeQueriesAndMutations(Routing)") {
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             withTestApplication(Application::main) {
-                handleRequest(HttpMethod.Post, "graphql") {
+                handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
                         query IsUsernameTaken {
                             isUsernameTaken(username: "john_doe")
@@ -79,8 +77,7 @@ class QueriesAndMutationsTest : FunSpec({
             """
         ) {
             val (admin, user) = createSignedInUsers(2)
-            val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(user.info.id))
-            val chatId = createGroupChat(admin.accessToken, chat)
+            val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
             val variables = mapOf("update" to GroupChatUpdate(chatId))
             requestGraphQlQueryOrMutation(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
                 .shouldHaveUnauthorizedStatus()

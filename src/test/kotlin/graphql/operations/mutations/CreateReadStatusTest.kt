@@ -74,7 +74,7 @@ class CreateReadStatusTest : FunSpec({
     test("Creating a status in a private chat the user deleted should fail") {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("text"))
+        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("t"))
         deletePrivateChat(user1.accessToken, chatId)
         errCreateReadStatus(user1.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }
@@ -88,7 +88,7 @@ class CreateReadStatusTest : FunSpec({
     ) {
         val (user1, user2) = createSignedInUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("text"))
+        val messageId = messageAndReadId(user1.accessToken, chatId, TextMessage("t"))
         deletePrivateChat(user2.accessToken, chatId)
         errCreateReadStatus(user2.accessToken, messageId) shouldBe InvalidMessageIdException.message
     }

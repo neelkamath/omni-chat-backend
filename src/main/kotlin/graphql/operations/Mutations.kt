@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.graphql.operations
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messagesBroker
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
@@ -55,7 +54,7 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val chat = env.parseArgument<NewGroupChat>("chat")
     val userIdList = chat.userIdList.filter { it != env.userId!! }
-    if (!userIdList.all { userIdExists(it) }) throw InvalidUserIdException
+    if (userIdList.any { !userIdExists(it) }) throw InvalidUserIdException
     return GroupChats.create(env.userId!!, chat)
 }
 
@@ -113,7 +112,6 @@ fun deletePrivateChat(env: DataFetchingEnvironment): Placeholder {
     val chatId = env.getArgument<Int>("chatId")
     if (chatId !in PrivateChats.readIdList(env.userId!!)) throw InvalidChatIdException
     PrivateChatDeletions.create(chatId, env.userId!!)
-    messagesBroker.unsubscribe { it.userId == env.userId!! && it.chatId == chatId }
     return Placeholder
 }
 
@@ -158,6 +156,7 @@ fun updateGroupChat(env: DataFetchingEnvironment): Placeholder {
     val newAdminId = args["newAdminId"] as String?
     if (newAdminId != null && newAdminId !in GroupChatUsers.readUserIdList(chatId)) throw InvalidNewAdminIdException
     val newUserIdList = args["newUserIdList"] as List<*>?
+    if (newUserIdList != null && newUserIdList.any { !userIdExists(it as String) }) throw InvalidUserIdException
     val removedUserIdList = args["removedUserIdList"] as List<*>?
     if (newUserIdList != null && removedUserIdList != null && newUserIdList.intersect(removedUserIdList).isNotEmpty())
         throw InvalidGroupChatUsersException

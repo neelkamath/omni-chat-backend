@@ -28,7 +28,7 @@ object PrivateChatDeletions : IntIdTable() {
      * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
      * they've deleted it, the [chatId] is deleted from [PrivateChats].
      *
-     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
+     * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: String) {
         if (!isUserInChat(userId, chatId))
@@ -64,7 +64,7 @@ object PrivateChatDeletions : IntIdTable() {
      * deleted it.
      */
     private fun isChatDeleted(chatId: Int): Boolean {
-        val (user1Id, user2Id) = PrivateChats.readUsers(chatId)
+        val (user1Id, user2Id) = PrivateChats.readUserIdList(chatId)
         return isDeleted(user1Id, chatId) && isDeleted(user2Id, chatId)
     }
 

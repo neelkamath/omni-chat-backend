@@ -41,16 +41,14 @@ class GetHealthCheckTest : FunSpec({
 class EncodingTest : FunSpec({
     test("A group chat's title should allow emoji") {
         val token = createSignedInUsers(1)[0].accessToken
-        val title = "Title \uD83D\uDCDA"
-        val chat = NewGroupChat(GroupChatTitle(title), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
-        GroupChats.readChat(chatId).title.value shouldBe title
+        val title = GroupChatTitle("Title \uD83D\uDCDA")
+        val chatId = createGroupChat(token, NewGroupChat(title, GroupChatDescription("")))
+        GroupChats.readChat(chatId).title shouldBe title
     }
 
     fun testMessage(message: TextMessage) {
         val token = createSignedInUsers(1)[0].accessToken
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(token, chat)
+        val chatId = createGroupChat(token, buildNewGroupChat())
         createMessage(token, chatId, message)
         Messages.readGroupChat(chatId)[0].node.text shouldBe message
     }

@@ -1,7 +1,10 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.contactsBroker
+import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.keycloak.representations.idm.UserRepresentation
@@ -49,14 +52,14 @@ object Contacts : IntIdTable() {
 
     /** @see [readIdList] */
     fun read(ownerId: String, pagination: ForwardPagination? = null): AccountsConnection =
-        buildAccountsConnection(readRows(ownerId), pagination)
+        AccountsConnection.build(readRows(ownerId), pagination)
 
     /**
      * Case-insensitively [query]s the [ownerId]'s contacts' usernames, first names, last names, and email addresses.
      */
     fun search(ownerId: String, query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val rows = readRows(ownerId).filter { it.node.matches(query) }
-        return buildAccountsConnection(rows, pagination)
+        return AccountsConnection.build(rows, pagination)
     }
 
     /**

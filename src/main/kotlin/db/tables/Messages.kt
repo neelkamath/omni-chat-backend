@@ -15,7 +15,7 @@ private typealias Filter = Op<Boolean>?
 
 /**
  * @throws [IllegalArgumentException] if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at least one
- *                                    non-whitespace.
+ * non-whitespace.
  */
 data class TextMessage(val value: String) {
     init {
@@ -71,7 +71,8 @@ object Messages : IntIdTable() {
                 it[senderId] = userId
             }.resultedValues!![0]
         }
-        messagesBroker.notify(buildMessage(row).toNewMessage()) { it.chatId == chatId }
+        val message = NewMessage.build(buildMessage(row))
+        messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
     }
 
     /** Case-insensitively [query]s the [chatId]'s text messages. */
@@ -153,7 +154,7 @@ object Messages : IntIdTable() {
 
     /**
      * Deletes all [Messages] and [MessageStatuses] in the [chatId]. Clients will be notified of a
-     * [DeletionOfEveryMessage], and then [Broker.unsubscribe]d via [messagesBroker].
+     * [DeletionOfEveryMessage] via [messagesBroker].
      */
     fun deleteChat(chatId: Int) {
         val messageIdList = readMessageIdList(chatId)
@@ -161,8 +162,7 @@ object Messages : IntIdTable() {
         transact {
             deleteWhere { Messages.chatId eq chatId }
         }
-        messagesBroker.notify(DeletionOfEveryMessage) { it.chatId == chatId }
-        messagesBroker.unsubscribe { it.chatId == chatId }
+        messagesBroker.notify(DeletionOfEveryMessage(chatId)) { isUserInChat(it.userId, chatId) }
     }
 
     /** Deletes all [Messages] and [MessageStatuses] in the [chatId] [until] the specified [LocalDateTime]. */
@@ -186,7 +186,7 @@ object Messages : IntIdTable() {
         transact {
             deleteWhere { Messages.id inList idList }
         }
-        messagesBroker.notify(UserChatMessagesRemoval(userId)) { it.chatId == chatId }
+        messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
     }
 
     /**
@@ -201,7 +201,7 @@ object Messages : IntIdTable() {
             deleteWhere { senderId eq userId }
         }
         chatMessages.forEach { (chatId) ->
-            messagesBroker.notify(UserChatMessagesRemoval(userId)) { it.chatId == chatId }
+            messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
         }
     }
 
@@ -216,7 +216,7 @@ object Messages : IntIdTable() {
         transact {
             deleteWhere { Messages.id eq id }
         }
-        messagesBroker.notify(DeletedMessage(id)) { it.chatId == chatId }
+        messagesBroker.notify(DeletedMessage(chatId, id)) { isUserInChat(it.userId, chatId) }
     }
 
     /** Returns every [ChatAndMessageId] the [userId] created which are visible to at least one user. */

@@ -1,4 +1,4 @@
-FROM gradle:6.5.0-jdk14 AS builder
+FROM gradle:6.5.1-jdk14 AS builder
 WORKDIR /home/gradle/project
 COPY build.gradle.kts gradle.properties settings.gradle.kts ./
 RUN gradle --no-daemon -i shadowJar

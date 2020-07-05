@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.GroupChat
 import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
@@ -47,8 +48,7 @@ class CreateGroupChatTest : FunSpec({
     }
 
     test("A group chat shouldn't be created when supplied with an invalid user ID") {
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf("invalid user ID"))
         val token = createSignedInUsers(1)[0].accessToken
-        errCreateGroupChat(token, chat) shouldBe InvalidUserIdException.message
+        errCreateGroupChat(token, buildNewGroupChat("invalid user ID")) shouldBe InvalidUserIdException.message
     }
 })

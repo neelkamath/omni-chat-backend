@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat.graphql.operations.queries
 
-import com.neelkamath.omniChat.NewGroupChat
+import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId
@@ -26,9 +24,8 @@ class ChatMessagesDtoTest : FunSpec({
 
         fun createUtilizedChat(): AdminMessages {
             val adminToken = createSignedInUsers(1)[0].accessToken
-            val chat = NewGroupChat(GroupChatTitle("T"), GroupChatDescription(""))
-            val chatId = createGroupChat(adminToken, chat)
-            val message = TextMessage("text")
+            val chatId = createGroupChat(adminToken, buildNewGroupChat())
+            val message = TextMessage("t")
             val messageIdList = (1..10).map { messageAndReadId(adminToken, chatId, message) }
             return AdminMessages(adminToken, message, messageIdList)
         }
@@ -41,7 +38,7 @@ class ChatMessagesDtoTest : FunSpec({
             searchMessages(
                 adminToken,
                 queryText.value,
-                messagesPagination = BackwardPagination(last, before = messageIdList[index])
+                chatMessagesPagination = BackwardPagination(last, before = messageIdList[index])
             ).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList.take(index).takeLast(last)
         }
 

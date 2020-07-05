@@ -1,9 +1,12 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.ContactsAsset
+import com.neelkamath.omniChat.db.UpdatedChatsAsset
+import com.neelkamath.omniChat.db.contactsBroker
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChat.db.tables.PrivateChats
+import com.neelkamath.omniChat.db.updatedChatsBroker
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -118,33 +121,31 @@ class AuthTest : FunSpec({
 
         test(
             """
-            Given user 1 in group chat 1, and user 2 in group chats 1 and 2,
-            when user 1 updates their account,
-            then user 1 should be notified, and user 2 should be notified only in group chat 1 
+            Given subscribers to updated chats,
+            when a user updates their account,
+            then only the users who share their group chat should be notified of the updated account, except the updater
+            """
+        ) {
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
+            listOf(user1Id, user2Id).forEach { GroupChats.create(adminId, buildNewGroupChat(it)) }
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            updateUser(user1Id, AccountUpdate(firstName = "new name"))
+            adminSubscriber.assertValue(UpdatedAccount.fromUserId(user1Id))
+            listOf(user1Subscriber, user2Subscriber).forEach { it.assertNoValues() }
+        }
+
+        test(
+            """
+            Given two users subscribed to the private chat,
+            when one user updates their account,
+            then only the other user should be notified
             """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chat1Id = GroupChats.create(adminId = user1Id, userIdList = listOf(user2Id))
-            val chat2Id = GroupChats.create(adminId = user2Id)
-            val (user1Subscriber, user2Chat1Subscriber, user2Chat2Subscriber) =
-                listOf(user1Id to chat1Id, user2Id to chat1Id, user2Id to chat2Id).map { (userId, chatId) ->
-                    groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, userId)).subscribeWith(TestSubscriber())
-                }
-            updateUser(user1Id, AccountUpdate())
-            val update = UpdatedAccount.fromUserId(user1Id)
-            user1Subscriber.assertValue(update)
-            user2Chat1Subscriber.assertValue(update)
-            user2Chat2Subscriber.assertNoValues()
-        }
-
-        test("Updating an account should notify the subscriber of the update but not the user") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val (user1Subscriber, user2Subscriber) = mapOf(user1Id to user2Id, user2Id to user1Id)
-                .map { (subscriberId, userId) ->
-                    privateChatInfoBroker
-                        .subscribe(PrivateChatInfoAsset(subscriberId, userId))
-                        .subscribeWith(TestSubscriber())
-                }
+            PrivateChats.create(user1Id, user2Id)
+            val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             updateUser(user2Id, AccountUpdate())
             user1Subscriber.assertValue(UpdatedAccount.fromUserId(user2Id))
             user2Subscriber.assertNoValues()

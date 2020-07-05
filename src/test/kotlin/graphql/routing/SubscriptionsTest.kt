@@ -2,21 +2,17 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.CreatedSubscription
 import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
-import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
-import com.neelkamath.omniChat.graphql.operations.subscriptions.*
+import com.neelkamath.omniChat.graphql.operations.subscriptions.SUBSCRIBE_TO_CONTACTS_QUERY
+import com.neelkamath.omniChat.graphql.operations.subscriptions.operateGraphQlSubscription
+import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
+import com.neelkamath.omniChat.graphql.operations.subscriptions.subscribeToContacts
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.FrameType
 
 class SubscriptionsTest : FunSpec({
@@ -24,7 +20,7 @@ class SubscriptionsTest : FunSpec({
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             val query = """
                 subscription SubscribeToMessages {
-                    subscribeToMessages(chatId: 4) {
+                    subscribeToMessages {
                         $CREATED_SUBSCRIPTION_FRAGMENT
                     }
                 }
@@ -38,7 +34,7 @@ class SubscriptionsTest : FunSpec({
             val operationName = if (shouldSupplyOperationName) "SubscribeToContacts" else null
             val token = createSignedInUsers(1)[0].accessToken
             operateGraphQlSubscription(
-                uri = "subscribe-to-contacts",
+                uri = "contacts-subscription",
                 request = GraphQlRequest(query, operationName = operationName),
                 accessToken = token
             ) { incoming ->
@@ -73,7 +69,7 @@ class SubscriptionsTest : FunSpec({
             """
         ) {
             operateGraphQlSubscription(
-                uri = "subscribe-to-contacts",
+                uri = "contacts-subscription",
                 request = GraphQlRequest(SUBSCRIBE_TO_CONTACTS_QUERY)
             ) { incoming -> incoming.receive().frameType shouldBe FrameType.CLOSE }
         }
@@ -91,24 +87,6 @@ class SubscriptionsTest : FunSpec({
             subscribeToContacts(owner.accessToken) { }
             subscribeToContacts(owner.accessToken) { incoming ->
                 createContacts(owner.accessToken, listOf(user.info.id))
-                incoming.poll().shouldNotBeNull()
-                incoming.poll().shouldBeNull()
-            }
-        }
-
-        test(
-            """
-            Given a client who failed to ping during the ping period,
-            when they recreate the connection,
-            then the previous connection's subscription shouldn't be active so duplicate notifications aren't sent 
-            """
-        ) {
-            val token = createSignedInUsers(1)[0].accessToken
-            val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-            val chatId = createGroupChat(token, chat)
-            subscribeToMessages(token, chatId) { incoming -> for (frame in incoming) if (frame is Frame.Close) break }
-            subscribeToMessages(token, chatId) { incoming ->
-                createMessage(token, chatId, TextMessage("text"))
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }

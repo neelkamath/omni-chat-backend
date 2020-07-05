@@ -4,8 +4,6 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.graphql.SignedInUser
@@ -23,50 +21,57 @@ import io.kotest.matchers.shouldBe
 
 const val READ_CHATS_QUERY = """
     query ReadChats(
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
         ${"$"}privateChat_messages_last: Int
         ${"$"}privateChat_messages_before: Cursor
         ${"$"}groupChat_users_first: Int
         ${"$"}groupChat_users_after: Cursor
+        ${"$"}groupChat_messages_last: Int
+        ${"$"}groupChat_messages_before: Cursor
     ) {
         readChats {
-            $GROUP_CHAT_FRAGMENT
             $PRIVATE_CHAT_FRAGMENT
+            $GROUP_CHAT_FRAGMENT
         }
     }
 """
 
 private fun operateReadChats(
     accessToken: String,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): GraphQlResponse = operateGraphQlQueryOrMutation(
     READ_CHATS_QUERY,
     variables = mapOf(
-        "groupChat_messages_last" to messagesPagination?.last,
-        "groupChat_messages_before" to messagesPagination?.before?.toString(),
-        "privateChat_messages_last" to messagesPagination?.last,
-        "privateChat_messages_before" to messagesPagination?.before?.toString(),
+        "privateChat_messages_last" to privateChatMessagesPagination?.last,
+        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
         "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString()
+        "groupChat_users_after" to usersPagination?.after?.toString(),
+        "groupChat_messages_last" to groupChatMessagesPagination?.last,
+        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
     ),
     accessToken = accessToken
 )
 
 fun readChats(
     accessToken: String,
+    privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null
 ): List<Chat> {
-    val chats = operateReadChats(accessToken, usersPagination, messagesPagination).data!!["readChats"] as List<*>
+    val chats = operateReadChats(
+        accessToken,
+        privateChatMessagesPagination,
+        usersPagination,
+        groupChatMessagesPagination
+    ).data!!["readChats"] as List<*>
     return objectMapper.convertValue(chats)
 }
 
 class ReadChatsTest : FunSpec({
     fun createAdminGroupChat(admin: SignedInUser): GroupChat {
         val userId = createSignedInUsers(1)[0].info.id
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(userId))
+        val chat = buildNewGroupChat(userId)
         val chatId = createGroupChat(admin.accessToken, chat)
         return GroupChat(
             chatId,
@@ -80,7 +85,7 @@ class ReadChatsTest : FunSpec({
 
     fun createUserGroupChat(admin: SignedInUser): GroupChat {
         val user = createSignedInUsers(1)[0]
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""), listOf(admin.info.id))
+        val chat = buildNewGroupChat(admin.info.id)
         val chatId = createGroupChat(user.accessToken, chat)
         return GroupChat(
             chatId,

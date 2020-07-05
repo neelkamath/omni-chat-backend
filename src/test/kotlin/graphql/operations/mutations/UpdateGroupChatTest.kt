@@ -5,10 +5,7 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChatDescription
 import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.InvalidGroupChatUsersException
-import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -39,7 +36,7 @@ class UpdateGroupChatTest : FunSpec({
     test("Only the supplied fields should be updated") {
         val (admin, user1, user2) = createSignedInUsers(3)
         val initialUserIdList = listOf(user1.info.id)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription("description"), initialUserIdList)
+        val chat = buildNewGroupChat(initialUserIdList)
         val chatId = createGroupChat(admin.accessToken, chat)
         val update = GroupChatUpdate(
             chatId,
@@ -60,7 +57,7 @@ class UpdateGroupChatTest : FunSpec({
     test("The chat's new admin should be set") {
         val (firstAdmin, secondAdmin) = createSignedInUsers(2)
         val chat = NewGroupChat(
-            GroupChatTitle("Title"),
+            GroupChatTitle("T"),
             GroupChatDescription("description"),
             userIdList = listOf(secondAdmin.info.id)
         )
@@ -78,7 +75,7 @@ class UpdateGroupChatTest : FunSpec({
     test("Updating a chat the user isn't the admin of should return an authorization error") {
         val (admin, user) = createSignedInUsers(2)
         val chat = NewGroupChat(
-            GroupChatTitle("Title"),
+            GroupChatTitle("T"),
             GroupChatDescription("description"),
             userIdList = listOf(user.info.id)
         )
@@ -90,16 +87,21 @@ class UpdateGroupChatTest : FunSpec({
 
     test("Transferring admin status to a user not in the chat should throw an exception") {
         val (admin, notInvitedUser) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
         val update = GroupChatUpdate(chatId, newAdminId = notInvitedUser.info.id)
         errUpdateGroupChat(admin.accessToken, update) shouldBe InvalidNewAdminIdException.message
     }
 
+    test("Adding a nonexistent user should fail") {
+        val token = createSignedInUsers(1)[0].accessToken
+        val chatId = createGroupChat(token, buildNewGroupChat())
+        errUpdateGroupChat(token, GroupChatUpdate(chatId, newUserIdList = listOf("invalid user ID"))) shouldBe
+                InvalidUserIdException.message
+    }
+
     test("Adding and removing the same user at the same time should fail") {
         val (admin, user) = createSignedInUsers(2)
-        val chat = NewGroupChat(GroupChatTitle("Title"), GroupChatDescription(""))
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
         val update = mapOf(
             "update" to mapOf(
                 "chatId" to chatId,

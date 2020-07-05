@@ -104,35 +104,13 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
 fun isUserInChat(userId: String, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
-/** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
-fun buildAccountsConnection(
-    AccountEdges: List<AccountEdge>,
-    pagination: ForwardPagination? = null
-): AccountsConnection {
-    val (first, after) = pagination ?: ForwardPagination()
-    val accounts = AccountEdges.sortedBy { it.cursor }
-    val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
-    val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
-    val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
-    val pageInfo = PageInfo(
-        hasNextPage = firstAccounts.size < afterAccounts.size,
-        hasPreviousPage = afterAccounts.size < accounts.size,
-        startCursor = accounts.firstOrNull()?.cursor,
-        endCursor = accounts.lastOrNull()?.cursor
-    )
-    return AccountsConnection(edges, pageInfo)
-}
-
 /**
  * Deletes the [userId]'s data from the DB.
  *
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
- * - Clients who have [Broker.subscribe]d to the [PrivateChatInfoAsset.userId]'s [UpdatedAccount]s via
- *   [privateChatInfoBroker] will be [Broker.unsubscribe]d.
- * - If the [userId] has subscribed to [UpdatedAccount]s via [privateChatInfoBroker], they'll be
- *   [Broker.unsubscribe]d.
+ * - Clients who have [Broker.subscribe]d via [updatedChatsBroker] will be [Broker.unsubscribe]d.
  *
  * ## Contacts
  *
@@ -146,15 +124,14 @@ fun buildAccountsConnection(
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a
- *   [DeletionOfEveryMessage], and then [Broker.unsubscribe]d.
+ * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a [DeletionOfEveryMessage].
  *
  * ## Group Chats
  *
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Broker.unsubscribe]d via [groupChatInfoBroker].
+ * - Clients will be [Broker.unsubscribe]d via [updatedChatsBroker].
  *
  * ## Messages
  *
@@ -171,12 +148,12 @@ fun deleteUserFromDb(userId: String) {
             "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
     contactsBroker.unsubscribe { it.userId == userId }
-    privateChatInfoBroker.unsubscribe { it.subscriberId == userId || it.userId == userId }
-    val chatIdList = GroupChatUsers.readChatIdList(userId)
-    groupChatInfoBroker.unsubscribe { it.userId == userId && it.chatId in chatIdList }
+    updatedChatsBroker.unsubscribe { it.userId == userId }
+    newGroupChatsBroker.unsubscribe { it.userId == userId }
     Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, userId) }
     Messages.deleteUserMessages(userId)
+    messagesBroker.unsubscribe { it.userId == userId }
 }
