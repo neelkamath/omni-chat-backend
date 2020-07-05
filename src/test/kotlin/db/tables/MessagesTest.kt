@@ -69,12 +69,21 @@ class MessagesTest : FunSpec({
         test("Subscribers should receive notifications of created messages") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id, user2Id))
-            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id).map {
-                messagesBroker.subscribe(MessagesAsset(it, chatId)).subscribeWith(TestSubscriber())
-            }
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             repeat(3) { Messages.create(chatId, listOf(adminId, user1Id, user2Id).random(), TextMessage("t")) }
-            val updates = Messages.readGroupChat(chatId).map { it.node.toNewMessage() }
+            val updates = Messages.readGroupChat(chatId).map { NewMessage.build(it.node) }
             listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { it.assertValueSequence(updates) }
+        }
+
+        test("A subscriber should be notified of a new message in a private chat they just deleted") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            PrivateChatDeletions.create(chatId, user1Id)
+            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
+            val message = NewMessage.build(Messages.read(messageId))
+            subscriber.assertValue(message)
         }
 
         test("An exception should be thrown if the user isn't in the chat") {
@@ -111,8 +120,8 @@ class MessagesTest : FunSpec({
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.message(chatId, user1Id, TextMessage("t"))
-            Messages.message(chatId, user2Id, TextMessage("t"))
+            Messages.create(chatId, user1Id, TextMessage("t"))
+            Messages.create(chatId, user2Id, TextMessage("t"))
             PrivateChatDeletions.create(chatId, user1Id)
             val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
             Messages.readPrivateChat(chatId, user1Id).map { it.node } shouldBe listOf(Messages.read(messageId))
@@ -130,15 +139,12 @@ class MessagesTest : FunSpec({
             MessageStatuses.count().shouldBeZero()
         }
 
-        test("The subscriber should be notified of every message being deleted, and then be unsubscribed") {
+        test("The subscriber should be notified of every message being deleted") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(user1Id, chatId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             Messages.deleteChat(chatId)
-            subscriber.assertValue(DeletionOfEveryMessage)
-            subscriber.assertComplete()
+            subscriber.assertValue(DeletionOfEveryMessage(chatId))
         }
     }
 
@@ -173,11 +179,9 @@ class MessagesTest : FunSpec({
         test("A subscriber should be notified when a user's messages have been deleted from the chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(adminId, chatId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Messages.deleteUserChatMessages(chatId, userId)
-            subscriber.assertValue(UserChatMessagesRemoval(userId))
+            subscriber.assertValue(UserChatMessagesRemoval(chatId, userId))
         }
     }
 
@@ -220,24 +224,19 @@ class MessagesTest : FunSpec({
             testMessages(Messages.readGroupChat(groupChatId))
         }
 
-        /**
-         * Creates a group chat with the [adminId] and [userId], has the [userId] send a message in it, and returns the
-         * [userId]'s [TestSubscriber] to the chat.
-         */
-        fun createChatMessageSubscriber(adminId: String, userId: String): TestSubscriber<MessagesSubscription> {
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            Messages.create(chatId, userId, TextMessage("t"))
-            return messagesBroker.subscribe(MessagesAsset(userId, chatId)).subscribeWith(TestSubscriber())
-        }
-
         test("Subscribers should be notified when every message the user sent is deleted") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat1Subscriber = createChatMessageSubscriber(adminId, userId)
-            val chat2Subscriber = createChatMessageSubscriber(adminId, userId)
+            val (chat1Id, chat2Id) = (1..2).map {
+                val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+                Messages.create(chatId, userId, TextMessage("t"))
+                chatId
+            }
+            val (chat1Subscriber, chat2Subscriber) = (1..2)
+                .map { messagesBroker.subscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
-            val removal = UserChatMessagesRemoval(userId)
-            chat1Subscriber.assertValue(removal)
-            chat2Subscriber.assertValue(removal)
+            listOf(chat1Subscriber, chat2Subscriber).forEach {
+                it.assertValues(UserChatMessagesRemoval(chat1Id, userId), UserChatMessagesRemoval(chat2Id, userId))
+            }
         }
     }
 
@@ -256,11 +255,9 @@ class MessagesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(user1Id, chatId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             Messages.delete(messageId)
-            subscriber.assertValue(DeletedMessage(messageId))
+            subscriber.assertValue(DeletedMessage(chatId, messageId))
         }
     }
 

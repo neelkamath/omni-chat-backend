@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.PostgresEnum
-import com.neelkamath.omniChat.db.messagesBroker
-import com.neelkamath.omniChat.db.transact
+import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import java.time.LocalDateTime
@@ -75,9 +72,9 @@ object MessageStatuses : Table() {
                 it[MessageStatuses.status] = status
             }
         }
-        messagesBroker.notify(Messages.read(messageId).toUpdatedMessage()) {
-            it.chatId == Messages.readChatFromMessage(messageId)
-        }
+        val chatId = Messages.readChatFromMessage(messageId)
+        val message = UpdatedMessage.build(chatId, Messages.read(messageId))
+        messagesBroker.notify(message) { isUserInChat(userId, chatId) }
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */

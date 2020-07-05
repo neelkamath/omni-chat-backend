@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.USER_ID_LENGTH
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.isUserInChat
+import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
@@ -27,17 +28,12 @@ object PrivateChatDeletions : IntIdTable() {
      * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
      * they've deleted it, the [chatId] is deleted from [PrivateChats].
      *
-     * The [userId] will be [Broker.unsubscribe]d from the [chatId] via [messagesBroker] and [privateChatInfoBroker].
-     *
      * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: String) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         insert(chatId, userId)
-        messagesBroker.unsubscribe { it.userId == userId && it.chatId == chatId }
-        val otherUserId = PrivateChats.readOtherUserId(chatId, userId)
-        privateChatInfoBroker.unsubscribe { it.subscriberId == userId && it.userId == otherUserId }
         deleteUnusedChatData(chatId, userId)
     }
 

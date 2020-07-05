@@ -110,8 +110,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
- * - Clients who have [Broker.subscribe]d to the [PrivateChatInfoAsset.userId]'s [UpdatedAccount]s via
- *   [privateChatInfoBroker] will be [Broker.unsubscribe]d.
+ * - Clients who have [Broker.subscribe]d via [privateChatInfoBroker] will be [Broker.unsubscribe]d.
  * - If the [userId] has subscribed to [UpdatedAccount]s via [privateChatInfoBroker], they'll be
  *   [Broker.unsubscribe]d.
  *
@@ -127,8 +126,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a
- *   [DeletionOfEveryMessage], and then [Broker.unsubscribe]d.
+ * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a [DeletionOfEveryMessage].
  *
  * ## Group Chats
  *
@@ -152,13 +150,13 @@ fun deleteUserFromDb(userId: String) {
             "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
     contactsBroker.unsubscribe { it.userId == userId }
-    privateChatInfoBroker.unsubscribe { it.subscriberId == userId || it.userId == userId }
-    val chatIdList = GroupChatUsers.readChatIdList(userId)
-    groupChatInfoBroker.unsubscribe { it.userId == userId && it.chatId in chatIdList }
+    privateChatInfoBroker.unsubscribe { it.userId == userId }
+    groupChatInfoBroker.unsubscribe { it.userId == userId }
     newGroupChatsBroker.unsubscribe { it.userId == userId }
     Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, userId) }
     Messages.deleteUserMessages(userId)
+    messagesBroker.unsubscribe { it.userId == userId }
 }

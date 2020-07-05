@@ -296,14 +296,13 @@ type Mutation {
 
 type Subscription {
     """
-    Yields created and deleted messages (including your own) in the `chatId`. The subscription will be stopped if the
-    chat was deleted, or the user deleted their account.
-
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Yields created and deleted messages (including your own) in every chat the user is in. A message from a chat the
+    user wasn't previously in can be sent as well (e.g., when the other user in a private chat the user deleted sends a
+    message in it). The subscription will be stopped if the user deletes their account.
 
     You must send an access token with this request.
     """
-    subscribeToMessages(chatId: Int!): MessagesSubscription!
+    subscribeToMessages: MessagesSubscription!
 
     """
     Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
@@ -314,24 +313,20 @@ type Subscription {
     subscribeToContacts: ContactsSubscription!
 
     """
-    Yields the other user's account when they update it. The subscription will be stopped if one of the users in the
-    chat deletes their account, or if the user deletes the chat.
-
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
-
-    You must send an access token with this request.
-    """
-    subscribeToPrivateChatInfo(chatId: Int!): PrivateChatInfoSubscription!
-
-    """
-    Yields updates on a group chat's metadata. The subscription will be stopped if the user deletes their account, or
-    leaves the chat.
-
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Yields updated accounts of users the user has private chats with. Updates will be sent for private chats the user
+    has deleted because it's possible that the user recreated the chat but hasn't finished sending a message in it yet.
+    The subscription will be stopped if the user deletes their account.
 
     You must send an access token with this request.
     """
-    subscribeToGroupChatInfo(chatId: Int!): GroupChatInfoSubscription!
+    subscribeToPrivateChatInfo: PrivateChatInfoSubscription!
+
+    """
+    Yields updates on a group chat's metadata. The subscription will be stopped if the user deletes their account.
+
+    You must send an access token with this request.
+    """
+    subscribeToGroupChatInfo: GroupChatInfoSubscription!
 
     """
     Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
@@ -343,11 +338,11 @@ type Subscription {
 
 """Represents created and deleted messages, deleted chats, and the subscription creation status."""
 union MessagesSubscription = CreatedSubscription
-    | DeletedMessage
-    | DeletionOfEveryMessage
     | NewMessage
     | UpdatedMessage
+    | DeletedMessage
     | MessageDeletionPoint
+    | DeletionOfEveryMessage
     | UserChatMessagesRemoval
 
 union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
@@ -357,21 +352,30 @@ union PrivateChatInfoSubscription = CreatedSubscription | UpdatedAccount
 
 """
 An `UpdatedAccount` represents the account of a user in the chat which has been updated. The subscriber's account
-updates will also be included.
+updates will not be included.
 
-An `ExitedUser` will not be sent if the subscriber has exited.
+An `ExitedUser` will not be sent if the subscriber has exited. If the subscriber leaves the chat, they won't receive
+their own `ExitedUser` message.
 """
 union GroupChatInfoSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
-"""A `GroupChat` represents a chat the user was added to, including a chat the user just made."""
-union NewGroupChatsSubscription = CreatedSubscription | GroupChat
+"""
+A `GroupChatId` is the ID of the chat the user was added to, excluding a chat the user just created themselves.
+"""
+union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
+
+type GroupChatId {
+    id: Int!
+}
 
 """The `id` of a user who left the group chat."""
 type ExitedUser {
-    id: ID!
+    chatId: Int!
+    userId: ID!
 }
 
 type UpdatedAccount {
+    userId: ID!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -383,6 +387,7 @@ A group chat which had its metadata updated. null fields haven't been updated. T
 (e.g., `adminId` may still be the previous admin's ID).
 """
 type UpdatedGroupChat {
+    chatId: Int!
     title: GroupChatTitle
     description: GroupChatDescription
     newUsers: [Account!]
@@ -391,20 +396,21 @@ type UpdatedGroupChat {
 }
 
 """
-Every message in the chat has been deleted.
+Every message in the `chatId` has been deleted.
 
 This happens in private chats when the user deleted it, or the other user deleted their account. This happens in group
 chats when the last user left the chat.
 """
 type DeletionOfEveryMessage {
-    placeholder: Placeholder!
+    chatId: Int!
 }
 
 """
-Every message the `userId` sent in the chat has been deleted. This happens when a group chat's member deletes their
+Every message the `userId` sent in the `chatId` has been deleted. This happens when a group chat's member deletes their
 account.
 """
 type UserChatMessagesRemoval {
+    chatId: Int!
     userId: ID!
 }
 
@@ -415,13 +421,16 @@ type CreatedSubscription {
     placeholder: Placeholder!
 }
 
-"""Indicates that the every message `until` the `DateTime` has been deleted."""
+"""Indicates that the every message `until` the `DateTime` has been deleted in the `chatId`."""
 type MessageDeletionPoint {
+    chatId: Int!
     until: DateTime!
 }
 
+"""The `messageId` has been deleted from the `chatId`."""
 type DeletedMessage {
-    id: Int!
+    chatId: Int!
+    messageId: Int!
 }
 
 type AccountsConnection {
@@ -528,7 +537,8 @@ type PrivateChat implements Chat {
 }
 
 interface MessageData {
-    id: Int!
+    chatId: Int!
+    messageId: Int!
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
@@ -542,15 +552,17 @@ type Message {
 }
 
 type NewMessage implements MessageData {
-    id: Int!
+    chatId: Int!
+    messageId: Int!
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
 }
 
-"""A message which was previously sent was updated."""
-type UpdatedMessage implements MessageData {
-    id: Int!
+"""An existing `messageId` in the `chatId` which was updated."""
+type UpdatedMessage implements MessageData{
+    chatId: Int!
+    messageId: Int!
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!

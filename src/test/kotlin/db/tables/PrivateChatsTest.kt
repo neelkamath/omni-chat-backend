@@ -183,4 +183,13 @@ class PrivateChatsTest : FunSpec({
             PrivateChats.readOtherUserId(chatId, user2Id) shouldBe user1Id
         }
     }
+
+    context("readOtherUserIdList(String)") {
+        test("Reading the user ID list the user is chatting with should include those from deleted chats") {
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
+            val chatId = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }[0]
+            PrivateChatDeletions.create(chatId, user1Id)
+            PrivateChats.readOtherUserIdList(user1Id) shouldBe listOf(user2Id, user3Id)
+        }
+    }
 })

@@ -50,27 +50,22 @@ class Broker<T, U> {
     }
 }
 
-/** The [userId] is to receive the [chatId]'s [MessagesAsset]s. */
-data class MessagesAsset(val userId: String, val chatId: Int)
+data class MessagesAsset(val userId: String)
 
 val messagesBroker = Broker<MessagesAsset, MessagesSubscription>()
 
-/** The [userId] who is to receive their [ContactsSubscription]. */
 data class ContactsAsset(val userId: String)
 
 val contactsBroker = Broker<ContactsAsset, ContactsSubscription>()
 
-/** The [subscriberId] is to receive the [userId]'s [UpdatedAccount]s. */
-data class PrivateChatInfoAsset(val subscriberId: String, val userId: String)
+data class PrivateChatInfoAsset(val userId: String)
 
 val privateChatInfoBroker = Broker<PrivateChatInfoAsset, PrivateChatInfoSubscription>()
 
-/** The [userId] watching the [chatId] for [UpdatedGroupChat]s. */
-data class GroupChatInfoAsset(val chatId: Int, val userId: String)
+data class GroupChatInfoAsset(val userId: String)
 
 val groupChatInfoBroker = Broker<GroupChatInfoAsset, GroupChatInfoSubscription>()
 
-/** The [userId] who is to be notified of group chats they have been added to. */
 data class NewGroupChatsAsset(val userId: String)
 
 val newGroupChatsBroker = Broker<NewGroupChatsAsset, NewGroupChatsSubscription>()

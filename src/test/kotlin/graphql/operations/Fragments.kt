@@ -12,6 +12,7 @@ const val ACCOUNT_FRAGMENT = """
 
 const val UPDATED_ACCOUNT_FRAGMENT = """
     ... on UpdatedAccount {
+        userId
         username
         emailAddress
         firstName
@@ -21,12 +22,14 @@ const val UPDATED_ACCOUNT_FRAGMENT = """
 
 const val EXITED_USER_FRAGMENT = """
     ... on ExitedUser {
-        id
+        chatId
+        userId
     }
 """
 
 const val UPDATED_GROUP_CHAT_FRAGMENT = """
     ... on UpdatedGroupChat {
+        chatId
         title
         description
         newUsers {
@@ -102,7 +105,8 @@ const val MESSAGE_FRAGMENT = """
 
 const val NEW_MESSAGE_FRAGMENT = """
     ... on NewMessage {
-        id
+        chatId
+        messageId
         sender {
             $ACCOUNT_FRAGMENT
         }
@@ -115,7 +119,8 @@ const val NEW_MESSAGE_FRAGMENT = """
 
 const val UPDATED_MESSAGE_FRAGMENT = """
     ... on UpdatedMessage {
-        id
+        chatId
+        messageId
         sender {
             $ACCOUNT_FRAGMENT
         }
@@ -148,18 +153,20 @@ const val MESSAGES_CONNECTION_FRAGMENT = """
 
 const val DELETION_OF_EVERY_MESSAGE_FRAGMENT = """
     ... on DeletionOfEveryMessage {
-        placeholder
+        chatId
     }
 """
 
 const val USER_CHAT_MESSAGES_REMOVAL_FRAGMENT = """
     ... on UserChatMessagesRemoval {
+        chatId
         userId
     }
 """
 
 const val MESSAGE_DELETION_POINT_FRAGMENT = """
     ... on MessageDeletionPoint {
+        chatId
         until
     }
 """
@@ -172,7 +179,8 @@ const val CREATED_SUBSCRIPTION_FRAGMENT = """
 
 const val DELETED_MESSAGE_FRAGMENT = """
     ... on DeletedMessage {
-        id
+        chatId
+        messageId
     }
 """
 
@@ -188,6 +196,12 @@ const val GROUP_CHAT_FRAGMENT = """
         messages(last: ${"$"}groupChat_messages_last, before: ${"$"}groupChat_messages_before) {
             $MESSAGES_CONNECTION_FRAGMENT
         }
+    }
+"""
+
+const val GROUP_CHAT_ID_FRAGMENT = """
+    ... on GroupChatId {
+        id
     }
 """
 

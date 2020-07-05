@@ -44,23 +44,29 @@ class DbTest : FunSpec({
             subscriber.assertComplete()
         }
 
-        test("The deleted subscriber should be unsubscribed from account updates") {
-            val (subscriberId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val subscriber = privateChatInfoBroker
-                .subscribe(PrivateChatInfoAsset(subscriberId, userId))
-                .subscribeWith(TestSubscriber())
-            deleteUserFromDb(subscriberId)
+        test("The deleted subscriber should be unsubscribed from private chat info updates") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val subscriber =
+                privateChatInfoBroker.subscribe(PrivateChatInfoAsset(userId)).subscribeWith(TestSubscriber())
+            deleteUserFromDb(userId)
             subscriber.assertComplete()
         }
 
-        test("Only the deleted subscriber should be unsubscribed from group chat updates") {
+        test("Only the deleted subscriber should be unsubscribed from group chat info updates") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, it)).subscribeWith(TestSubscriber()) }
+                .map { groupChatInfoBroker.subscribe(GroupChatInfoAsset(it)).subscribeWith(TestSubscriber()) }
             deleteUserFromDb(userId)
-            adminSubscriber.assertValue(ExitedUser(userId))
+            adminSubscriber.assertValue(ExitedUser(chatId, userId))
             userSubscriber.assertComplete()
+        }
+
+        test("The user should be unsubscribed from message updates") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val subscriber = messagesBroker.subscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber())
+            deleteUserFromDb(userId)
+            subscriber.assertComplete()
         }
     }
 

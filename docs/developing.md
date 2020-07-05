@@ -10,7 +10,7 @@ Here's what a standard project iteration looks like.
     - An operation which is a subscription must return a `union` whose name's suffixed with `Subscription` which includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
     - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
     - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
-1. Create Kotlin [models](../src/main/kotlin/Models.kt) off the GraphQL types:
+1. Create Kotlin [models](../src/main/kotlin/Models.kt) without duplicating documentation for the GraphQL types:
 
     |GraphQL|Kotlin|
     |---|---|

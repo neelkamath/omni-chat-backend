@@ -46,14 +46,13 @@ class GroupChatsTest : FunSpec({
                     listOf(adminId, userId)
         }
 
-        test("Creating a chat should notify everyone in the chat of such, but no one else") {
+        test("Creating a chat should notify only non-admins in the chat, even if the admin is in the user ID list") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id))
-            val chat = GroupChats.readChat(chatId)
-            listOf(adminSubscriber, user1Subscriber).forEach { it.assertValue(chat) }
-            user2Subscriber.assertNoValues()
+            val chatId = GroupChats.create(adminId, buildNewGroupChat(adminId, user1Id))
+            user1Subscriber.assertValue(GroupChatId(chatId))
+            listOf(adminSubscriber, user2Subscriber).forEach { it.assertNoValues() }
         }
     }
 
@@ -73,15 +72,6 @@ class GroupChatsTest : FunSpec({
     }
 
     context("update(GroupChatUpdate)") {
-        test("When a user leaves the chat, their messages subscription to it should be removed") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val subscriber = messagesBroker.subscribe(MessagesAsset(userId, chatId)).subscribeWith(TestSubscriber())
-            val update = GroupChatUpdate(chatId, removedUserIdList = listOf(userId))
-            GroupChats.update(update)
-            subscriber.assertComplete()
-        }
-
         test("The chat should be deleted once every user has left it") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val userIdList = listOf(user1Id, user2Id)
@@ -93,8 +83,7 @@ class GroupChatsTest : FunSpec({
         test("A subscriber should be notified when the chat is updated") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat())
-            val subscriber =
-                groupChatInfoBroker.subscribe(GroupChatInfoAsset(chatId, adminId)).subscribeWith(TestSubscriber())
+            val subscriber = groupChatInfoBroker.subscribe(GroupChatInfoAsset(adminId)).subscribeWith(TestSubscriber())
             val update = GroupChatUpdate(chatId, GroupChatTitle("New Title"), newUserIdList = listOf(userId))
             GroupChats.update(update)
             subscriber.assertValue(update.toUpdatedGroupChat())
@@ -107,35 +96,17 @@ class GroupChatsTest : FunSpec({
                 .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChats.update(GroupChatUpdate(chatId, newUserIdList = listOf(user1Id, user2Id)))
             listOf(adminSubscriber, user1Subscriber).forEach { it.assertNoValues() }
-            user2Subscriber.assertValue(GroupChats.readChat(chatId))
+            user2Subscriber.assertValue(GroupChatId(chatId))
         }
     }
 
     context("removeUsers(Int, List<String>)") {
-        test("Subscriptions should be removed for deleted chats") {
-            val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
-            val subscriber = messagesBroker.subscribe(MessagesAsset(adminId, chatId)).subscribeWith(TestSubscriber())
-            GroupChatUsers.removeUsers(chatId, adminId)
-            subscriber.assertComplete()
-        }
-
         test("Messages from a user who left should be retained") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val messageId = Messages.message(chatId, userId, TextMessage("t"))
             GroupChatUsers.removeUsers(chatId, userId)
             Messages.readIdList(chatId) shouldBe listOf(messageId)
-        }
-
-        test("When the user leaves the chat they were accessing on two devices, both subscriptions should be removed") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val (phoneSubscriber, laptopSubscriber) = (1..2)
-                .map { messagesBroker.subscribe(MessagesAsset(userId, chatId)).subscribeWith(TestSubscriber()) }
-            GroupChatUsers.removeUsers(chatId, userId)
-            phoneSubscriber.assertComplete()
-            laptopSubscriber.assertComplete()
         }
     }
 
@@ -155,20 +126,6 @@ class GroupChatsTest : FunSpec({
             GroupChats.count().shouldBeZero()
             Messages.count().shouldBeZero()
             MessageStatuses.count().shouldBeZero()
-        }
-
-        test("Deleting a chat should unsubscribe subscribers only for that chat") {
-            val (admin1Id, userId, admin2Id) = createVerifiedUsers(3).map { it.info.id }
-            val chat1Id = GroupChats.create(admin1Id, buildNewGroupChat(userId))
-            val chat2Id = GroupChats.create(admin2Id, buildNewGroupChat())
-            val (admin1Subscriber, userSubscriber, admin2Subscriber) =
-                mapOf(admin1Id to chat1Id, userId to chat1Id, admin2Id to chat2Id).map { (userId, chatId) ->
-                    messagesBroker.subscribe(MessagesAsset(userId, chatId)).subscribeWith(TestSubscriber())
-                }
-            GroupChatUsers.removeUsers(chat1Id, admin1Id, userId)
-            admin1Subscriber.assertComplete()
-            userSubscriber.assertComplete()
-            admin2Subscriber.assertNotComplete()
         }
     }
 

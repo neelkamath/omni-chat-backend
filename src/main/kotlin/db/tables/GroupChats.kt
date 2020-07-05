@@ -4,8 +4,10 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.sql.*
 
-/** @throws [IllegalArgumentException] if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of which at
- *                                     least one isn't whitespace. */
+/**
+ * @throws [IllegalArgumentException] if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of which at
+ * least one isn't whitespace.
+ */
 data class GroupChatTitle(val value: String) {
     init {
         if (value.trim().isEmpty() || value.length > GroupChats.MAX_TITLE_LENGTH)
@@ -65,8 +67,9 @@ object GroupChats : Table() {
     }
 
     /**
-     * @return the [chat]'s ID after creating it, and [Broker.notify]s the [NewGroupChat.userIdList] of the
-     *         [NewGroupChat] via [newGroupChatsBroker].
+     * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via [newGroupChatsBroker].
+     *
+     * @return the [chat]'s ID after creating it.
      */
     fun create(adminId: String, chat: NewGroupChat): Int {
         val chatId = transact {
@@ -77,9 +80,8 @@ object GroupChats : Table() {
                 it[description] = chat.description.value
             }[GroupChats.id]
         }
-        val userIdList = chat.userIdList + adminId
-        GroupChatUsers.addUsers(chatId, userIdList)
-        newGroupChatsBroker.notify(readChat(chatId)) { it.userId in userIdList }
+        GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
+        newGroupChatsBroker.notify(GroupChatId(chatId)) { it.userId in chat.userIdList - adminId }
         return chatId
     }
 
@@ -113,8 +115,7 @@ object GroupChats : Table() {
      * Users in the [GroupChatUpdate.newUserIdList] who are already in the chat are ignored.
      *
      * Users in the [GroupChatUpdate.removedUserIdList] who aren't in the chat are ignored. Removed users will be
-     * [Broker.unsubscribe]d via [messagesBroker] and [groupChatInfoBroker]. The chat is deleted if
-     * every user is removed.
+     * [Broker.unsubscribe]d via [groupChatInfoBroker]. The chat is deleted if every user is removed.
      *
      * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [groupChatInfoBroker]. Clients who have
      * [Broker.subscribe]d via [newGroupChatsBroker] will be [Broker.notify]d of the [GroupChat].
@@ -138,7 +139,7 @@ object GroupChats : Table() {
         val newUserIdList = if (update.newUserIdList == null) null else update.newUserIdList - existingUserIdList
         if (newUserIdList != null) {
             GroupChatUsers.addUsers(update.chatId, newUserIdList)
-            newGroupChatsBroker.notify(readChat(update.chatId)) { it.userId in newUserIdList }
+            newGroupChatsBroker.notify(GroupChatId(update.chatId)) { it.userId in newUserIdList }
         }
         operateInfoBroker(update.copy(newUserIdList = newUserIdList, removedUserIdList = removedUserIdList))
     }
@@ -156,23 +157,21 @@ object GroupChats : Table() {
     }
 
     /** [Broker.notify]s users in the [GroupChatUpdate.chatId] of the [UpdatedGroupChat] via [groupChatInfoBroker]. */
-    private fun operateInfoBroker(update: GroupChatUpdate) {
-        val updatedChat = with(update) {
-            UpdatedGroupChat(
-                title,
-                description,
-                newUserIdList?.map(::readUserById),
-                removedUserIdList?.map(::readUserById),
-                newAdminId
-            )
-        }
-        groupChatInfoBroker.notify(updatedChat) { it.chatId == update.chatId }
+    private fun operateInfoBroker(update: GroupChatUpdate): Unit = with(update) {
+        val updatedChat = UpdatedGroupChat(
+            chatId,
+            title,
+            description,
+            newUserIdList?.map(::readUserById),
+            removedUserIdList?.map(::readUserById),
+            newAdminId
+        )
+        groupChatInfoBroker.notify(updatedChat) { isUserInChat(it.userId, chatId) }
     }
 
     /**
      * Deletes the [chatId] from [GroupChats]. [Messages], and [MessageStatuses]. Clients who have
-     * [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a
-     * [DeletionOfEveryMessage], and then be [Broker.unsubscribe]d.
+     * [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
@@ -184,7 +183,6 @@ object GroupChats : Table() {
             deleteWhere { GroupChats.id eq chatId }
         }
         Messages.deleteChat(chatId)
-        messagesBroker.unsubscribe { it.chatId == chatId }
     }
 
     /**

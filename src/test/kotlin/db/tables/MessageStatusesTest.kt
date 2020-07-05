@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.MessageStatus
+import com.neelkamath.omniChat.UpdatedMessage
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
@@ -65,11 +66,10 @@ class MessageStatusesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            val subscriber = messagesBroker
-                .subscribe(MessagesAsset(user1Id, chatId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            subscriber.assertValue(Messages.readPrivateChat(chatId, user1Id)[0].node.toUpdatedMessage())
+            val message = Messages.readPrivateChat(chatId, user1Id)[0].node
+            subscriber.assertValue(UpdatedMessage.build(chatId, message))
         }
     }
 

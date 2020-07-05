@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.TextMessage
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.callGraphQlQueryOrMutation
 import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
@@ -43,9 +41,9 @@ class GetHealthCheckTest : FunSpec({
 class EncodingTest : FunSpec({
     test("A group chat's title should allow emoji") {
         val token = createSignedInUsers(1)[0].accessToken
-        val title = "Title \uD83D\uDCDA"
-        val chatId = createGroupChat(token, buildNewGroupChat())
-        GroupChats.readChat(chatId).title.value shouldBe title
+        val title = GroupChatTitle("Title \uD83D\uDCDA")
+        val chatId = createGroupChat(token, NewGroupChat(title, GroupChatDescription("")))
+        GroupChats.readChat(chatId).title shouldBe title
     }
 
     fun testMessage(message: TextMessage) {

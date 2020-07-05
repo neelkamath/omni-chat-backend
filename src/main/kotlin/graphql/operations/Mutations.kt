@@ -54,7 +54,7 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val chat = env.parseArgument<NewGroupChat>("chat")
     val userIdList = chat.userIdList.filter { it != env.userId!! }
-    if (!userIdList.all { userIdExists(it) }) throw InvalidUserIdException
+    if (userIdList.any { !userIdExists(it) }) throw InvalidUserIdException
     return GroupChats.create(env.userId!!, chat)
 }
 

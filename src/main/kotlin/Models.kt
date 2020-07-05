@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChatDescription
 import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.TextMessage
 import java.time.LocalDateTime
 
@@ -10,7 +11,7 @@ typealias Cursor = Int
 
 /**
  * @throws [IllegalArgumentException] if the [value] isn't lowercase, isn't shorter than 256 characters, or doesn't
- *                                    contain non-whitespace characters.
+ * contain non-whitespace characters.
  */
 data class Username(val value: String) {
     init {
@@ -128,6 +129,7 @@ interface GroupChatInfoSubscription
 
 /** @throws [IllegalArgumentException] if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(
+    val chatId: Int,
     val title: GroupChatTitle? = null,
     val description: GroupChatDescription? = null,
     val newUsers: List<Account>? = null,
@@ -140,6 +142,7 @@ data class UpdatedGroupChat(
 }
 
 data class UpdatedAccount(
+    val userId: String,
     val username: Username,
     val emailAddress: String,
     val firstName: String? = null,
@@ -147,7 +150,7 @@ data class UpdatedAccount(
 ) : PrivateChatInfoSubscription, GroupChatInfoSubscription {
     companion object {
         fun fromUserId(userId: String): UpdatedAccount =
-            with(readUserById(userId)) { UpdatedAccount(username, emailAddress, firstName, lastName) }
+            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName) }
     }
 }
 
@@ -165,6 +168,7 @@ data class GroupChatUpdate(
     }
 
     fun toUpdatedGroupChat(): UpdatedGroupChat = UpdatedGroupChat(
+        chatId,
         title,
         description,
         newUserIdList?.map(::readUserById),
@@ -180,7 +184,6 @@ interface Chat {
 
 data class PrivateChat(
     override val id: Int,
-    /** The user being chatted with. */
     val user: Account,
     override val messages: MessagesConnection
 ) : Chat
@@ -192,93 +195,77 @@ data class GroupChat(
     val title: GroupChatTitle,
     val description: GroupChatDescription? = null,
     override val messages: MessagesConnection
-) : Chat, NewGroupChatsSubscription
+) : Chat
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
 interface MessageData {
-    val id: Int
+    val chatId: Int
+    val messageId: Int
     val sender: Account
     val text: TextMessage
     val dateTimes: MessageDateTimes
 }
 
 data class Message(
-    override val id: Int,
-    override val sender: Account,
-    override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData {
-    fun toNewMessage(): NewMessage = NewMessage(id, sender, text, dateTimes)
-
-    fun toUpdatedMessage(): UpdatedMessage = UpdatedMessage(id, sender, text, dateTimes)
-}
+    val id: Int,
+    val sender: Account,
+    val text: TextMessage,
+    val dateTimes: MessageDateTimes
+)
 
 interface MessagesSubscription
 
 data class NewMessage(
-    override val id: Int,
+    override val chatId: Int,
+    override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription
+) : MessageData, MessagesSubscription {
+    companion object {
+        fun build(message: Message): NewMessage =
+            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes) }
+    }
+}
 
 data class UpdatedMessage(
-    override val id: Int,
+    override val chatId: Int,
+    override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription
+) : MessageData, MessagesSubscription {
+    companion object {
+        fun build(chatId: Int, message: Message): UpdatedMessage =
+            with(message) { UpdatedMessage(chatId, id, sender, text, dateTimes) }
+    }
+}
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
-/** The [dateTime] and [status] the [user] has on a message. */
 data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime, val status: MessageStatus)
 
 enum class MessageStatus { DELIVERED, READ }
 
-data class DeletedMessage(val id: Int) : MessagesSubscription
+data class DeletedMessage(val chatId: Int, val messageId: Int) : MessagesSubscription
 
-/** Every message [until] the [LocalDateTime] has been deleted. */
-data class MessageDeletionPoint(val until: LocalDateTime) : MessagesSubscription
+data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : MessagesSubscription
 
-/**
- * Every message the [userId] sent in the chat has been deleted. This happens when a group chat's member deletes their
- * account.
- */
-data class UserChatMessagesRemoval(val userId: String) : MessagesSubscription
+data class UserChatMessagesRemoval(val chatId: Int, val userId: String) : MessagesSubscription
 
-data class ExitedUser(val id: String) : GroupChatInfoSubscription
+data class ExitedUser(val chatId: Int, val userId: String) : GroupChatInfoSubscription
 
 interface NewGroupChatsSubscription
 
+data class GroupChatId(val id: Int) : NewGroupChatsSubscription
+
 interface PrivateChatInfoSubscription
 
-/**
- * Every message in the chat has been deleted.
- *
- * This happens in private chats when the user deletes the chat, or the other user deletes their account. This happens
- * in group chats when the last user leaves the chat.
- */
-object DeletionOfEveryMessage : MessagesSubscription {
-    val placeholder = Placeholder
-}
+data class DeletionOfEveryMessage(val chatId: Int) : MessagesSubscription
 
-/**
- * Lets clients know that the GraphQL subscription is created. It's to be sent only once, and will be the first event
- * sent.
- *
- * Subscriptions are handled using WebSockets. It takes a small amount of time for the WebSocket connection to be
- * created. After the connection has been created, it takes a small amount of time for the subscription to be created.
- * Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat
- * message, was sent during one of these delays. For example, if the client was opening a user's chat, they might be
- * tempted to first query the previous messages, and then subscribe to new messages. However, this might cause a message
- * another user sent in the chat to be lost during one of the aforementioned delays. Therefore, the client should first
- * subscribe (i.e., await the WebSocket connection to be created), await the [CreatedSubscription] event, and then query
- * for older data if required.
- */
 object CreatedSubscription :
     MessagesSubscription,
     ContactsSubscription,
@@ -289,7 +276,6 @@ object CreatedSubscription :
     val placeholder = Placeholder
 }
 
-/** The [chat] the [messages] belong to. */
 data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
 data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {

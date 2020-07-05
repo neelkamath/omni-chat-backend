@@ -160,7 +160,7 @@ object PrivateChats : Table() {
 
     /**
      * @return the IDs of the users in the [chatId]. Even if one of the users has deleted the chat, their ID will be
-     *         returned.
+     * returned.
      * @see [readOtherUserId]
      */
     fun readUserIdList(chatId: Int): List<String> = transact {
@@ -176,6 +176,9 @@ object PrivateChats : Table() {
         val userIdList = readUserIdList(chatId)
         return if (userIdList[0] == userId) userIdList[1] else userIdList[0]
     }
+
+    /** @return the ID of every other user the [userId] has chats with, including deleted chats. */
+    fun readOtherUserIdList(userId: String): List<String> = readIdList(userId).map { readOtherUserId(it, userId) }
 
     /**
      * Checks if this user's [UserRepresentation.username], [UserRepresentation.firstName], or

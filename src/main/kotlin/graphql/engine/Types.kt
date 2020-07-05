@@ -71,7 +71,7 @@ private fun wireNewGroupChatsSubscription(builder: TypeRuntimeWiring.Builder): T
     builder.typeResolver {
         val type = when (val obj = it.getObject<Any>()) {
             is CreatedSubscription -> "CreatedSubscription"
-            is GroupChat -> "GroupChat"
+            is GroupChatId -> "GroupChatId"
             else -> throw Error("$obj wasn't a CreatedSubscription or GroupChat.")
         }
         it.schema.getObjectType(type)
@@ -102,7 +102,6 @@ private fun wireAccountData(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiri
 
 private fun wireMessageData(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder.typeResolver {
     val type = when (val obj = it.getObject<Any>()) {
-        is Message -> "Message"
         is NewMessage -> "NewMessage"
         is UpdatedMessage -> "UpdatedMessage"
         else -> throw Error("$obj wasn't a Message, NewMessage, or UpdatedMessage.")

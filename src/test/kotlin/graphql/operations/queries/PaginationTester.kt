@@ -69,7 +69,7 @@ fun testMessagesPagination(operation: MessagesOperationName) {
     when (operation) {
         MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(adminToken, chatId, text.value, pagination)
         MessagesOperationName.SEARCH_MESSAGES ->
-            searchMessages(adminToken, text.value, groupChatMessagesPagination = pagination).flatMap { it.messages }
+            searchMessages(adminToken, text.value, chatMessagesPagination = pagination).flatMap { it.messages }
         MessagesOperationName.READ_CHATS ->
             readChats(adminToken, groupChatMessagesPagination = pagination)[0].messages.edges
         MessagesOperationName.READ_CHAT ->

@@ -55,7 +55,7 @@ fun buildExecutionInput(request: GraphQlRequest, call: ApplicationCall): Executi
 
 /**
  * @return the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with
- *         empty `"errors"`.
+ * empty `"errors"`.
  * @throws [UnauthorizedException] if an [UnauthorizedException] is present.
  */
 fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpecification()

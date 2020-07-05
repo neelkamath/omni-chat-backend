@@ -38,7 +38,7 @@ class ChatMessagesDtoTest : FunSpec({
             searchMessages(
                 adminToken,
                 queryText.value,
-                groupChatMessagesPagination = BackwardPagination(last, before = messageIdList[index])
+                chatMessagesPagination = BackwardPagination(last, before = messageIdList[index])
             ).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList.take(index).takeLast(last)
         }
 

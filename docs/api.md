@@ -98,7 +98,7 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 ### `Subscription`s
 
-Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of 60 seconds, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
+Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of one minute, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older db if required.
 
@@ -118,10 +118,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
 
     ```json
     {
-      "query": "subscription MessageUpdates($chatId: Int!) { messageUpdates(chatId: $chatId) { ... on DeletedMessage { id } ... on Message { id, senderId, text } } }",
-      "variables": {
-        "chatId": 3
-      }
+      "query": "subscription SubscribeToMessages { subscribeToMessages { ... on CreatedSubscription { placeholder } ... on NewMessage { senderId, text } } }"
     }
     ```
 1. If the user is unauthorized, the connection will be closed with a status code of 1008.
@@ -131,7 +128,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
     {
       "errors": [
         {
-           "message": "INVALID_CHAT_ID"  
+           "message": "Invalid type"  
         } 
       ]
     }
@@ -141,8 +138,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
     ```json
     {
       "data": {
-        "messageUpdates": {
-          "id": 7,
+        "subscribeToMessageUpdates": {
           "senderId": "586a42c6-1fd4-4bfa-9b78-5f32727042ca",
           "text": "Hi!"
         }

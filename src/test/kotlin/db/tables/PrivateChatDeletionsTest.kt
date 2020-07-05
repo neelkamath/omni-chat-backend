@@ -1,10 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.PrivateChatInfoAsset
-import com.neelkamath.omniChat.db.messagesBroker
-import com.neelkamath.omniChat.db.privateChatInfoBroker
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -12,7 +8,6 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 
 class PrivateChatDeletionsTest : FunSpec({
     context("isDeleted(String, Int)") {
@@ -69,32 +64,6 @@ class PrivateChatDeletionsTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             repeat(2) { PrivateChatDeletions.create(chatId, user1Id) }
-        }
-
-        test("Deleting a chat should unsubscribe only the deleter from messages") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it, chatId)).subscribeWith(TestSubscriber()) }
-            PrivateChatDeletions.create(chatId, user1Id)
-            user1Subscriber.assertComplete()
-            user2Subscriber.assertNotComplete()
-        }
-
-        test("Deleting a chat should only unsubscribe the deleter from the chat") {
-            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }[0]
-            val (user1ToUser2Subscriber, user1ToUser3Subscriber, user2ToUser1Subscriber, user3ToUser1Subscriber) =
-                listOf(user1Id to user2Id, user1Id to user3Id, user2Id to user1Id, user3Id to user1Id)
-                    .map { (subscriberId, userId) ->
-                        privateChatInfoBroker
-                            .subscribe(PrivateChatInfoAsset(subscriberId, userId))
-                            .subscribeWith(TestSubscriber())
-                    }
-            PrivateChatDeletions.create(chatId, user1Id)
-            user1ToUser2Subscriber.assertComplete()
-            listOf(user1ToUser3Subscriber, user2ToUser1Subscriber, user3ToUser1Subscriber)
-                .forEach { it.assertNotComplete() }
         }
     }
 

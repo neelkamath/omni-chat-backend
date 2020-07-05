@@ -20,7 +20,7 @@ class QueriesAndMutationsTest : FunSpec({
     context("routeQueriesAndMutations(Routing)") {
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             withTestApplication(Application::main) {
-                handleRequest(HttpMethod.Post, "graphql") {
+                handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
                         query IsUsernameTaken {
                             isUsernameTaken(username: "john_doe")

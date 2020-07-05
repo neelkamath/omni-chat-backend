@@ -16,7 +16,7 @@ class DateTimeCoercingTest : FunSpec({
         val token = createSignedInUsers(1)[0].accessToken
         val chatId = createGroupChat(token, buildNewGroupChat())
         var sent: String? = null
-        subscribeToMessages(token, chatId) { incoming ->
+        subscribeToMessages(token) { incoming ->
             createMessage(token, chatId, TextMessage("t"))
             val message = parseFrameData<Map<String, Any>>(incoming)
             val dateTimes = message["dateTimes"] as Map<*, *>
