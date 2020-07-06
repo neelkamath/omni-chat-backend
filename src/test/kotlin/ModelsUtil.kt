@@ -1,8 +1,5 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
-
 fun Account.toUpdatedAccount(): UpdatedAccount = UpdatedAccount(id, username, emailAddress, firstName, lastName)
 
 fun buildNewGroupChat(userIdList: List<String>): NewGroupChat =

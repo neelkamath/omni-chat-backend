@@ -44,7 +44,7 @@ class SearchContactsTest : FunSpec({
         ).map {
             createAccount(it)
             val userId = readUserByUsername(it.username).id
-            Account(userId, it.username, it.emailAddress, it.firstName, it.lastName)
+            Account(userId, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
         }
         val token = createSignedInUsers(1)[0].accessToken
         createContacts(token, accounts.map { it.id })

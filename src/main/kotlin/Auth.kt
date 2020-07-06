@@ -134,20 +134,21 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
     isEnabled = true
 }
 
-private fun buildAccount(user: UserRepresentation): Account =
-    with(user) { Account(id, Username(username), email, firstName, lastName) }
-
-fun readUserByUsername(username: Username): Account =
-    realm.users().search(username.value).first { it.username == username.value }.let(::buildAccount)
+fun readUserByUsername(username: Username): Account {
+    val user = realm.users().search(username.value).first { it.username == username.value }
+    return Account.build(user)
+}
 
 fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
 
-fun readUserById(userId: String): Account = buildAccount(readUser(userId))
+fun readUserById(userId: String): Account = Account.build(readUser(userId))
 
 private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
-private fun readUserByEmail(email: String): Account =
-    realm.users().list().first { it.email == email }.let(::buildAccount)
+private fun readUserByEmail(email: String): Account {
+    val user = realm.users().list().first { it.email == email }
+    return Account.build(user)
+}
 
 /**
  * Case-insensitively [query]s every user's username, first name, last name, and email address.
@@ -159,7 +160,7 @@ fun searchUsers(query: String): List<Account> = with(realm.users()) {
             searchBy(firstName = query) +
             searchBy(lastName = query) +
             searchBy(emailAddress = query)
-}.distinctBy { it.id }.map(::buildAccount)
+}.distinctBy { it.id }.map { Account.build(it) }
 
 /** Convenience function for [UsersResource.search] which provides only the relevant parameters with names. */
 private fun UsersResource.searchBy(

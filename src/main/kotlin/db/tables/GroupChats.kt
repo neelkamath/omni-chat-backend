@@ -4,32 +4,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.sql.*
 
-/**
- * @throws [IllegalArgumentException] if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of which at
- * least one isn't whitespace.
- */
-data class GroupChatTitle(val value: String) {
-    init {
-        if (value.trim().isEmpty() || value.length > GroupChats.MAX_TITLE_LENGTH)
-            throw IllegalArgumentException(
-                """
-                The title ("$value") must be 1-${GroupChats.MAX_TITLE_LENGTH} characters, with at least one 
-                non-whitespace character.
-                """.trimIndent()
-            )
-    }
-}
-
-/** @throws [IllegalArgumentException] if the [value] isn't at most [GroupChats.MAX_DESCRIPTION_LENGTH] characters. */
-data class GroupChatDescription(val value: String) {
-    init {
-        if (value.length > GroupChats.MAX_DESCRIPTION_LENGTH)
-            throw IllegalArgumentException(
-                """The description ("$value") must be at most ${GroupChats.MAX_DESCRIPTION_LENGTH} characters"""
-            )
-    }
-}
-
 /** The [GroupChatUsers] table contains the participants. [GroupChats] have [Messages]. */
 object GroupChats : Table() {
     override val tableName get() = "group_chats"

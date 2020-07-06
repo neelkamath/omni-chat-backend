@@ -14,19 +14,6 @@ import java.time.LocalDateTime
 private typealias Filter = Op<Boolean>?
 
 /**
- * @throws [IllegalArgumentException] if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at least one
- * non-whitespace.
- */
-data class TextMessage(val value: String) {
-    init {
-        if (value.trim().isEmpty() || value.length > Messages.MAX_TEXT_LENGTH)
-            throw IllegalArgumentException(
-                "The text must be 1-${Messages.MAX_TEXT_LENGTH} characters, with at least one non-whitespace."
-            )
-    }
-}
-
-/**
  * The messages for [PrivateChats] and [GroupChats]. The date and time messages were delivered and read are stored in
  * [MessageStatuses].
  *

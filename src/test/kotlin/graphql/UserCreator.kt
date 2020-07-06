@@ -24,11 +24,12 @@ fun createSignedInUsers(count: Int): List<SignedInUser> = (1..count).map {
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",
+        Bio(""),
         "firstName$userCount",
         "lastName$userCount"
     )
     createAccount(account)
     verifyEmailAddress(account.username)
     val userId = readUserByUsername(account.username).id
-    with(account) { SignedInUser(Account(userId, username, emailAddress, firstName, lastName), password) }
+    with(account) { SignedInUser(Account(userId, username, emailAddress, bio, firstName, lastName), password) }
 }

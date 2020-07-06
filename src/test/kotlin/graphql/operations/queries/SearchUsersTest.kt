@@ -40,7 +40,7 @@ class SearchUsersTest : FunSpec({
         ).map {
             createAccount(it)
             val id = readUserByUsername(it.username).id
-            Account(id, it.username, it.emailAddress, it.firstName, it.lastName)
+            Account(id, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
         }
         searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
     }
@@ -63,7 +63,7 @@ class SearchUsersTest : FunSpec({
     test("Users should be paginated") {
         val infoCursors = createAccounts().zip(Users.read()).map { (newAccount, cursor) ->
             val account = with(newAccount) {
-                Account(readUserByUsername(username).id, username, emailAddress, firstName, lastName)
+                Account(readUserByUsername(username).id, username, emailAddress, bio, firstName, lastName)
             }
             AccountEdge(account, cursor)
         }

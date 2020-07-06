@@ -11,32 +11,6 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
-class GroupChatTitleTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the title is only whitespace") {
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("  ") }
-        }
-
-        test("An exception should be thrown if the title is too long") {
-            val title = CharArray(GroupChats.MAX_TITLE_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle(title) }
-        }
-
-        test("An exception should be thrown if the title is too short") {
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("") }
-        }
-    }
-})
-
-class GroupChatDescriptionTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the description is too long") {
-            val description = CharArray(GroupChats.MAX_DESCRIPTION_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { GroupChatDescription(description) }
-        }
-    }
-})
-
 class GroupChatsTest : FunSpec({
     context("create(String, NewGroupChat") {
         test("A chat should be created which includes the admin in the list of users") {

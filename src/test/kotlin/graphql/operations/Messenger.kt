@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.neelkamath.omniChat.NewMessage
-import com.neelkamath.omniChat.db.tables.TextMessage
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
 import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
 import com.neelkamath.omniChat.graphql.operations.subscriptions.subscribeToMessages

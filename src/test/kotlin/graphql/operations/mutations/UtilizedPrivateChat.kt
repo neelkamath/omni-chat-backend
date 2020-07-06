@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.graphql.operations.mutations
 
-import com.neelkamath.omniChat.db.tables.TextMessage
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.graphql.SignedInUser
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId

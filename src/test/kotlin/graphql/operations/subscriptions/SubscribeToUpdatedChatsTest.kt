@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.EXITED_USER_FRAGMENT

@@ -15,23 +15,6 @@ import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import java.time.LocalDateTime
 
-class TextMessageTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the value is too short") {
-            shouldThrowExactly<IllegalArgumentException> { TextMessage("") }
-        }
-
-        test("An exception should be thrown if the value is only whitespace") {
-            shouldThrowExactly<IllegalArgumentException> { TextMessage("  ") }
-        }
-
-        test("An exception should be thrown if the value is too long") {
-            val text = CharArray(Messages.MAX_TEXT_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { TextMessage(text) }
-        }
-    }
-})
-
 class MessagesTest : FunSpec({
     data class CreatedMessage(val creator: String, val message: String)
 

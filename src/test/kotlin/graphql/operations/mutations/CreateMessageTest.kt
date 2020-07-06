@@ -3,7 +3,6 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation

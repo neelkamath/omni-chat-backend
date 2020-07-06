@@ -4,9 +4,6 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
-import com.neelkamath.omniChat.db.tables.TextMessage
 
 private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Placeholder =
@@ -78,34 +75,32 @@ private object TextMessageDeserializer : JsonDeserializer<TextMessage>() {
         parser.codec.readTree<JsonNode>(parser).textValue().let(::TextMessage)
 }
 
+private object BioSerializer : JsonSerializer<Bio>() {
+    override fun serialize(textMessage: Bio, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(textMessage.value)
+}
+
+private object BioDeserializer : JsonDeserializer<Bio>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Bio =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::Bio)
+}
+
 /** Updates the [objectMapper] to provide the extra functionality the test source set requires. */
 fun configureObjectMapper() {
     objectMapper
-        .registerModule(SimpleModule().addDeserializer(Placeholder::class.java, PlaceholderDeserializer))
-        .registerModule(SimpleModule().addDeserializer(Chat::class.java, ChatDeserializer))
-        .registerModule(
-            SimpleModule()
-                .addSerializer(Username::class.java, UsernameSerializer)
-                .addDeserializer(Username::class.java, UsernameDeserializer)
-        )
-        .registerModule(
-            SimpleModule()
-                .addSerializer(Password::class.java, PasswordSerializer)
-                .addDeserializer(Password::class.java, PasswordDeserializer)
-        )
-        .registerModule(
-            SimpleModule()
-                .addSerializer(GroupChatTitle::class.java, GroupChatTitleSerializer)
-                .addDeserializer(GroupChatTitle::class.java, GroupChatTitleDeserializer)
-        )
-        .registerModule(
-            SimpleModule()
-                .addSerializer(GroupChatDescription::class.java, GroupChatDescriptionSerializer)
-                .addDeserializer(GroupChatDescription::class.java, GroupChatDescriptionDeserializer)
-        )
-        .registerModule(
-            SimpleModule()
-                .addSerializer(TextMessage::class.java, TextMessageSerializer)
-                .addDeserializer(TextMessage::class.java, TextMessageDeserializer)
-        )
+        .register(Placeholder::class.java, PlaceholderDeserializer)
+        .register(Chat::class.java, ChatDeserializer)
+        .register(Username::class.java, UsernameDeserializer, UsernameSerializer)
+        .register(Password::class.java, PasswordDeserializer, PasswordSerializer)
+        .register(GroupChatTitle::class.java, GroupChatTitleDeserializer, GroupChatTitleSerializer)
+        .register(GroupChatDescription::class.java, GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
+        .register(TextMessage::class.java, TextMessageDeserializer, TextMessageSerializer)
+        .register(Bio::class.java, BioDeserializer, BioSerializer)
 }
+
+/** Convenience function for [ObjectMapper.registerModule]. Registers the [clazz]'s [serializer] and [deserializer]. */
+private fun <T> ObjectMapper.register(
+    clazz: Class<T>,
+    deserializer: JsonDeserializer<T>? = null,
+    serializer: JsonSerializer<T>? = null
+): ObjectMapper = registerModule(SimpleModule().addSerializer(clazz, serializer).addDeserializer(clazz, deserializer))

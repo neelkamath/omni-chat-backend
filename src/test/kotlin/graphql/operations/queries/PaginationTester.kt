@@ -1,11 +1,11 @@
 package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.neelkamath.omniChat.GroupChat
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.db.tables.read
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId

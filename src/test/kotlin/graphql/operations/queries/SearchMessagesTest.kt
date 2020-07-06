@@ -3,9 +3,9 @@ package com.neelkamath.omniChat.graphql.operations.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.ChatMessages
 import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.CHAT_MESSAGES_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.messageAndReadId

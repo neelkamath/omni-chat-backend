@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
 

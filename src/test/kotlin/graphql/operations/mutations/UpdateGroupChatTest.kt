@@ -2,8 +2,6 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation

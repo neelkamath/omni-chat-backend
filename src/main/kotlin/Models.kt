@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.TextMessage
+import com.neelkamath.omniChat.db.tables.Users
+import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
 typealias Cursor = Int
@@ -51,6 +51,7 @@ data class NewAccount(
     val username: Username,
     val password: Password,
     val emailAddress: String,
+    val bio: Bio = Bio(""),
     val firstName: String? = null,
     val lastName: String? = null
 )
@@ -59,6 +60,7 @@ interface AccountData {
     val id: String
     val username: Username
     val emailAddress: String
+    val bio: Bio
     val firstName: String?
     val lastName: String?
 }
@@ -67,9 +69,15 @@ data class Account(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
+    override val bio: Bio,
     override val firstName: String? = null,
     override val lastName: String? = null
-) : AccountData
+) : AccountData {
+    companion object {
+        fun build(user: UserRepresentation): Account =
+            with(user) { Account(id, Username(username), email, Users.readBio(id), firstName, lastName) }
+    }
+}
 
 interface ContactsSubscription
 
@@ -77,12 +85,13 @@ data class NewContact(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
+    override val bio: Bio,
     override val firstName: String? = null,
     override val lastName: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
         fun fromUserId(userId: String): NewContact =
-            with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName) }
+            with(readUserById(userId)) { NewContact(id, username, emailAddress, bio, firstName, lastName) }
     }
 }
 
@@ -90,12 +99,13 @@ data class UpdatedContact(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
+    override val bio: Bio,
     override val firstName: String? = null,
     override val lastName: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
         fun fromUserId(userId: String): UpdatedContact =
-            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName) }
+            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, bio, firstName, lastName) }
     }
 }
 
@@ -126,6 +136,53 @@ private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?)
 }
 
 interface UpdatedChatsSubscription
+
+/** @throws [IllegalArgumentException] if the [value] is longer than [Users.MAX_BIO_LENGTH]. */
+data class Bio(val value: String) {
+    init {
+        if (value.length > Users.MAX_BIO_LENGTH)
+            throw IllegalArgumentException("The bio ($value) must be at most ${Users.MAX_BIO_LENGTH} characters.")
+    }
+}
+
+/**
+ * @throws [IllegalArgumentException] if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at least one
+ * non-whitespace.
+ */
+data class TextMessage(val value: String) {
+    init {
+        if (value.trim().isEmpty() || value.length > Messages.MAX_TEXT_LENGTH)
+            throw IllegalArgumentException(
+                "The text must be 1-${Messages.MAX_TEXT_LENGTH} characters, with at least one non-whitespace."
+            )
+    }
+}
+
+/**
+ * @throws [IllegalArgumentException] if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of which at
+ * least one isn't whitespace.
+ */
+data class GroupChatTitle(val value: String) {
+    init {
+        if (value.trim().isEmpty() || value.length > GroupChats.MAX_TITLE_LENGTH)
+            throw IllegalArgumentException(
+                """
+                The title ("$value") must be 1-${GroupChats.MAX_TITLE_LENGTH} characters, with at least one 
+                non-whitespace character.
+                """.trimIndent()
+            )
+    }
+}
+
+/** @throws [IllegalArgumentException] if the [value] isn't at most [GroupChats.MAX_DESCRIPTION_LENGTH] characters. */
+data class GroupChatDescription(val value: String) {
+    init {
+        if (value.length > GroupChats.MAX_DESCRIPTION_LENGTH)
+            throw IllegalArgumentException(
+                """The description ("$value") must be at most ${GroupChats.MAX_DESCRIPTION_LENGTH} characters"""
+            )
+    }
+}
 
 /** @throws [IllegalArgumentException] if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.graphql.createSignedInUsers

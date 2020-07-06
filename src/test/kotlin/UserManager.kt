@@ -21,13 +21,14 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",
+        Bio(""),
         "firstName$userCount",
         "lastName$userCount"
     )
     val userId = createUser(account)
-    Users.create(userId)
+    Users.create(userId, account.bio)
     verifyEmailAddress(account.username)
-    with(account) { VerifiedUser(Account(userId, username, emailAddress, firstName, lastName), password) }
+    with(account) { VerifiedUser(Account(userId, username, emailAddress, bio, firstName, lastName), password) }
 }
 
 /** Deletes the user [id] from the DB and auth system. */

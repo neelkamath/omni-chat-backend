@@ -13,7 +13,8 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<NewAccount>("account")
     if (isUsernameTaken(account.username)) throw UsernameTakenException
     if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
-    Users.create(userId = createUser(account))
+    val userId = createUser(account)
+    Users.create(userId, account.bio)
     return Placeholder
 }
 

@@ -1,10 +1,9 @@
 package com.neelkamath.omniChat.graphql.operations.mutations
 
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.GroupChat
-import com.neelkamath.omniChat.NewGroupChat
-import com.neelkamath.omniChat.buildNewGroupChat
-import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation

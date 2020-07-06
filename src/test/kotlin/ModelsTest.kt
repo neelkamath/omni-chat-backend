@@ -1,8 +1,63 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.Users
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
+
+class BioTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the bio's too long") {
+            val value = CharArray(Users.MAX_BIO_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { Bio(value) }
+        }
+    }
+})
+
+class TextMessageTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the value is too short") {
+            shouldThrowExactly<IllegalArgumentException> { TextMessage("") }
+        }
+
+        test("An exception should be thrown if the value is only whitespace") {
+            shouldThrowExactly<IllegalArgumentException> { TextMessage("  ") }
+        }
+
+        test("An exception should be thrown if the value is too long") {
+            val text = CharArray(Messages.MAX_TEXT_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { TextMessage(text) }
+        }
+    }
+})
+
+class GroupChatTitleTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the title is only whitespace") {
+            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("  ") }
+        }
+
+        test("An exception should be thrown if the title is too long") {
+            val title = CharArray(GroupChats.MAX_TITLE_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle(title) }
+        }
+
+        test("An exception should be thrown if the title is too short") {
+            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("") }
+        }
+    }
+})
+
+class GroupChatDescriptionTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the description is too long") {
+            val description = CharArray(GroupChats.MAX_DESCRIPTION_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { GroupChatDescription(description) }
+        }
+    }
+})
 
 class UsernameTest : FunSpec({
     context("init") {

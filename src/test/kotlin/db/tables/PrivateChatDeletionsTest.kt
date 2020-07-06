@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec

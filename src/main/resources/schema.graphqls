@@ -19,6 +19,9 @@ scalar GroupChatDescription
 """1-10,000 characters, of which at least one isn't whitespace."""
 scalar TextMessage
 
+"""A user's bio, which is at most 250 characters."""
+scalar Bio
+
 """
 GraphQL mandates data be returned for every operation, and data be present in every type. However, certain operations
 and types don't have relevant data. This type, which is an empty `String`, indicates such.
@@ -437,6 +440,7 @@ interface AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
+    bio: Bio!
     firstName: String
     lastName: String
 }
@@ -445,6 +449,7 @@ type Account implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
+    bio: Bio!
     firstName: String
     lastName: String
 }
@@ -453,6 +458,7 @@ type NewContact implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
+    bio: Bio!
     firstName: String
     lastName: String
 }
@@ -461,6 +467,7 @@ type UpdatedContact implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
+    bio: Bio!
     firstName: String
     lastName: String
 }
@@ -478,6 +485,7 @@ input NewAccount {
     username: Username!
     password: Password!
     emailAddress: String!
+    bio: Bio!
     firstName: String
     lastName: String
 }

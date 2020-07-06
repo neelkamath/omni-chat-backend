@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChatDescription
-import com.neelkamath.omniChat.db.tables.GroupChatTitle
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.TextMessage
 import com.neelkamath.omniChat.graphql.SignedInUser
 import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.*
