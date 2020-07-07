@@ -1,10 +1,12 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.DeletionOfEveryMessage
+import com.neelkamath.omniChat.PrivateChat
+import com.neelkamath.omniChat.USER_ID_LENGTH
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.keycloak.representations.idm.UserRepresentation
 
 /**
  * [PrivateChats] have [Messages]. [PrivateChatDeletions] are when each user deleted their chat. If both users have
@@ -16,7 +18,10 @@ object PrivateChats : Table() {
     private val user1Id: Column<String> = varchar("user_1_id", USER_ID_LENGTH)
     private val user2Id: Column<String> = varchar("user_2_id", USER_ID_LENGTH)
 
-    /** Returns the created chat's ID. An [IllegalArgumentException] will be thrown if the chat exists. */
+    /**
+     * @return the created chat's ID.
+     * @throws [IllegalArgumentException] if the chat exists.
+     */
     fun create(user1Id: String, user2Id: String): Int {
         if (exists(user1Id, user2Id))
             throw IllegalArgumentException("The chat between user 1 (ID: $user1Id) and user 2 (ID: $user2Id) exists.")
@@ -33,16 +38,15 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Returns the ID of the chat between the [participantId] (is in the chat) and [userId] (may be in the chat). You
+     * @return the ID of the chat between the [participantId] (is in the chat) and [userId] (may be in the chat). You
      * can check if the [PrivateChats.exists].
      */
     fun readChatId(participantId: String, userId: String): Int =
         readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
 
     /**
-     * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
+     * @return the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
      * returned.
-     *
      * @see [readIdList]
      * @see [readUserChatIdList]
      */
@@ -50,23 +54,21 @@ object PrivateChats : Table() {
         readUserChatsRows(userId).map { buildPrivateChat(it, userId, pagination) }
 
     /**
-     * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
+     * @return the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
      * returned.
-     *
      * @see [readIdList]
      * @see [readUserChats]
      */
     fun readUserChatIdList(userId: String): List<Int> = readUserChatsRows(userId).map { it[id] }
 
     /**
-     * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
+     * @return every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
      * deletion.
      */
-    private fun readUserChatsRows(userId: String): List<ResultRow> =
-        transact {
-            select { (user1Id eq userId) or (user2Id eq userId) }
-                .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
-        }
+    private fun readUserChatsRows(userId: String): List<ResultRow> = transact {
+        select { (user1Id eq userId) or (user2Id eq userId) }
+            .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
+    }
 
     fun read(id: Int, userId: String, pagination: BackwardPagination? = null): PrivateChat = transact {
         select { PrivateChats.id eq id }.first()
@@ -86,8 +88,7 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Returns the ID list of the [userId]'s chats, including deleted chat IDs.
-     *
+     * @return the ID list of the [userId]'s chats, including deleted chat IDs.
      * @see [readUserChats]
      */
     fun readIdList(userId: String): List<Int> = transact {
@@ -129,10 +130,7 @@ object PrivateChats : Table() {
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
     fun search(userId: String, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChats(userId, pagination).filter {
-            readUserById(it.user.id)
-                .matches(query)
-        }
+        readUserChats(userId, pagination).filter { readUserById(it.user.id).matches(query) }
 
     /**
      * Deletes every record the [userId] has in [PrivateChats], [PrivateChatDeletions], [Messages], and
@@ -179,17 +177,4 @@ object PrivateChats : Table() {
 
     /** @return the ID of every other user the [userId] has chats with, including deleted chats. */
     fun readOtherUserIdList(userId: String): List<String> = readIdList(userId).map { readOtherUserId(it, userId) }
-
-    /**
-     * Checks if this user's [UserRepresentation.username], [UserRepresentation.firstName], or
-     * [UserRepresentation.lastName] case-insensitively match the [query].
-     */
-    private fun Account.matches(query: String): Boolean = containsQuery(username.value, query)
-            || containsQuery(emailAddress, query)
-            || containsQuery(firstName, query)
-            || containsQuery(lastName, query)
-
-    /** Whether the [string] contains the [query] (case-insensitive). */
-    private fun containsQuery(string: String?, query: String): Boolean =
-        string != null && query.toLowerCase() in string.toLowerCase()
 }

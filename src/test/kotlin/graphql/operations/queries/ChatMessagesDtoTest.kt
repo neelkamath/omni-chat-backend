@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.graphql.createSignedInUsers
-import com.neelkamath.omniChat.graphql.operations.messageAndReadId
+import com.neelkamath.omniChat.graphql.operations.messageAndReadIdList
 import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
 import com.neelkamath.omniChat.graphql.operations.mutations.deleteMessage
 import io.kotest.core.spec.style.FunSpec
@@ -26,7 +26,7 @@ class ChatMessagesDtoTest : FunSpec({
             val adminToken = createSignedInUsers(1)[0].accessToken
             val chatId = createGroupChat(adminToken, buildNewGroupChat())
             val message = TextMessage("t")
-            val messageIdList = (1..10).map { messageAndReadId(adminToken, chatId, message) }
+            val messageIdList = messageAndReadIdList(adminToken, chatId, message, count = 10)
             return AdminMessages(adminToken, message, messageIdList)
         }
 

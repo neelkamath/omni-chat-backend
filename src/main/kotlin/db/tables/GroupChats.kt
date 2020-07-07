@@ -28,8 +28,9 @@ object GroupChats : Table() {
     }
 
     /**
-     * Sets the [userId] as the admin of the [chatId]. An [IllegalArgumentException] will be thrown if the [userId]
-     * isn't in the chat.
+     * Sets the [userId] as the admin of the [chatId]. A
+     *
+     * @throws [IllegalArgumentException] if the [userId] isn't in the chat.
      */
     fun setAdmin(chatId: Int, userId: String) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
@@ -64,15 +65,17 @@ object GroupChats : Table() {
         id: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
-    ): GroupChat = transact {
-        select { GroupChats.id eq id }.first()
-    }.let { buildGroupChat(it, id, usersPagination, messagesPagination) }
+    ): GroupChat {
+        val row = transact {
+            select { GroupChats.id eq id }.first()
+        }
+        return buildGroupChat(row, id, usersPagination, messagesPagination)
+    }
 
     /**
-     * Returns the [userId]'s chats.
-     *
      * @param[usersPagination] pagination for [GroupChat.users].
      * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @return the [userId]'s chats.
      * @see [GroupChatUsers.readChatIdList]
      */
     fun readUserChats(
@@ -115,7 +118,9 @@ object GroupChats : Table() {
             GroupChatUsers.addUsers(update.chatId, newUserIdList)
             newGroupChatsBroker.notify(GroupChatId(update.chatId)) { it.userId in newUserIdList }
         }
-        operateInfoBroker(update.copy(newUserIdList = newUserIdList, removedUserIdList = removedUserIdList))
+        val chat =
+            update.copy(newUserIdList = newUserIdList, removedUserIdList = removedUserIdList).toUpdatedGroupChat()
+        updatedChatsBroker.notify(chat) { isUserInChat(it.userId, update.chatId) }
     }
 
     /**
@@ -130,24 +135,11 @@ object GroupChats : Table() {
         }
     }
 
-    /** [Broker.notify]s users in the [GroupChatUpdate.chatId] of the [UpdatedGroupChat] via [updatedChatsBroker]. */
-    private fun operateInfoBroker(update: GroupChatUpdate): Unit = with(update) {
-        val updatedChat = UpdatedGroupChat(
-            chatId,
-            title,
-            description,
-            newUserIdList?.map(::readUserById),
-            removedUserIdList?.map(::readUserById),
-            newAdminId
-        )
-        updatedChatsBroker.notify(updatedChat) { isUserInChat(it.userId, chatId) }
-    }
-
     /**
      * Deletes the [chatId] from [GroupChats]. [Messages], and [MessageStatuses]. Clients who have
      * [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
      *
-     * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
+     * @throws [IllegalArgumentException] if the [chatId] has users in it.
      */
     fun delete(chatId: Int) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
@@ -160,10 +152,9 @@ object GroupChats : Table() {
     }
 
     /**
-     * Returns chats after case-insensitively [query]ing the title of every chat the [userId] is in.
-     *
      * @param[usersPagination] pagination for [GroupChat.messages].
      * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @return chats after case-insensitively [query]ing the title of every chat the [userId] is in.
      */
     fun search(
         userId: String,
@@ -206,9 +197,8 @@ object GroupChats : Table() {
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
-    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> =
-        GroupChatUsers.readChatIdList(userId)
-            .associateWith { Messages.searchGroupChat(it, query) }
-            .filter { (_, edges) -> edges.isNotEmpty() }
-            .map { (chatId, edges) -> ChatEdges(chatId, edges) }
+    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
+        .associateWith { Messages.searchGroupChat(it, query) }
+        .filter { (_, edges) -> edges.isNotEmpty() }
+        .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 }

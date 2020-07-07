@@ -87,9 +87,8 @@ object Messages : IntIdTable() {
         edges.filter { it.node.text.value.contains(query, ignoreCase = true) }
 
     /**
-     * Returns the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by
+     * @return the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by
      * the [userId].
-     *
      * @see [readPrivateChatConnection]
      */
     fun readPrivateChat(id: Int, userId: String, pagination: BackwardPagination? = null): List<MessageEdge> {
@@ -98,12 +97,10 @@ object Messages : IntIdTable() {
     }
 
     /** @see [readGroupChatConnection] */
-    fun readGroupChat(id: Int, pagination: BackwardPagination? = null): List<MessageEdge> =
-        readChat(id, pagination)
+    fun readGroupChat(id: Int, pagination: BackwardPagination? = null): List<MessageEdge> = readChat(id, pagination)
 
     /**
-     * Returns the [MessageEdge]s in the chat [id].
-     *
+     * @return the [MessageEdge]s in the chat [id].
      * @see [readPrivateChat]
      * @see [readGroupChat]
      */
@@ -121,7 +118,7 @@ object Messages : IntIdTable() {
         }
     }
 
-    /** Returns the message IDs in the [chatId]. */
+    /** @return the message IDs in the [chatId]. */
     fun readIdList(chatId: Int): List<Int> = transact {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }
@@ -131,8 +128,7 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Returns the ID of the chat which contains the [messageId].
-     *
+     * @return the ID of the chat which contains the [messageId].
      * @see [Messages.exists]
      */
     fun readChatFromMessage(messageId: Int): Int = transact {
@@ -206,24 +202,22 @@ object Messages : IntIdTable() {
         messagesBroker.notify(DeletedMessage(chatId, id)) { isUserInChat(it.userId, chatId) }
     }
 
-    /** Returns every [ChatAndMessageId] the [userId] created which are visible to at least one user. */
-    private fun readChatMessages(userId: String): List<ChatAndMessageId> =
-        transact {
-            select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
-        }
+    /** @return every [ChatAndMessageId] the [userId] created which are visible to at least one user. */
+    private fun readChatMessages(userId: String): List<ChatAndMessageId> = transact {
+        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
+    }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
     fun existsFrom(chatId: Int, from: LocalDateTime): Boolean = transact {
         !select { (Messages.chatId eq chatId) and (sent greaterEq from) }.empty()
     }
 
-    /** Returns the [id] list for the [chatId]. */
-    private fun readMessageIdList(chatId: Int, filter: Filter = null): List<Int> =
-        transact {
-            val chatOp = Messages.chatId eq chatId
-            val op = if (filter == null) chatOp else chatOp and filter
-            select(op).map { it[Messages.id].value }
-        }
+    /** @return the [id] list for the [chatId]. */
+    private fun readMessageIdList(chatId: Int, filter: Filter = null): List<Int> = transact {
+        val chatOp = Messages.chatId eq chatId
+        val op = if (filter == null) chatOp else chatOp and filter
+        select(op).map { it[Messages.id].value }
+    }
 
     /** Whether the [messageId] exists in the [chatId]. */
     fun existsInChat(messageId: Int, chatId: Int): Boolean = transact {
@@ -281,7 +275,7 @@ object Messages : IntIdTable() {
         }
     }
 
-    /** Returns the ID of the [type] of message in the [chatId], or `null` if there are no messages. */
+    /** @return the ID of the [type] of message in the [chatId], or `null` if there are no messages. */
     private fun readCursor(chatId: Int, type: CursorType, filter: Filter = null): Int? {
         val order = when (type) {
             CursorType.START -> SortOrder.ASC

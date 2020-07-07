@@ -85,7 +85,7 @@ private fun createClient() {
     )
 }
 
-/** Returns whether the [login] is valid. */
+/** @return whether the [login] is valid. */
 fun isValidLogin(login: Login): Boolean = try {
     AuthzClient.create(config).obtainAccessToken(login.username.value, login.password.value)
     true

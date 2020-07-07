@@ -6,12 +6,22 @@ import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
 import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
 import com.neelkamath.omniChat.graphql.operations.subscriptions.subscribeToMessages
 
-/** Has the user who bears the [accessToken] send a [text] in the [chatId], and returns the message's ID. */
-fun messageAndReadId(accessToken: String, chatId: Int, text: TextMessage): Int {
-    var id: Int? = null
+/**
+ * Has the user who bears the [accessToken] send the [text] [count] times in the [chatId], and returns the its ID.
+ *
+ * @see [messageAndReadId]
+ */
+fun messageAndReadIdList(accessToken: String, chatId: Int, text: TextMessage, count: Int): List<Int> {
+    val list = mutableListOf<Int>()
     subscribeToMessages(accessToken) { incoming ->
-        createMessage(accessToken, chatId, text)
-        id = parseFrameData<NewMessage>(incoming).messageId
+        repeat(count) {
+            createMessage(accessToken, chatId, text)
+            parseFrameData<NewMessage>(incoming).messageId.let(list::add)
+        }
     }
-    return id!!
+    return list
 }
+
+/** Convenience function for [messageAndReadIdList] */
+fun messageAndReadId(accessToken: String, chatId: Int, text: TextMessage): Int =
+    messageAndReadIdList(accessToken, chatId, text, count = 1)[0]

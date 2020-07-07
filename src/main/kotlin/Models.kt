@@ -73,6 +73,13 @@ data class Account(
     override val firstName: String? = null,
     override val lastName: String? = null
 ) : AccountData {
+    /**
+     * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
+     * [UserRepresentation.lastName], and [UserRepresentation.email].
+     */
+    fun matches(query: String): Boolean =
+        listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
+
     companion object {
         fun build(user: UserRepresentation): Account =
             with(user) { Account(id, Username(username), email, Users.readBio(id), firstName, lastName) }

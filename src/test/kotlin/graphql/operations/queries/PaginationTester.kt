@@ -8,7 +8,7 @@ import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.read
 import com.neelkamath.omniChat.graphql.createSignedInUsers
-import com.neelkamath.omniChat.graphql.operations.messageAndReadId
+import com.neelkamath.omniChat.graphql.operations.messageAndReadIdList
 import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
 import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
@@ -62,7 +62,7 @@ fun testMessagesPagination(operation: MessagesOperationName) {
     val chat = buildNewGroupChat()
     val chatId = createGroupChat(adminToken, chat)
     val text = TextMessage("t")
-    val messageIdList = (1..10).map { messageAndReadId(adminToken, chatId, text) }
+    val messageIdList = messageAndReadIdList(adminToken, chatId, text, count = 10)
     val last = 4
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])

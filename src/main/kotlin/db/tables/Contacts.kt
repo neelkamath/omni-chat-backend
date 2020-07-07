@@ -7,7 +7,6 @@ import com.neelkamath.omniChat.db.contactsBroker
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
-import org.keycloak.representations.idm.UserRepresentation
 
 object Contacts : IntIdTable() {
     /** The ID of the user who has saved the [contactId]. */
@@ -34,20 +33,14 @@ object Contacts : IntIdTable() {
         }
     }
 
-    /** Returns the user ID list of the contacts saved by the contact [ownerId]. */
+    /** @return the user ID list of the contacts saved by the contact [ownerId]. */
     fun readIdList(ownerId: String): List<String> = transact {
         select { contactOwnerId eq ownerId }.map { it[contactId] }
     }
 
     /** @return the [ownerId]'s contacts. */
     private fun readRows(ownerId: String): List<AccountEdge> = transact {
-        select { contactOwnerId eq ownerId }.map {
-            AccountEdge(
-                readUserById(
-                    it[contactId]
-                ), it[Contacts.id].value
-            )
-        }
+        select { contactOwnerId eq ownerId }.map { AccountEdge(readUserById(it[contactId]), it[Contacts.id].value) }
     }
 
     /** @see [readIdList] */
@@ -86,11 +79,4 @@ object Contacts : IntIdTable() {
             deleteWhere { (contactOwnerId eq userId) or (contactId eq userId) }
         }
     }
-
-    /**
-     * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
-     * [UserRepresentation.lastName], and [UserRepresentation.email].
-     */
-    private fun Account.matches(query: String): Boolean =
-        listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
 }

@@ -23,8 +23,7 @@ object GroupChatUsers : IntIdTable() {
         user1Id in readChatIdList(user2Id).flatMap { readUserIdList(it) }
 
     /**
-     * Returns the user ID list from the specified [groupChatId].
-     *
+     * @return the user ID list from the specified [groupChatId].
      * @see [readUsers]
      */
     fun readUserIdList(groupChatId: Int): List<String> = transact {
@@ -70,7 +69,7 @@ object GroupChatUsers : IntIdTable() {
     /** Convenience function for [removeUsers]. */
     fun removeUsers(chatId: Int, vararg userIdList: String): Unit = removeUsers(chatId, userIdList.toList())
 
-    /** Returns the chat ID list of every chat the [userId] is in. */
+    /** @return the chat ID list of every chat the [userId] is in. */
     fun readChatIdList(userId: String): List<Int> = transact {
         select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }
     }
