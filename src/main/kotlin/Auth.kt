@@ -104,16 +104,14 @@ fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }
 fun emailAddressExists(email: String): Boolean = email in realm.users().list().map { it.email }
 
 /**
- * Creates a new account in the auth system, and sends the user a verification email.
- *
- * @return the user ID.
- * @see [Users.create]
+ * Creates a new account in the auth system, saves it to the DB via [Users.create], and sends the user a verification
+ * email.
  */
-fun createUser(account: NewAccount): String {
+fun createUser(account: NewAccount) {
     realm.users().create(createUserRepresentation(account))
-    val userId = readUserByUsername(account.username).id
+    val userId = realm.users().search(account.username.value).first { it.username == account.username.value }.id
+    Users.create(userId, account.bio)
     sendEmailAddressVerification(userId)
-    return userId
 }
 
 /** Sends an email to the user to verify their email address. */

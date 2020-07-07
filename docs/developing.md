@@ -60,7 +60,7 @@ Here's what a standard project iteration looks like.
 
 ## Auth
 
-- There's an [admin panel](auth_admin_panel.md).
+There's an [admin panel](auth_admin_panel.md).
 
 ## Server
 

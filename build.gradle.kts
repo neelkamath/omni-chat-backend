@@ -42,7 +42,7 @@ dependencies {
     val keycloakVersion = "10.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
-    val kotestVersion = "4.1.0"
+    val kotestVersion = "4.1.1"
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
 }

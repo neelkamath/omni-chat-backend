@@ -103,4 +103,9 @@ private fun <T> ObjectMapper.register(
     clazz: Class<T>,
     deserializer: JsonDeserializer<T>? = null,
     serializer: JsonSerializer<T>? = null
-): ObjectMapper = registerModule(SimpleModule().addSerializer(clazz, serializer).addDeserializer(clazz, deserializer))
+): ObjectMapper {
+    val module = SimpleModule()
+    if (serializer != null) module.addSerializer(clazz, serializer)
+    if (deserializer != null) module.addDeserializer(clazz, deserializer)
+    return registerModule(module)
+}

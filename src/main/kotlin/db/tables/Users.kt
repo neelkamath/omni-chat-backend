@@ -22,6 +22,7 @@ object Users : IntIdTable() {
     /** At most [MAX_BIO_LENGTH] characters. */
     private val bio: Column<String> = varchar("bio", MAX_BIO_LENGTH)
 
+    /** @see [createUser] */
     fun create(userId: String, bio: Bio): Unit = transact {
         insert {
             it[this.userId] = userId

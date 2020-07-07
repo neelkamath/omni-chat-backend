@@ -5,6 +5,7 @@ const val ACCOUNT_FRAGMENT = """
         id
         username
         emailAddress
+        bio
         firstName
         lastName
     }
@@ -241,6 +242,7 @@ const val NEW_CONTACT_FRAGMENT = """
         id
         username
         emailAddress
+        bio
         firstName
         lastName
     }
@@ -251,6 +253,7 @@ const val UPDATED_CONTACT_FRAGMENT = """
         id
         username
         emailAddress
+        bio
         firstName
         lastName
     }
