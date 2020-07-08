@@ -1,20 +1,16 @@
 package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.Chat
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.buildNewGroupChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
+import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.PRIVATE_CHAT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -88,20 +84,20 @@ fun errReadChat(
 
 class ReadChatTest : FunSpec({
     test("The chat should be read") {
-        val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, buildNewGroupChat())
-        readChat(token, chatId).id shouldBe chatId
+        val user = createVerifiedUsers(1)[0]
+        val chatId = GroupChats.create(user.info.id, buildNewGroupChat())
+        readChat(user.accessToken, chatId).id shouldBe chatId
     }
 
     test("Requesting a chat using an invalid ID should return an error") {
-        val token = createSignedInUsers(1)[0].accessToken
+        val token = createVerifiedUsers(1)[0].accessToken
         errReadChat(id = 1, accessToken = token) shouldBe InvalidChatIdException.message
     }
 
     test("The private chat the user just deleted should be readThe chat should be read") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         readChat(user1.accessToken, chatId)
     }
 

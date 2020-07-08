@@ -1,15 +1,11 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.DELETED_CONTACT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.NEW_CONTACT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATED_CONTACT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
-import com.neelkamath.omniChat.graphql.operations.mutations.deleteAccount
-import com.neelkamath.omniChat.graphql.operations.mutations.deleteContacts
-import com.neelkamath.omniChat.graphql.operations.mutations.updateAccount
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
@@ -42,46 +38,46 @@ fun subscribeToContacts(accessToken: String, callback: SubscriptionCallback) {
 
 class SubscribeToContactsTest : FunSpec({
     test("Subscribers should be notified when they save contacts") {
-        val (owner, user1, user2) = createSignedInUsers(3)
+        val (owner, user1, user2) = createVerifiedUsers(3)
         subscribeToContacts(owner.accessToken) { incoming ->
-            createContacts(owner.accessToken, listOf(user1.info.id, user2.info.id))
+            Contacts.create(owner.info.id, setOf(user1.info.id, user2.info.id))
             parseFrameData<NewContact>(incoming).id shouldBe user1.info.id
             parseFrameData<NewContact>(incoming).id shouldBe user2.info.id
         }
     }
 
     test("Subscribers should be notified when a user in their contacts updates their account") {
-        val (owner, contact) = createSignedInUsers(2)
-        createContacts(owner.accessToken, listOf(contact.info.id))
+        val (owner, contact) = createVerifiedUsers(2)
+        Contacts.create(owner.info.id, setOf(contact.info.id))
         subscribeToContacts(owner.accessToken) { incoming ->
             val update = AccountUpdate(Username("new_username"))
-            updateAccount(contact.accessToken, update)
+            updateUser(contact.info.id, update)
             parseFrameData<UpdatedContact>(incoming).username shouldBe update.username
         }
     }
 
     test("Subscribers should be notified when they delete contacts") {
-        val (owner, contact) = createSignedInUsers(2)
-        createContacts(owner.accessToken, listOf(contact.info.id))
+        val (owner, contact) = createVerifiedUsers(2)
+        Contacts.create(owner.info.id, setOf(contact.info.id))
         subscribeToContacts(owner.accessToken) { incoming ->
-            deleteContacts(owner.accessToken, listOf(contact.info.id))
+            Contacts.delete(owner.info.id, listOf(contact.info.id))
             parseFrameData<DeletedContact>(incoming).id shouldBe contact.info.id
         }
     }
 
     test("Subscribers should be notified when a user in their contacts deletes their account") {
-        val (owner, contact) = createSignedInUsers(2)
-        createContacts(owner.accessToken, listOf(contact.info.id))
+        val (owner, contact) = createVerifiedUsers(2)
+        Contacts.create(owner.info.id, setOf(contact.info.id))
         subscribeToContacts(owner.accessToken) { incoming ->
-            deleteAccount(contact.accessToken)
+            deleteUser(contact.info.id)
             parseFrameData<DeletedContact>(incoming).id shouldBe contact.info.id
         }
     }
 
     test("The subscriptions should be stopped if the user deletes their account") {
-        val token = createSignedInUsers(1)[0].accessToken
-        subscribeToContacts(token) { incoming ->
-            deleteAccount(token)
+        val user = createVerifiedUsers(1)[0]
+        subscribeToContacts(user.accessToken) { incoming ->
+            deleteUser(user.info.id)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
     }

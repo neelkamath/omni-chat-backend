@@ -2,9 +2,9 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.CreatedSubscription
 import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.subscriptions.SUBSCRIBE_TO_CONTACTS_QUERY
 import com.neelkamath.omniChat.graphql.operations.subscriptions.operateGraphQlSubscription
 import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
@@ -32,7 +32,7 @@ class SubscriptionsTest : FunSpec({
                 }
             """
             val operationName = if (shouldSupplyOperationName) "SubscribeToContacts" else null
-            val token = createSignedInUsers(1)[0].accessToken
+            val token = createVerifiedUsers(1)[0].accessToken
             operateGraphQlSubscription(
                 uri = "contacts-subscription",
                 request = GraphQlRequest(query, operationName = operationName),
@@ -83,10 +83,10 @@ class SubscriptionsTest : FunSpec({
             then they should only receive it once because their previous connection's notifier should've been removed
             """
         ) {
-            val (owner, user) = createSignedInUsers(2)
+            val (owner, user) = createVerifiedUsers(2)
             subscribeToContacts(owner.accessToken) { }
             subscribeToContacts(owner.accessToken) { incoming ->
-                createContacts(owner.accessToken, listOf(user.info.id))
+                Contacts.create(owner.info.id, setOf(user.info.id))
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }

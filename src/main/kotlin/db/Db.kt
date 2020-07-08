@@ -140,7 +140,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * - Clients will be [Broker.unsubscribe]d via [messagesBroker].
  *
  * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
- * @see [deleteUserFromAuth]
+ * @see [deleteUser]
  */
 fun deleteUserFromDb(userId: String) {
     if (GroupChats.isNonemptyChatAdmin(userId))

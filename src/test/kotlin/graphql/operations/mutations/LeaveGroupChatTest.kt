@@ -1,15 +1,12 @@
 package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.Placeholder
-import com.neelkamath.omniChat.buildNewGroupChat
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.graphql.AdminCannotLeaveException
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -35,26 +32,26 @@ fun errLeaveGroupChat(accessToken: String, chatId: Int): String =
 
 class LeaveGroupChatTest : FunSpec({
     test("A non-admin should leave the chat") {
-        val (admin, user) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+        val (admin, user) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
         leaveGroupChat(user.accessToken, chatId)
         GroupChatUsers.readUserIdList(chatId) shouldBe listOf(admin.info.id)
     }
 
     test("The admin should leave the chat if they're the only user") {
-        val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, buildNewGroupChat())
-        leaveGroupChat(token, chatId)
+        val user = createVerifiedUsers(1)[0]
+        val chatId = GroupChats.create(user.info.id, buildNewGroupChat())
+        leaveGroupChat(user.accessToken, chatId)
     }
 
     test("The admin shouldn't be allowed to leave if there are other users in the chat") {
-        val (admin, user) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+        val (admin, user) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
         errLeaveGroupChat(admin.accessToken, chatId) shouldBe AdminCannotLeaveException.message
     }
 
     test("Leaving a group chat the user is not in should throw an exception") {
-        val token = createSignedInUsers(1)[0].accessToken
+        val token = createVerifiedUsers(1)[0].accessToken
         errLeaveGroupChat(token, chatId = 1) shouldBe InvalidChatIdException.message
     }
 })

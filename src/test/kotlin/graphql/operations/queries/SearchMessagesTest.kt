@@ -1,19 +1,15 @@
 package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.ChatMessages
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.TextMessage
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
+import com.neelkamath.omniChat.db.tables.PrivateChats
+import com.neelkamath.omniChat.db.tables.message
 import com.neelkamath.omniChat.graphql.operations.CHAT_MESSAGES_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.messageAndReadId
-import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
-import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
-import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -80,25 +76,25 @@ fun searchMessages(
 
 class SearchMessagesTest : FunSpec({
     test("Messages should be search case-insensitively only across chats the user is in") {
-        val (user1, user2, user3) = createSignedInUsers(3)
-        val chat1Id = createPrivateChat(user1.accessToken, user2.info.id)
-        val message1Id = messageAndReadId(user1.accessToken, chat1Id, TextMessage("Hey!"))
-        val chat2Id = createPrivateChat(user1.accessToken, user3.info.id)
-        createMessage(user1.accessToken, chat2Id, TextMessage("hiii"))
-        val message2Id = messageAndReadId(user3.accessToken, chat2Id, TextMessage("hey, what's up?"))
-        createMessage(user1.accessToken, chat2Id, TextMessage("sitting, wbu?"))
-        val chat3Id = createPrivateChat(user2.accessToken, user3.info.id)
-        createMessage(user2.accessToken, chat3Id, TextMessage("hey"))
+        val (user1, user2, user3) = createVerifiedUsers(3)
+        val chat1Id = PrivateChats.create(user1.info.id, user2.info.id)
+        val message1Id = Messages.message(chat1Id, user1.info.id, TextMessage("Hey!"))
+        val chat2Id = PrivateChats.create(user1.info.id, user3.info.id)
+        Messages.create(chat2Id, user1.info.id, TextMessage("hiii"))
+        val message2Id = Messages.message(chat2Id, user3.info.id, TextMessage("hey, what's up?"))
+        Messages.create(chat2Id, user1.info.id, TextMessage("sitting, wbu?"))
+        val chat3Id = PrivateChats.create(user2.info.id, user3.info.id)
+        Messages.create(chat3Id, user2.info.id, TextMessage("hey"))
         searchMessages(user1.accessToken, "hey").flatMap { it.messages }.map { it.cursor } shouldBe
                 listOf(message1Id, message2Id)
     }
 
     test("Messages from a private chat the user deleted shouldn't be included in the search results") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         val text = "text"
-        messageAndReadId(user1.accessToken, chatId, TextMessage(text))
-        deletePrivateChat(user1.accessToken, chatId)
+        Messages.message(chatId, user1.info.id, TextMessage(text))
+        PrivateChatDeletions.create(chatId, user1.info.id)
         searchMessages(user1.accessToken, text).shouldBeEmpty()
     }
 
@@ -109,11 +105,11 @@ class SearchMessagesTest : FunSpec({
         then it shouldn't be retrieved
         """
     ) {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         val text = "text"
-        messageAndReadId(user1.accessToken, chatId, TextMessage(text))
-        deletePrivateChat(user1.accessToken, chatId)
+        Messages.message(chatId, user1.info.id, TextMessage(text))
+        PrivateChatDeletions.create(chatId, user1.info.id)
         searchMessages(user1.accessToken, text).shouldBeEmpty()
     }
 

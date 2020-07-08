@@ -4,15 +4,9 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.PRIVATE_CHAT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -73,24 +67,24 @@ fun searchChats(
 }
 
 class SearchChatsTest : FunSpec({
-    fun createPrivateChats(accessToken: String): List<PrivateChat> = listOf(
+    fun createPrivateChats(userId: String): List<PrivateChat> = listOf(
         NewAccount(Username("iron man"), Password("malibu"), "tony@example.com", firstName = "Tony"),
         NewAccount(Username("iron fist"), Password("monk"), "iron.fist@example.org"),
         NewAccount(Username("chris tony"), Password("pass"), "chris@example.com", lastName = "Tony")
     ).map {
-        createAccount(it)
-        val userId = readUserByUsername(it.username).id
-        val chatId = createPrivateChat(accessToken, userId)
-        PrivateChat(chatId, readUserById(userId), Messages.readPrivateChatConnection(chatId, userId))
+        createUser(it)
+        val otherUserId = readUserByUsername(it.username).id
+        val chatId = PrivateChats.create(userId, otherUserId)
+        PrivateChat(chatId, readUserById(otherUserId), Messages.readPrivateChatConnection(chatId, otherUserId))
     }
 
-    fun createGroupChats(accessToken: String, adminId: String): List<GroupChat> = listOf(
+    fun createGroupChats(adminId: String): List<GroupChat> = listOf(
         NewGroupChat(GroupChatTitle("Iron Man Fan Club"), GroupChatDescription("")),
         NewGroupChat(GroupChatTitle("Language Class"), GroupChatDescription("")),
         NewGroupChat(GroupChatTitle("Programming Languages"), GroupChatDescription("")),
         NewGroupChat(GroupChatTitle("Tony's Birthday"), GroupChatDescription(""))
     ).map {
-        val chatId = createGroupChat(accessToken, it)
+        val chatId = GroupChats.create(adminId, it)
         GroupChat(
             chatId,
             adminId,
@@ -102,9 +96,9 @@ class SearchChatsTest : FunSpec({
     }
 
     test("Private chats and group chats should be searched case-insensitively") {
-        val user = createSignedInUsers(1)[0]
-        val privateChats = createPrivateChats(user.accessToken)
-        val groupChats = createGroupChats(user.accessToken, user.info.id)
+        val user = createVerifiedUsers(1)[0]
+        val privateChats = createPrivateChats(user.info.id)
+        val groupChats = createGroupChats(user.info.id)
         searchChats(user.accessToken, "iron") shouldContainExactlyInAnyOrder
                 listOf(privateChats[0], privateChats[1], groupChats[0])
         searchChats(user.accessToken, "tony") shouldContainExactlyInAnyOrder
@@ -124,19 +118,20 @@ class SearchChatsTest : FunSpec({
             ),
             NewAccount(Username("username"), Password("password"), "username@example.com")
         )
-        accounts.forEach { createAccount(it) }
+        accounts.forEach(::createUser)
         val response = with(accounts[0]) {
             verifyEmailAddress(username)
-            val token = requestTokenSet(Login(username, password)).accessToken
+            val userId = readUserByUsername(username).id
+            val token = buildAuthToken(userId).accessToken
             searchChats(token, "John")
         }
         response.shouldBeEmpty()
     }
 
     test("Searching a private chat the user deleted shouldn't include the chat in the search results") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         searchChats(user1.accessToken, user2.info.username.value).shouldBeEmpty()
     }
 

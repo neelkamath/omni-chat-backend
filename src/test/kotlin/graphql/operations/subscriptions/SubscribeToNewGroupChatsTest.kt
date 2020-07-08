@@ -1,12 +1,9 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_ID_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deleteAccount
-import com.neelkamath.omniChat.graphql.operations.mutations.updateGroupChat
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -37,35 +34,35 @@ fun subscribeToNewGroupChats(accessToken: String, callback: SubscriptionCallback
 
 class SubscribeToNewGroupChatsTest : FunSpec({
     test("The user shouldn't be notified of a created chat they weren't added to") {
-        val (admin, user) = createSignedInUsers(2)
+        val (admin, user) = createVerifiedUsers(2)
         subscribeToNewGroupChats(user.accessToken) { incoming ->
-            createGroupChat(admin.accessToken, buildNewGroupChat())
+            GroupChats.create(admin.info.id, buildNewGroupChat())
             incoming.poll().shouldBeNull()
         }
     }
 
     test("The user should be notified of a newly created chat they were added to") {
-        val (admin, user) = createSignedInUsers(2)
+        val (admin, user) = createVerifiedUsers(2)
         subscribeToNewGroupChats(user.accessToken) { incoming ->
-            val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+            val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
             parseFrameData<GroupChatId>(incoming).id shouldBe chatId
         }
     }
 
     test("The user should be notified of a previously created chat which they were recently added to") {
-        val (admin, user) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
+        val (admin, user) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat())
         subscribeToNewGroupChats(user.accessToken) { incoming ->
-            updateGroupChat(admin.accessToken, GroupChatUpdate(chatId, newUserIdList = listOf(user.info.id)))
+            GroupChats.update(GroupChatUpdate(chatId, newUserIdList = listOf(user.info.id)))
             parseFrameData<GroupChatId>(incoming).id shouldBe chatId
         }
     }
 
     test("The subscription should be stopped if the user deletes their account") {
-        val (admin, user) = createSignedInUsers(2)
-        createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+        val (admin, user) = createVerifiedUsers(2)
+        GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
         subscribeToNewGroupChats(user.accessToken) { incoming ->
-            deleteAccount(user.accessToken)
+            deleteUser(user.info.id)
             incoming.receive().frameType shouldBe FrameType.CLOSE
         }
     }

@@ -2,11 +2,11 @@ package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.buildNewGroupChat
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.graphql.createSignedInUsers
-import com.neelkamath.omniChat.graphql.operations.messageAndReadIdList
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deleteMessage
+import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.message
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -23,17 +23,17 @@ class ChatMessagesDtoTest : FunSpec({
         )
 
         fun createUtilizedChat(): AdminMessages {
-            val adminToken = createSignedInUsers(1)[0].accessToken
-            val chatId = createGroupChat(adminToken, buildNewGroupChat())
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(admin.info.id, buildNewGroupChat())
             val message = TextMessage("t")
-            val messageIdList = messageAndReadIdList(adminToken, chatId, message, count = 10)
-            return AdminMessages(adminToken, message, messageIdList)
+            val messageIdList = (1..10).map { Messages.message(chatId, admin.info.id, message) }
+            return AdminMessages(admin.accessToken, message, messageIdList)
         }
 
         fun testPagination(shouldDeleteMessage: Boolean) {
             val (adminToken, queryText, messageIdList) = createUtilizedChat()
             val index = 5
-            if (shouldDeleteMessage) deleteMessage(adminToken, messageIdList[index])
+            if (shouldDeleteMessage) Messages.delete(messageIdList[index])
             val last = 3
             searchMessages(
                 adminToken,

@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
@@ -26,21 +25,17 @@ fun createContacts(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun createDeliveredStatus(env: DataFetchingEnvironment): Placeholder = createStatus(env, MessageStatus.DELIVERED)
-
-fun createReadStatus(env: DataFetchingEnvironment): Placeholder = createStatus(env, MessageStatus.READ)
-
-/** Implementation for [createDeliveredStatus] and [createReadStatus] (based on the [status]). */
-private fun createStatus(env: DataFetchingEnvironment, status: MessageStatus): Placeholder {
+fun createStatus(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
+    val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
     verifyCanCreateStatus(messageId, env.userId!!, status)
     MessageStatuses.create(messageId, env.userId!!, status)
     return Placeholder
 }
 
 /**
- * Throws an [InvalidMessageIdException] or [DuplicateStatusException] if the [userId] cannot create the [status] on the
+ * @throws [InvalidMessageIdException] or [DuplicateStatusException] if the [userId] cannot create the [status] on the
  * [messageId].
  */
 private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
@@ -79,8 +74,7 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
 fun deleteAccount(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     if (GroupChats.isNonemptyChatAdmin(env.userId!!)) throw CannotDeleteAccountException
-    deleteUserFromDb(env.userId!!)
-    deleteUserFromAuth(env.userId!!)
+    deleteUser(env.userId!!)
     return Placeholder
 }
 

@@ -21,7 +21,7 @@ object Contacts : IntIdTable() {
      */
     fun create(ownerId: String, contactIdList: Set<String>) {
         val existingContacts = readIdList(ownerId)
-        val newContacts = contactIdList.filterNot { it in existingContacts }
+        val newContacts = contactIdList.filter { it !in existingContacts }
         transact {
             batchInsert(newContacts) {
                 this[contactOwnerId] = ownerId

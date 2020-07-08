@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.db.tables.read
 import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -38,7 +37,7 @@ class SearchUsersTest : FunSpec({
             NewAccount(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
             NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
         ).map {
-            createAccount(it)
+            createUser(it)
             val id = readUserByUsername(it.username).id
             Account(id, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
         }
@@ -56,7 +55,7 @@ class SearchUsersTest : FunSpec({
             NewAccount(Username("black_widow"), Password("p"), "black.widow@example.com"),
             NewAccount(Username("iron_spider"), Password("p"), "iron.spider@example.com")
         )
-        accounts.forEach { createAccount(it) }
+        accounts.forEach(::createUser)
         return accounts
     }
 

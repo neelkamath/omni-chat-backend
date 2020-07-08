@@ -51,7 +51,7 @@ object Users : IntIdTable() {
     /**
      * Deletes the [userId] from this table.
      *
-     * @see [deleteUserFromAuth]
+     * @see [deleteUser]
      */
     fun delete(userId: String): Unit = transact {
         deleteWhere { Users.userId eq userId }

@@ -3,7 +3,10 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.graphql.*
+import com.neelkamath.omniChat.graphql.InvalidChatIdException
+import com.neelkamath.omniChat.graphql.InvalidGroupChatUsersException
+import com.neelkamath.omniChat.graphql.InvalidNewAdminIdException
+import com.neelkamath.omniChat.graphql.InvalidUserIdException
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -32,10 +35,10 @@ fun errUpdateGroupChat(accessToken: String, update: GroupChatUpdate): String =
 
 class UpdateGroupChatTest : FunSpec({
     test("Only the supplied fields should be updated") {
-        val (admin, user1, user2) = createSignedInUsers(3)
+        val (admin, user1, user2) = createVerifiedUsers(3)
         val initialUserIdList = listOf(user1.info.id)
         val chat = buildNewGroupChat(initialUserIdList)
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = GroupChats.create(admin.info.id, chat)
         val update = GroupChatUpdate(
             chatId,
             GroupChatTitle("New Title"),
@@ -53,53 +56,53 @@ class UpdateGroupChatTest : FunSpec({
     }
 
     test("The chat's new admin should be set") {
-        val (firstAdmin, secondAdmin) = createSignedInUsers(2)
+        val (firstAdmin, secondAdmin) = createVerifiedUsers(2)
         val chat = NewGroupChat(
             GroupChatTitle("T"),
             GroupChatDescription("description"),
             userIdList = listOf(secondAdmin.info.id)
         )
-        val chatId = createGroupChat(firstAdmin.accessToken, chat)
+        val chatId = GroupChats.create(firstAdmin.info.id, chat)
         val update = GroupChatUpdate(chatId, newAdminId = secondAdmin.info.id)
         updateGroupChat(firstAdmin.accessToken, update)
         GroupChats.readChat(chatId).adminId shouldBe secondAdmin.info.id
     }
 
     test("Updating a nonexistent chat should throw an exception") {
-        val token = createSignedInUsers(1)[0].accessToken
+        val token = createVerifiedUsers(1)[0].accessToken
         errUpdateGroupChat(token, GroupChatUpdate(chatId = 1)) shouldBe InvalidChatIdException.message
     }
 
     test("Updating a chat the user isn't the admin of should return an authorization error") {
-        val (admin, user) = createSignedInUsers(2)
+        val (admin, user) = createVerifiedUsers(2)
         val chat = NewGroupChat(
             GroupChatTitle("T"),
             GroupChatDescription("description"),
             userIdList = listOf(user.info.id)
         )
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = GroupChats.create(admin.info.id, chat)
         val variables = mapOf("update" to GroupChatUpdate(chatId))
         requestGraphQlQueryOrMutation(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
             .shouldHaveUnauthorizedStatus()
     }
 
     test("Transferring admin status to a user not in the chat should throw an exception") {
-        val (admin, notInvitedUser) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
+        val (admin, notInvitedUser) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat())
         val update = GroupChatUpdate(chatId, newAdminId = notInvitedUser.info.id)
         errUpdateGroupChat(admin.accessToken, update) shouldBe InvalidNewAdminIdException.message
     }
 
     test("Adding a nonexistent user should fail") {
-        val token = createSignedInUsers(1)[0].accessToken
-        val chatId = createGroupChat(token, buildNewGroupChat())
-        errUpdateGroupChat(token, GroupChatUpdate(chatId, newUserIdList = listOf("invalid user ID"))) shouldBe
-                InvalidUserIdException.message
+        val user = createVerifiedUsers(1)[0]
+        val chatId = GroupChats.create(user.info.id, buildNewGroupChat())
+        val update = GroupChatUpdate(chatId, newUserIdList = listOf("invalid user ID"))
+        errUpdateGroupChat(user.accessToken, update) shouldBe InvalidUserIdException.message
     }
 
     test("Adding and removing the same user at the same time should fail") {
-        val (admin, user) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat())
+        val (admin, user) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat())
         val update = mapOf(
             "update" to mapOf(
                 "chatId" to chatId,

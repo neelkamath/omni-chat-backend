@@ -1,10 +1,11 @@
 package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
 import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.graphql.ChatExistsException
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -30,13 +31,13 @@ fun errCreatePrivateChat(accessToken: String, userId: String): String =
 
 class CreatePrivateChatTest : FunSpec({
     test("A chat should be created") {
-        val (user1, user2) = createSignedInUsers(2)
+        val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
         PrivateChats.readIdList(user1.info.id) shouldBe listOf(chatId)
     }
 
     test("Attempting to create a chat the user is in should return an error") {
-        val (user1, user2) = createSignedInUsers(2)
+        val (user1, user2) = createVerifiedUsers(2)
         createPrivateChat(user1.accessToken, user2.info.id)
         errCreatePrivateChat(user1.accessToken, user2.info.id) shouldBe ChatExistsException.message
     }
@@ -48,19 +49,19 @@ class CreatePrivateChatTest : FunSpec({
         then the existing chat's ID should be received
         """
     ) {
-        val (user1, user2) = createSignedInUsers(2)
+        val (user1, user2) = createVerifiedUsers(2)
         val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         createPrivateChat(user1.accessToken, user2.info.id) shouldBe chatId
     }
 
     test("A chat shouldn't be created with a nonexistent user") {
-        val token = createSignedInUsers(1)[0].accessToken
+        val token = createVerifiedUsers(1)[0].accessToken
         errCreatePrivateChat(token, "a nonexistent user ID") shouldBe InvalidUserIdException.message
     }
 
     test("A chat shouldn't be created with the user themselves") {
-        val user = createSignedInUsers(1)[0]
+        val user = createVerifiedUsers(1)[0]
         errCreatePrivateChat(user.accessToken, user.info.id) shouldBe InvalidUserIdException.message
     }
 })

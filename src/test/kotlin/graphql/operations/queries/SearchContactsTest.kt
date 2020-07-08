@@ -3,10 +3,8 @@ package com.neelkamath.omniChat.graphql.operations.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createAccount
-import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -42,14 +40,14 @@ class SearchContactsTest : FunSpec({
             NewAccount(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
             NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
         ).map {
-            createAccount(it)
+            createUser(it)
             val userId = readUserByUsername(it.username).id
             Account(userId, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
         }
-        val token = createSignedInUsers(1)[0].accessToken
-        createContacts(token, accounts.map { it.id })
+        val user = createVerifiedUsers(1)[0]
+        Contacts.create(user.info.id, accounts.map { it.id }.toSet())
         val testContacts = { query: String, accountList: List<Account> ->
-            searchContacts(token, query).edges.map { it.node } shouldBe accountList
+            searchContacts(user.accessToken, query).edges.map { it.node } shouldBe accountList
         }
         testContacts("john", listOf(accounts[0], accounts[1], accounts[3]))
         testContacts("bost", listOf(accounts[2]))

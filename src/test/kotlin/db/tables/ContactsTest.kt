@@ -21,9 +21,7 @@ class ContactsTest : FunSpec({
         test("When the subscriber saves new and old contacts, they should only be notified of the new ones") {
             val (ownerId, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(ownerId, setOf(user2Id, user3Id))
-            val subscriber = contactsBroker
-                .subscribe(ContactsAsset(ownerId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = contactsBroker.subscribe(ContactsAsset(ownerId)).subscribeWith(TestSubscriber())
             Contacts.create(ownerId, setOf(user3Id, user4Id))
             subscriber.assertValue(NewContact.fromUserId(user4Id))
         }
@@ -39,9 +37,7 @@ class ContactsTest : FunSpec({
         ) {
             val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(ownerId, setOf(contact1Id, contact2Id))
-            val subscriber = contactsBroker
-                .subscribe(ContactsAsset(ownerId))
-                .subscribeWith(TestSubscriber())
+            val subscriber = contactsBroker.subscribe(ContactsAsset(ownerId)).subscribeWith(TestSubscriber())
             Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, "invalid ID"))
             subscriber.assertValues(DeletedContact(contact1Id), DeletedContact(contact2Id))
         }

@@ -1,12 +1,11 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.tables.Users
-
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0
 
 data class VerifiedUser(val info: Account, val password: Password) {
     val login = Login(info.username, password)
+    val accessToken = buildAuthToken(info.id).accessToken
 
     companion object {
         fun build(account: NewAccount): VerifiedUser = with(account) {
@@ -35,10 +34,4 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
     createUser(account)
     verifyEmailAddress(account.username)
     VerifiedUser.build(account)
-}
-
-/** Deletes the user [id] from the DB and auth system. */
-fun deleteUser(id: String) {
-    Users.delete(id)
-    deleteUserFromAuth(id)
 }

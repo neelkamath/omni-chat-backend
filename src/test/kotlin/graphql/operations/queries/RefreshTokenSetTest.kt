@@ -1,14 +1,10 @@
 package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.GraphQlResponse
-import com.neelkamath.omniChat.TokenSet
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.operations.TOKEN_SET_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
-import com.neelkamath.omniChat.objectMapper
-import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import io.kotest.core.spec.style.FunSpec
 
 const val REFRESH_TOKEN_SET_QUERY = """
@@ -29,8 +25,8 @@ fun refreshTokenSet(refreshToken: String): TokenSet {
 
 class RefreshTokenSetTest : FunSpec({
     test("A refresh token should issue a new token set") {
-        val login = createSignedInUsers(1)[0].login
-        val refreshToken = requestTokenSet(login).refreshToken
+        val userId = createVerifiedUsers(1)[0].info.id
+        val refreshToken = buildAuthToken(userId).refreshToken
         refreshTokenSet(refreshToken)
     }
 

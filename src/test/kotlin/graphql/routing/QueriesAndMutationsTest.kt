@@ -1,9 +1,8 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.graphql.operations.mutations.UPDATE_GROUP_CHAT_QUERY
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
 import com.neelkamath.omniChat.graphql.operations.queries.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
@@ -76,8 +75,8 @@ class QueriesAndMutationsTest : FunSpec({
             then an HTTP status code of 401 should be received
             """
         ) {
-            val (admin, user) = createSignedInUsers(2)
-            val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
+            val (admin, user) = createVerifiedUsers(2)
+            val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
             val variables = mapOf("update" to GroupChatUpdate(chatId))
             requestGraphQlQueryOrMutation(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
                 .shouldHaveUnauthorizedStatus()

@@ -3,10 +3,10 @@ package com.neelkamath.omniChat.graphql.operations.queries
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_CONNECTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
@@ -34,8 +34,8 @@ fun readContacts(accessToken: String, pagination: ForwardPagination? = null): Ac
 
 class ReadContactsTest : FunSpec({
     test("Contacts should be read") {
-        val (owner, contact1, contact2) = createSignedInUsers(3)
-        createContacts(owner.accessToken, listOf(contact1.info.id, contact2.info.id))
+        val (owner, contact1, contact2) = createVerifiedUsers(3)
+        Contacts.create(owner.info.id, setOf(contact1.info.id, contact2.info.id))
         readContacts(owner.accessToken).edges.map { it.node } shouldBe listOf(contact1.info, contact2.info)
     }
 

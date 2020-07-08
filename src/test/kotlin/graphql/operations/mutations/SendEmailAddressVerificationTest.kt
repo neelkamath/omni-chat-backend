@@ -30,7 +30,7 @@ class SendEmailAddressVerificationTest : FunSpec({
     test("A verification email should be sent") {
         val address = "username@example.com"
         val account = NewAccount(Username("username"), Password("password"), address)
-        createAccount(account)
+        createUser(account)
         sendEmailAddressVerification(address)
     }
 

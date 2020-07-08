@@ -3,8 +3,8 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
@@ -30,9 +30,9 @@ fun deleteContacts(accessToken: String, userIdList: List<String>): Placeholder {
 
 class DeleteContactsTest : FunSpec({
     test("Contacts should be deleted, ignoring invalid ones") {
-        val (owner, user1, user2) = createSignedInUsers(3)
+        val (owner, user1, user2) = createVerifiedUsers(3)
         val userIdList = listOf(user1.info.id, user2.info.id)
-        createContacts(owner.accessToken, userIdList)
+        Contacts.create(owner.info.id, userIdList.toSet())
         deleteContacts(owner.accessToken, userIdList + "invalid user id")
         Contacts.readIdList(owner.info.id).shouldBeEmpty()
     }

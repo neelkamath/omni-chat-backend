@@ -1,11 +1,8 @@
 package com.neelkamath.omniChat.graphql.operations.subscriptions
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.graphql.SignedInUser
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.operations.*
-import com.neelkamath.omniChat.graphql.operations.mutations.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.Frame
@@ -46,11 +43,11 @@ class SubscribeToMessagesTest : FunSpec({
      * subscriber will send the message. Otherwise, the other user will send it.
      */
     fun receiveCreatedMessage(senderIsSubscriber: Boolean) {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         subscribeToMessages(user1.accessToken) { incoming ->
             val user = if (senderIsSubscriber) user1 else user2
-            createMessage(user.accessToken, chatId, TextMessage("t"))
+            Messages.create(chatId, user.info.id, TextMessage("t"))
             parseFrameData<NewMessage>(incoming).messageId shouldBe
                     Messages.readPrivateChat(chatId, user1.info.id).last().node.id
         }
@@ -68,13 +65,13 @@ class SubscribeToMessagesTest : FunSpec({
      * message. Otherwise, the other chat user will delete the message.
      */
     fun receiveDeletedMessage(deleterIsSubscriber: Boolean) {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         subscribeToMessages(user1.accessToken) { incoming ->
             val user = if (deleterIsSubscriber) user1 else user2
-            createMessage(user.accessToken, chatId, TextMessage("t"))
+            Messages.create(chatId, user.info.id, TextMessage("t"))
             val messageId = parseFrameData<NewMessage>(incoming).messageId
-            deleteMessage(user.accessToken, messageId)
+            Messages.delete(messageId)
             parseFrameData<DeletedMessage>(incoming) shouldBe DeletedMessage(chatId, messageId)
         }
     }
@@ -94,11 +91,11 @@ class SubscribeToMessagesTest : FunSpec({
         then the members should be notified that the old member's messages were deleted 
         """
     ) {
-        val (admin, user) = createSignedInUsers(2)
-        val chatId = createGroupChat(admin.accessToken, buildNewGroupChat(user.info.id))
-        createMessage(user.accessToken, chatId, TextMessage("t"))
+        val (admin, user) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
+        Messages.create(chatId, user.info.id, TextMessage("t"))
         subscribeToMessages(admin.accessToken) { incoming ->
-            deleteAccount(user.accessToken)
+            deleteUser(user.info.id)
             parseFrameData<UserChatMessagesRemoval>(incoming) shouldBe UserChatMessagesRemoval(chatId, user.info.id)
         }
     }
@@ -110,9 +107,9 @@ class SubscribeToMessagesTest : FunSpec({
     }
 
     test("The user should be able to subscribe to updates in a private chat they just deleted") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         subscribeToMessages(user1.accessToken) { }
     }
 
@@ -120,12 +117,12 @@ class SubscribeToMessagesTest : FunSpec({
      * Creates a group chat with the [subscriber], [sender], and [statusCreator]. The [subscriber] is the user who will
      * [subscribeToMessages]. The [sender] is the user who sends a message. The [statusCreator] the user who creates a
      * [MessageStatus.DELIVERED] on the [sender]'s message. The [subscriber] and [sender] can be the same
-     * [SignedInUser].
+     * [VerifiedUser].
      */
     fun createUtilizedChat(
-        subscriber: SignedInUser,
-        sender: SignedInUser,
-        statusCreator: SignedInUser,
+        subscriber: VerifiedUser,
+        sender: VerifiedUser,
+        statusCreator: VerifiedUser,
         status: MessageStatus
     ) {
         val chat = NewGroupChat(
@@ -133,13 +130,14 @@ class SubscribeToMessagesTest : FunSpec({
             GroupChatDescription(""),
             listOf(sender.info.id, statusCreator.info.id)
         )
-        val chatId = createGroupChat(subscriber.accessToken, chat)
+        val chatId = GroupChats.create(subscriber.info.id, chat)
         subscribeToMessages(subscriber.accessToken) { incoming ->
-            createMessage(sender.accessToken, chatId, TextMessage("t"))
+            Messages.create(chatId, sender.info.id, TextMessage("t"))
             val messageId = parseFrameData<NewMessage>(incoming).messageId
             when (status) {
-                MessageStatus.DELIVERED -> createDeliveredStatus(statusCreator.accessToken, messageId)
-                MessageStatus.READ -> createReadStatus(statusCreator.accessToken, messageId)
+                MessageStatus.DELIVERED ->
+                    MessageStatuses.create(messageId, statusCreator.info.id, MessageStatus.DELIVERED)
+                MessageStatus.READ -> MessageStatuses.create(messageId, statusCreator.info.id, MessageStatus.READ)
             }
             if (status == MessageStatus.READ) incoming.poll() // Ignore the "delivered" status.
             // We convert it to a set because in the case of a "read" status, a "delivered" status would also exist.
@@ -155,7 +153,7 @@ class SubscribeToMessagesTest : FunSpec({
             message
             """
         ) {
-            val (user1, user2) = createSignedInUsers(2)
+            val (user1, user2) = createVerifiedUsers(2)
             createUtilizedChat(subscriber = user1, sender = user1, statusCreator = user2, status = status)
         }
 
@@ -165,7 +163,7 @@ class SubscribeToMessagesTest : FunSpec({
             The subscriber should be notified when they create a "${status.name.toLowerCase()}" status a user's message
             """
         ) {
-            val (user1, user2) = createSignedInUsers(2)
+            val (user1, user2) = createVerifiedUsers(2)
             createUtilizedChat(subscriber = user1, sender = user2, statusCreator = user1, status = status)
         }
 
@@ -177,7 +175,7 @@ class SubscribeToMessagesTest : FunSpec({
         message
         """
     ) {
-        val (user1, user2, user3) = createSignedInUsers(3)
+        val (user1, user2, user3) = createVerifiedUsers(3)
         createUtilizedChat(subscriber = user1, sender = user2, statusCreator = user3, status = status)
     }
 

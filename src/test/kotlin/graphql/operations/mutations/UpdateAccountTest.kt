@@ -4,7 +4,6 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.graphql.EmailAddressTakenException
 import com.neelkamath.omniChat.graphql.UsernameTakenException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.graphql.operations.queries.requestTokenSet
 import io.kotest.core.spec.style.FunSpec
@@ -45,7 +44,7 @@ class UpdateAccountTest : FunSpec({
     }
 
     test("Only the specified fields should be updated") {
-        val user = createSignedInUsers(1)[0]
+        val user = createVerifiedUsers(1)[0]
         val update =
             AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = "Roger")
         updateAccount(user.accessToken, update)
@@ -53,7 +52,7 @@ class UpdateAccountTest : FunSpec({
     }
 
     test("The password should be updated") {
-        val user = createSignedInUsers(1)[0]
+        val user = createVerifiedUsers(1)[0]
         val newPassword = Password("new password")
         val update = AccountUpdate(password = newPassword)
         updateAccount(user.accessToken, update)
@@ -62,13 +61,13 @@ class UpdateAccountTest : FunSpec({
     }
 
     test("Updating a username to one already taken shouldn't allow the account to be updated") {
-        val (user1, user2) = createSignedInUsers(2)
+        val (user1, user2) = createVerifiedUsers(2)
         errUpdateAccount(user1.accessToken, AccountUpdate(username = user2.info.username)) shouldBe
                 UsernameTakenException.message
     }
 
     test("Updating an email to one already taken shouldn't allow the account to be updated") {
-        val (user1, user2) = createSignedInUsers(2)
+        val (user1, user2) = createVerifiedUsers(2)
         errUpdateAccount(user1.accessToken, AccountUpdate(emailAddress = user2.info.emailAddress)) shouldBe
                 EmailAddressTakenException.message
     }

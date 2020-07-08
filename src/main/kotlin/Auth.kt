@@ -189,11 +189,9 @@ fun isUsernameTaken(username: Username): Boolean {
     return results.isNotEmpty() && results.any { it.username == username.value }
 }
 
-/**
- * @see [Users.delete]
- * @see [deleteUserFromDb]
- */
-fun deleteUserFromAuth(id: String) {
+/** Deletes the user [id] from the auth system, and calls [deleteUserFromDb]. */
+fun deleteUser(id: String) {
+    deleteUserFromDb(id)
     realm.users().delete(id)
 }
 

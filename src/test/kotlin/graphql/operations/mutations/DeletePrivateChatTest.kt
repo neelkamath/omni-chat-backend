@@ -3,9 +3,10 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.Placeholder
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
+import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
@@ -34,20 +35,20 @@ fun errDeletePrivateChat(accessToken: String, chatId: Int): String =
 
 class DeletePrivateChatTest : FunSpec({
     test("A chat should be deleted") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         deletePrivateChat(user1.accessToken, chatId)
         PrivateChatDeletions.isDeleted(user1.info.id, chatId).shouldBeTrue()
     }
 
-    test("Deleting an invalid chat ID should throw an exception") {
-        val token = createSignedInUsers(1)[0].accessToken
-        errDeletePrivateChat(chatId = 1, accessToken = token) shouldBe InvalidChatIdException.message
+    test("Deleting a deleted chat which still exists shouldn't fail") {
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        repeat(2) { deletePrivateChat(user1.accessToken, chatId) }
     }
 
-    test("Deleting a deleted chat which still exists shouldn't fail") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        repeat(2) { deletePrivateChat(user1.accessToken, chatId) }
+    test("Deleting an invalid chat ID should throw an exception") {
+        val token = createVerifiedUsers(1)[0].accessToken
+        errDeletePrivateChat(chatId = 1, accessToken = token) shouldBe InvalidChatIdException.message
     }
 })

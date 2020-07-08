@@ -4,15 +4,9 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.graphql.SignedInUser
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.operations.GROUP_CHAT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.PRIVATE_CHAT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createGroupChat
-import com.neelkamath.omniChat.graphql.operations.mutations.createPrivateChat
-import com.neelkamath.omniChat.graphql.operations.mutations.deletePrivateChat
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -69,10 +63,10 @@ fun readChats(
 }
 
 class ReadChatsTest : FunSpec({
-    fun createAdminGroupChat(admin: SignedInUser): GroupChat {
-        val userId = createSignedInUsers(1)[0].info.id
+    fun createAdminGroupChat(admin: VerifiedUser): GroupChat {
+        val userId = createVerifiedUsers(1)[0].info.id
         val chat = buildNewGroupChat(userId)
-        val chatId = createGroupChat(admin.accessToken, chat)
+        val chatId = GroupChats.create(admin.info.id, chat)
         return GroupChat(
             chatId,
             admin.info.id,
@@ -83,10 +77,10 @@ class ReadChatsTest : FunSpec({
         )
     }
 
-    fun createUserGroupChat(admin: SignedInUser): GroupChat {
-        val user = createSignedInUsers(1)[0]
+    fun createUserGroupChat(admin: VerifiedUser): GroupChat {
+        val user = createVerifiedUsers(1)[0]
         val chat = buildNewGroupChat(admin.info.id)
-        val chatId = createGroupChat(user.accessToken, chat)
+        val chatId = GroupChats.create(user.info.id, chat)
         return GroupChat(
             chatId,
             user.info.id,
@@ -97,18 +91,18 @@ class ReadChatsTest : FunSpec({
         )
     }
 
-    fun createAdminPrivateChat(admin: SignedInUser): PrivateChat {
-        val userId = createSignedInUsers(1)[0].info.id
-        val chatId = createPrivateChat(admin.accessToken, userId)
+    fun createAdminPrivateChat(admin: VerifiedUser): PrivateChat {
+        val userId = createVerifiedUsers(1)[0].info.id
+        val chatId = PrivateChats.create(admin.info.id, userId)
         return PrivateChat(
             chatId,
             readUserById(userId), Messages.readPrivateChatConnection(chatId, userId)
         )
     }
 
-    fun createUserPrivateChat(admin: SignedInUser): PrivateChat {
-        val user = createSignedInUsers(1)[0]
-        val chatId = createPrivateChat(user.accessToken, admin.info.id)
+    fun createUserPrivateChat(admin: VerifiedUser): PrivateChat {
+        val user = createVerifiedUsers(1)[0]
+        val chatId = PrivateChats.create(user.info.id, admin.info.id)
         return PrivateChat(
             chatId,
             readUserById(user.info.id), Messages.readPrivateChatConnection(chatId, user.info.id)
@@ -116,7 +110,7 @@ class ReadChatsTest : FunSpec({
     }
 
     /** Creates and returns the [admin]'s chats. */
-    fun createChats(admin: SignedInUser): List<Chat> = listOf(
+    fun createChats(admin: VerifiedUser): List<Chat> = listOf(
         createAdminGroupChat(admin),
         createUserGroupChat(admin),
         createAdminPrivateChat(admin),
@@ -124,15 +118,15 @@ class ReadChatsTest : FunSpec({
     )
 
     test("Private and group chats the user made, was invited to, and was added to should be retrieved") {
-        val admin = createSignedInUsers(1)[0]
+        val admin = createVerifiedUsers(1)[0]
         val chats = createChats(admin)
         readChats(admin.accessToken) shouldBe chats
     }
 
     test("Private chats deleted by the user should be retrieved only for the other user") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         readChats(user1.accessToken).shouldBeEmpty()
         readChats(user2.accessToken).shouldNotBeEmpty()
     }

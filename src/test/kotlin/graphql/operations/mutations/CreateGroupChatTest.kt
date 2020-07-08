@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.graphql.InvalidUserIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -27,7 +26,7 @@ fun errCreateGroupChat(accessToken: String, chat: NewGroupChat): String =
 
 class CreateGroupChatTest : FunSpec({
     test("A group chat should be created, ignoring the user's own ID, and keeping whitespace intact") {
-        val (admin, user1, user2) = createSignedInUsers(3)
+        val (admin, user1, user2) = createVerifiedUsers(3)
         val chat = NewGroupChat(
             GroupChatTitle(" Title  "),
             GroupChatDescription("  Description "),
@@ -47,7 +46,7 @@ class CreateGroupChatTest : FunSpec({
     }
 
     test("A group chat shouldn't be created when supplied with an invalid user ID") {
-        val token = createSignedInUsers(1)[0].accessToken
+        val token = createVerifiedUsers(1)[0].accessToken
         errCreateGroupChat(token, buildNewGroupChat("invalid user ID")) shouldBe InvalidUserIdException.message
     }
 })

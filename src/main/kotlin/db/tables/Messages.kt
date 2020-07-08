@@ -118,7 +118,7 @@ object Messages : IntIdTable() {
         }
     }
 
-    /** @return the message IDs in the [chatId]. */
+    /** @return the message IDs in the [chatId] in order of creation. */
     fun readIdList(chatId: Int): List<Int> = transact {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }

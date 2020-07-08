@@ -2,7 +2,7 @@ package com.neelkamath.omniChat.graphql.operations.queries
 
 import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.Username
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -23,7 +23,7 @@ class IsUsernameTakenTest : FunSpec({
     test("The username shouldn't be taken") { isUsernameTaken(Username("username")).shouldBeFalse() }
 
     test("The username should be taken") {
-        val username = createSignedInUsers(1)[0].info.username
+        val username = createVerifiedUsers(1)[0].info.username
         isUsernameTaken(username).shouldBeTrue()
     }
 })

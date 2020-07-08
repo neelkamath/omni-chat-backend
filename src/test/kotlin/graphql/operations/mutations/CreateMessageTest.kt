@@ -2,9 +2,11 @@ package com.neelkamath.omniChat.graphql.operations.mutations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.PrivateChatDeletions
+import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.createSignedInUsers
 import com.neelkamath.omniChat.graphql.operations.operateGraphQlQueryOrMutation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
@@ -42,32 +44,32 @@ class CreateMessageTest : FunSpec({
     }
 
     test("A message should be sent in a private chat") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
         val message = TextMessage("Hi")
         createMessage(user1.accessToken, chatId, message)
         testMessages(Messages.readPrivateChat(chatId, user1.info.id), user1.info.id, message)
     }
 
     test("A message should be sent in a group chat") {
-        val user = createSignedInUsers(1)[0]
-        val chatId = createGroupChat(user.accessToken, buildNewGroupChat())
-        val text = "Hi"
-        createMessage(user.accessToken, chatId, TextMessage(text))
-        testMessages(Messages.readGroupChat(chatId), user.info.id, TextMessage(text))
+        val user = createVerifiedUsers(1)[0]
+        val chatId = GroupChats.create(user.info.id, buildNewGroupChat())
+        val text = TextMessage("Hi")
+        createMessage(user.accessToken, chatId, text)
+        testMessages(Messages.readGroupChat(chatId), user.info.id, text)
     }
 
     test("Messaging in a chat the user isn't in should throw an exception") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createGroupChat(user1.accessToken, buildNewGroupChat())
-        createGroupChat(user2.accessToken, buildNewGroupChat())
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = GroupChats.create(user1.info.id, buildNewGroupChat())
+        GroupChats.create(user1.info.id, buildNewGroupChat())
         errCreateMessage(user2.accessToken, chatId, TextMessage("t")) shouldBe InvalidChatIdException.message
     }
 
     test("The user should be able to create a message in a private chat they just deleted") {
-        val (user1, user2) = createSignedInUsers(2)
-        val chatId = createPrivateChat(user1.accessToken, user2.info.id)
-        deletePrivateChat(user1.accessToken, chatId)
+        val (user1, user2) = createVerifiedUsers(2)
+        val chatId = PrivateChats.create(user1.info.id, user2.info.id)
+        PrivateChatDeletions.create(chatId, user1.info.id)
         createMessage(user1.accessToken, chatId, TextMessage("t"))
     }
 })
