@@ -66,7 +66,7 @@ class AuthTest : FunSpec({
         }
     }
 
-    context("findUserByUsername(String)") {
+    context("readUserByUsername(Username)") {
         test("Finding a user by their username should yield that user") {
             val username = createVerifiedUsers(1)[0].info.username
             readUserByUsername(username).username shouldBe username
@@ -87,12 +87,12 @@ class AuthTest : FunSpec({
 
         test("Users should be searched case-insensitively") {
             val infoList = createUsers()
-            val search = { query: String ->
-                searchUsers(query).map { it.id }
+            val search = { query: String, userIdList: List<String> ->
+                searchUsers(query).map { it.id } shouldBe userIdList
             }
-            search("tOnY") shouldBe listOf(infoList[0])
-            search("doe") shouldBe listOf(infoList[1])
-            search("john") shouldBe listOf(infoList[1], infoList[2], infoList[3])
+            search("tOnY", listOf(infoList[0]))
+            search("doe", listOf(infoList[1]))
+            search("john", listOf(infoList[1], infoList[2], infoList[3]))
         }
 
         test("Searching users shouldn't include duplicate results") {
@@ -111,9 +111,8 @@ class AuthTest : FunSpec({
         test("Updating an account should trigger a notification for the contact owner, but not the contact") {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
             Contacts.create(ownerId, setOf(contactId))
-            val (ownerSubscriber, contactSubscriber) = listOf(ownerId, contactId).map {
-                contactsBroker.subscribe(ContactsAsset(it)).subscribeWith(TestSubscriber())
-            }
+            val (ownerSubscriber, contactSubscriber) = listOf(ownerId, contactId)
+                .map { contactsBroker.subscribe(ContactsAsset(it)).subscribeWith(TestSubscriber()) }
             updateUser(contactId, AccountUpdate())
             ownerSubscriber.assertValue(UpdatedContact.fromUserId(contactId))
             contactSubscriber.assertNoValues()

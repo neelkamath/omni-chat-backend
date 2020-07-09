@@ -28,7 +28,6 @@ import io.ktor.routing.routing
 import io.ktor.websocket.WebSockets
 import java.time.Duration
 
-
 /** Project-wide Jackson config. */
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)

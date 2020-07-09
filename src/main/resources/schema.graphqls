@@ -148,27 +148,16 @@ type Mutation {
     deleteAccount: Placeholder!
 
     """
-    Lets the server know that the user has had the `messageId` delivered to them.
+    Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
+    `MessageStatus.DELIVERED` record, the delivery status will be created.
 
     Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
     in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
-    has had the message delivered to them).
+    had the message delivered to them).
 
     You must send an access token with this request.
     """
-    createDeliveredStatus(messageId: Int!): Placeholder!
-
-    """
-    Lets the server know that the user has read the message `id`. If you haven't told the server that the message was
-    received (i.e., `Mutation.receiveMessage`), the delivery status will be created.
-
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
-    in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
-    has had the message delivered to them).
-
-    You must send an access token with this request.
-    """
-    createReadStatus(messageId: Int!): Placeholder!
+    createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
 
     """
     Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and

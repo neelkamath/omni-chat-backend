@@ -34,7 +34,7 @@ object MessageStatuses : Table() {
      * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
      * [MessageStatus.DELIVERED] too.
      *
-     * An [IllegalArgumentException] may be thrown for the following reasons:
+     * @throws [IllegalArgumentException] if:
      * - The [messageId] was sent by the [userId].
      * - The status has already been recorded (you can check if the [status] [exists]).
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
@@ -73,8 +73,7 @@ object MessageStatuses : Table() {
             }
         }
         val chatId = Messages.readChatFromMessage(messageId)
-        val message = UpdatedMessage.build(chatId, Messages.read(messageId))
-        messagesBroker.notify(message) { isUserInChat(userId, chatId) }
+        messagesBroker.notify(Messages.read(messageId).toUpdatedMessage()) { isUserInChat(userId, chatId) }
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
@@ -104,10 +103,9 @@ object MessageStatuses : Table() {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
-    /** Returns the [MessageDateTimeStatus]es for the [messageId]. */
+    /** @return the [MessageDateTimeStatus]es for the [messageId]. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(readUserById(it[userId]), it[dateTime], it[status]) }
-
     }
 }

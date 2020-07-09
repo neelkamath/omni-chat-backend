@@ -74,34 +74,31 @@ object PrivateChatDeletions : IntIdTable() {
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */
-    private fun deletePreviousDeletionRecords(chatId: Int, userId: String): Unit =
-        transact {
-            val idList = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
-                .toList()
-                .dropLast(1)
-                .map { it[PrivateChatDeletions.id].value }
-            deleteWhere { PrivateChatDeletions.id inList idList }
-        }
+    private fun deletePreviousDeletionRecords(chatId: Int, userId: String): Unit = transact {
+        val idList = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
+            .toList()
+            .dropLast(1)
+            .map { it[PrivateChatDeletions.id].value }
+        deleteWhere { PrivateChatDeletions.id inList idList }
+    }
 
-    /** Returns the last [LocalDateTime] both users deleted the [chatId], if both of them have. */
-    private fun readLastChatDeletion(chatId: Int): LocalDateTime? =
-        transact {
-            val deletions = select { PrivateChatDeletions.chatId eq chatId }
-            val userIdList = deletions.map { it[userId] }.toSet()
-            if (userIdList.size < 2) return@transact null
-            val getDateTime = { index: Int ->
-                deletions.last { it[userId] == userIdList.elementAt(index) }[dateTime]
-            }
-            listOf(getDateTime(0), getDateTime(1)).min()
+    /** @return the last [LocalDateTime] both users deleted the [chatId], if both of them have. */
+    private fun readLastChatDeletion(chatId: Int): LocalDateTime? = transact {
+        val deletions = select { PrivateChatDeletions.chatId eq chatId }
+        val userIdList = deletions.map { it[userId] }.toSet()
+        if (userIdList.size < 2) return@transact null
+        val getDateTime = { index: Int ->
+            deletions.last { it[userId] == userIdList.elementAt(index) }[dateTime]
         }
+        listOf(getDateTime(0), getDateTime(1)).min()
+    }
 
-    /** Returns the last time the [userId] deleted the [chatId], if they ever did. */
-    fun readLastDeletion(chatId: Int, userId: String): LocalDateTime? =
-        transact {
-            select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
-                .lastOrNull()
-                ?.get(dateTime)
-        }
+    /** @return the last time the [userId] deleted the [chatId], if they ever did. */
+    fun readLastDeletion(chatId: Int, userId: String): LocalDateTime? = transact {
+        select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
+            .lastOrNull()
+            ?.get(dateTime)
+    }
 
     /** Whether the [userId] has deleted the [chatId] (and not recreated the chat after that). */
     fun isDeleted(userId: String, chatId: Int): Boolean = transact {

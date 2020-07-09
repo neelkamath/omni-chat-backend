@@ -1,9 +1,9 @@
 FROM gradle:6.5.1-jdk14 AS builder
 WORKDIR /home/gradle/project
 COPY build.gradle.kts gradle.properties settings.gradle.kts ./
-RUN gradle --no-daemon -i shadowJar
+RUN gradle -i shadowJar
 COPY src/main/ src/main/
-RUN gradle --no-daemon -i shadowJar
+RUN gradle -i shadowJar
 
 FROM adoptopenjdk:14-jre-hotspot
 WORKDIR /app

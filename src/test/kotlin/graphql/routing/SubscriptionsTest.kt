@@ -2,13 +2,12 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.CreatedSubscription
 import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.graphql.createSignedInUsers
+import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.mutations.createContacts
-import com.neelkamath.omniChat.graphql.operations.subscriptions.SUBSCRIBE_TO_CONTACTS_QUERY
-import com.neelkamath.omniChat.graphql.operations.subscriptions.operateGraphQlSubscription
-import com.neelkamath.omniChat.graphql.operations.subscriptions.parseFrameData
-import com.neelkamath.omniChat.graphql.operations.subscriptions.subscribeToContacts
+import com.neelkamath.omniChat.graphql.operations.DELETED_CONTACT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.NEW_CONTACT_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.UPDATED_CONTACT_FRAGMENT
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -32,8 +31,8 @@ class SubscriptionsTest : FunSpec({
                 }
             """
             val operationName = if (shouldSupplyOperationName) "SubscribeToContacts" else null
-            val token = createSignedInUsers(1)[0].accessToken
-            operateGraphQlSubscription(
+            val token = createVerifiedUsers(1)[0].accessToken
+            executeGraphQlSubscriptionViaWebSocket(
                 uri = "contacts-subscription",
                 request = GraphQlRequest(query, operationName = operationName),
                 accessToken = token
@@ -60,19 +59,23 @@ class SubscriptionsTest : FunSpec({
         ) { testOperationName(shouldSupplyOperationName = false) }
     }
 
-    context("closeWithError(DefaultWebSocketServerSession, ExecutionResult)") {
-        test(
-            """
-            Given an operation requiring an access token,
-            when calling the operation without a token,
-            then the connection should be closed with the status code 1008
-            """
-        ) {
-            operateGraphQlSubscription(
-                uri = "contacts-subscription",
-                request = GraphQlRequest(SUBSCRIBE_TO_CONTACTS_QUERY)
-            ) { incoming -> incoming.receive().frameType shouldBe FrameType.CLOSE }
-        }
+    fun subscribeToContacts(accessToken: String? = null, callback: SubscriptionCallback) {
+        val subscribeToContactsQuery = """
+            subscription SubscribeToContacts {
+                subscribeToContacts {
+                    $CREATED_SUBSCRIPTION_FRAGMENT
+                    $NEW_CONTACT_FRAGMENT
+                    $UPDATED_CONTACT_FRAGMENT
+                    $DELETED_CONTACT_FRAGMENT
+                }
+            }
+        """
+        executeGraphQlSubscriptionViaWebSocket(
+            uri = "contacts-subscription",
+            request = GraphQlRequest(subscribeToContactsQuery),
+            accessToken = accessToken,
+            callback = callback
+        )
     }
 
     context("subscribe(DefaultWebSocketServerSession, GraphQlSubscription, ExecutionResult)") {
@@ -83,13 +86,25 @@ class SubscriptionsTest : FunSpec({
             then they should only receive it once because their previous connection's notifier should've been removed
             """
         ) {
-            val (owner, user) = createSignedInUsers(2)
+            val (owner, user) = createVerifiedUsers(2)
             subscribeToContacts(owner.accessToken) { }
             subscribeToContacts(owner.accessToken) { incoming ->
-                createContacts(owner.accessToken, listOf(user.info.id))
+                Contacts.create(owner.info.id, setOf(user.info.id))
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }
+        }
+    }
+
+    context("closeWithError(DefaultWebSocketServerSession, ExecutionResult)") {
+        test(
+            """
+            Given an operation requiring an access token,
+            when calling the operation without a token,
+            then the connection should be closed
+            """
+        ) {
+            subscribeToContacts { incoming -> incoming.receive().frameType shouldBe FrameType.CLOSE }
         }
     }
 })

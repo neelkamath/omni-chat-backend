@@ -4,7 +4,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
 
@@ -21,7 +20,7 @@ data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 class PostgresEnum<T : Enum<T>>(
     /** The name of the enum in Postgres. */
     typeName: String,
-    /** The name of the enum in Kotlin */
+    /** The name of the enum in Kotlin. */
     value: T?
 ) : PGobject() {
     init {
@@ -81,12 +80,13 @@ private fun createType(name: String, definition: String) {
 }
 
 /** Whether the [type] has been created. */
-private fun exists(type: String): Boolean =
-    TransactionManager.current().exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
+private fun exists(type: String): Boolean = transact {
+    exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
         resultSet.next()
         val column = "exists"
         resultSet.getBoolean(column)
     }!!
+}
 
 /** Always use this instead of [transaction]. */
 inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transaction {
@@ -140,7 +140,7 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * - Clients will be [Broker.unsubscribe]d via [messagesBroker].
  *
  * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
- * @see [deleteUserFromAuth]
+ * @see [deleteUser]
  */
 fun deleteUserFromDb(userId: String) {
     if (GroupChats.isNonemptyChatAdmin(userId))

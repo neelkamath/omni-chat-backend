@@ -60,6 +60,9 @@ private val omniChatRealm: Lazy<RealmRepresentation> = lazy {
     }
 }
 
+fun UserRepresentation.toAccount(): Account =
+    Account(id, Username(username), email, Users.readBio(id), firstName, lastName)
+
 /**
  * Sets up account management.
  *
@@ -85,7 +88,7 @@ private fun createClient() {
     )
 }
 
-/** Returns whether the [login] is valid. */
+/** @return whether the [login] is valid. */
 fun isValidLogin(login: Login): Boolean = try {
     AuthzClient.create(config).obtainAccessToken(login.username.value, login.password.value)
     true
@@ -132,21 +135,16 @@ private fun createUserRepresentation(account: NewAccount): UserRepresentation = 
     isEnabled = true
 }
 
-fun readUserByUsername(username: Username): Account {
-    val user = realm.users().search(username.value).first { it.username == username.value }
-    return Account.build(user)
-}
+fun readUserByUsername(username: Username): Account =
+    realm.users().search(username.value).first { it.username == username.value }.toAccount()
 
 fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
 
-fun readUserById(userId: String): Account = Account.build(readUser(userId))
+fun readUserById(userId: String): Account = readUser(userId).toAccount()
 
 private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
 
-private fun readUserByEmail(email: String): Account {
-    val user = realm.users().list().first { it.email == email }
-    return Account.build(user)
-}
+private fun readUserByEmail(email: String): Account = realm.users().list().first { it.email == email }.toAccount()
 
 /**
  * Case-insensitively [query]s every user's username, first name, last name, and email address.
@@ -158,7 +156,7 @@ fun searchUsers(query: String): List<Account> = with(realm.users()) {
             searchBy(firstName = query) +
             searchBy(lastName = query) +
             searchBy(emailAddress = query)
-}.distinctBy { it.id }.map { Account.build(it) }
+}.distinctBy { it.id }.map { it.toAccount() }
 
 /** Convenience function for [UsersResource.search] which provides only the relevant parameters with names. */
 private fun UsersResource.searchBy(
@@ -189,11 +187,9 @@ fun isUsernameTaken(username: Username): Boolean {
     return results.isNotEmpty() && results.any { it.username == username.value }
 }
 
-/**
- * @see [Users.delete]
- * @see [deleteUserFromDb]
- */
-fun deleteUserFromAuth(id: String) {
+/** Deletes the user [id] from the auth system, and calls [deleteUserFromDb]. */
+fun deleteUser(id: String) {
+    deleteUserFromDb(id)
     realm.users().delete(id)
 }
 

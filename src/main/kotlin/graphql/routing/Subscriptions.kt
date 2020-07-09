@@ -42,8 +42,7 @@ fun routeGraphQlSubscriptions(context: Routing) {
 
 /** Routes the GraphQL `Subscription.subscribeToMessages`. */
 private fun routeMessagesSubscription(context: Routing): Unit = with(context) {
-    val completionReason =
-        CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
+    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     routeSubscription(
         context,
         path = "messages-subscription",

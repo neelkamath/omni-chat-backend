@@ -1,0 +1,26 @@
+package com.neelkamath.omniChat.graphql.engine
+
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChat.objectMapper
+import graphql.ExecutionInput
+
+/**
+ * Executes GraphQL queries and mutations directly via the GraphQL engine.
+ *
+ * @param[query] GraphQL document.
+ * @param[variables] GraphQL variables for the [query].
+ * @param[userId] the ID of the user performing the operation.
+ * @see [readGraphQlHttpResponse]
+ */
+fun executeGraphQlViaEngine(
+    query: String,
+    variables: Map<String, Any?>? = null,
+    userId: String? = null
+): GraphQlResponse {
+    val builder = ExecutionInput.Builder().query(query).context(userId)
+    if (variables != null) objectMapper.convertValue<Map<String, Any>>(variables).let(builder::variables)
+    val spec = buildSpecification(graphQl.execute(builder))
+    return objectMapper.convertValue(spec)
+}
