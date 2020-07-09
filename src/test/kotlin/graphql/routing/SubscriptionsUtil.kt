@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql.operations.subscriptions
+package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -22,7 +22,7 @@ typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Un
  * Opens a WebSocket connection on the [uri], sends the GraphQL subscription [request], and has the [callback]
  * [ReceiveChannel] and [SendChannel].
  */
-fun operateGraphQlSubscription(
+fun executeGraphQlSubscriptionViaWebSocket(
     uri: String,
     request: GraphQlRequest,
     accessToken: String? = null,
@@ -38,13 +38,6 @@ fun operateGraphQlSubscription(
         }.join()
         callback(incoming)
     }
-}
-
-/** Waits until the [channel] sends a [Frame.Text], and returns its first [GraphQlResponse.errors] message. */
-suspend fun parseFrameError(channel: ReceiveChannel<Frame>): String {
-    for (frame in channel)
-        if (frame is Frame.Text) return objectMapper.readValue<GraphQlResponse>(frame.readText()).errors!![0].message
-    throw Exception("There was no text frame to be read.")
 }
 
 /**

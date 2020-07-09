@@ -91,7 +91,6 @@ fun deleteMessage(env: DataFetchingEnvironment): Placeholder {
     if (!Messages.exists(messageId)) throw InvalidMessageIdException
     val chatId = Messages.readChatFromMessage(messageId)
     if (!isUserInChat(env.userId!!, chatId) ||
-        !Messages.existsInChat(messageId, chatId) ||
         Messages.read(messageId).sender.id != env.userId!! ||
         !Messages.isVisible(messageId, env.userId!!)
     ) {

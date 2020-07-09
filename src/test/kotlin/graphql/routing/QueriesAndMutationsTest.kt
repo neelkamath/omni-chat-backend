@@ -1,10 +1,11 @@
 package com.neelkamath.omniChat.graphql.routing
 
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.graphql.operations.mutations.UPDATE_GROUP_CHAT_QUERY
-import com.neelkamath.omniChat.graphql.operations.queries.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.graphql.operations.requestGraphQlQueryOrMutation
+import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_QUERY
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -17,6 +18,13 @@ import io.ktor.server.testing.withTestApplication
 
 class QueriesAndMutationsTest : FunSpec({
     context("routeQueriesAndMutations(Routing)") {
+        test("The GraphQL engine should be queried via the HTTP interface") {
+            val user = createVerifiedUsers(1)[0]
+            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
+            val data = objectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
+            objectMapper.convertValue<Account>(data) shouldBe user.info
+        }
+
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
@@ -54,7 +62,8 @@ class QueriesAndMutationsTest : FunSpec({
         ) { testOperationName(shouldSupplyOperationName = false) }
 
         test("An HTTP status code of 401 should be received when a mandatory access token wasn't supplied") {
-            requestGraphQlQueryOrMutation(READ_ACCOUNT_QUERY).shouldHaveUnauthorizedStatus()
+            executeGraphQlViaHttp(READ_ACCOUNT_QUERY)
+                .shouldHaveUnauthorizedStatus()
         }
 
         test(
@@ -64,7 +73,7 @@ class QueriesAndMutationsTest : FunSpec({
             then an HTTP status code of 401 should be received
             """
         ) {
-            requestGraphQlQueryOrMutation(READ_ACCOUNT_QUERY, accessToken = "invalid token")
+            executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
                 .shouldHaveUnauthorizedStatus()
         }
 
@@ -78,7 +87,7 @@ class QueriesAndMutationsTest : FunSpec({
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
             val variables = mapOf("update" to GroupChatUpdate(chatId))
-            requestGraphQlQueryOrMutation(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
+            executeGraphQlViaHttp(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
                 .shouldHaveUnauthorizedStatus()
         }
     }

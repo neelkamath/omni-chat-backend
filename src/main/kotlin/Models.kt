@@ -79,11 +79,6 @@ data class Account(
      */
     fun matches(query: String): Boolean =
         listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
-
-    companion object {
-        fun build(user: UserRepresentation): Account =
-            with(user) { Account(id, Username(username), email, Users.readBio(id), firstName, lastName) }
-    }
 }
 
 interface ContactsSubscription
@@ -278,7 +273,12 @@ data class Message(
     val sender: Account,
     val text: TextMessage,
     val dateTimes: MessageDateTimes
-)
+) {
+    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
+
+    fun toUpdatedMessage(): UpdatedMessage =
+        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
+}
 
 interface MessagesSubscription
 
@@ -288,12 +288,7 @@ data class NewMessage(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription {
-    companion object {
-        fun build(message: Message): NewMessage =
-            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes) }
-    }
-}
+) : MessageData, MessagesSubscription
 
 data class UpdatedMessage(
     override val chatId: Int,
@@ -301,12 +296,7 @@ data class UpdatedMessage(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription {
-    companion object {
-        fun build(chatId: Int, message: Message): UpdatedMessage =
-            with(message) { UpdatedMessage(chatId, id, sender, text, dateTimes) }
-    }
-}
+) : MessageData, MessagesSubscription
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 

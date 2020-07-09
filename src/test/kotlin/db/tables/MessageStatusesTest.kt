@@ -1,6 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.MessageStatus
+import com.neelkamath.omniChat.TextMessage
+import com.neelkamath.omniChat.buildNewGroupChat
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesBroker
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -66,7 +69,7 @@ class MessageStatusesTest : FunSpec({
             val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
             val message = Messages.readPrivateChat(chatId, user1Id)[0].node
-            subscriber.assertValue(UpdatedMessage.build(chatId, message))
+            subscriber.assertValue(message.toUpdatedMessage())
         }
     }
 

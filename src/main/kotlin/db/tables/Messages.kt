@@ -58,8 +58,7 @@ object Messages : IntIdTable() {
                 it[senderId] = userId
             }.resultedValues!![0]
         }
-        val message = NewMessage.build(buildMessage(row))
-        messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
+        messagesBroker.notify(buildMessage(row).toNewMessage()) { isUserInChat(it.userId, chatId) }
     }
 
     /** Case-insensitively [query]s the [chatId]'s text messages. */

@@ -1,9 +1,8 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChat.graphql.routing
 
-import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.GraphQlResponse
+import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.objectMapper
 import io.ktor.application.Application
@@ -15,46 +14,23 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 
-/**
- * Executes GraphQL queries and mutations.
- *
- * @param[query] GraphQL document.
- * @param[variables] GraphQL variables for the [query].
- * @see [callGraphQlQueryOrMutation]
- */
-fun operateGraphQlQueryOrMutation(
+/** [executeGraphQlViaHttp] wrapper which parses the [TestApplicationResponse.content] as a [Map]. */
+fun readGraphQlHttpResponse(
     query: String,
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
-): GraphQlResponse {
-    val response = callGraphQlQueryOrMutation(query, variables, accessToken)
-    return objectMapper.convertValue(response)
-}
+): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(objectMapper::readValue)
 
 /**
- * Executes GraphQL queries and mutations.
+ * Executes GraphQL queries and mutations via the HTTP interface.
  *
  * @param[query] GraphQL document.
  * @param[variables] GraphQL variables for the [query].
- * @return GraphQL response as a [Map].
- * @see [operateGraphQlQueryOrMutation]
+ * @return the HTTP response of the GraphQL query.
+ * @see [readGraphQlHttpResponse]
+ * @see [executeGraphQlViaEngine]
  */
-fun callGraphQlQueryOrMutation(
-    query: String,
-    variables: Map<String, Any?>? = null,
-    accessToken: String? = null
-): Map<String, Any> =
-    requestGraphQlQueryOrMutation(query, variables, accessToken).content!!.let(objectMapper::readValue)
-
-/**
- * Executes GraphQL queries and mutations.
- *
- * @param[query] GraphQL document.
- * @param[variables] GraphQL variables for the [query].
- * @see [callGraphQlQueryOrMutation]
- * @see [operateGraphQlQueryOrMutation]
- */
-fun requestGraphQlQueryOrMutation(
+fun executeGraphQlViaHttp(
     query: String,
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
@@ -64,5 +40,5 @@ fun requestGraphQlQueryOrMutation(
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         val body = GraphQlRequest(query, variables)
         setBody(objectMapper.writeValueAsString(body))
-    }
-}.response
+    }.response
+}

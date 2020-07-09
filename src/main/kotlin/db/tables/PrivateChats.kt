@@ -96,8 +96,9 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
-     * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
+     * Case-insensitively [query]s the messages in the chats the [userId] is in, excluding ones the [userId] deleted.
+     * Only chats having messages matching the [query] will be returned. Only the matched message [ChatEdges.edges] will
+     * be returned.
      */
     fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = readUserChatIdList(userId)
         .associateWith { Messages.searchPrivateChat(it, userId, query) }

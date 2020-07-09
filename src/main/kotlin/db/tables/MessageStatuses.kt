@@ -73,8 +73,7 @@ object MessageStatuses : Table() {
             }
         }
         val chatId = Messages.readChatFromMessage(messageId)
-        val message = UpdatedMessage.build(chatId, Messages.read(messageId))
-        messagesBroker.notify(message) { isUserInChat(userId, chatId) }
+        messagesBroker.notify(Messages.read(messageId).toUpdatedMessage()) { isUserInChat(userId, chatId) }
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */

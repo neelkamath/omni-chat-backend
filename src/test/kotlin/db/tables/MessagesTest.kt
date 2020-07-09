@@ -55,7 +55,7 @@ class MessagesTest : FunSpec({
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             repeat(3) { Messages.create(chatId, listOf(adminId, user1Id, user2Id).random(), TextMessage("t")) }
-            val updates = Messages.readGroupChat(chatId).map { NewMessage.build(it.node) }
+            val updates = Messages.readGroupChat(chatId).map { it.node.toNewMessage() }
             listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { it.assertValueSequence(updates) }
         }
 
@@ -65,8 +65,7 @@ class MessagesTest : FunSpec({
             PrivateChatDeletions.create(chatId, user1Id)
             val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
-            val message = NewMessage.build(Messages.read(messageId))
-            subscriber.assertValue(message)
+            subscriber.assertValue(Messages.read(messageId).toNewMessage())
         }
 
         test("An exception should be thrown if the user isn't in the chat") {

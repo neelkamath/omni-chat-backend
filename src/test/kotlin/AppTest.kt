@@ -3,10 +3,10 @@ package com.neelkamath.omniChat
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.graphql.operations.callGraphQlQueryOrMutation
-import com.neelkamath.omniChat.graphql.operations.mutations.createMessage
-import com.neelkamath.omniChat.graphql.operations.queries.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.graphql.operations.queries.REQUEST_TOKEN_SET_QUERY
+import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
+import com.neelkamath.omniChat.graphql.operations.createMessage
+import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldNotHaveKey
@@ -17,14 +17,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 
-class GetHealthCheckTest : FunSpec({
-    test("A health check should respond with an HTTP status code of 204") {
-        withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }
-            .response
-            .status() shouldBe HttpStatusCode.NoContent
-    }
-})
-
 /**
  * Sanity tests for encoding.
  *
@@ -32,12 +24,22 @@ class GetHealthCheckTest : FunSpec({
  * https://github.com/graphql-java/graphql-java/issues/1877 shows otherwise. Had these tests not existed, such an
  * encoding problem may not have been found until technical debt from the tool at fault had already accumulated.
  */
+class AppTest : FunSpec({
+    context("route(Routing)") {
+        test("A health check should respond with an HTTP status code of 204") {
+            withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }
+                .response
+                .status() shouldBe HttpStatusCode.NoContent
+        }
+    }
+})
+
 class EncodingTest : FunSpec({
     test("A message should allow using emoji and multiple languages") {
-        val admin = createVerifiedUsers(1)[0]
-        val chatId = GroupChats.create(admin.info.id, buildNewGroupChat())
+        val adminId = createVerifiedUsers(1)[0].info.id
+        val chatId = GroupChats.create(adminId, buildNewGroupChat())
         val message = TextMessage("\uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
-        createMessage(admin.accessToken, chatId, message)
+        createMessage(adminId, chatId, message)
         Messages.readGroupChat(chatId)[0].node.text shouldBe message
     }
 })
@@ -55,12 +57,12 @@ class EncodingTest : FunSpec({
 class SpecComplianceTest : FunSpec({
     test("""The "data" key shouldn't be returned if there was no data to be received""") {
         val login = Login(Username("username"), Password("password"))
-        callGraphQlQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "data"
+        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "data"
     }
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
         val login = createVerifiedUsers(1)[0].login
-        callGraphQlQueryOrMutation(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey
+        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey
                 "errors"
     }
 
@@ -69,7 +71,7 @@ class SpecComplianceTest : FunSpec({
         createUser(account)
         val userId = readUserByUsername(account.username).id
         val accessToken = buildAuthToken(userId).accessToken
-        val response = callGraphQlQueryOrMutation(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
+        val response = readGraphQlHttpResponse(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
         objectMapper.convertValue<Map<String, Any>>(response["readAccount"]!!) shouldContain Pair("firstName", null)
     }
 })
