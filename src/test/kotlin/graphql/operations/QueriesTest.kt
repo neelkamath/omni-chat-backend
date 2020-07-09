@@ -721,12 +721,9 @@ class QueriesTest : FunSpec({
         }
 
         test("Users should be paginated") {
-            val infoCursors = createAccounts().zip(Users.read()).map { (newAccount, cursor) ->
-                val account = with(newAccount) {
-                    Account(readUserByUsername(username).id, username, emailAddress, bio, firstName, lastName)
-                }
-                AccountEdge(account, cursor)
-            }
+            val infoCursors = createAccounts()
+                .zip(Users.read())
+                .map { (newAccount, cursor) -> AccountEdge(newAccount.toAccount(), cursor) }
             val searchedUsers = listOf(infoCursors[0], infoCursors[2], infoCursors[4], infoCursors[5], infoCursors[7])
             val first = 3
             val index = 0
