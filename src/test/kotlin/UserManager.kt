@@ -10,7 +10,7 @@ data class VerifiedUser(val info: Account, val password: Password) {
     companion object {
         fun build(account: NewAccount): VerifiedUser = with(account) {
             val userId = readUserByUsername(username).id
-            VerifiedUser(Account(userId, username, emailAddress, bio, firstName, lastName), password)
+            VerifiedUser(Account(userId, username, emailAddress, firstName, lastName, bio), password)
         }
     }
 }
@@ -27,9 +27,9 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",
-        Bio("bio"),
         "firstName$userCount",
-        "lastName$userCount"
+        "lastName$userCount",
+        "bio"
     )
     createUser(account)
     verifyEmailAddress(account.username)

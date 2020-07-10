@@ -23,7 +23,7 @@ class ContactsTest : FunSpec({
             Contacts.create(ownerId, setOf(user2Id, user3Id))
             val subscriber = contactsBroker.subscribe(ContactsAsset(ownerId)).subscribeWith(TestSubscriber())
             Contacts.create(ownerId, setOf(user3Id, user4Id))
-            subscriber.assertValue(NewContact.fromUserId(user4Id))
+            subscriber.assertValue(NewContact.build(user4Id))
         }
     }
 

@@ -130,8 +130,8 @@ object GroupChats : Table() {
      */
     private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transact {
         update({ GroupChats.id eq update.chatId }) { statement ->
-            if (update.title != null) statement[title] = update.title.value
-            if (update.description != null) statement[description] = update.description.value
+            update.title?.let { statement[title] = it.value }
+            update.description?.let { statement[description] = it.value }
         }
     }
 

@@ -106,8 +106,8 @@ object Messages : IntIdTable() {
     private fun readChat(id: Int, pagination: BackwardPagination? = null, filter: Filter = null): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = chatId eq id
-        if (before != null) op = op and (Messages.id less before)
-        if (filter != null) op = op and filter
+        before?.let { op = op and (Messages.id less it) }
+        filter?.let { op = op and it }
         return transact {
             select(op)
                 .orderBy(Messages.id, SortOrder.DESC)
@@ -268,7 +268,7 @@ object Messages : IntIdTable() {
             Chronology.BEFORE -> Messages.id less messageId
             Chronology.AFTER -> Messages.id greater messageId
         }
-        if (filter != null) op = op and filter
+        filter?.let { op = op and it }
         return transact {
             !select { (Messages.chatId eq chatId) and op }.empty()
         }
@@ -281,7 +281,7 @@ object Messages : IntIdTable() {
             CursorType.END -> SortOrder.DESC
         }
         var op = Messages.chatId eq chatId
-        if (filter != null) op = op and filter
+        filter?.let { op = op and it }
         return transact { select(op).orderBy(Messages.id, order).firstOrNull()?.get(Messages.id)?.value }
     }
 

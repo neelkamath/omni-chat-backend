@@ -61,7 +61,7 @@ private val omniChatRealm: Lazy<RealmRepresentation> = lazy {
 }
 
 fun UserRepresentation.toAccount(): Account =
-    Account(id, Username(username), email, Users.readBio(id), firstName, lastName)
+    Account(id, Username(username), email, firstName, lastName, attributes?.get("bio")?.first())
 
 /**
  * Sets up account management.
@@ -111,9 +111,9 @@ fun emailAddressExists(email: String): Boolean = email in realm.users().list().m
  * email.
  */
 fun createUser(account: NewAccount) {
-    realm.users().create(createUserRepresentation(account))
+    realm.users().create(account.toUserRepresentation())
     val userId = realm.users().search(account.username.value).first { it.username == account.username.value }.id
-    Users.create(userId, account.bio)
+    Users.create(userId)
     sendEmailAddressVerification(userId)
 }
 
@@ -126,13 +126,14 @@ fun resetPassword(email: String) {
     realm.users().get(userId).executeActionsEmail(listOf("UPDATE_PASSWORD"))
 }
 
-private fun createUserRepresentation(account: NewAccount): UserRepresentation = UserRepresentation().apply {
-    username = account.username.value
-    credentials = createCredentials(account.password)
-    email = account.emailAddress
-    firstName = account.firstName
-    lastName = account.lastName
-    isEnabled = true
+private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresentation().also {
+    it.username = username.value
+    it.credentials = createCredentials(password)
+    it.email = emailAddress
+    it.firstName = firstName
+    it.lastName = lastName
+    if (bio != null) it.singleAttribute("bio", bio)
+    it.isEnabled = true
 }
 
 fun readUserByUsername(username: Username): Account =
@@ -175,8 +176,8 @@ fun updateUser(id: String, update: AccountUpdate) {
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     updateUserRepresentation(user, update)
     realm.users().get(id).update(user)
-    contactsBroker.notify(UpdatedContact.fromUserId(id)) { id in Contacts.readIdList(it.userId) }
-    updatedChatsBroker.notify(UpdatedAccount.fromUserId(id)) {
+    contactsBroker.notify(UpdatedContact.build(id)) { id in Contacts.readIdList(it.userId) }
+    updatedChatsBroker.notify(UpdatedAccount.build(id)) {
         val shareChat = id in PrivateChats.readOtherUserIdList(it.userId) || GroupChatUsers.areInSameChat(it.userId, id)
         it.userId != id && shareChat
     }
@@ -187,17 +188,17 @@ fun isUsernameTaken(username: Username): Boolean {
     return results.isNotEmpty() && results.any { it.username == username.value }
 }
 
-/** Deletes the user [id] from the auth system, and calls [deleteUserFromDb]. */
+/** Deletes the user [id] from the auth system after calling [deleteUserFromDb]. */
 fun deleteUser(id: String) {
     deleteUserFromDb(id)
     realm.users().delete(id)
 }
 
-/** [update]s the [user] in-place. */
+/** [update]s the [user] object. */
 private fun updateUserRepresentation(user: UserRepresentation, update: AccountUpdate) {
     user.apply {
         update.username?.let { username = it.value }
-        update.password?.let { credentials = createCredentials(update.password) }
+        update.password?.let { credentials = createCredentials(it) }
         update.emailAddress?.let { email = it }
         update.firstName?.let { firstName = it }
         update.lastName?.let { lastName = it }

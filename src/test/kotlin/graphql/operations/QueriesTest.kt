@@ -652,8 +652,7 @@ class QueriesTest : FunSpec({
                 NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
             ).map {
                 createUser(it)
-                val userId = readUserByUsername(it.username).id
-                Account(userId, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
+                it.toAccount()
             }
             val userId = createVerifiedUsers(1)[0].info.id
             Contacts.create(userId, accounts.map { it.id }.toSet())
@@ -699,8 +698,7 @@ class QueriesTest : FunSpec({
                 NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
             ).map {
                 createUser(it)
-                val id = readUserByUsername(it.username).id
-                Account(id, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
+                it.toAccount()
             }
             searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
         }

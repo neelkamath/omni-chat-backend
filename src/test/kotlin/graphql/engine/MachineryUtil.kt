@@ -20,7 +20,7 @@ fun executeGraphQlViaEngine(
     userId: String? = null
 ): GraphQlResponse {
     val builder = ExecutionInput.Builder().query(query).context(userId)
-    if (variables != null) objectMapper.convertValue<Map<String, Any>>(variables).let(builder::variables)
+    variables?.let { objectMapper.convertValue<Map<String, Any>>(it).let(builder::variables) }
     val spec = buildSpecification(graphQl.execute(builder))
     return objectMapper.convertValue(spec)
 }

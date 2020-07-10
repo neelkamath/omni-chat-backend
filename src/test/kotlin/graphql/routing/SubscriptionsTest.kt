@@ -89,6 +89,7 @@ class SubscriptionsTest : FunSpec({
             val (owner, user) = createVerifiedUsers(2)
             subscribeToContacts(owner.accessToken) { }
             subscribeToContacts(owner.accessToken) { incoming ->
+                parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(owner.info.id, setOf(user.info.id))
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()

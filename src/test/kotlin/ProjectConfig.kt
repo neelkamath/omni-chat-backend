@@ -17,6 +17,7 @@ object ProjectConfig : AbstractProjectConfig() {
         configureObjectMapper()
         setUpAuthForTests()
         setUpDb()
+        wipe() // If previously run tests were cancelled, the data wouldn't have been wiped.
     }
 
     override fun afterAll() {
@@ -27,9 +28,12 @@ object ProjectConfig : AbstractProjectConfig() {
 
 private object AppListener : TestListener {
     override suspend fun afterTest(testCase: TestCase, result: TestResult) {
-        if (testCase.type == TestType.Test) {
-            wipeDb()
-            wipeAuth()
-        }
+        if (testCase.type == TestType.Test) wipe()
     }
+}
+
+/** Calls [wipeAuth] and [wipeDb]. */
+private fun wipe() {
+    wipeDb()
+    wipeAuth()
 }

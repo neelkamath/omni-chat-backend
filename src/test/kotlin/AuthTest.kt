@@ -114,7 +114,7 @@ class AuthTest : FunSpec({
             val (ownerSubscriber, contactSubscriber) = listOf(ownerId, contactId)
                 .map { contactsBroker.subscribe(ContactsAsset(it)).subscribeWith(TestSubscriber()) }
             updateUser(contactId, AccountUpdate())
-            ownerSubscriber.assertValue(UpdatedContact.fromUserId(contactId))
+            ownerSubscriber.assertValue(UpdatedContact.build(contactId))
             contactSubscriber.assertNoValues()
         }
 
@@ -130,7 +130,7 @@ class AuthTest : FunSpec({
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             updateUser(user1Id, AccountUpdate(firstName = "new name"))
-            adminSubscriber.assertValue(UpdatedAccount.fromUserId(user1Id))
+            adminSubscriber.assertValue(UpdatedAccount.build(user1Id))
             listOf(user1Subscriber, user2Subscriber).forEach { it.assertNoValues() }
         }
 
@@ -146,7 +146,7 @@ class AuthTest : FunSpec({
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             updateUser(user2Id, AccountUpdate())
-            user1Subscriber.assertValue(UpdatedAccount.fromUserId(user2Id))
+            user1Subscriber.assertValue(UpdatedAccount.build(user2Id))
             user2Subscriber.assertNoValues()
         }
 

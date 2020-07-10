@@ -36,7 +36,7 @@ fun executeGraphQlViaHttp(
     accessToken: String? = null
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(HttpMethod.Post, "query-or-mutation") {
-        if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         val body = GraphQlRequest(query, variables)
         setBody(objectMapper.writeValueAsString(body))
