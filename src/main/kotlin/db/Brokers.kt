@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.ContactsSubscription
-import com.neelkamath.omniChat.MessagesSubscription
-import com.neelkamath.omniChat.NewGroupChatsSubscription
-import com.neelkamath.omniChat.UpdatedChatsSubscription
+import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.tables.Contacts
+import com.neelkamath.omniChat.db.tables.GroupChatUsers
+import com.neelkamath.omniChat.db.tables.PrivateChats
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observer
@@ -59,12 +59,24 @@ val messagesBroker = Broker<MessagesAsset, MessagesSubscription>()
 
 data class ContactsAsset(val userId: String)
 
+/** @see [negotiateUserUpdate] */
 val contactsBroker = Broker<ContactsAsset, ContactsSubscription>()
 
 data class UpdatedChatsAsset(val userId: String)
 
+/** @see [negotiateUserUpdate] */
 val updatedChatsBroker = Broker<UpdatedChatsAsset, UpdatedChatsSubscription>()
 
 data class NewGroupChatsAsset(val userId: String)
 
 val newGroupChatsBroker = Broker<NewGroupChatsAsset, NewGroupChatsSubscription>()
+
+/** [Broker.notify]s [Broker.subscribe]rs via [contactsBroker] and [updatedChatsBroker] of the updated [userId]. */
+fun negotiateUserUpdate(userId: String) {
+    contactsBroker.notify(UpdatedContact.build(userId)) { userId in Contacts.readIdList(it.userId) }
+    updatedChatsBroker.notify(UpdatedAccount.build(userId)) {
+        val shareChat =
+            userId in PrivateChats.readOtherUserIdList(it.userId) || GroupChatUsers.areInSameChat(it.userId, userId)
+        it.userId != userId && shareChat
+    }
+}

@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChat.routing
 
 import com.neelkamath.omniChat.CreatedSubscription
 import com.neelkamath.omniChat.GraphQlRequest
@@ -13,8 +13,10 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
+import kotlinx.coroutines.time.delay
+import java.time.Duration
 
-class SubscriptionsTest : FunSpec({
+class GraphQlSubscriptionsTest : FunSpec({
     context("routeSubscription(Routing, String, GraphQlSubscription)") {
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             val query = """
@@ -91,6 +93,7 @@ class SubscriptionsTest : FunSpec({
             subscribeToContacts(owner.accessToken) { incoming ->
                 parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(owner.info.id, setOf(user.info.id))
+                delay(Duration.ofNanos(1)) // Await event emission.
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }

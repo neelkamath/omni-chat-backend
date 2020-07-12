@@ -1,13 +1,8 @@
 package com.neelkamath.omniChat
 
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.contactsBroker
 import com.neelkamath.omniChat.db.deleteUserFromDb
-import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.PrivateChats
+import com.neelkamath.omniChat.db.negotiateUserUpdate
 import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.db.updatedChatsBroker
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
@@ -167,20 +162,13 @@ private fun UsersResource.searchBy(
     emailAddress: String? = null
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
-/**
- * Clients who have [Broker.subscribe]d via [contactsBroker] and [updatedChatsBroker] will be [Broker.notify]d of the
- * user's [update].
- */
+/** Calls [negotiateUserUpdate]. */
 fun updateUser(id: String, update: AccountUpdate) {
     val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
-    updateUserRepresentation(user, update)
+    user.update(update)
     realm.users().get(id).update(user)
-    contactsBroker.notify(UpdatedContact.build(id)) { id in Contacts.readIdList(it.userId) }
-    updatedChatsBroker.notify(UpdatedAccount.build(id)) {
-        val shareChat = id in PrivateChats.readOtherUserIdList(it.userId) || GroupChatUsers.areInSameChat(it.userId, id)
-        it.userId != id && shareChat
-    }
+    negotiateUserUpdate(id)
 }
 
 fun isUsernameTaken(username: Username): Boolean {
@@ -194,15 +182,13 @@ fun deleteUser(id: String) {
     realm.users().delete(id)
 }
 
-/** [update]s the [user] object. */
-private fun updateUserRepresentation(user: UserRepresentation, update: AccountUpdate) {
-    user.apply {
-        update.username?.let { username = it.value }
-        update.password?.let { credentials = createCredentials(it) }
-        update.emailAddress?.let { email = it }
-        update.firstName?.let { firstName = it }
-        update.lastName?.let { lastName = it }
-    }
+/** Applies this [update]. */
+private fun UserRepresentation.update(update: AccountUpdate) {
+    update.username?.let { username = it.value }
+    update.password?.let { credentials = createCredentials(it) }
+    update.emailAddress?.let { email = it }
+    update.firstName?.let { firstName = it }
+    update.lastName?.let { lastName = it }
 }
 
 private fun createCredentials(password: Password): List<CredentialRepresentation> = listOf(

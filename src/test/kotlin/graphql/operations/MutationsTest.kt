@@ -5,13 +5,28 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+
+const val DELETE_PROFILE_PIC_QUERY = """
+    mutation DeleteProfilePic {
+        deleteProfilePic
+    }
+"""
+
+fun operateDeleteProfilePic(userId: String): GraphQlResponse =
+    executeGraphQlViaEngine(DELETE_PROFILE_PIC_QUERY, userId = userId)
+
+fun deleteProfilePic(userId: String): Placeholder {
+    val data = operateDeleteProfilePic(userId).data!!["deleteProfilePic"] as String
+    return objectMapper.convertValue(data)
+}
 
 const val CREATE_ACCOUNTS_QUERY = """
     mutation CreateAccount(${"$"}account: NewAccount!) {
@@ -259,6 +274,15 @@ fun errUpdateGroupChat(userId: String, update: GroupChatUpdate): String =
     operateUpdateGroupChat(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("deleteProfilePic(DataFetchingEnvironment)") {
+        test("The user's profile pic should be deleted") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            Users.setProfilePic(userId)
+            deleteProfilePic(userId)
+            Users.readProfilePic(userId).shouldBeNull()
+        }
+    }
+
     context("createAccount(DataFetchingEnvironment)") {
         test("Creating an account should save it to the auth system, and the DB") {
             val account = NewAccount(Username("username"), Password("password"), "username@example.com")
@@ -585,6 +609,7 @@ class MutationsTest : FunSpec({
                 isEmailVerified(id).shouldBeFalse()
                 firstName shouldBe accountBeforeUpdate.firstName
                 lastName shouldBe accountAfterUpdate.lastName
+                bio shouldBe accountBeforeUpdate.bio
             }
         }
 

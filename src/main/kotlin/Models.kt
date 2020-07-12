@@ -117,7 +117,8 @@ data class AccountUpdate(
     val password: Password? = null,
     val emailAddress: String? = null,
     val firstName: String? = null,
-    val lastName: String? = null
+    val lastName: String? = null,
+    val bio: String? = null
 )
 
 data class NewGroupChat(
@@ -196,11 +197,12 @@ data class UpdatedAccount(
     val username: Username,
     val emailAddress: String,
     val firstName: String? = null,
-    val lastName: String? = null
+    val lastName: String? = null,
+    val bio: String? = null
 ) : UpdatedChatsSubscription {
     companion object {
         fun build(userId: String): UpdatedAccount =
-            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName) }
+            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
     }
 }
 

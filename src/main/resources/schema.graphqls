@@ -145,6 +145,13 @@ type Mutation {
     deleteAccount: Placeholder!
 
     """
+    Deletes the user's profile pic.
+
+    You must send an access token with this request.
+    """
+    deleteProfilePic: Placeholder!
+
+    """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
     `MessageStatus.DELIVERED` record, the delivery status will be created.
 
@@ -353,12 +360,14 @@ type ExitedUser {
     userId: ID!
 }
 
+"""null fields correspond to the field not existing."""
 type UpdatedAccount {
     userId: ID!
     username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
+    bio: String
 }
 
 """
@@ -579,12 +588,14 @@ input Login {
     password: Password!
 }
 
+"""Only non-null fields will be updated."""
 input AccountUpdate {
     username: Username
     password: Password
     emailAddress: String
     firstName: String
     lastName: String
+    bio: String
 }
 
 input GroupChatUpdate {

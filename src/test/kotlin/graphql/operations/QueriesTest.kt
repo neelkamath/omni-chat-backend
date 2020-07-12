@@ -10,7 +10,7 @@ import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -474,13 +474,13 @@ class ChatMessagesDtoTest : FunSpec({
             testPagination(shouldDeleteMessage = true)
         }
 
+        test("Only the messages specified by the cursor and limit should be retrieved") {
+            testPagination(shouldDeleteMessage = false)
+        }
+
         test("If neither cursor nor limit are supplied, every message should be retrieved") {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
             searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList
-        }
-
-        test("Only the messages specified by the cursor and limit should be retrieved") {
-            testPagination(shouldDeleteMessage = false)
         }
     }
 })

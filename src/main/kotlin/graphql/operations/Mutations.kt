@@ -134,6 +134,12 @@ fun updateAccount(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+fun deleteProfilePic(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    Users.deleteProfilePic(env.userId!!)
+    return Placeholder
+}
+
 private fun wantsTakenUsername(userId: String, wantedUsername: Username?): Boolean =
     wantedUsername != null && readUserById(userId).username != wantedUsername && isUsernameTaken(wantedUsername)
 

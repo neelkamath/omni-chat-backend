@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChat.routing
 
 import com.neelkamath.omniChat.graphql.UnauthorizedException
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
@@ -16,7 +16,7 @@ import io.ktor.routing.post
 /**
  * Adds the HTTP POST `/query-or-mutation` endpoint to the [context], which deals with every GraphQL query and mutation.
  */
-fun routeQueriesAndMutations(context: Routing): Unit = with(context) {
+fun routeGraphQlQueriesAndMutations(context: Routing): Unit = with(context) {
     authenticate(optional = true) {
         post("query-or-mutation") {
             val builder = buildExecutionInput(call.receive(), call)

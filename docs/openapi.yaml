@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  version: 0.0.1
+  title: Omni Chat
+  description: Services supplementary to the GraphQL API such as image uploading.
+  contact:
+    name: Neel Kamath
+    url: https://github.com/neelkamath/omni-chat
+    email: neelkamathonline@gmail.com
+  license:
+    name: MIT
+    url: https://github.com/neelkamath/omni-chat/blob/master/LICENSE
+servers:
+  - url: http://localhost:80
+    description: You'll have to set up the server yourself.
+paths:
+  /profile-pic:
+    get:
+      tags: [profile]
+      description: Get the user's profile pic.
+      operationId: getProfilePic
+      responses:
+        '204':
+          description: The user doesn't have a profile pic.
+        '200':
+          description: The user's profile pic as a byte array.
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+    patch:
+      tags: [profile]
+      description: Update the user's profile pic.
+      operationId: patchProfilePic
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              description: Mustn't exceed 100 KiB.
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Pic updated.
+        '400':
+          description: Pic was bigger than 100 KiB.
+  /health-check:
+    get:
+      tags: [status]
+      description: Check if all systems are operational. For example, a backend developer building atop this service can
+        program the server to automatically restart when it becomes "unhealthy".
+      operationId: getHealthCheck
+      responses:
+        '204':
+          description: Healthy.
