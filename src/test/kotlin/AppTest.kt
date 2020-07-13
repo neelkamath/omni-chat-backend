@@ -3,19 +3,15 @@ package com.neelkamath.omniChat
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createMessage
-import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChat.routing.readGraphQlHttpResponse
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldNotHaveKey
 import io.kotest.matchers.shouldBe
-import io.ktor.application.Application
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.withTestApplication
 
 /**
  * Sanity tests for encoding.
@@ -24,20 +20,10 @@ import io.ktor.server.testing.withTestApplication
  * https://github.com/graphql-java/graphql-java/issues/1877 shows otherwise. Had these tests not existed, such an
  * encoding problem may not have been found until technical debt from the tool at fault had already accumulated.
  */
-class AppTest : FunSpec({
-    context("route(Routing)") {
-        test("A health check should respond with an HTTP status code of 204") {
-            withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }
-                .response
-                .status() shouldBe HttpStatusCode.NoContent
-        }
-    }
-})
-
 class EncodingTest : FunSpec({
     test("A message should allow using emoji and multiple languages") {
         val adminId = createVerifiedUsers(1)[0].info.id
-        val chatId = GroupChats.create(adminId, buildNewGroupChat())
+        val chatId = GroupChats.create(adminId)
         val message = TextMessage("\uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createMessage(adminId, chatId, message)
         Messages.readGroupChat(chatId)[0].node.text shouldBe message

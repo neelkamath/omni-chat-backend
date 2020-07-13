@@ -10,7 +10,7 @@ import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -25,7 +25,7 @@ const val CAN_DELETE_ACCOUNT_QUERY = """
     }
 """
 
-fun operateCanDeleteAccount(userId: String): GraphQlResponse =
+private fun operateCanDeleteAccount(userId: String): GraphQlResponse =
     executeGraphQlViaEngine(CAN_DELETE_ACCOUNT_QUERY, userId = userId)
 
 fun canDeleteAccount(userId: String): Boolean = operateCanDeleteAccount(userId).data!!["canDeleteAccount"] as Boolean
@@ -36,7 +36,7 @@ const val IS_EMAIL_ADDRESS_TAKEN_QUERY = """
     }
 """
 
-fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
+private fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
     executeGraphQlViaEngine(IS_EMAIL_ADDRESS_TAKEN_QUERY, mapOf("emailAddress" to emailAddress))
 
 fun isEmailAddressTaken(emailAddress: String): Boolean =
@@ -48,7 +48,7 @@ const val IS_USERNAME_TAKEN_QUERY = """
     }
 """
 
-fun operateIsUsernameTaken(username: Username): GraphQlResponse =
+private fun operateIsUsernameTaken(username: Username): GraphQlResponse =
     executeGraphQlViaEngine(IS_USERNAME_TAKEN_QUERY, mapOf("username" to username))
 
 fun isUsernameTaken(username: Username): Boolean = operateIsUsernameTaken(username).data!!["isUsernameTaken"] as Boolean
@@ -61,7 +61,7 @@ const val READ_ACCOUNT_QUERY = """
     }
 """
 
-fun operateReadAccount(userId: String): GraphQlResponse =
+private fun operateReadAccount(userId: String): GraphQlResponse =
     executeGraphQlViaEngine(READ_ACCOUNT_QUERY, userId = userId)
 
 fun readAccount(userId: String): Account {
@@ -85,7 +85,7 @@ const val READ_CHATS_QUERY = """
     }
 """
 
-fun operateReadChats(
+private fun operateReadChats(
     userId: String,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -135,7 +135,7 @@ const val READ_CHAT_QUERY = """
     }
 """
 
-fun operateReadChat(
+private fun operateReadChat(
     userId: String,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
@@ -194,7 +194,7 @@ const val READ_CONTACTS_QUERY = """
     }
 """
 
-fun operateReadContacts(userId: String, pagination: ForwardPagination? = null): GraphQlResponse =
+private fun operateReadContacts(userId: String, pagination: ForwardPagination? = null): GraphQlResponse =
     executeGraphQlViaEngine(
         READ_CONTACTS_QUERY,
         mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
@@ -214,7 +214,7 @@ const val REFRESH_TOKEN_SET_QUERY = """
     }
 """
 
-fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
+private fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
     executeGraphQlViaEngine(REFRESH_TOKEN_SET_QUERY, mapOf("refreshToken" to refreshToken))
 
 fun refreshTokenSet(refreshToken: String): TokenSet {
@@ -230,7 +230,7 @@ const val REQUEST_TOKEN_SET_QUERY = """
     }
 """
 
-fun operateRequestTokenSet(login: Login): GraphQlResponse =
+private fun operateRequestTokenSet(login: Login): GraphQlResponse =
     executeGraphQlViaEngine(REQUEST_TOKEN_SET_QUERY, mapOf("login" to login))
 
 fun requestTokenSet(login: Login): TokenSet {
@@ -248,7 +248,7 @@ const val SEARCH_CHAT_MESSAGES_QUERY = """
     }
 """
 
-fun operateSearchChatMessages(
+private fun operateSearchChatMessages(
     userId: String,
     chatId: Int,
     query: String,
@@ -299,7 +299,7 @@ const val SEARCH_CHATS_QUERY = """
     }
 """
 
-fun operateSearchChats(
+private fun operateSearchChats(
     userId: String,
     query: String,
     privateChatMessagesPagination: BackwardPagination? = null,
@@ -344,7 +344,7 @@ const val SEARCH_CONTACTS_QUERY = """
     }
 """
 
-fun operateSearchContacts(
+private fun operateSearchContacts(
     userId: String,
     query: String,
     pagination: ForwardPagination? = null
@@ -377,7 +377,7 @@ const val SEARCH_MESSAGES_QUERY = """
     }
 """
 
-fun operateSearchMessages(
+private fun operateSearchMessages(
     userId: String,
     query: String,
     chatMessagesPagination: BackwardPagination? = null,
@@ -427,7 +427,7 @@ const val SEARCH_USERS_QUERY = """
     }
 """
 
-fun operateSearchUsers(query: String, pagination: ForwardPagination? = null): GraphQlResponse =
+private fun operateSearchUsers(query: String, pagination: ForwardPagination? = null): GraphQlResponse =
     executeGraphQlViaEngine(
         SEARCH_USERS_QUERY,
         mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString())
@@ -452,7 +452,7 @@ class ChatMessagesDtoTest : FunSpec({
 
         fun createUtilizedChat(): AdminMessages {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val message = TextMessage("t")
             val messageIdList = (1..10).map { Messages.message(chatId, adminId, message) }
             return AdminMessages(adminId, message, messageIdList)
@@ -474,13 +474,13 @@ class ChatMessagesDtoTest : FunSpec({
             testPagination(shouldDeleteMessage = true)
         }
 
+        test("Only the messages specified by the cursor and limit should be retrieved") {
+            testPagination(shouldDeleteMessage = false)
+        }
+
         test("If neither cursor nor limit are supplied, every message should be retrieved") {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
             searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList
-        }
-
-        test("Only the messages specified by the cursor and limit should be retrieved") {
-            testPagination(shouldDeleteMessage = false)
         }
     }
 })
@@ -489,7 +489,7 @@ class QueriesTest : FunSpec({
     context("canDeleteAccount(DataFetchingEnvironment)") {
         test("An account should be deletable if the user is the admin of an empty group chat") {
             val userId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(userId, buildNewGroupChat())
+            GroupChats.create(userId)
             canDeleteAccount(userId).shouldBeTrue()
         }
 
@@ -652,8 +652,7 @@ class QueriesTest : FunSpec({
                 NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
             ).map {
                 createUser(it)
-                val userId = readUserByUsername(it.username).id
-                Account(userId, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
+                it.toAccount()
             }
             val userId = createVerifiedUsers(1)[0].info.id
             Contacts.create(userId, accounts.map { it.id }.toSet())
@@ -699,8 +698,7 @@ class QueriesTest : FunSpec({
                 NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
             ).map {
                 createUser(it)
-                val id = readUserByUsername(it.username).id
-                Account(id, it.username, it.emailAddress, it.bio, it.firstName, it.lastName)
+                it.toAccount()
             }
             searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
         }

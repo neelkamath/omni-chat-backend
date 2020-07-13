@@ -22,6 +22,11 @@ object GroupChats : Table() {
     /** Can have at most [MAX_DESCRIPTION_LENGTH]. */
     private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
 
+    /** The pic cannot exceed 100 KiB. */
+    const val MAX_PIC_BYTES = 100 * 1024
+
+    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
+
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
     fun isAdmin(userId: String, chatId: Int): Boolean = transact {
         select { GroupChats.id eq chatId }.first()[adminId] == userId
@@ -42,7 +47,8 @@ object GroupChats : Table() {
     }
 
     /**
-     * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via [newGroupChatsBroker].
+     * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via
+     * [newGroupChatsBroker].
      *
      * @return the [chat]'s ID after creating it.
      */
@@ -100,6 +106,7 @@ object GroupChats : Table() {
      * @see [GroupChatUsers.addUsers]
      * @see [GroupChatUsers.removeUsers]
      * @see [updateTitleAndDescription]
+     * @see [updatePic]
      */
     fun update(update: GroupChatUpdate) {
         val existingUserIdList =
@@ -130,9 +137,25 @@ object GroupChats : Table() {
      */
     private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transact {
         update({ GroupChats.id eq update.chatId }) { statement ->
-            if (update.title != null) statement[title] = update.title.value
-            if (update.description != null) statement[description] = update.description.value
+            update.title?.let { statement[title] = it.value }
+            update.description?.let { statement[description] = it.value }
         }
+    }
+
+    /**
+     * Deletes the [pic] if it's `null`. [Broker.subscribe]rs will be [Broker.notify]d of the [UpdatedGroupChat].
+     *
+     * @see [update]
+     */
+    fun updatePic(chatId: Int, pic: ByteArray?) {
+        transact {
+            update({ GroupChats.id eq chatId }) { it[this.pic] = pic }
+        }
+        updatedChatsBroker.notify(UpdatedGroupChat(chatId)) { isUserInChat(it.userId, chatId) }
+    }
+
+    fun readPic(chatId: Int): ByteArray? = transact {
+        select { GroupChats.id eq chatId }.first()[pic]
     }
 
     /**

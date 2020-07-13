@@ -10,16 +10,14 @@ The [spec](docs/spec.md) explains how Omni Chat differentiates itself from exist
 
 ## Installation
 
+1. Grab a [release](https://github.com/neelkamath/omni-chat/releases), and then continue these steps from the source code you downloaded.
 1. Install the [app](docs/install.md).
 1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on the [schema](src/main/resources/schema.graphqls).
 
 ## Usage
 
-Note that we use the term "auth" to refer to "authentication and authorization".
-
 - [Branding assets](branding)
 - [Changelog](docs/CHANGELOG.md)
-- [Releases](https://github.com/neelkamath/omni-chat/releases)
 
 ### [Running the App](docs/production.md)
 

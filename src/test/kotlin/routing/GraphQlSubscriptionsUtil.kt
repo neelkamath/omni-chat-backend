@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChat.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue

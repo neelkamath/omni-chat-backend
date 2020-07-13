@@ -12,6 +12,7 @@ Here is the usual flow for using this service.
 ## Notes
 
 - The base URL is http://localhost:80.
+- This service is primarily a [GraphQL](https://graphql.org/) API served over the HTTP and WebSocket protocols. There is also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. When you downloaded the [release](https://github.com/neelkamath/omni-chat/releases) assets, you would've gotten a file `redoc-static.html` which contains the REST API docs.
 - Unless explicitly states, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
@@ -20,9 +21,7 @@ Here is the usual flow for using this service.
 
 [JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/messages-subscription` endpoint for `Subscription.subscribeToMessages`, the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
 
-## GraphQL
-
-The service gets exposed as a [GraphQL](https://graphql.org/) API over the HTTP and WebSocket protocols. 
+## GraphQL API
 
 GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
 
@@ -145,7 +144,3 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
       }
     }
     ```
-   
-## Health Check
-
-There is an HTTP API endpoint `/health_check` which accepts the HTTP GET verb. It responds with the HTTP status code of 204 only if the server is "healthy". For example, a backend developer building atop this service can program the server to automatically restart when it becomes "unhealthy".

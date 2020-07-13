@@ -29,7 +29,7 @@ object Contacts : IntIdTable() {
             }
         }
         newContacts.forEach { userId ->
-            contactsBroker.notify(NewContact.fromUserId(userId)) { it.userId == ownerId }
+            contactsBroker.notify(NewContact.build(userId)) { it.userId == ownerId }
         }
     }
 

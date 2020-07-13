@@ -19,9 +19,6 @@ scalar GroupChatDescription
 """1-10,000 characters, of which at least one isn't whitespace."""
 scalar TextMessage
 
-"""A user's bio, which is at most 250 characters."""
-scalar Bio
-
 """
 GraphQL mandates data be returned for every operation, and data be present in every type. However, certain operations
 and types don't have relevant data. This type, which is an empty `String`, indicates such.
@@ -146,6 +143,22 @@ type Mutation {
     You must send an access token with this request.
     """
     deleteAccount: Placeholder!
+
+    """
+    Deletes the user's profile pic.
+
+    You must send an access token with this request.
+    """
+    deleteProfilePic: Placeholder!
+
+    """
+    Deletes the group chat's profile pic. The user must be the admin.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+
+    You must send an access token with this request.
+    """
+    deleteGroupChatPic(chatId: Int!): Placeholder!
 
     """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
@@ -331,13 +344,16 @@ union MessagesSubscription = CreatedSubscription
     | DeletionOfEveryMessage
     | UserChatMessagesRemoval
 
+"""An `UpdatedContact` might be sent if the contact's profile pic was updated."""
 union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
 
 """
-An `UpdatedAccount` represents the account of a user which was updated. The subscriber's account updates will not be
-included.
+An `UpdatedAccount` represents the account of a user which was updated. It's possible the user updated their profile
+pic. The subscriber's account updates will not be included.
 
 If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+
+An `UpdatedGroupChat` might be sent if the chat's pic was updated.
 """
 union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
@@ -356,12 +372,14 @@ type ExitedUser {
     userId: ID!
 }
 
+"""null fields correspond to the field not existing."""
 type UpdatedAccount {
     userId: ID!
     username: Username!
     emailAddress: String!
     firstName: String
     lastName: String
+    bio: String
 }
 
 """
@@ -429,36 +447,36 @@ interface AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
-    bio: Bio!
     firstName: String
     lastName: String
+    bio: String
 }
 
 type Account implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
-    bio: Bio!
     firstName: String
     lastName: String
+    bio: String
 }
 
 type NewContact implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
-    bio: Bio!
     firstName: String
     lastName: String
+    bio: String
 }
 
 type UpdatedContact implements AccountData {
     id: ID!
     username: Username!
     emailAddress: String!
-    bio: Bio!
     firstName: String
     lastName: String
+    bio: String
 }
 
 """
@@ -474,9 +492,9 @@ input NewAccount {
     username: Username!
     password: Password!
     emailAddress: String!
-    bio: Bio!
     firstName: String
     lastName: String
+    bio: String
 }
 
 type ChatMessages {
@@ -582,12 +600,14 @@ input Login {
     password: Password!
 }
 
+"""Only non-null fields will be updated."""
 input AccountUpdate {
     username: Username
     password: Password
     emailAddress: String
     firstName: String
     lastName: String
+    bio: String
 }
 
 input GroupChatUpdate {

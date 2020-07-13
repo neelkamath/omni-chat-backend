@@ -19,14 +19,19 @@ private object ChatDeserializer : JsonDeserializer<Chat>() {
     }
 }
 
+private object UsernameDeserializer : JsonDeserializer<Username>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Username =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::Username)
+}
+
 private object UsernameSerializer : JsonSerializer<Username>() {
     override fun serialize(username: Username, generator: JsonGenerator, provider: SerializerProvider): Unit =
         generator.writeString(username.value)
 }
 
-private object UsernameDeserializer : JsonDeserializer<Username>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): Username =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::Username)
+private object PasswordDeserializer : JsonDeserializer<Password>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Password =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::Password)
 }
 
 private object PasswordSerializer : JsonSerializer<Password>() {
@@ -34,9 +39,9 @@ private object PasswordSerializer : JsonSerializer<Password>() {
         generator.writeString(password.value)
 }
 
-private object PasswordDeserializer : JsonDeserializer<Password>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): Password =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::Password)
+private object GroupChatTitleDeserializer : JsonDeserializer<GroupChatTitle>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatTitle =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::GroupChatTitle)
 }
 
 private object GroupChatTitleSerializer : JsonSerializer<GroupChatTitle>() {
@@ -47,9 +52,9 @@ private object GroupChatTitleSerializer : JsonSerializer<GroupChatTitle>() {
     ): Unit = generator.writeString(groupChatTitle.value)
 }
 
-private object GroupChatTitleDeserializer : JsonDeserializer<GroupChatTitle>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatTitle =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::GroupChatTitle)
+private object GroupChatDescriptionDeserializer : JsonDeserializer<GroupChatDescription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatDescription =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::GroupChatDescription)
 }
 
 private object GroupChatDescriptionSerializer : JsonSerializer<GroupChatDescription>() {
@@ -60,29 +65,14 @@ private object GroupChatDescriptionSerializer : JsonSerializer<GroupChatDescript
     ): Unit = generator.writeString(groupChatDescription.value)
 }
 
-private object GroupChatDescriptionDeserializer : JsonDeserializer<GroupChatDescription>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatDescription =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::GroupChatDescription)
-}
-
-private object TextMessageSerializer : JsonSerializer<TextMessage>() {
-    override fun serialize(textMessage: TextMessage, generator: JsonGenerator, provider: SerializerProvider): Unit =
-        generator.writeString(textMessage.value)
-}
-
 private object TextMessageDeserializer : JsonDeserializer<TextMessage>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): TextMessage =
         parser.codec.readTree<JsonNode>(parser).textValue().let(::TextMessage)
 }
 
-private object BioSerializer : JsonSerializer<Bio>() {
-    override fun serialize(textMessage: Bio, generator: JsonGenerator, provider: SerializerProvider): Unit =
+private object TextMessageSerializer : JsonSerializer<TextMessage>() {
+    override fun serialize(textMessage: TextMessage, generator: JsonGenerator, provider: SerializerProvider): Unit =
         generator.writeString(textMessage.value)
-}
-
-private object BioDeserializer : JsonDeserializer<Bio>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): Bio =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::Bio)
 }
 
 /** Updates the [objectMapper] to provide the extra functionality the test source set requires. */
@@ -95,7 +85,6 @@ fun configureObjectMapper() {
         .register(GroupChatTitle::class.java, GroupChatTitleDeserializer, GroupChatTitleSerializer)
         .register(GroupChatDescription::class.java, GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
         .register(TextMessage::class.java, TextMessageDeserializer, TextMessageSerializer)
-        .register(Bio::class.java, BioDeserializer, BioSerializer)
 }
 
 /** Convenience function for [ObjectMapper.registerModule]. Registers the [clazz]'s [serializer] and [deserializer]. */
@@ -105,7 +94,7 @@ private fun <T> ObjectMapper.register(
     serializer: JsonSerializer<T>? = null
 ): ObjectMapper {
     val module = SimpleModule()
-    if (serializer != null) module.addSerializer(clazz, serializer)
-    if (deserializer != null) module.addDeserializer(clazz, deserializer)
+    serializer?.let { module.addSerializer(clazz, it) }
+    deserializer?.let { module.addDeserializer(clazz, it) }
     return registerModule(module)
 }

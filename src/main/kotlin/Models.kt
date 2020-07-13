@@ -3,11 +3,14 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.Users
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
 typealias Cursor = Int
+
+enum class InvalidGroupChatPicReason { NONEXISTENT_CHAT, PIC_TOO_BIG }
+
+data class InvalidGroupChatPic(val reason: InvalidGroupChatPicReason)
 
 /**
  * @throws [IllegalArgumentException] if the [value] isn't lowercase, isn't shorter than 256 characters, or doesn't
@@ -51,27 +54,27 @@ data class NewAccount(
     val username: Username,
     val password: Password,
     val emailAddress: String,
-    val bio: Bio = Bio(""),
     val firstName: String? = null,
-    val lastName: String? = null
+    val lastName: String? = null,
+    val bio: String? = null
 )
 
 interface AccountData {
     val id: String
     val username: Username
     val emailAddress: String
-    val bio: Bio
     val firstName: String?
     val lastName: String?
+    val bio: String?
 }
 
 data class Account(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
-    override val bio: Bio,
     override val firstName: String? = null,
-    override val lastName: String? = null
+    override val lastName: String? = null,
+    override val bio: String? = null
 ) : AccountData {
     /**
      * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
@@ -87,13 +90,13 @@ data class NewContact(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
-    override val bio: Bio,
     override val firstName: String? = null,
-    override val lastName: String? = null
+    override val lastName: String? = null,
+    override val bio: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
-        fun fromUserId(userId: String): NewContact =
-            with(readUserById(userId)) { NewContact(id, username, emailAddress, bio, firstName, lastName) }
+        fun build(userId: String): NewContact =
+            with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
@@ -101,13 +104,13 @@ data class UpdatedContact(
     override val id: String,
     override val username: Username,
     override val emailAddress: String,
-    override val bio: Bio,
     override val firstName: String? = null,
-    override val lastName: String? = null
+    override val lastName: String? = null,
+    override val bio: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
-        fun fromUserId(userId: String): UpdatedContact =
-            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, bio, firstName, lastName) }
+        fun build(userId: String): UpdatedContact =
+            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
@@ -118,7 +121,8 @@ data class AccountUpdate(
     val password: Password? = null,
     val emailAddress: String? = null,
     val firstName: String? = null,
-    val lastName: String? = null
+    val lastName: String? = null,
+    val bio: String? = null
 )
 
 data class NewGroupChat(
@@ -138,14 +142,6 @@ private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?)
 }
 
 interface UpdatedChatsSubscription
-
-/** @throws [IllegalArgumentException] if the [value] is longer than [Users.MAX_BIO_LENGTH]. */
-data class Bio(val value: String) {
-    init {
-        if (value.length > Users.MAX_BIO_LENGTH)
-            throw IllegalArgumentException("The bio ($value) must be at most ${Users.MAX_BIO_LENGTH} characters.")
-    }
-}
 
 /**
  * @throws [IllegalArgumentException] if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at least one
@@ -205,11 +201,12 @@ data class UpdatedAccount(
     val username: Username,
     val emailAddress: String,
     val firstName: String? = null,
-    val lastName: String? = null
+    val lastName: String? = null,
+    val bio: String? = null
 ) : UpdatedChatsSubscription {
     companion object {
-        fun fromUserId(userId: String): UpdatedAccount =
-            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName) }
+        fun build(userId: String): UpdatedAccount =
+            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
     }
 }
 

@@ -1,1 +1,2 @@
-Download the `Source code` asset, unpack it, and read its `README.md`. It links to the docs, changelog, and instructions to run the app.
+- Download the `Source code` asset, unpack it, and read its `README.md`. It links to the docs, changelog, and instructions to run the app.
+- Download and open the `redoc-static.html` in your browser to view the REST API docs.

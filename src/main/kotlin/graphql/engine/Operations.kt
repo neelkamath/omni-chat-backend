@@ -28,6 +28,8 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("deleteAccount", ::deleteAccount)
     .dataFetcher("createAccount", ::createAccount)
     .dataFetcher("updateAccount", ::updateAccount)
+    .dataFetcher("deleteProfilePic", ::deleteProfilePic)
+    .dataFetcher("deleteGroupChatPic", ::deleteGroupChatPic)
     .dataFetcher("sendEmailAddressVerification", ::sendEmailAddressVerification)
     .dataFetcher("resetPassword", ::resetPassword)
     .dataFetcher("leaveGroupChat", ::leaveGroupChat)

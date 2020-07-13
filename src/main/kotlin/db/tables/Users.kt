@@ -2,36 +2,42 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.negotiateUserUpdate
+import com.neelkamath.omniChat.db.tables.Users.id
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 
 /**
- * The ID and custom fields of every user in the auth system. The ID is useful because the auth system doesn't give us
- * unique integer IDs, which are required to correctly paginate.
+ * Stores info which would be impractical to store in Keycloak's custom user attributes. The [id] can be used for
+ * pagination.
  */
 object Users : IntIdTable() {
     private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
 
-    /** The bio cannot exceed this many characters. */
-    const val MAX_BIO_LENGTH = 250
+    /** Pics cannot exceed 100 KiB. */
+    const val MAX_PIC_BYTES = 100 * 1024
 
-    /** At most [MAX_BIO_LENGTH] characters. */
-    private val bio: Column<String> = varchar("bio", MAX_BIO_LENGTH)
+    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** @see [createUser] */
-    fun create(userId: String, bio: Bio): Unit = transact {
+    fun create(userId: String, pic: ByteArray? = null): Unit = transact {
         insert {
             it[this.userId] = userId
-            it[this.bio] = bio.value
+            it[this.pic] = pic
         }
     }
 
-    fun readBio(userId: String): Bio = transact {
-        select { Users.userId eq userId }.first()[bio].let(::Bio)
+    /** Deletes the pic if [pic] is `null`. Calls [negotiateUserUpdate]. */
+    fun updatePic(userId: String, pic: ByteArray?) {
+        transact {
+            update({ Users.userId eq userId }) { it[Users.pic] = pic }
+        }
+        negotiateUserUpdate(userId)
+    }
+
+    fun readPic(userId: String): ByteArray? = transact {
+        select { Users.userId eq userId }.first()[pic]
     }
 
     private fun readPrimaryKey(userId: String): Int = transact {

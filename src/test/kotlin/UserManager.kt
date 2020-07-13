@@ -10,7 +10,7 @@ data class VerifiedUser(val info: Account, val password: Password) {
     companion object {
         fun build(account: NewAccount): VerifiedUser = with(account) {
             val userId = readUserByUsername(username).id
-            VerifiedUser(Account(userId, username, emailAddress, bio, firstName, lastName), password)
+            VerifiedUser(Account(userId, username, emailAddress, firstName, lastName, bio), password)
         }
     }
 }
@@ -19,15 +19,14 @@ data class VerifiedUser(val info: Account, val password: Password) {
  * Returns the [count] of users after creating them, and verifying their emails.
  *
  * Regardless of how many times this is called, the user returned is guaranteed to be unique. The username, password,
- * email, bio, first name, and last name use the format `username<INTEGER>`, `password<INTEGER>`,
- * `<USERNAME>@example.com`, `"bio"`, `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
+ * email, first name, and last name use the format `username<INTEGER>`, `password<INTEGER>`, `<USERNAME>@example.com`
+ * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
  */
 fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
     val account = NewAccount(
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",
-        Bio("bio"),
         "firstName$userCount",
         "lastName$userCount"
     )

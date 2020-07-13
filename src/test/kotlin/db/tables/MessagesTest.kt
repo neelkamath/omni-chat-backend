@@ -252,7 +252,7 @@ class MessagesTest : FunSpec({
             """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val now = LocalDateTime.now()
             Messages.create(chatId, adminId, TextMessage("t"))
             Messages.existsFrom(chatId, now).shouldBeTrue()
@@ -266,7 +266,7 @@ class MessagesTest : FunSpec({
             """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             Messages.create(chatId, adminId, TextMessage("t"))
             Messages.existsFrom(chatId, LocalDateTime.now()).shouldBeFalse()
         }
@@ -288,7 +288,7 @@ class MessagesTest : FunSpec({
         test("Messages should only be retrieved from the specified chat") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val create = {
-                GroupChats.create(adminId, buildNewGroupChat()).also { Messages.create(it, adminId, TextMessage("t")) }
+                GroupChats.create(adminId).also { Messages.create(it, adminId, TextMessage("t")) }
             }
             create()
             Messages.readGroupChat(create()) shouldHaveSize 1
@@ -296,14 +296,14 @@ class MessagesTest : FunSpec({
 
         test("Messages should be retrieved in the order of their creation.") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messagesIdList = (1..3).map { Messages.message(chatId, adminId, TextMessage("t")) }
             Messages.readGroupChat(chatId).map { it.cursor } shouldBe messagesIdList
         }
 
         test("Every message should be retrieved if neither the cursor nor the limit are supplied") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageIdList = (1..3).map { Messages.message(chatId, adminId, TextMessage("t")) }
             Messages.readGroupChat(chatId).map { it.cursor } shouldBe messageIdList
         }
@@ -316,7 +316,7 @@ class MessagesTest : FunSpec({
             """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageIdList = (1..10).map { Messages.message(chatId, adminId, TextMessage("t")) }
             val last = 3
             val cursorIndex = 7
@@ -334,7 +334,7 @@ class MessagesTest : FunSpec({
             """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageIdList = (1..5).map { Messages.message(chatId, adminId, TextMessage("t")) }
             val last = 3
             Messages.readGroupChat(chatId, BackwardPagination(last)).map { it.cursor } shouldBe
@@ -349,7 +349,7 @@ class MessagesTest : FunSpec({
             """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messages = 5
             val messageIdList = (1..messages).map { Messages.message(chatId, adminId, TextMessage("t")) }
             val index = 3
@@ -360,7 +360,7 @@ class MessagesTest : FunSpec({
 
         test("Using a deleted message's cursor shouldn't cause pagination to behave differently") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageIdList = (1..10).map { Messages.message(chatId, adminId, TextMessage("t")) }
             val index = 5
             val deletedMessageId = messageIdList[index]
@@ -392,7 +392,7 @@ class MessagesTest : FunSpec({
 
         fun createChat(): CreatedChat {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val message = { Messages.message(chatId, adminId, TextMessage("t")) }
             return CreatedChat(chatId, firstMessageId = message(), secondMessageId = message())
         }
@@ -433,7 +433,7 @@ class MessagesTest : FunSpec({
     context("readCursor(Int, CursorType, Filter)") {
         fun assertCursor(hasMessage: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageId = if (hasMessage) Messages.message(chatId, adminId, TextMessage("t")) else null
             with(Messages.readGroupChatConnection(chatId).pageInfo) {
                 startCursor shouldBe messageId
@@ -449,7 +449,7 @@ class MessagesTest : FunSpec({
 
         test("The first and last message IDs should be retrieved for the start and end cursors respectively") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val messageIdList = (1..5).map { Messages.message(chatId, adminId, TextMessage("t")) }
             with(Messages.readGroupChatConnection(chatId).pageInfo) {
                 startCursor shouldBe messageIdList.first()
