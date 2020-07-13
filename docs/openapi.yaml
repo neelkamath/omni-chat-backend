@@ -12,39 +12,69 @@ info:
     url: https://github.com/neelkamath/omni-chat/blob/master/LICENSE
 servers:
   - url: http://localhost:80
-    description: You'll have to set up the server yourself.
+    description: You'll have to run the server yourself.
 paths:
   /profile-pic:
+    description: A user's profile pic which doesn't exceed 100 KiB.
     get:
-      tags: [profile]
+      tags: [profilePic]
       description: Get the user's profile pic.
       operationId: getProfilePic
+      parameters:
+        - $ref: '#/components/parameters/UserId'
       responses:
+        '200':
+          $ref: '#/components/responses/Pic'
         '204':
           description: The user doesn't have a profile pic.
-        '200':
-          description: The user's profile pic as a byte array.
-          content:
-            image/*:
-              schema:
-                type: string
-                format: binary
+        '400':
+          description: The user doesn't exist.
     patch:
-      tags: [profile]
+      tags: [profilePic]
       description: Update the user's profile pic.
       operationId: patchProfilePic
+      security:
+        - bearerAuth: []
       requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              description: Mustn't exceed 100 KiB.
-              type: string
-              format: binary
+        $ref: '#/components/requestBodies/PicUpdate'
       responses:
         '204':
           description: Pic updated.
         '400':
-          description: Pic was bigger than 100 KiB.
+          $ref: '#/components/responses/InvalidPic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /group-chat-pic:
+    get:
+      tags: [groupChatPic]
+      description: Retrieves the group chat's pic.
+      operationId: getGroupChatPic
+      parameters:
+        - $ref: '#/components/parameters/GroupChatId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Pic'
+        '204':
+          description: The chat doesn't have a pic.
+        '400':
+          description: The chat doesn't exist.
+    patch:
+      tags: [groupChatPic]
+      description: Update the group chat's pic. The user must be the admin.
+      operationId: patchGroupChatPic
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GroupChatId'
+      requestBody:
+        $ref: '#/components/requestBodies/PicUpdate'
+      responses:
+        '204':
+          description: Pic updated.
+        '400':
+          $ref: '#/components/responses/InvalidGroupChatPicUpdate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /health-check:
     get:
       tags: [status]
@@ -54,3 +84,58 @@ paths:
       responses:
         '204':
           description: Healthy.
+components:
+  schemas:
+    InvalidGroupChatPicUpdate:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum: [NONEXISTENT_CHAT, PIC_TOO_BIG]
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    InvalidGroupChatPicUpdate:
+      description: The group chat's pic couldn't be updated because the chat didn't exist, or the pic was larger than
+        100 KiB.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
+    Pic:
+      description: Pic.
+      content:
+        image/*:
+          schema:
+            type: string
+            format: binary
+    InvalidPic:
+      description: Pic was bigger than 100 KiB.
+    Unauthorized:
+      description: Invalid or missing auth token.
+  requestBodies:
+    PicUpdate:
+      content:
+        multipart/form-data:
+          schema:
+            description: Mustn't exceed 100 KiB.
+            type: string
+            format: binary
+  parameters:
+    UserId:
+      name: user-id
+      in: query
+      description: The ID of the user the pic is to be retrieved from.
+      required: true
+      schema:
+        type: string
+    GroupChatId:
+      name: chat-id
+      in: query
+      description: Group chat ID.
+      required: true
+      schema:
+        type: string

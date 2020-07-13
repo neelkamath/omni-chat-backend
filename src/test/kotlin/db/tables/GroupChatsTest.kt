@@ -40,7 +40,7 @@ class GroupChatsTest : FunSpec({
 
         test("Setting the admin to a user who isn't in the chat should throw an exception") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             shouldThrowExactly<IllegalArgumentException> { GroupChats.setAdmin(chatId, "new admin ID") }
         }
     }
@@ -56,7 +56,7 @@ class GroupChatsTest : FunSpec({
 
         test("A subscriber should be notified when the chat is updated") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             val subscriber = updatedChatsBroker.subscribe(UpdatedChatsAsset(adminId)).subscribeWith(TestSubscriber())
             val update = GroupChatUpdate(chatId, GroupChatTitle("New Title"), newUserIdList = listOf(userId))
             GroupChats.update(update)
@@ -74,6 +74,17 @@ class GroupChatsTest : FunSpec({
         }
     }
 
+    context("updatePic(Int, ByteArray?)") {
+        test("Updating the chat's pic should notify subscribers") {
+            val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(adminId)
+            val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            adminSubscriber.assertValue(UpdatedGroupChat(chatId))
+            nonParticipantSubscriber.assertNoValues()
+        }
+    }
+
     context("removeUsers(Int, List<String>)") {
         test("Messages from a user who left should be retained") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
@@ -87,7 +98,7 @@ class GroupChatsTest : FunSpec({
     context("delete(Int)") {
         test("Deleting a nonempty chat should throw an exception") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId, buildNewGroupChat())
+            val chatId = GroupChats.create(adminId)
             shouldThrowExactly<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
 
@@ -112,7 +123,7 @@ class GroupChatsTest : FunSpec({
 
         test("An admin of an empty group chat shouldn't be the admin of a nonempty group chat") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(adminId, buildNewGroupChat())
+            GroupChats.create(adminId)
             GroupChats.isNonemptyChatAdmin(adminId).shouldBeFalse()
         }
 
@@ -126,7 +137,7 @@ class GroupChatsTest : FunSpec({
     context("queryUserChatEdges(String, String)") {
         test("Chats should be queried") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(adminId, buildNewGroupChat()) }
+            val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(adminId) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
                 val id = Messages.message(it, adminId, TextMessage(queryText))

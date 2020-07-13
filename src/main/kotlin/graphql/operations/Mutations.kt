@@ -136,7 +136,16 @@ fun updateAccount(env: DataFetchingEnvironment): Placeholder {
 
 fun deleteProfilePic(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    Users.deleteProfilePic(env.userId!!)
+    Users.updatePic(env.userId!!, pic = null)
+    return Placeholder
+}
+
+fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!Chats.exists(chatId)) throw InvalidChatIdException
+    if (!GroupChats.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    GroupChats.updatePic(chatId, pic = null)
     return Placeholder
 }
 

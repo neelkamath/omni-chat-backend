@@ -15,29 +15,29 @@ import org.jetbrains.exposed.sql.*
 object Users : IntIdTable() {
     private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
 
-    /** Profile pics cannot exceed 100 KiB. */
-    const val MAX_PROFILE_PIC_BYTES = 100 * 1024
+    /** Pics cannot exceed 100 KiB. */
+    const val MAX_PIC_BYTES = 100 * 1024
 
-    private val profilePic: Column<ByteArray?> = binary("profile_pic", MAX_PROFILE_PIC_BYTES).nullable()
+    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** @see [createUser] */
-    fun create(userId: String, profilePic: ByteArray? = null): Unit = transact {
+    fun create(userId: String, pic: ByteArray? = null): Unit = transact {
         insert {
             it[this.userId] = userId
-            it[this.profilePic] = profilePic
+            it[this.pic] = pic
         }
     }
 
-    /** Calls [negotiateUserUpdate]. */
-    fun updateProfilePic(userId: String, profilePic: ByteArray) {
+    /** Deletes the pic if [pic] is `null`. Calls [negotiateUserUpdate]. */
+    fun updatePic(userId: String, pic: ByteArray?) {
         transact {
-            update({ Users.userId eq userId }) { it[Users.profilePic] = profilePic }
+            update({ Users.userId eq userId }) { it[Users.pic] = pic }
         }
         negotiateUserUpdate(userId)
     }
 
-    fun readProfilePic(userId: String): ByteArray? = transact {
-        select { Users.userId eq userId }.first()[profilePic]
+    fun readPic(userId: String): ByteArray? = transact {
+        select { Users.userId eq userId }.first()[pic]
     }
 
     private fun readPrimaryKey(userId: String): Int = transact {
@@ -61,16 +61,5 @@ object Users : IntIdTable() {
      */
     fun delete(userId: String): Unit = transact {
         deleteWhere { Users.userId eq userId }
-    }
-
-    /**
-     * If the [userId] has a profile pic, it'll be deleted, and [negotiateUserUpdate] will be called. Otherwise, nothing
-     * will happen.
-     */
-    fun deleteProfilePic(userId: String) {
-        transact {
-            update({ Users.userId eq userId }) { it[profilePic] = null }
-        }
-        negotiateUserUpdate(userId)
     }
 }

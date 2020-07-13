@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createMessage
@@ -22,7 +23,7 @@ import io.kotest.matchers.shouldBe
 class EncodingTest : FunSpec({
     test("A message should allow using emoji and multiple languages") {
         val adminId = createVerifiedUsers(1)[0].info.id
-        val chatId = GroupChats.create(adminId, buildNewGroupChat())
+        val chatId = GroupChats.create(adminId)
         val message = TextMessage("\uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createMessage(adminId, chatId, message)
         Messages.readGroupChat(chatId)[0].node.text shouldBe message

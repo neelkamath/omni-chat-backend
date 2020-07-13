@@ -20,8 +20,6 @@ object InvalidChatIdException : GraphQlDocDataException("INVALID_CHAT_ID")
 
 object InvalidGroupChatUsersException : GraphQlDocDataException("INVALID_GROUP_CHAT_USERS")
 
-object MissingNewAdminIdException : GraphQlDocDataException("MISSING_NEW_ADMIN_ID")
-
 object InvalidNewAdminIdException : GraphQlDocDataException("INVALID_NEW_ADMIN_ID")
 
 object UnregisteredEmailAddressException : GraphQlDocDataException("UNREGISTERED_EMAIL_ADDRESS")

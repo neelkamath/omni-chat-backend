@@ -152,6 +152,15 @@ type Mutation {
     deleteProfilePic: Placeholder!
 
     """
+    Deletes the group chat's profile pic. The user must be the admin.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+
+    You must send an access token with this request.
+    """
+    deleteGroupChatPic(chatId: Int!): Placeholder!
+
+    """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
     `MessageStatus.DELIVERED` record, the delivery status will be created.
 
@@ -335,13 +344,16 @@ union MessagesSubscription = CreatedSubscription
     | DeletionOfEveryMessage
     | UserChatMessagesRemoval
 
+"""An `UpdatedContact` might be sent if the contact's profile pic was updated."""
 union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
 
 """
-An `UpdatedAccount` represents the account of a user which was updated. The subscriber's account updates will not be
-included.
+An `UpdatedAccount` represents the account of a user which was updated. It's possible the user updated their profile
+pic. The subscriber's account updates will not be included.
 
 If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+
+An `UpdatedGroupChat` might be sent if the chat's pic was updated.
 """
 union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 

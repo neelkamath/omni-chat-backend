@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 
 /** The IDs for [PrivateChats] and [GroupChats]. */
 object Chats : IntIdTable() {
@@ -14,5 +15,9 @@ object Chats : IntIdTable() {
 
     fun delete(id: Int): Unit = transact {
         deleteWhere { Chats.id eq id }
+    }
+
+    fun exists(id: Int): Boolean = transact {
+        !select { Chats.id eq id }.empty()
     }
 }

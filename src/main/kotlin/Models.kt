@@ -8,6 +8,10 @@ import java.time.LocalDateTime
 
 typealias Cursor = Int
 
+enum class InvalidGroupChatPicReason { NONEXISTENT_CHAT, PIC_TOO_BIG }
+
+data class InvalidGroupChatPic(val reason: InvalidGroupChatPicReason)
+
 /**
  * @throws [IllegalArgumentException] if the [value] isn't lowercase, isn't shorter than 256 characters, or doesn't
  * contain non-whitespace characters.
