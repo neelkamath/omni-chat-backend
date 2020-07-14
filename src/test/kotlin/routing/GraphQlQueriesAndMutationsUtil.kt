@@ -22,11 +22,9 @@ fun readGraphQlHttpResponse(
 ): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(objectMapper::readValue)
 
 /**
- * Executes GraphQL queries and mutations via the HTTP interface.
+ * Executes GraphQL queries and mutations via the HTTP interface. The [variables] are for the query, which is the
+ * GraphQL doc.
  *
- * @param[query] GraphQL document.
- * @param[variables] GraphQL variables for the [query].
- * @return the HTTP response of the GraphQL query.
  * @see [readGraphQlHttpResponse]
  * @see [executeGraphQlViaEngine]
  */

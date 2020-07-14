@@ -1,12 +1,15 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.MessageDateTimeStatus
+import com.neelkamath.omniChat.MessageStatus
+import com.neelkamath.omniChat.MessagesSubscription
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import java.time.LocalDateTime
 
-/** When [Messages] were delivered/read. */
+/** When [Messages] were delivered and read. */
 object MessageStatuses : Table() {
     override val tableName = "message_statuses"
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
@@ -21,7 +24,7 @@ object MessageStatuses : Table() {
     )
 
     /** The user recording the [status]. */
-    private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
+    private val userId: Column<Int> = integer("user_id").references(Users.id)
 
     /** When the [status] was recorded. */
     private val dateTime: Column<LocalDateTime> = datetime("date_time").clientDefault { LocalDateTime.now() }
@@ -39,7 +42,7 @@ object MessageStatuses : Table() {
      * - The status has already been recorded (you can check if the [status] [exists]).
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
      */
-    fun create(messageId: Int, userId: String, status: MessageStatus) {
+    fun create(messageId: Int, userId: Int, status: MessageStatus) {
         if (!Messages.isVisible(messageId, userId))
             throw IllegalArgumentException(
                 """
@@ -64,7 +67,7 @@ object MessageStatuses : Table() {
      * Inserts the status into the DB, and notifies clients who have [Broker.subscribe]d to [MessagesSubscription]s via
      * [messagesBroker].
      */
-    private fun insertAndNotify(messageId: Int, userId: String, status: MessageStatus) {
+    private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transact {
             insert {
                 it[MessageStatuses.messageId] = messageId
@@ -77,7 +80,7 @@ object MessageStatuses : Table() {
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
-    fun exists(messageId: Int, userId: String, status: MessageStatus): Boolean = !transact {
+    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = !transact {
         select {
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
@@ -94,16 +97,16 @@ object MessageStatuses : Table() {
     fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Deletes every status the [userId] created in the [chatId]. */
-    fun deleteUserChatStatuses(chatId: Int, userId: String) = transact {
+    fun deleteUserChatStatuses(chatId: Int, userId: Int) = transact {
         deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
     /** Deletes every status the [userId] created. */
-    fun deleteUserStatuses(userId: String): Unit = transact {
+    fun deleteUserStatuses(userId: Int): Unit = transact {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
-    /** @return the [MessageDateTimeStatus]es for the [messageId]. */
+    /** [messageId]'s [MessageDateTimeStatus]es. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(readUserById(it[userId]), it[dateTime], it[status]) }

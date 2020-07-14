@@ -63,7 +63,7 @@
 ### Development
 
 ```
-npx redoc-cli serve docs/spec/openapi.yaml -w
+npx redoc-cli serve docs/openapi.yaml -w
 ```
 
 Open http://127.0.0.1:8080 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.

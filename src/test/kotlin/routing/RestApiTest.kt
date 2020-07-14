@@ -26,8 +26,8 @@ class RestApiTest : FunSpec({
     }
 
     context("getProfilePic(Route)") {
-        fun getProfilePic(userId: String): TestApplicationResponse = withTestApplication(Application::main) {
-            val parameters = listOf("user-id" to userId).formUrlEncode()
+        fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplication(Application::main) {
+            val parameters = listOf("user-id" to userId.toString()).formUrlEncode()
             handleRequest(HttpMethod.Get, "profile-pic?$parameters").response
         }
 
@@ -46,7 +46,7 @@ class RestApiTest : FunSpec({
         }
 
         test("Requesting the pic of a nonexistent user should cause an HTTP status code of 400 to be received") {
-            getProfilePic("user ID").status() shouldBe HttpStatusCode.BadRequest
+            getProfilePic(userId = 1).status() shouldBe HttpStatusCode.BadRequest
         }
     }
 

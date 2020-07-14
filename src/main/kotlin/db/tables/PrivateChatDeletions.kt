@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.USER_ID_LENGTH
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -19,18 +18,19 @@ object PrivateChatDeletions : IntIdTable() {
     override val tableName get() = "private_chat_deletions"
     private val chatId: Column<Int> = integer("chat_id").references(PrivateChats.id)
     private val dateTime: Column<LocalDateTime> = datetime("date_time").clientDefault { LocalDateTime.now() }
-    private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
+    private val userId: Column<Int> = integer("user_id").references(Users.id)
 
     /**
      * Deletes the [chatId] for the [userId].
      *
      * Commonly deleted [Messages] and [MessageStatuses] are deleted. The user's older [PrivateChatDeletions] are
      * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
-     * they've deleted it, the [chatId] is deleted from [PrivateChats].
+     * they've deleted it, the [chatId] is deleted from [PrivateChats], [PrivateChatDeletions] [Messages],
+     * [MessageStatuses], and [TypingStatuses].
      *
      * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
      */
-    fun create(chatId: Int, userId: String) {
+    fun create(chatId: Int, userId: Int) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         insert(chatId, userId)
@@ -38,7 +38,7 @@ object PrivateChatDeletions : IntIdTable() {
     }
 
     /** Records in the DB that the [userId] deleted the [chatId]. */
-    private fun insert(chatId: Int, userId: String): Unit = transact {
+    private fun insert(chatId: Int, userId: Int): Unit = transact {
         insert {
             it[PrivateChatDeletions.chatId] = chatId
             it[PrivateChatDeletions.userId] = userId
@@ -48,15 +48,12 @@ object PrivateChatDeletions : IntIdTable() {
     /**
      * Commonly deleted [Messages] and [MessageStatuses] are deleted. The user's older [PrivateChatDeletions] are
      * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
-     * they've deleted it, the [chatId] is deleted from [PrivateChats].
+     * they've deleted it, the [chatId] is [PrivateChats.delete]d.
      */
-    private fun deleteUnusedChatData(chatId: Int, userId: String) {
+    private fun deleteUnusedChatData(chatId: Int, userId: Int) {
         deleteCommonlyDeletedMessages(chatId)
         deletePreviousDeletionRecords(chatId, userId)
-        if (isChatDeleted(chatId)) {
-            delete(chatId)
-            PrivateChats.delete(chatId)
-        }
+        if (isChatDeleted(chatId)) PrivateChats.delete(chatId)
     }
 
     /**
@@ -74,7 +71,7 @@ object PrivateChatDeletions : IntIdTable() {
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */
-    private fun deletePreviousDeletionRecords(chatId: Int, userId: String): Unit = transact {
+    private fun deletePreviousDeletionRecords(chatId: Int, userId: Int): Unit = transact {
         val idList = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
             .toList()
             .dropLast(1)
@@ -82,7 +79,7 @@ object PrivateChatDeletions : IntIdTable() {
         deleteWhere { PrivateChatDeletions.id inList idList }
     }
 
-    /** @return the last [LocalDateTime] both users deleted the [chatId], if both of them have. */
+    /** Returns the last [LocalDateTime] both users deleted the [chatId], if both of them have. */
     private fun readLastChatDeletion(chatId: Int): LocalDateTime? = transact {
         val deletions = select { PrivateChatDeletions.chatId eq chatId }
         val userIdList = deletions.map { it[userId] }.toSet()
@@ -93,15 +90,15 @@ object PrivateChatDeletions : IntIdTable() {
         listOf(getDateTime(0), getDateTime(1)).min()
     }
 
-    /** @return the last time the [userId] deleted the [chatId], if they ever did. */
-    fun readLastDeletion(chatId: Int, userId: String): LocalDateTime? = transact {
+    /** Returns the last time the [userId] deleted the [chatId], if they ever did. */
+    fun readLastDeletion(chatId: Int, userId: Int): LocalDateTime? = transact {
         select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
             .lastOrNull()
             ?.get(dateTime)
     }
 
     /** Whether the [userId] has deleted the [chatId] (and not recreated the chat after that). */
-    fun isDeleted(userId: String, chatId: Int): Boolean = transact {
+    fun isDeleted(userId: Int, chatId: Int): Boolean = transact {
         val deletions = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
         if (deletions.empty()) return@transact false
         val lastDeletion = deletions.last { it[PrivateChatDeletions.userId] == userId }

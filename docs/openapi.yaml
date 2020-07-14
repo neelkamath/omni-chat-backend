@@ -90,7 +90,7 @@ components:
       type: object
       properties:
         reason:
-          type: string
+          type: integer
           enum: [NONEXISTENT_CHAT, PIC_TOO_BIG]
   securitySchemes:
     bearerAuth:
@@ -131,11 +131,11 @@ components:
       description: The ID of the user the pic is to be retrieved from.
       required: true
       schema:
-        type: string
+        type: integer
     GroupChatId:
       name: chat-id
       in: query
       description: Group chat ID.
       required: true
       schema:
-        type: string
+        type: integer

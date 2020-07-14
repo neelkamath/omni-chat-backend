@@ -7,12 +7,13 @@ import org.jetbrains.exposed.sql.deleteAll
 
 private val tables: List<Table> = listOf(
     Contacts,
+    MessageStatuses,
+    Messages,
+    TypingStatuses,
     GroupChatUsers,
     GroupChats,
     PrivateChatDeletions,
     PrivateChats,
-    MessageStatuses,
-    Messages,
     Chats,
     Users
 )

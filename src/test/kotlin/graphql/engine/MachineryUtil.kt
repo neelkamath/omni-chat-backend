@@ -17,7 +17,7 @@ import graphql.ExecutionInput
 fun executeGraphQlViaEngine(
     query: String,
     variables: Map<String, Any?>? = null,
-    userId: String? = null
+    userId: Int? = null
 ): GraphQlResponse {
     val builder = ExecutionInput.Builder().query(query).context(userId)
     variables?.let { objectMapper.convertValue<Map<String, Any>>(it).let(builder::variables) }

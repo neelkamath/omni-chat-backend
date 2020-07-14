@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.db.tables.Chats
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.userId
-import com.neelkamath.omniChat.userIdExists
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.auth.authenticate
@@ -31,8 +30,8 @@ fun routeProfilePic(routing: Routing): Unit = with(routing) {
 
 private fun getProfilePic(route: Route): Unit = with(route) {
     get {
-        val userId = call.parameters["user-id"]!!
-        if (!userIdExists(userId)) call.respond(HttpStatusCode.BadRequest)
+        val userId = call.parameters["user-id"]!!.toInt()
+        if (!Users.exists(userId)) call.respond(HttpStatusCode.BadRequest)
         else call.respond(Users.readPic(userId) ?: HttpStatusCode.NoContent)
     }
 }

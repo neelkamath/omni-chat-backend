@@ -39,9 +39,9 @@ class GroupChatsTest : FunSpec({
         }
 
         test("Setting the admin to a user who isn't in the chat should throw an exception") {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val (adminId, invalidAdminId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId)
-            shouldThrowExactly<IllegalArgumentException> { GroupChats.setAdmin(chatId, "new admin ID") }
+            shouldThrowExactly<IllegalArgumentException> { GroupChats.setAdmin(chatId, invalidAdminId) }
         }
     }
 
@@ -103,15 +103,18 @@ class GroupChatsTest : FunSpec({
             shouldThrowExactly<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
 
-        test("Deleting a chat should delete it along with its messages and messages statuses") {
+        test("Deleting a chat should wipe it from the DB") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val messageId = Messages.message(chatId, adminId, TextMessage("t"))
             MessageStatuses.create(messageId, userId, MessageStatus.READ)
+            TypingStatuses.set(adminId, chatId, isTyping = true)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
+            Chats.count().shouldBeZero()
             GroupChats.count().shouldBeZero()
             Messages.count().shouldBeZero()
             MessageStatuses.count().shouldBeZero()
+            TypingStatuses.count().shouldBeZero()
         }
     }
 

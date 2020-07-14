@@ -20,11 +20,28 @@ class PrivateChatsTest : FunSpec({
         }
     }
 
+    context("delete(Int)") {
+        test("Deleting the chat should wipe it from the DB") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            TypingStatuses.set(user1Id, chatId, isTyping = true)
+            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
+            MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
+            PrivateChatDeletions.create(chatId, user1Id)
+            PrivateChats.delete(chatId)
+            Chats.count().shouldBeZero()
+            PrivateChats.count().shouldBeZero()
+            Messages.count().shouldBeZero()
+            MessageStatuses.count().shouldBeZero()
+            TypingStatuses.count().shouldBeZero()
+        }
+    }
+
     context("read(String, BackwardPagination?)") {
         test("Reading a chat should give the ID of the user being chatted with, and not the user's own ID") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
-            val test = { userId: String, otherUserId: String ->
+            val test = { userId: Int, otherUserId: Int ->
                 PrivateChats.readUserChats(userId)[0].user.id shouldBe otherUserId
             }
             test(user1Id, user2Id)
@@ -129,41 +146,6 @@ class PrivateChatsTest : FunSpec({
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, participantId)
             shouldThrowAny { PrivateChats.readChatId(participantId, userId) }
-        }
-    }
-
-    context("delete(Int)") {
-        /**
-         * Creates a private chat between [user1Id] and [user2Id], has [user1Id] send a message in it, has [user2Id]
-         * create [MessageStatuses] for the sent message, and returns the chat's ID.
-         */
-        fun createAndUseChat(user1Id: String, user2Id: String): Int {
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
-            return chatId
-        }
-
-        test(
-            """
-            Given a chat which hasn't been deleted, and a chat deleted by the user which had no activity after its 
-            deletion, 
-            
-            when the user's chats are deleted,
-            
-            then both the chats (along with their chat deletion records, messages, and message statuses) should be 
-            deleted
-            """
-        ) {
-            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-            createAndUseChat(user1Id, user2Id)
-            val chatId = createAndUseChat(user1Id, user3Id)
-            PrivateChatDeletions.delete(chatId)
-            PrivateChats.deleteUserChats(user1Id)
-            PrivateChats.count().shouldBeZero()
-            PrivateChatDeletions.count().shouldBeZero()
-            Messages.count().shouldBeZero()
-            MessageStatuses.count().shouldBeZero()
         }
     }
 

@@ -53,26 +53,26 @@ class Broker<T, U> {
     }
 }
 
-data class MessagesAsset(val userId: String)
+data class MessagesAsset(val userId: Int)
 
 val messagesBroker = Broker<MessagesAsset, MessagesSubscription>()
 
-data class ContactsAsset(val userId: String)
+data class ContactsAsset(val userId: Int)
 
 /** @see [negotiateUserUpdate] */
 val contactsBroker = Broker<ContactsAsset, ContactsSubscription>()
 
-data class UpdatedChatsAsset(val userId: String)
+data class UpdatedChatsAsset(val userId: Int)
 
 /** @see [negotiateUserUpdate] */
 val updatedChatsBroker = Broker<UpdatedChatsAsset, UpdatedChatsSubscription>()
 
-data class NewGroupChatsAsset(val userId: String)
+data class NewGroupChatsAsset(val userId: Int)
 
 val newGroupChatsBroker = Broker<NewGroupChatsAsset, NewGroupChatsSubscription>()
 
 /** [Broker.notify]s [Broker.subscribe]rs via [contactsBroker] and [updatedChatsBroker] of the updated [userId]. */
-fun negotiateUserUpdate(userId: String) {
+fun negotiateUserUpdate(userId: Int) {
     contactsBroker.notify(UpdatedContact.build(userId)) { userId in Contacts.readIdList(it.userId) }
     updatedChatsBroker.notify(UpdatedAccount.build(userId)) {
         val shareChat =
