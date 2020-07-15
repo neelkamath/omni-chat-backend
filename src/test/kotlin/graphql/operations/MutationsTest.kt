@@ -313,7 +313,7 @@ class MutationsTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
             setTyping(adminId, chatId, isTyping)
-            TypingStatuses.read(adminId, chatId) shouldBe isTyping
+            TypingStatuses.read(chatId, adminId) shouldBe isTyping
         }
 
         test("""The user's typing status should be set to "true"""") { assertTypingStatus(isTyping = true) }

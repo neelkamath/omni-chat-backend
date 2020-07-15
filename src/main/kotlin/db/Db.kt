@@ -143,6 +143,7 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
  * ## Typing Statuses
  *
  * - Deletes [TypingStatuses] the [userId] created.
+ * - The [userId] will be [Broker.unsubscribe]d via [typingStatusesBroker].
  *
  * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
  * @see [deleteUser]
@@ -152,14 +153,12 @@ fun deleteUserFromDb(userId: Int) {
         throw IllegalArgumentException(
             "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
-    contactsBroker.unsubscribe { it.userId == userId }
-    updatedChatsBroker.unsubscribe { it.userId == userId }
-    newGroupChatsBroker.unsubscribe { it.userId == userId }
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
-    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, userId) }
+    GroupChatUsers.removeUser(userId)
     TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
-    messagesBroker.unsubscribe { it.userId == userId }
     Users.delete(userId)
+    listOf(updatedChatsBroker, newGroupChatsBroker, contactsBroker, typingStatusesBroker, messagesBroker)
+        .forEach { broker -> broker.unsubscribe { it.userId == userId } }
 }

@@ -57,7 +57,7 @@ fun setTyping(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    TypingStatuses.set(env.userId!!, chatId, env.getArgument<Boolean>("isTyping"))
+    TypingStatuses.set(chatId, env.userId!!, env.getArgument<Boolean>("isTyping"))
     return Placeholder
 }
 

@@ -108,7 +108,7 @@ class GroupChatsTest : FunSpec({
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
             val messageId = Messages.message(chatId, adminId, TextMessage("t"))
             MessageStatuses.create(messageId, userId, MessageStatus.READ)
-            TypingStatuses.set(adminId, chatId, isTyping = true)
+            TypingStatuses.set(chatId, adminId, isTyping = true)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
             Chats.count().shouldBeZero()
             GroupChats.count().shouldBeZero()

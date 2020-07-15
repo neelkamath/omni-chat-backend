@@ -73,6 +73,9 @@ object GroupChatUsers : IntIdTable() {
     /** Convenience function for [removeUsers]. */
     fun removeUsers(chatId: Int, vararg userIdList: Int): Unit = removeUsers(chatId, userIdList.toList())
 
+    /** Removes the [userId] from every chat they're in, [GroupChats.delete]ing the chat if they're the last user. */
+    fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
+
     /** The chat ID list of every chat the [userId] is in. */
     fun readChatIdList(userId: Int): List<Int> = transact {
         select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }

@@ -1,41 +1,50 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.TypingStatus
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.transact
+import com.neelkamath.omniChat.db.typingStatusesBroker
 import org.jetbrains.exposed.sql.*
 
-/** Chats users are typing in. */
+/** Whether the user is typing in a chat. */
 object TypingStatuses : Table() {
     override val tableName = "typing_statuses"
-    private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
+    private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val isTyping: Column<Boolean> = bool("is_typing")
 
-    fun set(userId: Int, chatId: Int, isTyping: Boolean) =
-        if (exists(userId, chatId)) update(userId, chatId, isTyping) else insert(userId, chatId, isTyping)
-
-    /** Whether the [userId] has a record in this table for the [chatId]. */
-    private fun exists(userId: Int, chatId: Int): Boolean = transact {
-        !select { (TypingStatuses.userId eq userId) and (TypingStatuses.chatId eq chatId) }.empty()
+    /** [Broker.notify]s [Broker.subscribe]rs of the [TypingStatus]. */
+    fun set(chatId: Int, userId: Int, isTyping: Boolean) {
+        if (exists(chatId, userId)) update(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
+        typingStatusesBroker
+            .notify(TypingStatus(chatId, userId, isTyping)) { it.userId != userId && isUserInChat(it.userId, chatId) }
     }
 
-    private fun update(userId: Int, chatId: Int, isTyping: Boolean): Unit = transact {
-        update({ (TypingStatuses.userId eq userId) and (TypingStatuses.chatId eq chatId) }) {
+    /** Whether the [userId] has a record in this table for the [chatId]. */
+    private fun exists(chatId: Int, userId: Int): Boolean = transact {
+        !select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }.empty()
+    }
+
+    /** Updates the existing record in the table. */
+    private fun update(chatId: Int, userId: Int, isTyping: Boolean): Unit = transact {
+        update({ (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }) {
             it[this.isTyping] = isTyping
         }
     }
 
     /** Inserts the record into the table. */
-    private fun insert(userId: Int, chatId: Int, isTyping: Boolean): Unit = transact {
+    private fun insert(chatId: Int, userId: Int, isTyping: Boolean): Unit = transact {
         insert {
-            it[TypingStatuses.userId] = userId
             it[TypingStatuses.chatId] = chatId
+            it[TypingStatuses.userId] = userId
             it[TypingStatuses.isTyping] = isTyping
         }
     }
 
     /** Whether the [userId] is typing in the [chatId]. */
-    fun read(userId: Int, chatId: Int): Boolean = transact {
-        select { (TypingStatuses.userId eq userId) and (TypingStatuses.chatId eq chatId) }
+    fun read(chatId: Int, userId: Int): Boolean = transact {
+        select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }
             .firstOrNull()
             ?.get(isTyping) ?: false
     }

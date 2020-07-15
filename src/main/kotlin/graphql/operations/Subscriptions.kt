@@ -25,3 +25,8 @@ fun subscribeToNewGroupChats(env: DataFetchingEnvironment): Publisher<NewGroupCh
     env.verifyAuth()
     return newGroupChatsBroker.subscribe(NewGroupChatsAsset(env.userId!!))
 }
+
+fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingStatusesSubscription> {
+    env.verifyAuth()
+    return typingStatusesBroker.subscribe(TypingStatusesAsset(env.userId!!))
+}

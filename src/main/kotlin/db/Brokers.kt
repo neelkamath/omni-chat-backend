@@ -9,21 +9,25 @@ import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.subjects.PublishSubject
 
-/**
- * [subscribe] to be [notify]d of [U]s, and [unsubscribe] once you're done. The [T] is used to filter which [Flowable]s
- * get [notify]d.
- */
-class Broker<T, U> {
-    /** List of [subscribe]rs which should only be mutated in [subscribe] and [unsubscribe]. */
-    private val notifiers: MutableList<Notifier<T, U>> = mutableListOf()
+interface Asset {
+    val userId: Int
+}
 
-    private data class Notifier<T, U>(val data: T, val subject: PublishSubject<U>) {
+/**
+ * [subscribe] to be [notify]d of updates ([U] for update), and [unsubscribe] once you're done. The [Asset] ([A] for
+ * asset) is used to filter which [Flowable]s get [notify]d.
+ */
+class Broker<A : Asset, U> {
+    /** List of [subscribe]rs which should only be mutated in [subscribe] and [unsubscribe]. */
+    private val notifiers: MutableList<Notifier<A, U>> = mutableListOf()
+
+    private data class Notifier<A, U>(val data: A, val subject: PublishSubject<U>) {
         /** Guaranteed to be unique for every [Notifier]. */
         val id: Int = notifierId++
     }
 
     /** @param[data] used to filter which clients will get [notify]d. */
-    fun subscribe(data: T): Flowable<U> {
+    fun subscribe(data: A): Flowable<U> {
         val subject = PublishSubject.create<U>()
         val notifier = Notifier(data, subject)
         notifiers.add(notifier)
@@ -35,11 +39,11 @@ class Broker<T, U> {
     }
 
     /** Sends the [update] to the [filter]ed [subscribe]rs. */
-    fun notify(update: U, filter: (T) -> Boolean): Unit =
+    fun notify(update: U, filter: (A) -> Boolean): Unit =
         notifiers.forEach { if (filter(it.data)) it.subject.onNext(update) }
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */
-    fun unsubscribe(filter: (T) -> Boolean): Unit =
+    fun unsubscribe(filter: (A) -> Boolean): Unit =
         /*
         <subscribe()> removes the notifier from the list once it completes. This means we can't write
         <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException> would
@@ -53,23 +57,27 @@ class Broker<T, U> {
     }
 }
 
-data class MessagesAsset(val userId: Int)
+data class MessagesAsset(override val userId: Int) : Asset
 
 val messagesBroker = Broker<MessagesAsset, MessagesSubscription>()
 
-data class ContactsAsset(val userId: Int)
+data class ContactsAsset(override val userId: Int) : Asset
 
 /** @see [negotiateUserUpdate] */
 val contactsBroker = Broker<ContactsAsset, ContactsSubscription>()
 
-data class UpdatedChatsAsset(val userId: Int)
+data class UpdatedChatsAsset(override val userId: Int) : Asset
 
 /** @see [negotiateUserUpdate] */
 val updatedChatsBroker = Broker<UpdatedChatsAsset, UpdatedChatsSubscription>()
 
-data class NewGroupChatsAsset(val userId: Int)
+data class NewGroupChatsAsset(override val userId: Int) : Asset
 
 val newGroupChatsBroker = Broker<NewGroupChatsAsset, NewGroupChatsSubscription>()
+
+data class TypingStatusesAsset(override val userId: Int) : Asset
+
+val typingStatusesBroker = Broker<TypingStatusesAsset, TypingStatusesSubscription>()
 
 /** [Broker.notify]s [Broker.subscribe]rs via [contactsBroker] and [updatedChatsBroker] of the updated [userId]. */
 fun negotiateUserUpdate(userId: Int) {

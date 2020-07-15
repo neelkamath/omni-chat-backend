@@ -24,7 +24,7 @@ class PrivateChatsTest : FunSpec({
         test("Deleting the chat should wipe it from the DB") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            TypingStatuses.set(user1Id, chatId, isTyping = true)
+            TypingStatuses.set(chatId, user1Id, isTyping = true)
             val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
             MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
             PrivateChatDeletions.create(chatId, user1Id)

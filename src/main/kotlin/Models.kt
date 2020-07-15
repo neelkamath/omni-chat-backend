@@ -196,6 +196,10 @@ data class UpdatedGroupChat(
     }
 }
 
+interface TypingStatusesSubscription
+
+data class TypingStatus(val chatId: Int, val userId: Int, val isTyping: Boolean) : TypingStatusesSubscription
+
 data class UpdatedAccount(
     val userId: Int,
     val username: Username,
@@ -319,7 +323,8 @@ object CreatedSubscription :
     MessagesSubscription,
     ContactsSubscription,
     UpdatedChatsSubscription,
-    NewGroupChatsSubscription {
+    NewGroupChatsSubscription,
+    TypingStatusesSubscription {
 
     val placeholder = Placeholder
 }

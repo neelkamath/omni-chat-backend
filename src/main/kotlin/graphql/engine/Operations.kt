@@ -49,3 +49,4 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToContacts", ::subscribeToContacts)
     .dataFetcher("subscribeToUpdatedChats", ::subscribeToUpdatedChats)
     .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)
+    .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)
