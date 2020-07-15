@@ -17,12 +17,12 @@ jobs:
         with:
           name: server-test-results
           path: build/reports/tests/test/
-  test-openapi-spec:
+  lint-openapi-spec:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx @stoplight/spectral lint docs/openapi.yaml
-  github-release:
+      - run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
+  create-github-release:
     if: github.ref == 'refs/heads/master'
     needs: [test-server, test-openapi-spec]
     runs-on: ubuntu-latest
