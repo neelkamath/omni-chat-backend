@@ -16,6 +16,7 @@ servers:
 tags:
   - name: profilePic
   - name: groupChatPic
+  - name: status
 paths:
   /profile-pic:
     description: A user's profile pic which doesn't exceed 100 KiB.
