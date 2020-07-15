@@ -13,6 +13,9 @@ info:
 servers:
   - url: http://localhost:80
     description: You'll have to run the server yourself.
+tags:
+  - name: profilePic
+  - name: groupChatPic
 paths:
   /profile-pic:
     description: A user's profile pic which doesn't exceed 100 KiB.
@@ -90,7 +93,7 @@ components:
       type: object
       properties:
         reason:
-          type: integer
+          type: string
           enum: [NONEXISTENT_CHAT, PIC_TOO_BIG]
   securitySchemes:
     bearerAuth:

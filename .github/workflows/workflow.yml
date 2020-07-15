@@ -24,7 +24,7 @@ jobs:
       - run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
   create-github-release:
     if: github.ref == 'refs/heads/master'
-    needs: [test-server, test-openapi-spec]
+    needs: [test-server, lint-openapi-spec]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
