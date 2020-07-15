@@ -25,10 +25,10 @@ const val CAN_DELETE_ACCOUNT_QUERY = """
     }
 """
 
-private fun operateCanDeleteAccount(userId: String): GraphQlResponse =
+private fun operateCanDeleteAccount(userId: Int): GraphQlResponse =
     executeGraphQlViaEngine(CAN_DELETE_ACCOUNT_QUERY, userId = userId)
 
-fun canDeleteAccount(userId: String): Boolean = operateCanDeleteAccount(userId).data!!["canDeleteAccount"] as Boolean
+fun canDeleteAccount(userId: Int): Boolean = operateCanDeleteAccount(userId).data!!["canDeleteAccount"] as Boolean
 
 const val IS_EMAIL_ADDRESS_TAKEN_QUERY = """
     query IsEmailAddressTaken(${"$"}emailAddress: String!) {
@@ -61,10 +61,10 @@ const val READ_ACCOUNT_QUERY = """
     }
 """
 
-private fun operateReadAccount(userId: String): GraphQlResponse =
+private fun operateReadAccount(userId: Int): GraphQlResponse =
     executeGraphQlViaEngine(READ_ACCOUNT_QUERY, userId = userId)
 
-fun readAccount(userId: String): Account {
+fun readAccount(userId: Int): Account {
     val data = operateReadAccount(userId).data!!["readAccount"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
@@ -86,7 +86,7 @@ const val READ_CHATS_QUERY = """
 """
 
 private fun operateReadChats(
-    userId: String,
+    userId: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null
@@ -104,7 +104,7 @@ private fun operateReadChats(
 )
 
 fun readChats(
-    userId: String,
+    userId: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null
@@ -136,7 +136,7 @@ const val READ_CHAT_QUERY = """
 """
 
 private fun operateReadChat(
-    userId: String,
+    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -156,7 +156,7 @@ private fun operateReadChat(
 )
 
 fun readChat(
-    userId: String,
+    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -173,7 +173,7 @@ fun readChat(
 }
 
 fun errReadChat(
-    userId: String,
+    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -194,14 +194,14 @@ const val READ_CONTACTS_QUERY = """
     }
 """
 
-private fun operateReadContacts(userId: String, pagination: ForwardPagination? = null): GraphQlResponse =
+private fun operateReadContacts(userId: Int, pagination: ForwardPagination? = null): GraphQlResponse =
     executeGraphQlViaEngine(
         READ_CONTACTS_QUERY,
         mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
         userId
     )
 
-fun readContacts(userId: String, pagination: ForwardPagination? = null): AccountsConnection {
+fun readContacts(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
     val data = operateReadContacts(userId, pagination).data!!["readContacts"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
@@ -249,7 +249,7 @@ const val SEARCH_CHAT_MESSAGES_QUERY = """
 """
 
 private fun operateSearchChatMessages(
-    userId: String,
+    userId: Int,
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null
@@ -265,7 +265,7 @@ private fun operateSearchChatMessages(
 )
 
 fun searchChatMessages(
-    userId: String,
+    userId: Int,
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null
@@ -276,7 +276,7 @@ fun searchChatMessages(
 }
 
 fun errSearchChatMessages(
-    userId: String,
+    userId: Int,
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null
@@ -300,7 +300,7 @@ const val SEARCH_CHATS_QUERY = """
 """
 
 private fun operateSearchChats(
-    userId: String,
+    userId: Int,
     query: String,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -320,7 +320,7 @@ private fun operateSearchChats(
 )
 
 fun searchChats(
-    userId: String,
+    userId: Int,
     query: String,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
@@ -345,7 +345,7 @@ const val SEARCH_CONTACTS_QUERY = """
 """
 
 private fun operateSearchContacts(
-    userId: String,
+    userId: Int,
     query: String,
     pagination: ForwardPagination? = null
 ): GraphQlResponse = executeGraphQlViaEngine(
@@ -354,7 +354,7 @@ private fun operateSearchContacts(
     userId
 )
 
-fun searchContacts(userId: String, query: String, pagination: ForwardPagination? = null): AccountsConnection {
+fun searchContacts(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
     val data = operateSearchContacts(userId, query, pagination).data!!["searchContacts"] as Map<*, *>
     return objectMapper.convertValue(data)
 }
@@ -378,7 +378,7 @@ const val SEARCH_MESSAGES_QUERY = """
 """
 
 private fun operateSearchMessages(
-    userId: String,
+    userId: Int,
     query: String,
     chatMessagesPagination: BackwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
@@ -401,7 +401,7 @@ private fun operateSearchMessages(
 )
 
 fun searchMessages(
-    userId: String,
+    userId: Int,
     query: String,
     chatMessagesPagination: BackwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
@@ -443,7 +443,7 @@ class ChatMessagesDtoTest : FunSpec({
         /** Data on a group chat having only ever contained an admin. */
         data class AdminMessages(
             /** The ID of the chat's admin. */
-            val adminId: String,
+            val adminId: Int,
             /** Every message sent has this text. */
             val text: TextMessage,
             /** The ten messages the admin sent. */

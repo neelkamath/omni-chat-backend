@@ -6,4 +6,4 @@ import org.jetbrains.exposed.sql.selectAll
 
 fun GroupChats.count(): Long = transact { selectAll().count() }
 
-fun GroupChats.create(adminId: String): Int = create(adminId, buildNewGroupChat())
+fun GroupChats.create(adminId: Int): Int = create(adminId, buildNewGroupChat())

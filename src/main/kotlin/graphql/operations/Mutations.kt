@@ -19,8 +19,8 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val saved = Contacts.readIdList(env.userId!!)
-    val userIdList = env.getArgument<List<String>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
-    if (!userIdList.all { userIdExists(it) }) throw InvalidContactException
+    val userIdList = env.getArgument<List<Int>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
+    if (!userIdList.all { Users.exists(it) }) throw InvalidContactException
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }
@@ -38,7 +38,7 @@ fun createStatus(env: DataFetchingEnvironment): Placeholder {
  * @throws [InvalidMessageIdException] or [DuplicateStatusException] if the [userId] cannot create the [status] on the
  * [messageId].
  */
-private fun verifyCanCreateStatus(messageId: Int, userId: String, status: MessageStatus) {
+private fun verifyCanCreateStatus(messageId: Int, userId: Int, status: MessageStatus) {
     if (!Messages.exists(messageId) || !Messages.isVisible(messageId, userId)) throw InvalidMessageIdException
     val chatId = Messages.readChatFromMessage(messageId)
     if (!isUserInChat(userId, chatId) || Messages.read(messageId).sender.id == userId) throw InvalidMessageIdException
@@ -49,8 +49,16 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val chat = env.parseArgument<NewGroupChat>("chat")
     val userIdList = chat.userIdList.filter { it != env.userId!! }
-    if (userIdList.any { !userIdExists(it) }) throw InvalidUserIdException
+    if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
     return GroupChats.create(env.userId!!, chat)
+}
+
+fun setTyping(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    TypingStatuses.set(chatId, env.userId!!, env.getArgument<Boolean>("isTyping"))
+    return Placeholder
 }
 
 fun createMessage(env: DataFetchingEnvironment): Placeholder {
@@ -64,8 +72,8 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
 
 fun createPrivateChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
-    val invitedUserId = env.getArgument<String>("userId")
-    if (!userIdExists(invitedUserId) || invitedUserId == env.userId!!) throw InvalidUserIdException
+    val invitedUserId = env.getArgument<Int>("userId")
+    if (!Users.exists(invitedUserId) || invitedUserId == env.userId!!) throw InvalidUserIdException
     if (PrivateChats.areInChat(env.userId!!, invitedUserId)) throw ChatExistsException
     return if (PrivateChats.exists(env.userId!!, invitedUserId)) PrivateChats.readChatId(invitedUserId, env.userId!!)
     else PrivateChats.create(env.userId!!, invitedUserId)
@@ -80,7 +88,7 @@ fun deleteAccount(env: DataFetchingEnvironment): Placeholder {
 
 fun deleteContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<String>>("userIdList")
+    val userIdList = env.getArgument<List<Int>>("userIdList")
     Contacts.delete(env.userId!!, userIdList)
     return Placeholder
 }
@@ -149,10 +157,10 @@ fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-private fun wantsTakenUsername(userId: String, wantedUsername: Username?): Boolean =
+private fun wantsTakenUsername(userId: Int, wantedUsername: Username?): Boolean =
     wantedUsername != null && readUserById(userId).username != wantedUsername && isUsernameTaken(wantedUsername)
 
-private fun wantsTakenEmail(userId: String, wantedEmail: String?): Boolean =
+private fun wantsTakenEmail(userId: Int, wantedEmail: String?): Boolean =
     wantedEmail != null && readUserById(userId).emailAddress != wantedEmail && emailAddressExists(wantedEmail)
 
 fun updateGroupChat(env: DataFetchingEnvironment): Placeholder {
@@ -161,10 +169,10 @@ fun updateGroupChat(env: DataFetchingEnvironment): Placeholder {
     val chatId = args["chatId"] as Int
     if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) throw InvalidChatIdException
     if (!GroupChats.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val newAdminId = args["newAdminId"] as String?
+    val newAdminId = args["newAdminId"] as Int?
     if (newAdminId != null && newAdminId !in GroupChatUsers.readUserIdList(chatId)) throw InvalidNewAdminIdException
     val newUserIdList = args["newUserIdList"] as List<*>?
-    if (newUserIdList != null && newUserIdList.any { !userIdExists(it as String) }) throw InvalidUserIdException
+    if (newUserIdList != null && newUserIdList.any { !Users.exists(it as Int) }) throw InvalidUserIdException
     val removedUserIdList = args["removedUserIdList"] as List<*>?
     if (newUserIdList != null && removedUserIdList != null && newUserIdList.intersect(removedUserIdList).isNotEmpty())
         throw InvalidGroupChatUsersException

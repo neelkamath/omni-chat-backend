@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
 private data class GraphQlSubscription(
-    /** Operation name (e.g., `"messageUpdates"`). */
+    /** Operation name (e.g., `"subscribeToMessages"`). */
     val operation: String,
     /** The [CloseReason] to send the client when the subscription is successfully completed. */
     val completionReason: CloseReason
@@ -34,54 +34,20 @@ private data class GraphQlSubscription(
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
 fun routeGraphQlSubscriptions(context: Routing) {
-    routeMessagesSubscription(context)
-    routeContactsSubscription(context)
-    routeUpdatedChatsSubscription(context)
-    routeNewGroupChatsSubscription(context)
-}
-
-/** Routes the GraphQL `Subscription.subscribeToMessages`. */
-private fun routeMessagesSubscription(context: Routing): Unit = with(context) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    routeSubscription(
-        context,
-        path = "messages-subscription",
-        subscription = GraphQlSubscription("subscribeToMessages", completionReason)
-    )
-}
-
-/** Routes the GraphQL `Subscription.subscribeToContacts`. */
-private fun routeContactsSubscription(context: Routing): Unit = with(context) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    routeSubscription(
-        context,
-        path = "contacts-subscription",
-        subscription = GraphQlSubscription("subscribeToContacts", completionReason)
-    )
-}
-
-/** Routes the GraphQL `Subscription.subscribeToUpdatedChats`. */
-private fun routeUpdatedChatsSubscription(context: Routing): Unit = with(context) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    routeSubscription(
-        context,
-        path = "updated-chats-subscription",
-        subscription = GraphQlSubscription("subscribeToUpdatedChats", completionReason)
-    )
-}
-
-/** Routes the GraphQL `Subscription.subscribeToNewGroupChats`. */
-private fun routeNewGroupChatsSubscription(context: Routing): Unit = with(context) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    routeSubscription(
-        context,
-        path = "new-group-chats-subscription",
-        subscription = GraphQlSubscription("subscribeToNewGroupChats", completionReason)
-    )
+    mapOf(
+        "messages-subscription" to "subscribeToMessages",
+        "contacts-subscription" to "subscribeToContacts",
+        "updated-chats-subscription" to "subscribeToUpdatedChats",
+        "new-group-chats-subscription" to "subscribeToNewGroupChats",
+        "typing-statuses-subscription" to "subscribeToTypingStatuses"
+    ).forEach { (path, operation) ->
+        routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
+    }
 }
 
 /**
- * Binds a WebSocket for the GraphQL [subscription] at the [path] (e.g., `"message-updates"`).
+ * Binds a WebSocket for the GraphQL [subscription] at the [path] (e.g., `"messages-subscription"`).
  *
  * Once subscribed, the client will receive a [CreatedSubscription].
  *

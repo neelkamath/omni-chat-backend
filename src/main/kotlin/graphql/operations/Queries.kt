@@ -21,7 +21,7 @@ class GroupChatDto(chatId: Int) : ChatDto {
     override val id: Int = chatId
     val title: GroupChatTitle
     val description: GroupChatDescription?
-    val adminId: String
+    val adminId: Int
 
     init {
         val chat = GroupChats.readChat(
@@ -125,7 +125,7 @@ fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
 fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     val refreshToken = env.getArgument<String>("refreshToken")
     val userId = try {
-        JWT.decode(refreshToken).subject
+        JWT.decode(refreshToken).subject.toInt()
     } catch (_: JWTDecodeException) {
         throw UnauthorizedException
     }

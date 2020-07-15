@@ -15,6 +15,7 @@ import org.keycloak.representations.idm.ClientRepresentation
 import org.keycloak.representations.idm.CredentialRepresentation
 import org.keycloak.representations.idm.RealmRepresentation
 import org.keycloak.representations.idm.UserRepresentation
+import java.util.*
 
 const val USER_ID_LENGTH = 36
 private const val REALM_NAME = "omni-chat"
@@ -55,8 +56,10 @@ private val omniChatRealm: Lazy<RealmRepresentation> = lazy {
     }
 }
 
-fun UserRepresentation.toAccount(): Account =
-    Account(id, Username(username), email, firstName, lastName, attributes?.get("bio")?.first())
+fun UserRepresentation.toAccount(): Account {
+    val userId = Users.readId(UUID.fromString(id))
+    return Account(userId, Username(username), email, firstName, lastName, attributes?.get("bio")?.first())
+}
 
 /**
  * Sets up account management.
@@ -83,7 +86,7 @@ private fun createClient() {
     )
 }
 
-/** @return whether the [login] is valid. */
+/** Whether the [login] is valid. */
 fun isValidLogin(login: Login): Boolean = try {
     AuthzClient.create(config).obtainAccessToken(login.username.value, login.password.value)
     true
@@ -97,8 +100,6 @@ fun isValidLogin(login: Login): Boolean = try {
     else throw exception
 }
 
-fun userIdExists(id: String): Boolean = id in realm.users().list().map { it.id }
-
 fun emailAddressExists(email: String): Boolean = email in realm.users().list().map { it.email }
 
 /**
@@ -107,18 +108,26 @@ fun emailAddressExists(email: String): Boolean = email in realm.users().list().m
  */
 fun createUser(account: NewAccount) {
     realm.users().create(account.toUserRepresentation())
-    val userId = realm.users().search(account.username.value).first { it.username == account.username.value }.id
+    val userId = realm
+        .users()
+        .search(account.username.value)
+        .first { it.username == account.username.value }
+        .id
+        .let(UUID::fromString)
     Users.create(userId)
-    sendEmailAddressVerification(userId)
+    sendEmailAddressVerification(account.emailAddress)
 }
 
-/** Sends an email to the user to verify their email address. */
-fun sendEmailAddressVerification(userId: String): Unit = realm.users().get(userId).sendVerifyEmail()
+/** Sends an email to the user to verify their email [address]. */
+fun sendEmailAddressVerification(address: String) {
+    val userId = readUserByEmailAddress(address).id.let(Users::readUuid).toString()
+    realm.users().get(userId).sendVerifyEmail()
+}
 
 /** Sends an email for the user to reset their password. */
 fun resetPassword(email: String) {
-    val userId = readUserByEmail(email).id
-    realm.users().get(userId).executeActionsEmail(listOf("UPDATE_PASSWORD"))
+    val userId = readUserByEmailAddress(email).id
+    realm.users().get(Users.readUuid(userId).toString()).executeActionsEmail(listOf("UPDATE_PASSWORD"))
 }
 
 private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresentation().also {
@@ -134,13 +143,15 @@ private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresen
 fun readUserByUsername(username: Username): Account =
     realm.users().search(username.value).first { it.username == username.value }.toAccount()
 
-fun isEmailVerified(userId: String): Boolean = readUser(userId).isEmailVerified
+fun isEmailVerified(userId: Int): Boolean = readUser(userId).isEmailVerified
 
-fun readUserById(userId: String): Account = readUser(userId).toAccount()
+fun readUserById(userId: Int): Account = readUser(userId).toAccount()
 
-private fun readUser(userId: String): UserRepresentation = realm.users().list().first { it.id == userId }
+private fun readUser(userId: Int): UserRepresentation =
+    realm.users().list().first { Users.readId(UUID.fromString(it.id)) == userId }
 
-private fun readUserByEmail(email: String): Account = realm.users().list().first { it.email == email }.toAccount()
+private fun readUserByEmailAddress(email: String): Account =
+    realm.users().list().first { it.email == email }.toAccount()
 
 /**
  * Case-insensitively [query]s every user's username, first name, last name, and email address.
@@ -163,11 +174,11 @@ private fun UsersResource.searchBy(
 ): List<UserRepresentation> = search(username, firstName, lastName, emailAddress, null, null)
 
 /** Calls [negotiateUserUpdate]. */
-fun updateUser(id: String, update: AccountUpdate) {
+fun updateUser(id: Int, update: AccountUpdate) {
     val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     user.update(update)
-    realm.users().get(id).update(user)
+    realm.users().get(Users.readUuid(id).toString()).update(user)
     negotiateUserUpdate(id)
 }
 
@@ -177,9 +188,9 @@ fun isUsernameTaken(username: Username): Boolean {
 }
 
 /** Deletes the user [id] from the auth system after calling [deleteUserFromDb]. */
-fun deleteUser(id: String) {
+fun deleteUser(id: Int) {
+    realm.users().delete(Users.readUuid(id).toString())
     deleteUserFromDb(id)
-    realm.users().delete(id)
 }
 
 /** Applies this [update]. */

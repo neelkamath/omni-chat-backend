@@ -61,7 +61,8 @@ private fun create(): Unit = transact {
         PrivateChatDeletions,
         Messages,
         MessageStatuses,
-        Users
+        Users,
+        TypingStatuses
     )
 }
 
@@ -101,7 +102,7 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
  * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). Private chats the
  * [userId] deleted are included.
  */
-fun isUserInChat(userId: String, chatId: Int): Boolean =
+fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 /**
@@ -139,21 +140,25 @@ fun isUserInChat(userId: String, chatId: Int): Boolean =
  * - Deletes all [Messages] and [MessageStatuses] the [userId] has sent.
  * - Clients will be [Broker.unsubscribe]d via [messagesBroker].
  *
+ * ## Typing Statuses
+ *
+ * - Deletes [TypingStatuses] the [userId] created.
+ * - The [userId] will be [Broker.unsubscribe]d via [typingStatusesBroker].
+ *
  * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
  * @see [deleteUser]
  */
-fun deleteUserFromDb(userId: String) {
+fun deleteUserFromDb(userId: Int) {
     if (GroupChats.isNonemptyChatAdmin(userId))
         throw IllegalArgumentException(
             "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
         )
-    contactsBroker.unsubscribe { it.userId == userId }
-    updatedChatsBroker.unsubscribe { it.userId == userId }
-    newGroupChatsBroker.unsubscribe { it.userId == userId }
-    Users.delete(userId)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
-    GroupChatUsers.readChatIdList(userId).forEach { GroupChatUsers.removeUsers(it, userId) }
+    GroupChatUsers.removeUser(userId)
+    TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
-    messagesBroker.unsubscribe { it.userId == userId }
+    Users.delete(userId)
+    listOf(updatedChatsBroker, newGroupChatsBroker, contactsBroker, typingStatusesBroker, messagesBroker)
+        .forEach { broker -> broker.unsubscribe { it.userId == userId } }
 }

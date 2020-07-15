@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
+import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.routing.*
 import graphql.schema.DataFetchingEnvironment
 import io.ktor.application.Application
@@ -29,10 +30,10 @@ val objectMapper: ObjectMapper = jacksonObjectMapper()
     .findAndRegisterModules()
 
 /** The user's ID on authenticated calls, and `null` otherwise. */
-val ApplicationCall.userId: String? get() = authentication.principal<JWTPrincipal>()?.payload?.subject
+val ApplicationCall.userId: Int? get() = authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt()
 
 /** The user's ID on authenticated calls, and `null` otherwise. */
-val DataFetchingEnvironment.userId: String? get() = getContext()
+val DataFetchingEnvironment.userId: Int? get() = getContext()
 
 fun Application.main() {
     setUpAuth()
@@ -43,7 +44,7 @@ fun Application.main() {
     install(Authentication) {
         jwt {
             verifier(buildVerifier())
-            validate { if (userIdExists(it.payload.subject)) JWTPrincipal(it.payload) else null }
+            validate { if (Users.exists(it.payload.subject.toInt())) JWTPrincipal(it.payload) else null }
         }
     }
     routing {

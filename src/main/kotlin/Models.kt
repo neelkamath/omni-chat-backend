@@ -60,7 +60,7 @@ data class NewAccount(
 )
 
 interface AccountData {
-    val id: String
+    val id: Int
     val username: Username
     val emailAddress: String
     val firstName: String?
@@ -69,7 +69,7 @@ interface AccountData {
 }
 
 data class Account(
-    override val id: String,
+    override val id: Int,
     override val username: Username,
     override val emailAddress: String,
     override val firstName: String? = null,
@@ -87,7 +87,7 @@ data class Account(
 interface ContactsSubscription
 
 data class NewContact(
-    override val id: String,
+    override val id: Int,
     override val username: Username,
     override val emailAddress: String,
     override val firstName: String? = null,
@@ -95,13 +95,13 @@ data class NewContact(
     override val bio: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
-        fun build(userId: String): NewContact =
+        fun build(userId: Int): NewContact =
             with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
 data class UpdatedContact(
-    override val id: String,
+    override val id: Int,
     override val username: Username,
     override val emailAddress: String,
     override val firstName: String? = null,
@@ -109,12 +109,12 @@ data class UpdatedContact(
     override val bio: String? = null
 ) : AccountData, ContactsSubscription {
     companion object {
-        fun build(userId: String): UpdatedContact =
+        fun build(userId: Int): UpdatedContact =
             with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
-data class DeletedContact(val id: String) : ContactsSubscription
+data class DeletedContact(val id: Int) : ContactsSubscription
 
 data class AccountUpdate(
     val username: Username? = null,
@@ -128,7 +128,7 @@ data class AccountUpdate(
 data class NewGroupChat(
     val title: GroupChatTitle,
     val description: GroupChatDescription,
-    val userIdList: List<String> = listOf()
+    val userIdList: List<Int> = listOf()
 )
 
 private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?) {
@@ -189,15 +189,19 @@ data class UpdatedGroupChat(
     val description: GroupChatDescription? = null,
     val newUsers: List<Account>? = null,
     val removedUsers: List<Account>? = null,
-    val adminId: String? = null
+    val adminId: Int? = null
 ) : UpdatedChatsSubscription {
     init {
         verifyGroupChatUsers(newUsers, removedUsers)
     }
 }
 
+interface TypingStatusesSubscription
+
+data class TypingStatus(val chatId: Int, val userId: Int, val isTyping: Boolean) : TypingStatusesSubscription
+
 data class UpdatedAccount(
-    val userId: String,
+    val userId: Int,
     val username: Username,
     val emailAddress: String,
     val firstName: String? = null,
@@ -205,7 +209,7 @@ data class UpdatedAccount(
     val bio: String? = null
 ) : UpdatedChatsSubscription {
     companion object {
-        fun build(userId: String): UpdatedAccount =
+        fun build(userId: Int): UpdatedAccount =
             with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
     }
 }
@@ -215,9 +219,9 @@ data class GroupChatUpdate(
     val chatId: Int,
     val title: GroupChatTitle? = null,
     val description: GroupChatDescription? = null,
-    val newUserIdList: List<String>? = listOf(),
-    val removedUserIdList: List<String>? = listOf(),
-    val newAdminId: String? = null
+    val newUserIdList: List<Int>? = listOf(),
+    val removedUserIdList: List<Int>? = listOf(),
+    val newAdminId: Int? = null
 ) {
     init {
         verifyGroupChatUsers(newUserIdList, removedUserIdList)
@@ -246,7 +250,7 @@ data class PrivateChat(
 
 data class GroupChat(
     override val id: Int,
-    val adminId: String,
+    val adminId: Int,
     val users: AccountsConnection,
     val title: GroupChatTitle,
     val description: GroupChatDescription? = null,
@@ -305,9 +309,9 @@ data class DeletedMessage(val chatId: Int, val messageId: Int) : MessagesSubscri
 
 data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : MessagesSubscription
 
-data class UserChatMessagesRemoval(val chatId: Int, val userId: String) : MessagesSubscription
+data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesSubscription
 
-data class ExitedUser(val chatId: Int, val userId: String) : UpdatedChatsSubscription
+data class ExitedUser(val chatId: Int, val userId: Int) : UpdatedChatsSubscription
 
 interface NewGroupChatsSubscription
 
@@ -319,7 +323,8 @@ object CreatedSubscription :
     MessagesSubscription,
     ContactsSubscription,
     UpdatedChatsSubscription,
-    NewGroupChatsSubscription {
+    NewGroupChatsSubscription,
+    TypingStatusesSubscription {
 
     val placeholder = Placeholder
 }

@@ -135,14 +135,26 @@ type Query {
 
 type Mutation {
     """
-    Deletes the user's account. Returns whether the account was deleted. Use `Query.canDeleteAccount` to check if you
-    can delete the account.
+    Deletes the user's account.
 
-    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"`.
+    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` returns `false`
+    ).
 
     You must send an access token with this request.
     """
     deleteAccount: Placeholder!
+
+    """
+    Sets whether the user `isTyping` in the `chatId`.
+
+    Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing
+    status on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    setTyping(chatId: Int!, isTyping: Boolean!): Placeholder!
 
     """
     Deletes the user's profile pic.
@@ -259,7 +271,7 @@ type Mutation {
 
     You must send an access token with this request.
     """
-    createPrivateChat(userId: ID!): Int!
+    createPrivateChat(userId: Int!): Int!
 
     """
     Sends a message in a chat. Use `Subscription.subscribeToMessages` to get the message's ID and sending
@@ -286,7 +298,7 @@ type Mutation {
 
     You must send an access token with this request.
     """
-    deleteContacts(userIdList: [String!]!): Placeholder!
+    deleteContacts(userIdList: [Int!]!): Placeholder!
 
     """
     Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
@@ -296,7 +308,7 @@ type Mutation {
 
     You must send an access token with this request.
     """
-    createContacts(userIdList: [String!]!): Placeholder!
+    createContacts(userIdList: [Int!]!): Placeholder!
 }
 
 type Subscription {
@@ -308,6 +320,14 @@ type Subscription {
     You must send an access token with this request.
     """
     subscribeToMessages: MessagesSubscription!
+
+    """
+    Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
+    will be stopped if the user deletes their account.
+
+    You must send an access token with this request.
+    """
+    subscribeToTypingStatuses: TypingStatusesSubscription!
 
     """
     Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
@@ -344,6 +364,8 @@ union MessagesSubscription = CreatedSubscription
     | DeletionOfEveryMessage
     | UserChatMessagesRemoval
 
+union TypingStatusesSubscription = CreatedSubscription | TypingStatus
+
 """An `UpdatedContact` might be sent if the contact's profile pic was updated."""
 union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
 
@@ -362,6 +384,13 @@ A `GroupChatId` is the ID of the chat the user was added to, excluding a chat th
 """
 union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
 
+"""Whether the `userId` `isTyping` in the `chatId`."""
+type TypingStatus {
+    chatId: Int!
+    userId: Int!
+    isTyping: Boolean!
+}
+
 type GroupChatId {
     id: Int!
 }
@@ -369,12 +398,12 @@ type GroupChatId {
 """The user who left the group chat."""
 type ExitedUser {
     chatId: Int!
-    userId: ID!
+    userId: Int!
 }
 
 """null fields correspond to the field not existing."""
 type UpdatedAccount {
-    userId: ID!
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -392,7 +421,7 @@ type UpdatedGroupChat {
     description: GroupChatDescription
     newUsers: [Account!]
     removedUsers: [Account!]
-    adminId: String
+    adminId: Int
 }
 
 """
@@ -411,7 +440,7 @@ account.
 """
 type UserChatMessagesRemoval {
     chatId: Int!
-    userId: ID!
+    userId: Int!
 }
 
 """
@@ -444,7 +473,7 @@ type AccountEdge {
 }
 
 interface AccountData {
-    id: ID!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -453,7 +482,7 @@ interface AccountData {
 }
 
 type Account implements AccountData {
-    id: ID!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -462,7 +491,7 @@ type Account implements AccountData {
 }
 
 type NewContact implements AccountData {
-    id: ID!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -471,7 +500,7 @@ type NewContact implements AccountData {
 }
 
 type UpdatedContact implements AccountData {
-    id: ID!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: String
@@ -484,7 +513,7 @@ The `id` of the contact which has been deleted for the user. This happens when t
 contact's account gets deleted.
 """
 type DeletedContact {
-    id: ID!
+    id: Int!
 }
 
 input NewAccount {
@@ -530,7 +559,7 @@ type GroupChat implements Chat {
     title: GroupChatTitle!
     description: GroupChatDescription
     """The ID of the admin present who is present in the `users`."""
-    adminId: ID!
+    adminId: Int!
     users(first: Int, after: Cursor): AccountsConnection!
 }
 
@@ -615,15 +644,15 @@ input GroupChatUpdate {
     title: GroupChatTitle
     description: GroupChatDescription
     """The ID of every new user to add."""
-    newUserIdList: [String!]
+    newUserIdList: [Int!]
     """The ID of every user to remove."""
-    removedUserIdList: [String!]
+    removedUserIdList: [Int!]
     """Transfers the admin status to the specified user ID."""
-    newAdminId: ID
+    newAdminId: Int
 }
 
 input NewGroupChat {
     title: GroupChatTitle!
     description: GroupChatDescription!
-    userIdList: [String!]!
+    userIdList: [Int!]!
 }

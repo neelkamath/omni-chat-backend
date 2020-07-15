@@ -78,7 +78,7 @@ class MessageStatusesTest : FunSpec({
          * Creates a private chat between [user1Id] and [user2Id], has [user2Id] send a message in it, has [user1Id]
          * create a [MessageStatus.DELIVERED] on it, and returns the chat's ID.
          */
-        fun createUsedChat(user1Id: String, user2Id: String): Int {
+        fun createUsedChat(user1Id: Int, user2Id: Int): Int {
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
             MessageStatuses.create(messageId, user1Id, MessageStatus.DELIVERED)

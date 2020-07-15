@@ -3,17 +3,19 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.negotiateUserUpdate
-import com.neelkamath.omniChat.db.tables.Users.id
+import com.neelkamath.omniChat.db.tables.Users.MAX_PIC_BYTES
 import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import java.util.*
 
 /**
- * Stores info which would be impractical to store in Keycloak's custom user attributes. The [id] can be used for
- * pagination.
+ * Stores info which would be impractical to store in Keycloak's custom user attributes. Pics cannot exceed
+ * [MAX_PIC_BYTES].
  */
 object Users : IntIdTable() {
-    private val userId: Column<String> = varchar("user_id", USER_ID_LENGTH)
+    /** The ID given to the user by Keycloak. */
+    private val uuid: Column<UUID> = uuid("uuid")
 
     /** Pics cannot exceed 100 KiB. */
     const val MAX_PIC_BYTES = 100 * 1024
@@ -21,27 +23,39 @@ object Users : IntIdTable() {
     private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** @see [createUser] */
-    fun create(userId: String, pic: ByteArray? = null): Unit = transact {
+    fun create(userUuid: UUID, pic: ByteArray? = null): Unit = transact {
         insert {
-            it[this.userId] = userId
+            it[uuid] = userUuid
             it[this.pic] = pic
         }
     }
 
+    fun readUuid(id: Int): UUID = transact {
+        select { Users.id eq id }.first()[uuid]
+    }
+
+    fun readId(userUuid: UUID): Int = transact {
+        select { uuid eq userUuid }.first()[Users.id].value
+    }
+
+    fun exists(id: Int): Boolean = transact {
+        select { Users.id eq id }.empty().not()
+    }
+
     /** Deletes the pic if [pic] is `null`. Calls [negotiateUserUpdate]. */
-    fun updatePic(userId: String, pic: ByteArray?) {
+    fun updatePic(userId: Int, pic: ByteArray?) {
         transact {
-            update({ Users.userId eq userId }) { it[Users.pic] = pic }
+            update({ Users.id eq userId }) { it[Users.pic] = pic }
         }
         negotiateUserUpdate(userId)
     }
 
-    fun readPic(userId: String): ByteArray? = transact {
-        select { Users.userId eq userId }.first()[pic]
+    fun readPic(userId: Int): ByteArray? = transact {
+        select { Users.id eq userId }.first()[pic]
     }
 
-    private fun readPrimaryKey(userId: String): Int = transact {
-        select { Users.userId eq userId }.first()[Users.id].value
+    private fun readPrimaryKey(userId: Int): Int = transact {
+        select { Users.id eq userId }.first()[Users.id].value
     }
 
     /**
@@ -59,7 +73,7 @@ object Users : IntIdTable() {
      *
      * @see [deleteUser]
      */
-    fun delete(userId: String): Unit = transact {
-        deleteWhere { Users.userId eq userId }
+    fun delete(userId: Int): Unit = transact {
+        deleteWhere { Users.id eq userId }
     }
 }

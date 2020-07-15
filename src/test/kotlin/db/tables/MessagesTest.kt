@@ -16,7 +16,7 @@ import io.reactivex.rxjava3.subscribers.TestSubscriber
 import java.time.LocalDateTime
 
 class MessagesTest : FunSpec({
-    data class CreatedMessage(val creator: String, val message: String)
+    data class CreatedMessage(val creatorId: Int, val message: String)
 
     context("isVisible(Int, String)") {
         /**
@@ -86,9 +86,9 @@ class MessagesTest : FunSpec({
                 CreatedMessage(user1Id, "I have a question"),
                 CreatedMessage(user1Id, "Is tomorrow a holiday?")
             )
-            createdMessages.forEach { Messages.create(chatId, it.creator, TextMessage(it.message)) }
+            createdMessages.forEach { Messages.create(chatId, it.creatorId, TextMessage(it.message)) }
             Messages.readPrivateChat(chatId, user1Id).forEachIndexed { index, message ->
-                message.node.sender.id shouldBe createdMessages[index].creator
+                message.node.sender.id shouldBe createdMessages[index].creatorId
                 message.node.text.value shouldBe createdMessages[index].message
             }
         }
@@ -168,7 +168,7 @@ class MessagesTest : FunSpec({
     }
 
     context("deleteUserMessages(String)") {
-        fun createUtilizedPrivateChat(user1Id: String, user2Id: String): Int {
+        fun createUtilizedPrivateChat(user1Id: Int, user2Id: Int): Int {
             val chatId = PrivateChats.create(user1Id, user2Id)
             val message1Id = Messages.message(chatId, user1Id, TextMessage("t"))
             MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
@@ -177,7 +177,7 @@ class MessagesTest : FunSpec({
             return chatId
         }
 
-        fun createUtilizedGroupChat(user1Id: String, user2Id: String): Int {
+        fun createUtilizedGroupChat(user1Id: Int, user2Id: Int): Int {
             val chatId = GroupChats.create(user1Id, buildNewGroupChat(user2Id))
             val message1Id = Messages.message(chatId, user1Id, TextMessage("t"))
             MessageStatuses.create(message1Id, user2Id, MessageStatus.READ)
@@ -379,7 +379,7 @@ class MessagesTest : FunSpec({
             val message1Id = Messages.message(chatId, user1Id, TextMessage("t"))
             PrivateChatDeletions.create(chatId, user1Id)
             val message2Id = Messages.message(chatId, user1Id, TextMessage("t"))
-            val assert = { userId: String, messageIdList: List<Int> ->
+            val assert = { userId: Int, messageIdList: List<Int> ->
                 Messages.readPrivateChatConnection(chatId, userId).edges.map { it.cursor } shouldBe messageIdList
             }
             assert(user1Id, listOf(message2Id))

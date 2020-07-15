@@ -38,7 +38,7 @@ class ContactsTest : FunSpec({
             val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(ownerId, setOf(contact1Id, contact2Id))
             val subscriber = contactsBroker.subscribe(ContactsAsset(ownerId)).subscribeWith(TestSubscriber())
-            Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, "invalid ID"))
+            Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, -1))
             subscriber.assertValues(DeletedContact(contact1Id), DeletedContact(contact2Id))
         }
     }

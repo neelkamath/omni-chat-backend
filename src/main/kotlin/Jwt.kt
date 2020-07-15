@@ -15,7 +15,7 @@ fun buildVerifier(): JWTVerifier = JWT.require(algorithm).build()
  * The [TokenSet.accessToken]'s `sub` will be the [userId] (a [UserRepresentation.id]). The [TokenSet.accessToken]'s
  * expiry and [TokenSet.refreshToken]'s expiry will be set to one hour and one week respectively.
  */
-fun buildAuthToken(userId: String): TokenSet {
+fun buildAuthToken(userId: Int): TokenSet {
     val now = LocalDateTime.now()
     val accessToken = build(userId, now.plusHours(1))
     val refreshToken = build(userId, now.plusWeeks(1))
@@ -23,7 +23,7 @@ fun buildAuthToken(userId: String): TokenSet {
 }
 
 /** The [userId] is a [UserRepresentation.id]. */
-private fun build(userId: String, expiry: LocalDateTime): String {
+private fun build(userId: Int, expiry: LocalDateTime): String {
     val date = Timestamp.valueOf(expiry)
-    return JWT.create().withExpiresAt(date).withSubject(userId).sign(algorithm)
+    return JWT.create().withExpiresAt(date).withSubject(userId.toString()).sign(algorithm)
 }

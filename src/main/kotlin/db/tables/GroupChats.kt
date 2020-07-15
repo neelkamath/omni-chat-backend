@@ -2,24 +2,30 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.tables.GroupChats.MAX_PIC_BYTES
 import org.jetbrains.exposed.sql.*
 
-/** The [GroupChatUsers] table contains the participants. [GroupChats] have [Messages]. */
+/**
+ * Pics cannot exceed [MAX_PIC_BYTES].
+ *
+ * @see [GroupChatUsers]
+ * @see [Messages]
+ * @see [TypingStatuses]
+ * @see [Chats]
+ */
 object GroupChats : Table() {
     override val tableName get() = "group_chats"
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
-    private val adminId: Column<String> = varchar("admin_id", USER_ID_LENGTH)
+    private val adminId: Column<Int> = integer("admin_id").references(Users.id)
 
     /** Titles cannot exceed this length. */
     const val MAX_TITLE_LENGTH = 70
 
-    /** Can have at most [MAX_TITLE_LENGTH]. */
     private val title: Column<String> = varchar("title", MAX_TITLE_LENGTH)
 
     /** Descriptions cannot exceed this length. */
     const val MAX_DESCRIPTION_LENGTH = 1000
 
-    /** Can have at most [MAX_DESCRIPTION_LENGTH]. */
     private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
 
     /** The pic cannot exceed 100 KiB. */
@@ -28,7 +34,7 @@ object GroupChats : Table() {
     private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
-    fun isAdmin(userId: String, chatId: Int): Boolean = transact {
+    fun isAdmin(userId: Int, chatId: Int): Boolean = transact {
         select { GroupChats.id eq chatId }.first()[adminId] == userId
     }
 
@@ -37,7 +43,7 @@ object GroupChats : Table() {
      *
      * @throws [IllegalArgumentException] if the [userId] isn't in the chat.
      */
-    fun setAdmin(chatId: Int, userId: String) {
+    fun setAdmin(chatId: Int, userId: Int) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
@@ -47,12 +53,12 @@ object GroupChats : Table() {
     }
 
     /**
+     * Returns the [chat]'s ID after creating it.
+     *
      * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via
      * [newGroupChatsBroker].
-     *
-     * @return the [chat]'s ID after creating it.
      */
-    fun create(adminId: String, chat: NewGroupChat): Int {
+    fun create(adminId: Int, chat: NewGroupChat): Int {
         val chatId = transact {
             insert {
                 it[id] = Chats.create()
@@ -85,7 +91,7 @@ object GroupChats : Table() {
      * @see [GroupChatUsers.readChatIdList]
      */
     fun readUserChats(
-        userId: String,
+        userId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transact {
@@ -159,8 +165,8 @@ object GroupChats : Table() {
     }
 
     /**
-     * Deletes the [chatId] from [GroupChats]. [Messages], and [MessageStatuses]. Clients who have
-     * [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
+     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who
+     * have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
      *
      * @throws [IllegalArgumentException] if the [chatId] has users in it.
      */
@@ -168,10 +174,12 @@ object GroupChats : Table() {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
         if (userIdList.isNotEmpty())
             throw IllegalArgumentException("The chat (ID: $chatId) is not empty (users: $userIdList).")
+        TypingStatuses.deleteChat(chatId)
+        Messages.deleteChat(chatId)
         transact {
             deleteWhere { GroupChats.id eq chatId }
         }
-        Messages.deleteChat(chatId)
+        Chats.delete(chatId)
     }
 
     /**
@@ -180,7 +188,7 @@ object GroupChats : Table() {
      * @return chats after case-insensitively [query]ing the title of every chat the [userId] is in.
      */
     fun search(
-        userId: String,
+        userId: Int,
         query: String,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
@@ -210,7 +218,7 @@ object GroupChats : Table() {
     )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
-    fun isNonemptyChatAdmin(userId: String): Boolean = readUserChats(
+    fun isNonemptyChatAdmin(userId: Int): Boolean = readUserChats(
         userId,
         usersPagination = ForwardPagination(first = 2),
         messagesPagination = BackwardPagination(last = 0)
@@ -220,7 +228,7 @@ object GroupChats : Table() {
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
-    fun queryUserChatEdges(userId: String, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
+    fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
         .associateWith { Messages.searchGroupChat(it, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }

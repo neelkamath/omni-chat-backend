@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
 
 /** Sends the [text] in the [chatId] from the [userId], and returns the message's ID. */
-fun Messages.message(chatId: Int, userId: String, text: TextMessage): Int {
+fun Messages.message(chatId: Int, userId: Int, text: TextMessage): Int {
     create(chatId, userId, text)
     return readIdList(chatId).last()
 }

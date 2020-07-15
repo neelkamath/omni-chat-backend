@@ -13,6 +13,10 @@ info:
 servers:
   - url: http://localhost:80
     description: You'll have to run the server yourself.
+tags:
+  - name: profilePic
+  - name: groupChatPic
+  - name: status
 paths:
   /profile-pic:
     description: A user's profile pic which doesn't exceed 100 KiB.
@@ -131,11 +135,11 @@ components:
       description: The ID of the user the pic is to be retrieved from.
       required: true
       schema:
-        type: string
+        type: integer
     GroupChatId:
       name: chat-id
       in: query
       description: Group chat ID.
       required: true
       schema:
-        type: string
+        type: integer

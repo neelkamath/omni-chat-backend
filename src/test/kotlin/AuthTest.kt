@@ -38,15 +38,6 @@ class AuthTest : FunSpec({
         }
     }
 
-    context("userIdExists(String)") {
-        test("A nonexistent user ID should not be said to exist") { userIdExists("user ID").shouldBeFalse() }
-
-        test("An existing user ID should be said to exist") {
-            val id = createVerifiedUsers(1)[0].info.id
-            userIdExists(id).shouldBeTrue()
-        }
-    }
-
     context("emailAddressExists(String)") {
         test("A nonexistent email address should not be said to exist") {
             emailAddressExists("address").shouldBeFalse()
@@ -67,7 +58,7 @@ class AuthTest : FunSpec({
 
     context("searchUsers(String)") {
         /** Creates users, and returns their IDs. */
-        fun createUsers(): List<String> = listOf(
+        fun createUsers(): List<Int> = listOf(
             NewAccount(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
             NewAccount(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
             NewAccount(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
@@ -79,7 +70,7 @@ class AuthTest : FunSpec({
 
         test("Users should be searched case-insensitively") {
             val infoList = createUsers()
-            val search = { query: String, userIdList: List<String> ->
+            val search = { query: String, userIdList: List<Int> ->
                 searchUsers(query).map { it.id } shouldBe userIdList
             }
             search("tOnY", listOf(infoList[0]))

@@ -51,11 +51,12 @@ fun buildExecutionInput(request: GraphQlRequest, call: ApplicationCall): Executi
         .query(request.query)
         .variables(request.variables ?: mapOf())
         .operationName(request.operationName)
-        .context(call.authentication.principal<JWTPrincipal>()?.payload?.subject)
+        .context(call.authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt())
 
 /**
- * @return the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with
+ * Returns the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with
  * empty `"errors"`.
+ *
  * @throws [UnauthorizedException] if an [UnauthorizedException] is present.
  */
 fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpecification()

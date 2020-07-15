@@ -90,7 +90,7 @@ private object TextMessageCoercing : Coercing<TextMessage, String> {
 }
 
 /**
- * @throws [CoercingParseValueException] if the [parse] threw an [Exception].
+ * @throws [CoercingParseValueException] if [parse] threw an [Exception].
  * @return the result of [parse].
  */
 private inline fun <T> dissectValue(parse: () -> T): T = try {
@@ -100,7 +100,7 @@ private inline fun <T> dissectValue(parse: () -> T): T = try {
 }
 
 /**
- * @throws [CoercingParseLiteralException] if the [parse] threw an [Exception].
+ * @throws [CoercingParseLiteralException] if [parse] threw an [Exception].
  * @return the result of [parse].
  */
 private inline fun <T> dissectLiteral(parse: () -> T): T = try {

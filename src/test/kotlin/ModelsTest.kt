@@ -87,8 +87,6 @@ class VerifyGroupChatUsersTest : FunSpec({
     }
 
     test("An exception shouldn't be thrown if the list of users to add is distinct from the list of users to remove") {
-        shouldNotThrowAny {
-            GroupChatUpdate(chatId = 1, newUserIdList = listOf("user 1 ID"), removedUserIdList = listOf("user 2 ID"))
-        }
+        shouldNotThrowAny { GroupChatUpdate(chatId = 1, newUserIdList = listOf(1), removedUserIdList = listOf(2)) }
     }
 })

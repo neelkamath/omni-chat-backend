@@ -1,6 +1,6 @@
 # Production
 
-1. Start the server on http://localhost:80 (it's safe to run multiple instances of the `chat` service):
+1. Start the server on http://localhost:80:
     ```
     docker-compose \
         -f docker/docker-compose.yml \

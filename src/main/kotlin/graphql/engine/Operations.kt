@@ -36,6 +36,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("updateGroupChat", ::updateGroupChat)
     .dataFetcher("createStatus", ::createStatus)
     .dataFetcher("createGroupChat", ::createGroupChat)
+    .dataFetcher("setTyping", ::setTyping)
     .dataFetcher("deletePrivateChat", ::deletePrivateChat)
     .dataFetcher("createPrivateChat", ::createPrivateChat)
     .dataFetcher("createMessage", ::createMessage)
@@ -48,3 +49,4 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToContacts", ::subscribeToContacts)
     .dataFetcher("subscribeToUpdatedChats", ::subscribeToUpdatedChats)
     .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)
+    .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)

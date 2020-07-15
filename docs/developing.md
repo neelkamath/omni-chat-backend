@@ -19,7 +19,7 @@
 
 ### Testing
 
-1. It takes a minute to start the services. You should spin them up once by running:
+1. Spin up services:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -28,7 +28,7 @@
         --project-directory . \
         up --scale chat=0 -d
     ```
-1. Since the testing environment disables the sending of emails, the [`.example.env`](.example.env) file will suffice. You should enter the shell to run tests. It takes a negligible amount of time to enter the shell if the services have started. You can enter the shell any number of times you want by running:
+1. Enter the shell:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -43,8 +43,8 @@
         1. Wait for `Listening for transport dt_socket at address: 5005` to be printed.
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 
-1. Once you're done with the shell, run `exit` to shut it down.
-1. Once you are finished testing, spin down the services:
+1. Run `exit` to shut down the shell.
+1. Spin down the services:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -63,7 +63,7 @@
 ### Development
 
 ```
-npx redoc-cli serve docs/spec/openapi.yaml -w
+npx redoc-cli serve docs/openapi.yaml -w
 ```
 
 Open http://127.0.0.1:8080 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
@@ -77,7 +77,7 @@ npx @stoplight/spectral lint docs/openapi.yaml
 ## GraphQL
 
 - An operation which is a subscription must be named using the format `subscribeTo<UPDATE>` (e.g., `subscribeToMessages`).
-- An operation which is a subscription must return a `union` whose name's suffixed with `Subscription` which includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
+- An operation which is a subscription must return a `union` named using the format `<UPDATE>Subscription`, and includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 
