@@ -1,13 +1,17 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.BackwardPagination
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.isUserInChat
+import com.neelkamath.omniChat.db.messagesBroker
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.`java-time`.datetime
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 /** Messages checked to exist can optionally be filtered by this [Op]. */
@@ -45,7 +49,7 @@ object Messages : IntIdTable() {
     fun create(chatId: Int, userId: Int, text: TextMessage) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
-        val row = transact {
+        val row = transaction {
             insert {
                 it[this.chatId] = chatId
                 it[Messages.text] = text.value
@@ -104,7 +108,7 @@ object Messages : IntIdTable() {
         var op = chatId eq id
         before?.let { op = op and (Messages.id less it) }
         filter?.let { op = op and it }
-        return transact {
+        return transaction {
             select(op)
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
@@ -114,11 +118,11 @@ object Messages : IntIdTable() {
     }
 
     /** The message IDs in the [chatId] in order of creation. */
-    fun readIdList(chatId: Int): List<Int> = transact {
+    fun readIdList(chatId: Int): List<Int> = transaction {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }
 
-    fun read(id: Int): Message = transact {
+    fun read(id: Int): Message = transaction {
         select { Messages.id eq id }.first().let(::buildMessage)
     }
 
@@ -127,7 +131,7 @@ object Messages : IntIdTable() {
      *
      * @see [Messages.exists]
      */
-    fun readChatFromMessage(messageId: Int): Int = transact {
+    fun readChatFromMessage(messageId: Int): Int = transaction {
         select { Messages.id eq messageId }.first()[chatId]
     }
 
@@ -138,7 +142,7 @@ object Messages : IntIdTable() {
     fun deleteChat(chatId: Int) {
         val messageIdList = readMessageIdList(chatId)
         MessageStatuses.delete(messageIdList)
-        transact {
+        transaction {
             deleteWhere { Messages.chatId eq chatId }
         }
         messagesBroker.notify(DeletionOfEveryMessage(chatId)) { isUserInChat(it.userId, chatId) }
@@ -148,7 +152,7 @@ object Messages : IntIdTable() {
     fun deleteChatMessagesUntil(chatId: Int, until: LocalDateTime) {
         val idList = readMessageIdList(chatId, sent less until)
         MessageStatuses.delete(idList)
-        transact {
+        transaction {
             deleteWhere { (Messages.chatId eq chatId) and (sent less until) }
         }
     }
@@ -162,7 +166,7 @@ object Messages : IntIdTable() {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
         val idList = readMessageIdList(chatId, senderId eq userId)
         MessageStatuses.delete(idList)
-        transact {
+        transaction {
             deleteWhere { Messages.id inList idList }
         }
         messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
@@ -176,7 +180,7 @@ object Messages : IntIdTable() {
         MessageStatuses.deleteUserStatuses(userId)
         val chatMessages = readChatMessages(userId)
         MessageStatuses.delete(chatMessages.map { it.messageId })
-        transact {
+        transaction {
             deleteWhere { senderId eq userId }
         }
         chatMessages.forEach { (chatId) ->
@@ -192,35 +196,35 @@ object Messages : IntIdTable() {
     fun delete(id: Int) {
         MessageStatuses.delete(id)
         val chatId = readChatFromMessage(id)
-        transact {
+        transaction {
             deleteWhere { Messages.id eq id }
         }
         messagesBroker.notify(DeletedMessage(chatId, id)) { isUserInChat(it.userId, chatId) }
     }
 
     /** Every [ChatAndMessageId] the [userId] created which are visible to at least one user. */
-    private fun readChatMessages(userId: Int): List<ChatAndMessageId> = transact {
+    private fun readChatMessages(userId: Int): List<ChatAndMessageId> = transaction {
         select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
-    fun existsFrom(chatId: Int, from: LocalDateTime): Boolean = transact {
+    fun existsFrom(chatId: Int, from: LocalDateTime): Boolean = transaction {
         !select { (Messages.chatId eq chatId) and (sent greaterEq from) }.empty()
     }
 
     /** The [id] list for the [chatId]. */
-    private fun readMessageIdList(chatId: Int, filter: Filter = null): List<Int> = transact {
+    private fun readMessageIdList(chatId: Int, filter: Filter = null): List<Int> = transaction {
         val chatOp = Messages.chatId eq chatId
         val op = if (filter == null) chatOp else chatOp and filter
         select(op).map { it[Messages.id].value }
     }
 
     /** Whether the [messageId] exists in the [chatId]. */
-    fun existsInChat(messageId: Int, chatId: Int): Boolean = transact {
+    fun existsInChat(messageId: Int, chatId: Int): Boolean = transaction {
         !select { (Messages.chatId eq chatId) and (Messages.id eq messageId) }.empty()
     }
 
-    fun exists(id: Int): Boolean = transact {
+    fun exists(id: Int): Boolean = transaction {
         !select { Messages.id eq id }.empty()
     }
 
@@ -266,7 +270,7 @@ object Messages : IntIdTable() {
             Chronology.AFTER -> Messages.id greater messageId
         }
         filter?.let { op = op and it }
-        return transact {
+        return transaction {
             !select { (Messages.chatId eq chatId) and op }.empty()
         }
     }
@@ -279,7 +283,7 @@ object Messages : IntIdTable() {
         }
         var op = Messages.chatId eq chatId
         filter?.let { op = op and it }
-        return transact { select(op).orderBy(Messages.id, order).firstOrNull()?.get(Messages.id)?.value }
+        return transaction { select(op).orderBy(Messages.id, order).firstOrNull()?.get(Messages.id)?.value }
     }
 
     /**

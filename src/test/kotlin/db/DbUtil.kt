@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.db.tables.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteAll
+import org.jetbrains.exposed.sql.transactions.transaction
 
 private val tables: List<Table> = listOf(
     Contacts,
@@ -19,7 +20,7 @@ private val tables: List<Table> = listOf(
 )
 
 /** Deletes every row from every table created. */
-fun wipeDb(): Unit = transact {
+fun wipeDb(): Unit = transaction {
     tables.forEach { it.deleteAll() }
 }
 
@@ -29,6 +30,6 @@ fun tearDownDb() {
     dropTypes()
 }
 
-private fun dropTables(): Unit = transact { SchemaUtils.drop(*tables.toTypedArray()) }
+private fun dropTables(): Unit = transaction { SchemaUtils.drop(*tables.toTypedArray()) }
 
-private fun dropTypes(): Unit = transact { exec("DROP TYPE IF EXISTS message_status;") }
+private fun dropTypes(): Unit = transaction { exec("DROP TYPE IF EXISTS message_status;") }

@@ -11,7 +11,6 @@
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
-        -p dev \
         --project-directory . \
         up
     ```
@@ -24,7 +23,6 @@
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.test.yml \
-        -p test \
         --project-directory . \
         up --scale chat=0 -d
     ```
@@ -33,7 +31,6 @@
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.test.yml \
-        -p test \
         --project-directory . \
         run --rm --service-ports chat bash
     ```
@@ -49,7 +46,6 @@
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.test.yml \
-        -p test \
         --project-directory . \
         down
     ```
@@ -63,10 +59,10 @@
 ### Development
 
 ```
-npx redoc-cli serve docs/openapi.yaml -w
+npx redoc-cli serve docs/openapi.yaml -wp 6969
 ```
 
-Open http://127.0.0.1:8080 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
+Open http://127.0.0.1:6969 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
 
 ### Testing
 

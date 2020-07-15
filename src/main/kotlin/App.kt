@@ -14,7 +14,6 @@ import io.ktor.auth.Authentication
 import io.ktor.auth.authentication
 import io.ktor.auth.jwt.JWTPrincipal
 import io.ktor.auth.jwt.jwt
-import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.cio.websocket.pingPeriod
@@ -38,7 +37,6 @@ val DataFetchingEnvironment.userId: Int? get() = getContext()
 fun Application.main() {
     setUpAuth()
     setUpDb()
-    install(CallLogging)
     install(ContentNegotiation) { register(ContentType.Application.Json, JacksonConverter(objectMapper)) }
     install(WebSockets) { pingPeriod = Duration.ofMinutes(1) }
     install(Authentication) {

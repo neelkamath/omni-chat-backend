@@ -16,11 +16,13 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("AccountData") { wireType(it, ::readAccountData) }
     .type("MessageData") { wireType(it, ::readMessageData) }
 
-private fun wireType(builder: TypeRuntimeWiring.Builder, typeReader: (Any) -> String): TypeRuntimeWiring.Builder =
-    builder.typeResolver {
-        val type = typeReader(it.getObject())
-        it.schema.getObjectType(type)
-    }
+private inline fun wireType(
+    builder: TypeRuntimeWiring.Builder,
+    crossinline reader: (Any) -> String
+): TypeRuntimeWiring.Builder = builder.typeResolver {
+    val type = reader(it.getObject())
+    it.schema.getObjectType(type)
+}
 
 private fun readChat(obj: Any): String = when (obj) {
     is PrivateChat, is PrivateChatDto -> "PrivateChat"

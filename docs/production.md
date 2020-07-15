@@ -10,4 +10,4 @@
     ```
 1. [Set up auth](auth_setup.md).
 
-There's an [auth admin panel](auth_admin_panel.md).
+There's an [auth admin panel](auth_admin_panel.md). You'll need to take care of DB persistence and backups yourself via the [Docker config](../docker).
