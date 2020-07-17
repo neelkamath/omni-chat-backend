@@ -12,17 +12,25 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        up
+        up -d
     ```
 1. [Set up auth](auth_setup.md).
-
-### Testing
-
-1. Spin up services:
+1. To shut down:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
+        -f docker/docker-compose.override.yml \
+        --project-directory . \
+        down
+    ```
+
+### Testing
+
+1. Spin up the services:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         up --scale chat=0 -d
     ```
@@ -30,7 +38,7 @@
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         run --rm --service-ports chat bash
     ```
@@ -41,11 +49,11 @@
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 
 1. Run `exit` to shut down the shell.
-1. Spin down the services:
+1. To shut down the services:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         down
     ```

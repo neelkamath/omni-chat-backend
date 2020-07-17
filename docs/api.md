@@ -2,7 +2,7 @@
 
 ## Flow
 
-Here is the usual flow for using this service.
+Here is the usual flow for using the API.
 1. Have the user sign up for an account. Pass the info they give you to `Mutatation.createAccount`.
 1. Have the user verify their email.
 1. Have the user log in. Pass the credentials they give you to `Query.requestTokenSet`. This will give you an access token to authenticate their future actions.
@@ -12,7 +12,7 @@ Here is the usual flow for using this service.
 ## Notes
 
 - The base URL is http://localhost:80.
-- This service is primarily a [GraphQL](https://graphql.org/) API served over the HTTP and WebSocket protocols. There is also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. When you downloaded the [release](https://github.com/neelkamath/omni-chat/releases) assets, you would've gotten a file `redoc-static.html` which contains the REST API docs.
+- The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTPS and WSS protocols. There is also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. When you downloaded the [release](https://github.com/neelkamath/omni-chat/releases) assets, you would've gotten a file `redoc-static.html` which contains the REST API docs.
 - Unless explicitly states, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
@@ -52,9 +52,9 @@ Here is the current version's [schema](../src/main/resources/schema.graphqls).
 The schema contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message gets returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
 
 There are other types of error messages which could be returned which aren't explicitly documented in the schema because they would be repetitive and irrelevant. They are:
-- Receiving the `"INTERNAL_SERVER_ERROR"` `errors[0].message` indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "The service is currently unreachable".
+- Receiving the `"INTERNAL_SERVER_ERROR"` `errors[0].message` indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "Something went wrong. Please try again.".
 - Receiving the `"UNAUTHORIZED"` `errors[0].message` indicates that a mandatory access token wasn't supplied.
-- If descriptive error messages get returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there is a bug in the client's code, and the programmer consuming the service must fix it. 
+- If descriptive error messages get returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there's a bug in the client's code, and the programmer consuming the API must fix it. 
 
 ### Pagination
 

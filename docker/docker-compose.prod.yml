@@ -1,10 +1,20 @@
 version: '3.8'
 services:
-  auth:
-    ports: [8080:8080]
+  auth-db:
+    volumes:
+      - type: volume
+        source: auth-db-prod
+        target: /var/lib/postgresql/data
   chat:
     build:
       dockerfile: docker/Dockerfile
       context: .
-    ports: [80:80]
     command: java -server -jar omni-chat-all.jar
+  chat-db:
+    volumes:
+      - type: volume
+        source: chat-db-prod
+        target: /var/lib/postgresql/data
+volumes:
+  auth-db-prod:
+  chat-db-prod:

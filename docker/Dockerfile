@@ -6,9 +6,9 @@ COPY src/main/ src/main/
 RUN gradle -i shadowJar
 
 FROM adoptopenjdk:14-jre-hotspot
-WORKDIR /app
+WORKDIR /application
 COPY --from=builder /home/gradle/project/build/libs/omni-chat-all.jar .
 COPY docker/dockerize docker/dockerize
-EXPOSE 80/tcp
+EXPOSE 80
 HEALTHCHECK --timeout=5s --start-period=5s --retries=1 \
     CMD curl -f http://localhost:80/health_check
