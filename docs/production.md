@@ -2,7 +2,7 @@
 
 ## Setup
 
-1. Start the server on http://localhost:80:
+1. Start the server on http://localhost:80 (Docker Swarm isn't supported):
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -20,11 +20,9 @@
         down
     ```
 
-
 ## Operating
 
-- There's an [auth admin panel](auth_admin_panel.md).
-- The `proxy` service handles log emission. For example, you can view logs by running `docker logs omni-chat_proxy_1`.
-- The `chat` service can be scaled freely, and will automatically be load balanced. You'll have to research how to scale the other services, such as when you're replicating containers using Docker Swarm.
-- You should use [Docker secrets](https://docs.docker.com/engine/swarm/secrets/) instead of the `.env` file.
-- You should regularly back up the `auth-db-prod` and `chat-db-prod` volumes.
+- Note that you don't need to understand anything about the services used by the application. For example, the auth system uses a DB, but whatever needs to be known about it is explicitly documented here.
+- The auth system has an [admin panel](auth_admin_panel.md).
+- The `proxy` service handles log emission. View logs by running `docker logs proxy`.
+- You can freely scale services (i.e., `docker-compose up --scale`) which allow you to, and they will automatically be load balanced.

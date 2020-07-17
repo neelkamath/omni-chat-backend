@@ -1,3 +1,5 @@
+# Certain services cannot be scaled due to their stateful nature, and hence <container_name>s are provided to prevent
+# them from being scaled.
 version: '3.8'
 services:
   auth:
@@ -24,6 +26,7 @@ services:
   auth-db:
     image: postgres:12.3
     networks: [auth-db]
+    container_name: auth-db
     expose: [5432]
     restart: always
     environment:
@@ -49,6 +52,7 @@ services:
       POSTGRES_URL: chat-db:5432
   chat-db:
     image: postgres:12.3
+    container_name: chat-db
     restart: always
     expose: [5432]
     networks: [chat-db]
@@ -57,8 +61,10 @@ services:
   proxy:
     image: caddy:2.1.1
     networks: [proxy]
+    container_name: proxy
     expose: [80, 443, 2019]
     ports: [80:80, 443:443]
+    restart: always
     volumes:
       - type: bind
         source: ./Caddyfile
