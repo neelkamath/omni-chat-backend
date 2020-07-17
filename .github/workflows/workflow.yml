@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cp docs/.env .env
+      - run: cp docs/.env .
+      - run: cp docs/Caddyfile .
       - name: spin up services
         run: |
           docker-compose \
