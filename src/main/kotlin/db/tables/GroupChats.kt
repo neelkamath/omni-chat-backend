@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.db.tables.GroupChats.MAX_PIC_BYTES
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * Pics cannot exceed [MAX_PIC_BYTES].
@@ -34,7 +35,7 @@ object GroupChats : Table() {
     private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
-    fun isAdmin(userId: Int, chatId: Int): Boolean = transact {
+    fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
         select { GroupChats.id eq chatId }.first()[adminId] == userId
     }
 
@@ -47,7 +48,7 @@ object GroupChats : Table() {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
         if (userId !in userIdList)
             throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
-        transact {
+        transaction {
             update({ GroupChats.id eq chatId }) { it[adminId] = userId }
         }
     }
@@ -59,7 +60,7 @@ object GroupChats : Table() {
      * [newGroupChatsBroker].
      */
     fun create(adminId: Int, chat: NewGroupChat): Int {
-        val chatId = transact {
+        val chatId = transaction {
             insert {
                 it[id] = Chats.create()
                 it[GroupChats.adminId] = adminId
@@ -78,7 +79,7 @@ object GroupChats : Table() {
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): GroupChat {
-        val row = transact {
+        val row = transaction {
             select { GroupChats.id eq id }.first()
         }
         return buildGroupChat(row, id, usersPagination, messagesPagination)
@@ -94,7 +95,7 @@ object GroupChats : Table() {
         userId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
-    ): List<GroupChat> = transact {
+    ): List<GroupChat> = transaction {
         GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination) }
     }
 
@@ -141,7 +142,7 @@ object GroupChats : Table() {
      *
      * @see [GroupChats.update]
      */
-    private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transact {
+    private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transaction {
         update({ GroupChats.id eq update.chatId }) { statement ->
             update.title?.let { statement[title] = it.value }
             update.description?.let { statement[description] = it.value }
@@ -154,13 +155,13 @@ object GroupChats : Table() {
      * @see [update]
      */
     fun updatePic(chatId: Int, pic: ByteArray?) {
-        transact {
+        transaction {
             update({ GroupChats.id eq chatId }) { it[this.pic] = pic }
         }
         updatedChatsBroker.notify(UpdatedGroupChat(chatId)) { isUserInChat(it.userId, chatId) }
     }
 
-    fun readPic(chatId: Int): ByteArray? = transact {
+    fun readPic(chatId: Int): ByteArray? = transaction {
         select { GroupChats.id eq chatId }.first()[pic]
     }
 
@@ -176,7 +177,7 @@ object GroupChats : Table() {
             throw IllegalArgumentException("The chat (ID: $chatId) is not empty (users: $userIdList).")
         TypingStatuses.deleteChat(chatId)
         Messages.deleteChat(chatId)
-        transact {
+        transaction {
             deleteWhere { GroupChats.id eq chatId }
         }
         Chats.delete(chatId)
@@ -192,7 +193,7 @@ object GroupChats : Table() {
         query: String,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
-    ): List<GroupChat> = transact {
+    ): List<GroupChat> = transaction {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
             .map { buildGroupChat(it, it[GroupChats.id], usersPagination, messagesPagination) }
     }

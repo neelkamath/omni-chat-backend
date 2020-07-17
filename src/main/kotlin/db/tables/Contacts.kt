@@ -4,9 +4,9 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.contactsBroker
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 
 object Contacts : IntIdTable() {
     /** The ID of the user who has saved the [contactId]. */
@@ -22,7 +22,7 @@ object Contacts : IntIdTable() {
     fun create(ownerId: Int, contactIdList: Set<Int>) {
         val existingContacts = readIdList(ownerId)
         val newContacts = contactIdList.filter { it !in existingContacts }
-        transact {
+        transaction {
             batchInsert(newContacts) {
                 this[contactOwnerId] = ownerId
                 this[contactId] = it
@@ -34,12 +34,12 @@ object Contacts : IntIdTable() {
     }
 
     /** The user ID list of the contacts saved by the contact [ownerId]. */
-    fun readIdList(ownerId: Int): List<Int> = transact {
+    fun readIdList(ownerId: Int): List<Int> = transaction {
         select { contactOwnerId eq ownerId }.map { it[contactId] }
     }
 
     /** The [ownerId]'s contacts. */
-    private fun readRows(ownerId: Int): List<AccountEdge> = transact {
+    private fun readRows(ownerId: Int): List<AccountEdge> = transaction {
         select { contactOwnerId eq ownerId }.map { AccountEdge(readUserById(it[contactId]), it[Contacts.id].value) }
     }
 
@@ -61,7 +61,7 @@ object Contacts : IntIdTable() {
      */
     fun delete(ownerId: Int, contactIdList: List<Int>) {
         val contacts = readIdList(ownerId).intersect(contactIdList)
-        transact {
+        transaction {
             deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
         }
         contacts.forEach { contact ->
@@ -75,7 +75,7 @@ object Contacts : IntIdTable() {
      */
     fun deleteUserEntries(userId: Int) {
         contactsBroker.notify(DeletedContact(userId)) { userId in readIdList(it.userId) }
-        transact {
+        transaction {
             deleteWhere { (contactOwnerId eq userId) or (contactId eq userId) }
         }
     }

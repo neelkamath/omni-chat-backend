@@ -8,9 +8,9 @@ There are way too many chat apps. Every new one tries to implement features anot
 
 We'll create a new type of chat app which must render all the existing ones useless. It's important we go all the way. Otherwise, we'll just be another chat app no one will want to use a few years from now. We'll accomplish this goal by implementing the useful features different apps have, while leaving out the bad stuff. We aim to replace the traditional messaging systems to make email, phone calls, SMS, voicemail, video calls, and just chat in general, manageable for the first time.
 
-There are other services who share our vision, such as Rocket.Chat. We differentiate ourselves with the following points:
-- Services like Slack, Zulip, and Rocket.Chat only implement a subset of the features people actually require in chat systems. We implement all of them.
-- Services like Slack and Rocket.Chat delude themselves into thinking they'll replace email in the long term. People will never stop using the basics like SMS even if your service gives them free rainbow-pooping unicorns. What we try to do is more humble: replace most of the usage of traditional services with that of our own.
+There are other products which share our vision, such as Rocket.Chat. We differentiate ourselves with the following points:
+- Products like Slack, Zulip, and Rocket.Chat only implement a subset of the features people actually require in chat systems. We implement all of them.
+- Products like Slack and Rocket.Chat delude themselves into thinking they'll replace email in the long term. People will never stop using the basics like SMS even if your service gives them free rainbow-pooping unicorns. What we try to do is more humble: replace most of the usage of traditional services with that of our own.
 - We don't substitute features with useless integrations which are worse than the original services (e.g., Rocket.Chat's never ending quest of making integrations with companies like Uber even though Uber's app is superior in every way).
 
 Here are examples of existing chat systems that we can replace even though they serve niche use cases:

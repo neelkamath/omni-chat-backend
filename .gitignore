@@ -4,3 +4,6 @@ build/
 out/
 .DS_Store
 .env
+!docs/.env
+Caddyfile
+!docs/Caddyfile

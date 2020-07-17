@@ -1,14 +1,16 @@
 version: '3.8'
 services:
-  auth:
-    ports: [8080:8080]
+  auth-db:
+    volumes:
+      - type: volume
+        source: auth-db-dev
+        target: /var/lib/postgresql/data
   chat:
     image: gradle:6.5.1-jdk14
     command: sh -c 'gradle --stacktrace -t installDist & gradle run'
-    # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name. The directory
-    # must be nested (i.e., "/omni-chat" will not work).
+    # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name.
     working_dir: /home/gradle/omni-chat
-    ports: [80:80]
+    ports: [5005:5005] # The debugger attaches to port 5005.
     volumes:
       - type: bind
         source: .
@@ -17,5 +19,12 @@ services:
       - type: volume
         source: gradle-cache
         target: /home/gradle/.gradle
+  chat-db:
+    volumes:
+      - type: volume
+        source: chat-db-dev
+        target: /var/lib/postgresql/data
 volumes:
+  auth-db-dev:
+  chat-db-dev:
   gradle-cache:

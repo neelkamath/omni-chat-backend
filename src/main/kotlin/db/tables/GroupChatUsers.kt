@@ -5,11 +5,11 @@ import com.neelkamath.omniChat.AccountsConnection
 import com.neelkamath.omniChat.ExitedUser
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.transact
 import com.neelkamath.omniChat.db.updatedChatsBroker
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /** The users in [GroupChats]. */
 object GroupChatUsers : IntIdTable() {
@@ -17,7 +17,7 @@ object GroupChatUsers : IntIdTable() {
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val groupChatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)
 
-    private fun isUserInChat(groupChatId: Int, userId: Int): Boolean = transact {
+    private fun isUserInChat(groupChatId: Int, userId: Int): Boolean = transaction {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
@@ -30,11 +30,11 @@ object GroupChatUsers : IntIdTable() {
      *
      * @see [readUsers]
      */
-    fun readUserIdList(groupChatId: Int): List<Int> = transact {
+    fun readUserIdList(groupChatId: Int): List<Int> = transaction {
         select { GroupChatUsers.groupChatId eq groupChatId }.map { it[userId] }
     }
 
-    private fun readUserCursors(groupChatId: Int): List<AccountEdge> = transact {
+    private fun readUserCursors(groupChatId: Int): List<AccountEdge> = transaction {
         select { GroupChatUsers.groupChatId eq groupChatId }
             .map { AccountEdge(readUserById(it[userId]), it[GroupChatUsers.id].value) }
     }
@@ -44,7 +44,7 @@ object GroupChatUsers : IntIdTable() {
         AccountsConnection.build(readUserCursors(groupChatId), pagination)
 
     /** Adds every user in the [userIdList] to the [groupChatId] if they aren't in it. */
-    fun addUsers(groupChatId: Int, userIdList: List<Int>): Unit = transact {
+    fun addUsers(groupChatId: Int, userIdList: List<Int>): Unit = transaction {
         val users = userIdList.filterNot { isUserInChat(groupChatId, it) }.toSet()
         batchInsert(users) {
             this[GroupChatUsers.groupChatId] = groupChatId
@@ -61,7 +61,7 @@ object GroupChatUsers : IntIdTable() {
      * will be [Broker.notify]d of the [ExitedUser]s.
      */
     fun removeUsers(chatId: Int, userIdList: List<Int>) {
-        transact {
+        transaction {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         userIdList.forEach { userId ->
@@ -77,7 +77,7 @@ object GroupChatUsers : IntIdTable() {
     fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
     /** The chat ID list of every chat the [userId] is in. */
-    fun readChatIdList(userId: Int): List<Int> = transact {
+    fun readChatIdList(userId: Int): List<Int> = transaction {
         select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }
     }
 }

@@ -7,6 +7,7 @@ import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 /** When [Messages] were delivered and read. */
@@ -68,7 +69,7 @@ object MessageStatuses : Table() {
      * [messagesBroker].
      */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
-        transact {
+        transaction {
             insert {
                 it[MessageStatuses.messageId] = messageId
                 it[MessageStatuses.userId] = userId
@@ -80,7 +81,7 @@ object MessageStatuses : Table() {
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
-    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = !transact {
+    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = !transaction {
         select {
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
@@ -89,7 +90,7 @@ object MessageStatuses : Table() {
     }
 
     /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
-    fun delete(messageIdList: List<Int>): Unit = transact {
+    fun delete(messageIdList: List<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
     }
 
@@ -97,17 +98,17 @@ object MessageStatuses : Table() {
     fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Deletes every status the [userId] created in the [chatId]. */
-    fun deleteUserChatStatuses(chatId: Int, userId: Int) = transact {
+    fun deleteUserChatStatuses(chatId: Int, userId: Int) = transaction {
         deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
     /** Deletes every status the [userId] created. */
-    fun deleteUserStatuses(userId: Int): Unit = transact {
+    fun deleteUserStatuses(userId: Int): Unit = transaction {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
     /** [messageId]'s [MessageDateTimeStatus]es. */
-    fun read(messageId: Int): List<MessageDateTimeStatus> = transact {
+    fun read(messageId: Int): List<MessageDateTimeStatus> = transaction {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(readUserById(it[userId]), it[dateTime], it[status]) }
     }

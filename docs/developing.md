@@ -11,20 +11,26 @@
     docker-compose \
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
-        -p dev \
         --project-directory . \
-        up
+        up -d
     ```
 1. [Set up auth](auth_setup.md).
-
-### Testing
-
-1. Spin up services:
+1. To shut down:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
-        -p test \
+        -f docker/docker-compose.override.yml \
+        --project-directory . \
+        down
+    ```
+
+### Testing
+
+1. Spin up the services:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         up --scale chat=0 -d
     ```
@@ -32,8 +38,7 @@
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
-        -p test \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         run --rm --service-ports chat bash
     ```
@@ -44,12 +49,11 @@
         1. Run `jdb -attach 5005` in another terminal.
         1. Run `exit` in the debugger's terminal once you're done. 
 1. Run `exit` to shut down the shell.
-1. Spin down the services:
+1. To shut down the services:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
-        -f docker/docker-compose.test.yml \
-        -p test \
+        -f docker/docker-compose.override.yml \
         --project-directory . \
         down
     ```
@@ -63,10 +67,10 @@
 ### Development
 
 ```
-npx redoc-cli serve docs/openapi.yaml -w
+npx redoc-cli serve docs/openapi.yaml -wp 6969
 ```
 
-Open http://127.0.0.1:8080 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
+Open http://127.0.0.1:6969 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
 
 ### Testing
 

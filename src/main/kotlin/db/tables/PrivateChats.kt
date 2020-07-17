@@ -2,10 +2,14 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DeletionOfEveryMessage
 import com.neelkamath.omniChat.PrivateChat
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.BackwardPagination
+import com.neelkamath.omniChat.db.Broker
+import com.neelkamath.omniChat.db.ChatEdges
+import com.neelkamath.omniChat.db.messagesBroker
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * @see [Messages]
@@ -31,7 +35,7 @@ object PrivateChats : Table() {
     }
 
     /** Records in the DB that [user1Id] and [user2Id] are in a chat with each other, and returns the chat's ID. */
-    private fun insert(user1Id: Int, user2Id: Int): Int = transact {
+    private fun insert(user1Id: Int, user2Id: Int): Int = transaction {
         insert {
             it[id] = Chats.create()
             it[PrivateChats.user1Id] = user1Id
@@ -69,12 +73,12 @@ object PrivateChats : Table() {
      * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
      * deletion.
      */
-    private fun readUserChatsRows(userId: Int): List<ResultRow> = transact {
+    private fun readUserChatsRows(userId: Int): List<ResultRow> = transaction {
         select { (user1Id eq userId) or (user2Id eq userId) }
             .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
     }
 
-    fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat = transact {
+    fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat = transaction {
         select { PrivateChats.id eq id }.first()
     }.let { buildPrivateChat(it, userId, pagination) }
 
@@ -96,7 +100,7 @@ object PrivateChats : Table() {
      *
      * @see [readUserChats]
      */
-    fun readIdList(userId: Int): List<Int> = transact {
+    fun readIdList(userId: Int): List<Int> = transaction {
         select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }
     }
 
@@ -126,7 +130,7 @@ object PrivateChats : Table() {
      *
      * @see [areInChat]
      */
-    fun exists(user1Id: Int, user2Id: Int): Boolean = transact {
+    fun exists(user1Id: Int, user2Id: Int): Boolean = transaction {
         val where = { userId: Int -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
         !select { where(user1Id) and where(user2Id) }.empty()
     }
@@ -153,7 +157,7 @@ object PrivateChats : Table() {
         Messages.deleteChat(chatId)
         TypingStatuses.deleteChat(chatId)
         PrivateChatDeletions.delete(chatId)
-        transact {
+        transaction {
             deleteWhere { PrivateChats.id eq chatId }
         }
         Chats.delete(chatId)
@@ -165,7 +169,7 @@ object PrivateChats : Table() {
      *
      * @see [readOtherUserId]
      */
-    fun readUserIdList(chatId: Int): List<Int> = transact {
+    fun readUserIdList(chatId: Int): List<Int> = transaction {
         val row = select { PrivateChats.id eq chatId }.first()
         listOf(row[user1Id], row[user2Id])
     }

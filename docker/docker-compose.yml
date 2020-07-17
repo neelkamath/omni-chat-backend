@@ -1,32 +1,40 @@
+# Certain services cannot be scaled due to their stateful nature, and hence <container_name>s are provided to prevent
+# them from being scaled.
 version: '3.8'
 services:
   auth:
     image: jboss/keycloak:10.0.2
     entrypoint: docker/dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
-    networks: [auth, auth-db]
+    networks: [proxy, auth-db]
+    restart: always
+    expose: [8080]
     volumes:
       - type: bind
         source: ./docker/dockerize
         target: /docker/dockerize
+        read_only: true
     environment:
       DB_ADDR: auth-db
       DB_DATABASE: postgres
       DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
       DB_USER: postgres
       DB_VENDOR: postgres
-      KEYCLOAK_FRONTEND_URL: http://localhost:8080/auth
+      KEYCLOAK_FRONTEND_URL: http://localhost/auth
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_USER: admin
   auth-db:
-    image: postgres
+    image: postgres:12.3
     networks: [auth-db]
+    container_name: auth-db
+    expose: [5432]
     restart: always
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
   chat:
-    entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 180s
-    networks: [auth, chat-db]
+    entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 3m
+    networks: [proxy, chat-db]
+    expose: [80]
     restart: always
     environment:
       KEYCLOAK_USER: admin
@@ -44,11 +52,34 @@ services:
       POSTGRES_URL: chat-db:5432
   chat-db:
     image: postgres:12.3
+    container_name: chat-db
     restart: always
+    expose: [5432]
     networks: [chat-db]
     environment:
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
+  proxy:
+    image: caddy:2.1.1
+    networks: [proxy]
+    container_name: proxy
+    expose: [80, 443, 2019]
+    ports: [80:80, 443:443]
+    restart: always
+    volumes:
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+      - type: volume
+        source: caddy-config
+        target: /config
+      - type: volume
+        source: caddy-data
+        target: /data
+volumes:
+  caddy-config:
+  caddy-data:
 networks:
-  auth:
   auth-db:
   chat-db:
+  proxy:

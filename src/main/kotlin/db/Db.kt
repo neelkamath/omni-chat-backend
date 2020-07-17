@@ -50,7 +50,7 @@ private fun connect() {
 }
 
 /** Creates the required types and tables. */
-private fun create(): Unit = transact {
+private fun create(): Unit = transaction {
     createTypes()
     SchemaUtils.create(
         Contacts,
@@ -77,22 +77,16 @@ private fun createTypes() {
  * exist.
  */
 private fun createType(name: String, definition: String) {
-    if (!exists(name)) transact { exec("CREATE TYPE $name AS $definition;") }
+    if (!exists(name)) transaction { exec("CREATE TYPE $name AS $definition;") }
 }
 
 /** Whether the [type] has been created. */
-private fun exists(type: String): Boolean = transact {
+private fun exists(type: String): Boolean = transaction {
     exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
         resultSet.next()
         val column = "exists"
         resultSet.getBoolean(column)
     }!!
-}
-
-/** Always use this instead of [transaction]. */
-inline fun <T> transact(crossinline statement: Transaction.() -> T): T = transaction {
-    addLogger(StdOutSqlLogger)
-    statement()
 }
 
 /** Case-insensitively checks if [this] contains the [pattern]. */

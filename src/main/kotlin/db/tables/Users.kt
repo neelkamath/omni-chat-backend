@@ -4,9 +4,9 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.negotiateUserUpdate
 import com.neelkamath.omniChat.db.tables.Users.MAX_PIC_BYTES
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 /**
@@ -23,38 +23,38 @@ object Users : IntIdTable() {
     private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
 
     /** @see [createUser] */
-    fun create(userUuid: UUID, pic: ByteArray? = null): Unit = transact {
+    fun create(userUuid: UUID, pic: ByteArray? = null): Unit = transaction {
         insert {
             it[uuid] = userUuid
             it[this.pic] = pic
         }
     }
 
-    fun readUuid(id: Int): UUID = transact {
+    fun readUuid(id: Int): UUID = transaction {
         select { Users.id eq id }.first()[uuid]
     }
 
-    fun readId(userUuid: UUID): Int = transact {
+    fun readId(userUuid: UUID): Int = transaction {
         select { uuid eq userUuid }.first()[Users.id].value
     }
 
-    fun exists(id: Int): Boolean = transact {
+    fun exists(id: Int): Boolean = transaction {
         select { Users.id eq id }.empty().not()
     }
 
     /** Deletes the pic if [pic] is `null`. Calls [negotiateUserUpdate]. */
     fun updatePic(userId: Int, pic: ByteArray?) {
-        transact {
+        transaction {
             update({ Users.id eq userId }) { it[Users.pic] = pic }
         }
         negotiateUserUpdate(userId)
     }
 
-    fun readPic(userId: Int): ByteArray? = transact {
+    fun readPic(userId: Int): ByteArray? = transaction {
         select { Users.id eq userId }.first()[pic]
     }
 
-    private fun readPrimaryKey(userId: Int): Int = transact {
+    private fun readPrimaryKey(userId: Int): Int = transaction {
         select { Users.id eq userId }.first()[Users.id].value
     }
 
@@ -73,7 +73,7 @@ object Users : IntIdTable() {
      *
      * @see [deleteUser]
      */
-    fun delete(userId: Int): Unit = transact {
+    fun delete(userId: Int): Unit = transaction {
         deleteWhere { Users.id eq userId }
     }
 }

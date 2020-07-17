@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 
-fun TypingStatuses.count(): Long = transact { selectAll().count() }
+fun TypingStatuses.count(): Long = transaction { selectAll().count() }

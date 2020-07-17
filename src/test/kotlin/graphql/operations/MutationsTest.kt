@@ -541,7 +541,7 @@ class MutationsTest : FunSpec({
     }
 
     context("deleteAccount(DataFetchingEnvironment)") {
-        test("An account should be deleted from the auth service") {
+        test("An account should be deleted from the auth system") {
             val userId = createVerifiedUsers(1)[0].info.id
             deleteAccount(userId)
             Users.exists(userId).shouldBeFalse()

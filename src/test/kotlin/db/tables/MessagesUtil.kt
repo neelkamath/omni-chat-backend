@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.TextMessage
-import com.neelkamath.omniChat.db.transact
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Sends the [text] in the [chatId] from the [userId], and returns the message's ID. */
 fun Messages.message(chatId: Int, userId: Int, text: TextMessage): Int {
@@ -11,4 +11,4 @@ fun Messages.message(chatId: Int, userId: Int, text: TextMessage): Int {
 }
 
 /** Returns the number of messages in every chat. */
-fun Messages.count(): Long = transact { selectAll().count() }
+fun Messages.count(): Long = transaction { selectAll().count() }

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   version: 0.0.1
   title: Omni Chat
-  description: Services supplementary to the GraphQL API such as image uploading.
+  description: Functionality supplementary to the GraphQL API such as image uploading.
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat
@@ -82,7 +82,7 @@ paths:
   /health-check:
     get:
       tags: [status]
-      description: Check if all systems are operational. For example, a backend developer building atop this service can
+      description: Check if all systems are operational. For example, a backend developer building atop Omni Chat can
         program the server to automatically restart when it becomes "unhealthy".
       operationId: getHealthCheck
       responses:
