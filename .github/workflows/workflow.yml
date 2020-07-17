@@ -17,7 +17,7 @@ jobs:
             -f docker/docker-compose.yml \
             -f docker/docker-compose.override.yml \
             --project-directory . \
-            up --scale chat=0
+            up -d --scale chat=0
       - name: test
         run: |
           docker-compose \
