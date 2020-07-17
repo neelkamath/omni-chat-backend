@@ -4,7 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: docker run --mount type=bind,src=$PWD/Caddyfile,dst=/srv/Caddyfile caddy:2.1.1 caddy validate
+      - run: docker run --mount type=bind,src=$PWD/docs/Caddyfile,dst=/srv/Caddyfile caddy:2.1.1 caddy validate
   test-server:
     runs-on: ubuntu-latest
     steps:
