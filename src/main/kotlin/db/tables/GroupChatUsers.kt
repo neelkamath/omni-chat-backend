@@ -21,9 +21,9 @@ object GroupChatUsers : IntIdTable() {
         !select { (GroupChatUsers.groupChatId eq groupChatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
-    /** Whether [user1Id] and [user2Id] have at least one chat in common. */
-    fun areInSameChat(user1Id: Int, user2Id: Int): Boolean =
-        user1Id in readChatIdList(user2Id).flatMap { readUserIdList(it) }
+    /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
+    fun readFellowParticipants(userId: Int): Set<Int> =
+        readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
 
     /**
      * The user ID list from the specified [groupChatId].

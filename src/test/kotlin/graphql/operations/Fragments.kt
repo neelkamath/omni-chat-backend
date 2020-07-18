@@ -1,5 +1,13 @@
 package com.neelkamath.omniChat.graphql.operations
 
+const val ONLINE_STATUS_FRAGMENT = """
+    ... on OnlineStatus {
+        userId
+        isOnline
+        lastOnline
+    }
+"""
+
 const val ACCOUNT_FRAGMENT = """
     ... on Account {
         id

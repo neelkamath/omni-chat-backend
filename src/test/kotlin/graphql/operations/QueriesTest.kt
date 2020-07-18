@@ -19,6 +19,22 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
+const val READ_ONLINE_STATUSES_QUERY = """
+    query ReadOnlineStatuses {
+        readOnlineStatuses {
+            $ONLINE_STATUS_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadOnlineStatuses(userId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(READ_ONLINE_STATUSES_QUERY, userId = userId)
+
+fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
+    val data = operateReadOnlineStatuses(userId).data!!["readOnlineStatuses"] as List<*>
+    return objectMapper.convertValue(data)
+}
+
 const val CAN_DELETE_ACCOUNT_QUERY = """
     query CanDeleteAccount {
         canDeleteAccount
@@ -486,6 +502,16 @@ class ChatMessagesDtoTest : FunSpec({
 })
 
 class QueriesTest : FunSpec({
+    context("readOnlineStatuses(DataFetchingEnvironment)") {
+        test("Reading online statuses should only retrieve users the user has in their contacts, or has a chat with") {
+            val (contactOwnerId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
+            Contacts.create(contactOwnerId, setOf(contactId))
+            PrivateChats.create(contactOwnerId, chatSharerId)
+            readOnlineStatuses(contactOwnerId).map { it.userId } shouldContainExactlyInAnyOrder
+                    listOf(contactId, chatSharerId)
+        }
+    }
+
     context("canDeleteAccount(DataFetchingEnvironment)") {
         test("An account should be deletable if the user is the admin of an empty group chat") {
             val userId = createVerifiedUsers(1)[0].info.id

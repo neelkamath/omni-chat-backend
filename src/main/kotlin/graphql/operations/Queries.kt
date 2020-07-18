@@ -79,6 +79,16 @@ fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     return !GroupChats.isNonemptyChatAdmin(env.userId!!)
 }
 
+fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
+    env.verifyAuth()
+    val userIdList = Contacts.readIdList(env.userId!!) +
+            PrivateChats.readOtherUserIdList(env.userId!!) +
+            GroupChatUsers.readFellowParticipants(env.userId!!)
+    return userIdList.map {
+        with(Users.read(it)) { OnlineStatus(it, isOnline, lastOnline) }
+    }
+}
+
 fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean =
     emailAddressExists(env.getArgument("emailAddress"))
 

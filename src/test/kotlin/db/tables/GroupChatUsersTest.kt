@@ -6,24 +6,16 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.UpdatedChatsAsset
 import com.neelkamath.omniChat.db.updatedChatsBroker
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
 class GroupChatUsersTest : FunSpec({
-    context("areInSameChat(String, String)") {
-        test("Two users should be said to share a chat if they have at least one chat in common") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, buildNewGroupChat(userId))
-            GroupChatUsers.areInSameChat(adminId, userId).shouldBeTrue()
-            GroupChatUsers.areInSameChat(userId, adminId).shouldBeTrue()
-        }
-
-        test("Two users shouldn't be said to share a chat if they don't") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            GroupChatUsers.areInSameChat(user1Id, user2Id).shouldBeFalse()
-            GroupChatUsers.areInSameChat(user2Id, user1Id).shouldBeFalse()
+    context("readFellowParticipants(Int)") {
+        test("Reading fellow participants should only include other participants in the chats") {
+            val (adminId, participantId) = createVerifiedUsers(2).map { it.info.id }
+            GroupChats.create(adminId, buildNewGroupChat(participantId))
+            GroupChatUsers.readFellowParticipants(adminId) shouldBe setOf(participantId)
         }
     }
 
