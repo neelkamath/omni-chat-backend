@@ -27,6 +27,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
 private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("deleteAccount", ::deleteAccount)
     .dataFetcher("createAccount", ::createAccount)
+    .dataFetcher("setOnlineStatus", ::setOnlineStatus)
     .dataFetcher("updateAccount", ::updateAccount)
     .dataFetcher("deleteProfilePic", ::deleteProfilePic)
     .dataFetcher("deleteGroupChatPic", ::deleteGroupChatPic)

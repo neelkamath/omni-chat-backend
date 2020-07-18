@@ -32,7 +32,7 @@ private fun getProfilePic(route: Route): Unit = with(route) {
     get {
         val userId = call.parameters["user-id"]!!.toInt()
         if (!Users.exists(userId)) call.respond(HttpStatusCode.BadRequest)
-        else call.respond(Users.readPic(userId) ?: HttpStatusCode.NoContent)
+        else call.respond(Users.read(userId).pic ?: HttpStatusCode.NoContent)
     }
 }
 

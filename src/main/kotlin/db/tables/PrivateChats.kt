@@ -117,6 +117,8 @@ object PrivateChats : Table() {
     /**
      * Whether [user1Id] and [user2Id] are in a chat with each other (i.e., a chat [PrivateChats.exists] between them,
      * and neither of them has the chat deleted).
+     *
+     * @see [readOtherUserIdList]
      */
     fun areInChat(user1Id: Int, user2Id: Int): Boolean {
         val hasChatWith = { firstUserId: Int, secondUserId: Int ->
@@ -184,6 +186,10 @@ object PrivateChats : Table() {
         return if (userIdList[0] == userId) userIdList[1] else userIdList[0]
     }
 
-    /** Returns the ID of every other user the [userId] has chats with, including deleted chats. */
+    /**
+     * Returns the ID of every other user the [userId] has chats with, including deleted chats.
+     *
+     * @see [areInChat]
+     */
     fun readOtherUserIdList(userId: Int): List<Int> = readIdList(userId).map { readOtherUserId(it, userId) }
 }

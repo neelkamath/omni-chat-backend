@@ -16,6 +16,12 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+fun setOnlineStatus(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    Users.setOnlineStatus(env.userId!!, env.getArgument<Boolean>("isOnline"))
+    return Placeholder
+}
+
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val saved = Contacts.readIdList(env.userId!!)

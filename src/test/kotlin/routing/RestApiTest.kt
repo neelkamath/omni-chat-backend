@@ -36,7 +36,7 @@ class RestApiTest : FunSpec({
             Users.updatePic(userId, readImage("31kB.png"))
             with(getProfilePic(userId)) {
                 status() shouldBe HttpStatusCode.OK
-                byteContent shouldBe Users.readPic(userId)!!
+                byteContent shouldBe Users.read(userId).pic!!
             }
         }
 
@@ -83,7 +83,7 @@ class RestApiTest : FunSpec({
             val user = createVerifiedUsers(1)[0]
             val fileName = "31kB.png"
             patchProfilePic(user.accessToken, fileName).status() shouldBe HttpStatusCode.NoContent
-            Users.readPic(user.info.id) shouldBe readImage(fileName)
+            Users.read(user.info.id).pic shouldBe readImage(fileName)
         }
 
         test(
@@ -94,7 +94,7 @@ class RestApiTest : FunSpec({
         ) {
             val user = createVerifiedUsers(1)[0]
             patchProfilePic(user.accessToken, "734kB.jpg").status() shouldBe HttpStatusCode.BadRequest
-            Users.readPic(user.info.id).shouldBeNull()
+            Users.read(user.info.id).pic.shouldBeNull()
         }
     }
 

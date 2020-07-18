@@ -89,6 +89,14 @@ private object TextMessageCoercing : Coercing<TextMessage, String> {
     override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as TextMessage).value }
 }
 
+private object BioCoercing : Coercing<Bio, String> {
+    override fun parseValue(input: Any): Bio = dissectValue { Bio(input as String) }
+
+    override fun parseLiteral(input: Any): Bio = dissectLiteral { Bio((input as StringValue).value) }
+
+    override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as Bio).value }
+}
+
 /**
  * @throws [CoercingParseValueException] if [parse] threw an [Exception].
  * @return the result of [parse].
@@ -129,6 +137,7 @@ fun wireGraphQlScalars(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = 
     .scalar(build("GroupChatTitle", GroupChatTitleCoercing))
     .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
     .scalar(build("TextMessage", TextMessageCoercing))
+    .scalar(build("Bio", BioCoercing))
 
 private fun build(name: String, coercing: Coercing<*, *>): GraphQLScalarType =
     GraphQLScalarType.Builder().name(name).coercing(coercing).build()

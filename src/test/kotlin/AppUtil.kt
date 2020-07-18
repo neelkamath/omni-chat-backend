@@ -75,6 +75,16 @@ private object TextMessageSerializer : JsonSerializer<TextMessage>() {
         generator.writeString(textMessage.value)
 }
 
+private object BioDeserializer : JsonDeserializer<Bio>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Bio =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::Bio)
+}
+
+private object BioSerializer : JsonSerializer<Bio>() {
+    override fun serialize(textMessage: Bio, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(textMessage.value)
+}
+
 /** Updates the [objectMapper] to provide the extra functionality the test source set requires. */
 fun configureObjectMapper() {
     objectMapper
@@ -85,16 +95,17 @@ fun configureObjectMapper() {
         .register(GroupChatTitle::class.java, GroupChatTitleDeserializer, GroupChatTitleSerializer)
         .register(GroupChatDescription::class.java, GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
         .register(TextMessage::class.java, TextMessageDeserializer, TextMessageSerializer)
+        .register(Bio::class.java, BioDeserializer, BioSerializer)
 }
 
 /** Convenience function for [ObjectMapper.registerModule]. Registers the [clazz]'s [serializer] and [deserializer]. */
 private fun <T> ObjectMapper.register(
     clazz: Class<T>,
-    deserializer: JsonDeserializer<T>? = null,
+    deserializer: JsonDeserializer<T>,
     serializer: JsonSerializer<T>? = null
 ): ObjectMapper {
     val module = SimpleModule()
+    module.addDeserializer(clazz, deserializer)
     serializer?.let { module.addSerializer(clazz, it) }
-    deserializer?.let { module.addDeserializer(clazz, it) }
     return registerModule(module)
 }

@@ -1,5 +1,6 @@
 # Certain services cannot be scaled due to their stateful nature, and hence <container_name>s are provided to prevent
 # them from being scaled.
+
 version: '3.8'
 services:
   auth:

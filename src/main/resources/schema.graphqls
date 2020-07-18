@@ -7,6 +7,9 @@ scalar Cursor
 """A username which has non-whitespace characters, is less than 256 characters, and is lowercase."""
 scalar Username
 
+"""A user's bio which cannot exceed 2,500 characters."""
+scalar Bio
+
 """A password which contains non-whitespace characters."""
 scalar Password
 
@@ -40,6 +43,13 @@ type Query {
     You must send an access token with this request.
     """
     canDeleteAccount: Boolean!
+
+    """
+    The online statuses of users the user has in their contacts, or is in a chat with.
+
+    You must send an access token with this request.
+    """
+    readOnlineStatuses: [OnlineStatus!]!
 
     """
     Case-insensitively `query`s text messages in the `chatId`.
@@ -143,6 +153,13 @@ type Mutation {
     You must send an access token with this request.
     """
     deleteAccount: Placeholder!
+
+    """
+    Sets the current user's status to `isOnline`.
+
+    You must send an access token with this request.
+    """
+    setOnlineStatus(isOnline: Boolean!): Placeholder!
 
     """
     Sets whether the user `isTyping` in the `chatId`.
@@ -322,6 +339,13 @@ type Subscription {
     subscribeToMessages: MessagesSubscription!
 
     """
+    Yields the online statuses of users the user has in their contacts, or is in a chat with.
+
+    You must send an access token with this request.
+    """
+    subscribeToOnlineStatuses: OnlineStatusesSubscription!
+
+    """
     Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
     will be stopped if the user deletes their account.
 
@@ -355,7 +379,6 @@ type Subscription {
     subscribeToNewGroupChats: NewGroupChatsSubscription!
 }
 
-"""Represents created and deleted messages, deleted chats, and the subscription creation status."""
 union MessagesSubscription = CreatedSubscription
     | NewMessage
     | UpdatedMessage
@@ -363,6 +386,8 @@ union MessagesSubscription = CreatedSubscription
     | MessageDeletionPoint
     | DeletionOfEveryMessage
     | UserChatMessagesRemoval
+
+union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
@@ -383,6 +408,18 @@ union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | Update
 A `GroupChatId` is the ID of the chat the user was added to, excluding a chat the user just created themselves.
 """
 union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
+
+type UpdatedOnlineStatus {
+    userId: Int!
+    isOnline: Boolean!
+}
+
+type OnlineStatus {
+    userId: Int!
+    isOnline: Boolean!
+    """`null` if the `userId` has never set an online status."""
+    lastOnline: DateTime
+}
 
 """Whether the `userId` `isTyping` in the `chatId`."""
 type TypingStatus {
@@ -408,7 +445,7 @@ type UpdatedAccount {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 """
@@ -478,7 +515,7 @@ interface AccountData {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 type Account implements AccountData {
@@ -487,7 +524,7 @@ type Account implements AccountData {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 type NewContact implements AccountData {
@@ -496,7 +533,7 @@ type NewContact implements AccountData {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 type UpdatedContact implements AccountData {
@@ -505,7 +542,7 @@ type UpdatedContact implements AccountData {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 """
@@ -523,7 +560,7 @@ input NewAccount {
     emailAddress: String!
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 type ChatMessages {
@@ -636,7 +673,7 @@ input AccountUpdate {
     emailAddress: String
     firstName: String
     lastName: String
-    bio: String
+    bio: Bio
 }
 
 input GroupChatUpdate {
