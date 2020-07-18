@@ -339,7 +339,8 @@ type Subscription {
     subscribeToMessages: MessagesSubscription!
 
     """
-    Yields the online statuses of users the user has in their contacts, or is in a chat with.
+    Yields the online statuses of users the user has in their contacts, or is in a chat with. The subscription will be
+    stopped if the user deletes their account.
 
     You must send an access token with this request.
     """

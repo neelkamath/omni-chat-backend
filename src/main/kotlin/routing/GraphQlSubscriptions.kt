@@ -40,7 +40,8 @@ fun routeGraphQlSubscriptions(context: Routing) {
         "contacts-subscription" to "subscribeToContacts",
         "updated-chats-subscription" to "subscribeToUpdatedChats",
         "new-group-chats-subscription" to "subscribeToNewGroupChats",
-        "typing-statuses-subscription" to "subscribeToTypingStatuses"
+        "typing-statuses-subscription" to "subscribeToTypingStatuses",
+        "online-statuses-subscription" to "subscribeToOnlineStatuses"
     ).forEach { (path, operation) ->
         routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
     }

@@ -52,3 +52,4 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToUpdatedChats", ::subscribeToUpdatedChats)
     .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)
     .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)
+    .dataFetcher("subscribeToOnlineStatuses", ::subscribeToOnlineStatuses)
