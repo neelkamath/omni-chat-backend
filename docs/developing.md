@@ -14,7 +14,7 @@
         --project-directory . \
         up -d
     ```
-1. [Set up auth](auth_setup.md).
+1. [Set up the auth system](auth_setup.md) if you haven't already.
 1. To shut down:
     ```
     docker-compose \
