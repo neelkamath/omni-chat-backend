@@ -2,8 +2,6 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.PrivateChats
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observer
@@ -79,12 +77,12 @@ data class TypingStatusesAsset(override val userId: Int) : Asset
 
 val typingStatusesBroker = Broker<TypingStatusesAsset, TypingStatusesSubscription>()
 
+data class OnlineStatusesAsset(override val userId: Int) : Asset
+
+val onlineStatusesBroker = Broker<OnlineStatusesAsset, OnlineStatusesSubscription>()
+
 /** [Broker.notify]s [Broker.subscribe]rs via [contactsBroker] and [updatedChatsBroker] of the updated [userId]. */
 fun negotiateUserUpdate(userId: Int) {
     contactsBroker.notify(UpdatedContact.build(userId)) { userId in Contacts.readIdList(it.userId) }
-    updatedChatsBroker.notify(UpdatedAccount.build(userId)) {
-        val shareChat =
-            userId in PrivateChats.readOtherUserIdList(it.userId) || GroupChatUsers.areInSameChat(it.userId, userId)
-        it.userId != userId && shareChat
-    }
+    updatedChatsBroker.notify(UpdatedAccount.build(userId)) { it.userId != userId && shareChat(userId, it.userId) }
 }

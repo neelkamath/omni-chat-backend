@@ -66,6 +66,10 @@ private fun create(): Unit = transaction {
     )
 }
 
+/** Whether [user1Id] and [user2Id] are in a chat with each other, including private chats deleted by only one user. */
+fun shareChat(user1Id: Int, user2Id: Int): Boolean =
+    PrivateChats.exists(user1Id, user2Id) || user1Id in GroupChatUsers.readFellowParticipants(user2Id)
+
 /** Creates custom types if required. */
 private fun createTypes() {
     val values = MessageStatus.values().joinToString(", ") { "'${it.name.toLowerCase()}'" }

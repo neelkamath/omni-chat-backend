@@ -15,9 +15,7 @@ import org.keycloak.representations.idm.ClientRepresentation
 import org.keycloak.representations.idm.CredentialRepresentation
 import org.keycloak.representations.idm.RealmRepresentation
 import org.keycloak.representations.idm.UserRepresentation
-import java.util.*
 
-const val USER_ID_LENGTH = 36
 private const val REALM_NAME = "omni-chat"
 private const val CLIENT_ID = "server"
 private val config: Configuration = Configuration().apply {
@@ -57,8 +55,8 @@ private val omniChatRealm: Lazy<RealmRepresentation> = lazy {
 }
 
 fun UserRepresentation.toAccount(): Account {
-    val userId = Users.readId(UUID.fromString(id))
-    return Account(userId, Username(username), email, firstName, lastName, attributes?.get("bio")?.first())
+    val user = Users.read(id)
+    return Account(user.id, Username(username), email, firstName, lastName, user.bio)
 }
 
 /**
@@ -113,21 +111,20 @@ fun createUser(account: NewAccount) {
         .search(account.username.value)
         .first { it.username == account.username.value }
         .id
-        .let(UUID::fromString)
-    Users.create(userId)
+    Users.create(userId, account.bio)
     sendEmailAddressVerification(account.emailAddress)
 }
 
 /** Sends an email to the user to verify their email [address]. */
 fun sendEmailAddressVerification(address: String) {
-    val userId = readUserByEmailAddress(address).id.let(Users::readUuid).toString()
+    val userId = readUserByEmailAddress(address).id.let(Users::read).uuid.toString()
     realm.users().get(userId).sendVerifyEmail()
 }
 
 /** Sends an email for the user to reset their password. */
 fun resetPassword(email: String) {
     val userId = readUserByEmailAddress(email).id
-    realm.users().get(Users.readUuid(userId).toString()).executeActionsEmail(listOf("UPDATE_PASSWORD"))
+    realm.users().get(Users.read(userId).uuid.toString()).executeActionsEmail(listOf("UPDATE_PASSWORD"))
 }
 
 private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresentation().also {
@@ -136,7 +133,6 @@ private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresen
     it.email = emailAddress
     it.firstName = firstName
     it.lastName = lastName
-    if (bio != null) it.singleAttribute("bio", bio)
     it.isEnabled = true
 }
 
@@ -147,8 +143,7 @@ fun isEmailVerified(userId: Int): Boolean = readUser(userId).isEmailVerified
 
 fun readUserById(userId: Int): Account = readUser(userId).toAccount()
 
-private fun readUser(userId: Int): UserRepresentation =
-    realm.users().list().first { Users.readId(UUID.fromString(it.id)) == userId }
+private fun readUser(userId: Int): UserRepresentation = realm.users().list().first { Users.read(it.id).id == userId }
 
 private fun readUserByEmailAddress(email: String): Account =
     realm.users().list().first { it.email == email }.toAccount()
@@ -178,7 +173,8 @@ fun updateUser(id: Int, update: AccountUpdate) {
     val user = readUser(id)
     if (update.emailAddress != null && user.email != update.emailAddress) user.isEmailVerified = false
     user.update(update)
-    realm.users().get(Users.readUuid(id).toString()).update(user)
+    realm.users().get(Users.read(id).uuid.toString()).update(user)
+    Users.updateBio(id, update.bio)
     negotiateUserUpdate(id)
 }
 
@@ -189,7 +185,7 @@ fun isUsernameTaken(username: Username): Boolean {
 
 /** Deletes the user [id] from the auth system after calling [deleteUserFromDb]. */
 fun deleteUser(id: Int) {
-    realm.users().delete(Users.readUuid(id).toString())
+    realm.users().delete(Users.read(id).uuid.toString())
     deleteUserFromDb(id)
 }
 

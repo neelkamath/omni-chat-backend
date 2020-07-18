@@ -14,6 +14,20 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 
+const val SET_ONLINE_STATUS_QUERY = """
+    mutation SetOnlineStatus(${"$"}isOnline: Boolean!) {
+        setOnlineStatus(isOnline: ${"$"}isOnline)
+    }
+"""
+
+private fun operateSetOnlineStatus(userId: Int, isOnline: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_ONLINE_STATUS_QUERY, mapOf("isOnline" to isOnline), userId)
+
+fun setOnlineStatus(userId: Int, isOnline: Boolean): Placeholder {
+    val data = operateSetOnlineStatus(userId, isOnline).data!!["setOnlineStatus"] as String
+    return objectMapper.convertValue(data)
+}
+
 const val SET_TYPING_QUERY = """
     mutation SetTyping(${"$"}chatId: Int!, ${"$"}isTyping: Boolean!) {
         setTyping(chatId: ${"$"}chatId, isTyping: ${"$"}isTyping)
@@ -308,6 +322,18 @@ fun errUpdateGroupChat(userId: Int, update: GroupChatUpdate): String =
     operateUpdateGroupChat(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("setOnlineStatus(DataFetchingEnvironment)") {
+        fun assertOnlineStatus(isOnline: Boolean) {
+            val userId = createVerifiedUsers(1)[0].info.id
+            setOnlineStatus(userId, isOnline)
+            Users.read(userId).isOnline shouldBe isOnline
+        }
+
+        test("""The user's online status should be set to "true"""") { assertOnlineStatus(true) }
+
+        test("""The user's online status should be set to "false"""") { assertOnlineStatus(false) }
+    }
+
     context("setTyping(DataFetchingEnvironment)") {
         fun assertTypingStatus(isTyping: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
@@ -353,7 +379,7 @@ class MutationsTest : FunSpec({
             val userId = createVerifiedUsers(1)[0].info.id
             Users.updatePic(userId, readImage("31kB.png"))
             deleteProfilePic(userId)
-            Users.readPic(userId).shouldBeNull()
+            Users.read(userId).pic.shouldBeNull()
         }
     }
 

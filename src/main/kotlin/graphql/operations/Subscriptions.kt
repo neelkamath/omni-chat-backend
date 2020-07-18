@@ -30,3 +30,8 @@ fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingSta
     env.verifyAuth()
     return typingStatusesBroker.subscribe(TypingStatusesAsset(env.userId!!))
 }
+
+fun subscribeToOnlineStatuses(env: DataFetchingEnvironment): Publisher<OnlineStatusesSubscription> {
+    env.verifyAuth()
+    return onlineStatusesBroker.subscribe(OnlineStatusesAsset(env.userId!!))
+}

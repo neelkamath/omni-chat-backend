@@ -12,6 +12,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("UpdatedChatsSubscription") { wireType(it, ::readUpdatedChatsSubscription) }
     .type("NewGroupChatsSubscription") { wireType(it, ::readNewGroupChatsSubscription) }
     .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
+    .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
     .type("Chat") { wireType(it, ::readChat) }
     .type("AccountData") { wireType(it, ::readAccountData) }
     .type("MessageData") { wireType(it, ::readMessageData) }
@@ -66,6 +67,12 @@ private fun readTypingStatusesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is TypingStatus -> "TypingStatus"
     else -> throw IllegalArgumentException("$obj wasn't a CreatedSubscription or TypingStatus.")
+}
+
+private fun readOnlineStatusesSubscription(obj: Any): String = when (obj) {
+    is CreatedSubscription -> "CreatedSubscription"
+    is UpdatedOnlineStatus -> "UpdatedOnlineStatus"
+    else -> throw IllegalArgumentException("$obj wasn't a CreatedSubscription or UpdatedOnlineStatus.")
 }
 
 private fun readContactsSubscription(obj: Any): String = when (obj) {

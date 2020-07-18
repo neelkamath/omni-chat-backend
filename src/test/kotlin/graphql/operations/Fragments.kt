@@ -1,5 +1,13 @@
 package com.neelkamath.omniChat.graphql.operations
 
+const val ONLINE_STATUS_FRAGMENT = """
+    ... on OnlineStatus {
+        userId
+        isOnline
+        lastOnline
+    }
+"""
+
 const val ACCOUNT_FRAGMENT = """
     ... on Account {
         id
@@ -8,39 +16,6 @@ const val ACCOUNT_FRAGMENT = """
         firstName
         lastName
         bio
-    }
-"""
-
-const val UPDATED_ACCOUNT_FRAGMENT = """
-    ... on UpdatedAccount {
-        userId
-        username
-        emailAddress
-        firstName
-        lastName
-        bio
-    }
-"""
-
-const val EXITED_USER_FRAGMENT = """
-    ... on ExitedUser {
-        chatId
-        userId
-    }
-"""
-
-const val UPDATED_GROUP_CHAT_FRAGMENT = """
-    ... on UpdatedGroupChat {
-        chatId
-        title
-        description
-        newUsers {
-            $ACCOUNT_FRAGMENT
-        }
-        removedUsers {
-            $ACCOUNT_FRAGMENT
-        }
-        adminId
     }
 """
 
@@ -105,34 +80,6 @@ const val MESSAGE_FRAGMENT = """
     }
 """
 
-const val NEW_MESSAGE_FRAGMENT = """
-    ... on NewMessage {
-        chatId
-        messageId
-        sender {
-            $ACCOUNT_FRAGMENT
-        }
-        text
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
-        }
-    }
-"""
-
-const val UPDATED_MESSAGE_FRAGMENT = """
-    ... on UpdatedMessage {
-        chatId
-        messageId
-        sender {
-            $ACCOUNT_FRAGMENT
-        }
-        text
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
-        }
-    }
-"""
-
 const val MESSAGE_EDGE_FRAGMENT = """
     ... on MessageEdge {
         node {
@@ -153,36 +100,9 @@ const val MESSAGES_CONNECTION_FRAGMENT = """
     }
 """
 
-const val DELETION_OF_EVERY_MESSAGE_FRAGMENT = """
-    ... on DeletionOfEveryMessage {
-        chatId
-    }
-"""
-
-const val USER_CHAT_MESSAGES_REMOVAL_FRAGMENT = """
-    ... on UserChatMessagesRemoval {
-        chatId
-        userId
-    }
-"""
-
-const val MESSAGE_DELETION_POINT_FRAGMENT = """
-    ... on MessageDeletionPoint {
-        chatId
-        until
-    }
-"""
-
 const val CREATED_SUBSCRIPTION_FRAGMENT = """
     ... on CreatedSubscription {
         placeholder
-    }
-"""
-
-const val DELETED_MESSAGE_FRAGMENT = """
-    ... on DeletedMessage {
-        chatId
-        messageId
     }
 """
 
@@ -198,12 +118,6 @@ const val GROUP_CHAT_FRAGMENT = """
         messages(last: ${"$"}groupChat_messages_last, before: ${"$"}groupChat_messages_before) {
             $MESSAGES_CONNECTION_FRAGMENT
         }
-    }
-"""
-
-const val GROUP_CHAT_ID_FRAGMENT = """
-    ... on GroupChatId {
-        id
     }
 """
 

@@ -10,6 +10,7 @@ fun wireGraphQlOperations(builder: RuntimeWiring.Builder): RuntimeWiring.Builder
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("canDeleteAccount", ::canDeleteAccount)
+    .dataFetcher("readOnlineStatuses", ::readOnlineStatuses)
     .dataFetcher("readAccount", ::readAccount)
     .dataFetcher("isUsernameTaken", ::isUsernameTaken)
     .dataFetcher("isEmailAddressTaken", ::isEmailAddressTaken)
@@ -27,6 +28,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
 private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("deleteAccount", ::deleteAccount)
     .dataFetcher("createAccount", ::createAccount)
+    .dataFetcher("setOnlineStatus", ::setOnlineStatus)
     .dataFetcher("updateAccount", ::updateAccount)
     .dataFetcher("deleteProfilePic", ::deleteProfilePic)
     .dataFetcher("deleteGroupChatPic", ::deleteGroupChatPic)
@@ -50,3 +52,4 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToUpdatedChats", ::subscribeToUpdatedChats)
     .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)
     .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)
+    .dataFetcher("subscribeToOnlineStatuses", ::subscribeToOnlineStatuses)

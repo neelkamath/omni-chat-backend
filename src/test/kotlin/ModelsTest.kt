@@ -2,9 +2,19 @@ package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.Users
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
+
+class BioTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the value is too big") {
+            val value = CharArray(Users.MAX_BIO_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { Bio(value) }
+        }
+    }
+})
 
 class TextMessageTest : FunSpec({
     context("init") {

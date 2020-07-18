@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.Users
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
@@ -23,6 +24,14 @@ data class Username(val value: String) {
         if (value.length > 255) throw IllegalArgumentException("The username($value) must be less than 256 characters.")
         // The auth system silently saves uppercase characters in usernames as lowercase.
         if (value != value.toLowerCase()) throw IllegalArgumentException("The username ($value) must be lowercase.")
+    }
+}
+
+/** @throws [IllegalArgumentException] if the [value] exceeds [Users.MAX_BIO_LENGTH] */
+data class Bio(val value: String) {
+    init {
+        if (value.length > Users.MAX_BIO_LENGTH)
+            throw IllegalArgumentException("The value ($value) cannot exceed ${Users.MAX_BIO_LENGTH} characters.")
     }
 }
 
@@ -56,7 +65,7 @@ data class NewAccount(
     val emailAddress: String,
     val firstName: String? = null,
     val lastName: String? = null,
-    val bio: String? = null
+    val bio: Bio? = null
 )
 
 interface AccountData {
@@ -65,7 +74,7 @@ interface AccountData {
     val emailAddress: String
     val firstName: String?
     val lastName: String?
-    val bio: String?
+    val bio: Bio?
 }
 
 data class Account(
@@ -74,7 +83,7 @@ data class Account(
     override val emailAddress: String,
     override val firstName: String? = null,
     override val lastName: String? = null,
-    override val bio: String? = null
+    override val bio: Bio? = null
 ) : AccountData {
     /**
      * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
@@ -92,7 +101,7 @@ data class NewContact(
     override val emailAddress: String,
     override val firstName: String? = null,
     override val lastName: String? = null,
-    override val bio: String? = null
+    override val bio: Bio? = null
 ) : AccountData, ContactsSubscription {
     companion object {
         fun build(userId: Int): NewContact =
@@ -106,13 +115,19 @@ data class UpdatedContact(
     override val emailAddress: String,
     override val firstName: String? = null,
     override val lastName: String? = null,
-    override val bio: String? = null
+    override val bio: Bio? = null
 ) : AccountData, ContactsSubscription {
     companion object {
         fun build(userId: Int): UpdatedContact =
             with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
+
+interface OnlineStatusesSubscription
+
+data class UpdatedOnlineStatus(val userId: Int, val isOnline: Boolean) : OnlineStatusesSubscription
+
+data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?)
 
 data class DeletedContact(val id: Int) : ContactsSubscription
 
@@ -122,7 +137,7 @@ data class AccountUpdate(
     val emailAddress: String? = null,
     val firstName: String? = null,
     val lastName: String? = null,
-    val bio: String? = null
+    val bio: Bio? = null
 )
 
 data class NewGroupChat(
@@ -206,7 +221,7 @@ data class UpdatedAccount(
     val emailAddress: String,
     val firstName: String? = null,
     val lastName: String? = null,
-    val bio: String? = null
+    val bio: Bio? = null
 ) : UpdatedChatsSubscription {
     companion object {
         fun build(userId: Int): UpdatedAccount =
@@ -324,7 +339,8 @@ object CreatedSubscription :
     ContactsSubscription,
     UpdatedChatsSubscription,
     NewGroupChatsSubscription,
-    TypingStatusesSubscription {
+    TypingStatusesSubscription,
+    OnlineStatusesSubscription {
 
     val placeholder = Placeholder
 }
