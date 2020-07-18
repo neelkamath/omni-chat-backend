@@ -26,3 +26,21 @@
 - The auth system has an [admin panel](auth_admin_panel.md).
 - The `proxy` service handles log emission. View logs by running `docker logs proxy`.
 - You can freely scale services (i.e., `docker-compose up --scale`) which allow you to, and they will automatically be load balanced.
+
+### `chat-db` Service
+
+Here's how to back up the chat's DB:
+``` 
+docker exec chat-db sh -c 'pg_dumpall -cU postgres | gzip > /var/backups/dump.gz'
+docker cp chat-db:/var/backups/dump.gz backup.gz
+```
+This will save the backup to a file named `backup.gz` in the present working directory.
+
+Here's how to restore a backup:
+```
+docker cp backup.gz chat-db:/var/backups/restore.gz
+docker exec chat-db sh -c 'gunzip --stdout /var/backups/restore.gz | psql -U postgres'
+```
+This will restore a backup from a file named `backup.gz`, which is assumed to exist in the present working directory.
+
+You might want to automate backups.
