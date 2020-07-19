@@ -9,7 +9,7 @@ services:
     expose: [8080]
     volumes:
       - type: bind
-        source: ./docker/dockerize
+        source: ./dockerize
         target: /dockerize
         read_only: true
     environment:
@@ -33,7 +33,9 @@ services:
         source: auth-db
         target: /var/lib/postgresql/data
   chat:
+    image: docker.pkg.github.com/neelkamath/omni-chat/omni-chat:0.1.0
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 3m
+    command: java -server -jar omni-chat-all.jar
     networks: [proxy, chat-db]
     expose: [80]
     restart: always

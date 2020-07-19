@@ -1,10 +1,5 @@
 version: '3.8'
 services:
-  auth-db:
-    volumes:
-      - type: volume
-        source: auth-db-dev
-        target: /var/lib/postgresql/data
   chat:
     image: gradle:6.5.1-jdk14
     command: sh -c 'gradle --stacktrace -t installDist & gradle run'
@@ -19,12 +14,5 @@ services:
       - type: volume
         source: gradle-cache
         target: /home/gradle/.gradle
-  chat-db:
-    volumes:
-      - type: volume
-        source: chat-db-dev
-        target: /var/lib/postgresql/data
 volumes:
-  auth-db-dev:
-  chat-db-dev:
   gradle-cache:

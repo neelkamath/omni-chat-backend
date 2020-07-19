@@ -4,21 +4,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: docker run --mount type=bind,src=$PWD/docs/Caddyfile,dst=/srv/Caddyfile caddy:2.1.1 caddy validate
+      - name: Validate
+        run: docker run --mount type=bind,src=$PWD/docs/Caddyfile,dst=/srv/Caddyfile caddy:2.1.1 caddy validate
   test-server:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: cp docs/.env .
       - run: cp docs/Caddyfile .
-      - name: spin up services
+      - name: Spin up services
         run: |
           docker-compose \
             -f docker/docker-compose.yml \
             -f docker/docker-compose.override.yml \
             --project-directory . \
             up -d --scale chat=0
-      - name: test
+      - name: Test
         run: |
           docker-compose \
             -f docker/docker-compose.yml \
@@ -34,12 +35,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
+      - name: Lint
+        run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
   create-github-release:
     if: github.ref == 'refs/heads/master'
     needs: [test-server, lint-openapi-spec]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
-      - run: ./gradlew githubRelease -PGITHUB_PAT=${{ secrets.GITHUB_PAT }}
+      - name: Build REST API docs
+        run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
+      - name: Release
+        run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+  docker-registry-upload:
+    if: github.ref == 'refs/heads/master'
+    needs: [test-server, lint-openapi-spec]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Log in to registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u neelkamath --password-stdin
+      - run: docker build -t omni-chat -f docker/Dockerfile .
+      - name: Set $TAG
+        run: echo ::set-env name=TAG::docker.pkg.github.com/neelkamath/omni-chat/omni-chat
+      - name: Set $VERSION
+        run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
+      - run: docker tag omni-chat $TAG:$VERSION
+      - run: docker push $TAG:$VERSION
+      - run: docker tag omni-chat $TAG:latest
+      - run: docker push $TAG:latest

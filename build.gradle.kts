@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.0.1"
+version = "0.1.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -50,7 +50,7 @@ dependencies {
 tasks {
     withType<Test> {
         useJUnitPlatform()
-        // Workaround for remote debugging a JVM 9+ target (see https://github.com/gradle/gradle/issues/13118).
+        // Workaround for remote debugging a JVM 9+ target (https://github.com/gradle/gradle/issues/13118).
         jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
     withType<Jar> {
@@ -60,6 +60,7 @@ tasks {
         archiveVersion.set("")
         mergeServiceFiles()
     }
+    register("printVersion") { println(project.version) }
     val jvmTarget = "13"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
@@ -67,10 +68,9 @@ tasks {
 
 if (gradle.startParameter.taskNames.contains("githubRelease"))
     githubRelease {
-        token(property("GITHUB_PAT") as String)
+        token(property("GITHUB_TOKEN") as String)
         owner("neelkamath")
-        body(File("docs/release.md").readText())
         overwrite(true)
         prerelease((project.version as String).startsWith("0"))
-        releaseAssets("redoc-static.html")
+        releaseAssets("rest-api.html")
     }
