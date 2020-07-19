@@ -104,6 +104,14 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] Choose who can see when you were last online, or whether they saw your message.
 - [ ] You can toggle chat history so that it automatically gets deleted in a particular manner (e.g., new participants can't see old messages).
 - [ ] App-wide, and chat-specific lock. You will need to enter a password or biometric to unlock the app or chat.
+- [ ] Run a production instance taking care of the following:
+    - [ ] Automate backups.
+    - [ ] Don't run images as the `root` user.
+    - [ ] Use Docker secrets instead of an `.env` file. At the very least, doc that you should use secrets instead of an `.env` file (if it's bad to use an `.env` file).
+    - [ ] Use Docker configs instead of bind mounts.
+    - [ ] Metrics via Prometheus and/or [Elastic Metrics](https://www.elastic.co/infrastructure-monitoring).
+    - [ ] Monitoring and tracing via [Elastic APM](https://www.elastic.co/apm).
+    - [ ] Logs consumed by [Elastic Logs](https://www.elastic.co/log-monitoring).
 
 ### Paid
 

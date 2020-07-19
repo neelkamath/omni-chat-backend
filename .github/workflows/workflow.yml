@@ -62,6 +62,6 @@ jobs:
       - name: Set $VERSION
         run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
       - run: docker tag omni-chat $TAG:$VERSION
-      - run: docker push $TAG:VERSION
+      - run: docker push $TAG:$VERSION
       - run: docker tag omni-chat $TAG:latest
       - run: docker push $TAG:latest
