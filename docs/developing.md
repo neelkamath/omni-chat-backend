@@ -60,6 +60,7 @@
 
 ### Production
 
+Here's how to test the production build:
 1. Start the server on http://localhost:80:
     ```
     docker-compose \
@@ -80,15 +81,15 @@
 
 ## OpenAPI Spec
 
-[`openapi.yaml`](openapi.yaml) is the spec for the REST API.
+[`openapi.yaml`](openapi.yaml) is the REST API spec.
 
 ### Development
 
 ```
-npx redoc-cli serve docs/openapi.yaml -wp 6969
+npx redoc-cli serve docs/openapi.yaml -w
 ```
 
-Open http://127.0.0.1:6969 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
+Open http://127.0.0.1:8080 in your browser. The documentation will automatically rebuild whenever you save a change to the spec. Refresh the page whenever you want to view the updated documentation.
 
 ### Testing
 

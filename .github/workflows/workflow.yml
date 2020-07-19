@@ -36,16 +36,16 @@ jobs:
       - uses: actions/checkout@v2
       - run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
   create-github-release:
-    if: github.ref == 'refs/heads/master'
-    needs: [test-server, lint-openapi-spec]
+    # if: github.ref == 'refs/heads/master'
+    # needs: [test-server, lint-openapi-spec]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
       - run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
   docker-registry-upload:
-    if: github.ref == 'refs/heads/master'
-    needs: [test-server, lint-openapi-spec]
+    # if: github.ref == 'refs/heads/master'
+    # needs: [test-server, lint-openapi-spec]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

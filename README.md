@@ -8,13 +8,13 @@ For people who need to communicate via instant messaging, Omni Chat is a free, o
 
 The [spec](docs/spec.md) explains how Omni Chat differentiates itself from existing services, and which features have been implemented so far. This repo is for the backend. There is no frontend yet.
 
-The [releases](https://github.com/neelkamath/omni-chat/releases) contain every version of the application. To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the release tag (e.g., `v0.1.0`).
+To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the release tag (e.g., `v0.1.0`).
 
 ## Installation
 
 1. Download the `rest-api.html` asset from a [release](https://github.com/neelkamath/omni-chat/releases).
-1. Download the [`dockerize`](docker/dockerize) file.
-1. Download the [example `docker-compose.yml`](docs/docker-compose.yml) file.
+1. Download [`dockerize`](docker/dockerize).
+1. Download [`docker-compose.yml`](docs/docker-compose.yml).
 1. Install [Docker](https://docs.docker.com/get-docker/).
 1. [Configure](docs/config.md).
 1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on [`schema.graphqls`](src/main/resources/schema.graphqls).
