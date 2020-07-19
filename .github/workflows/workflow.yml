@@ -51,6 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u neelkamath --password-stdin
-      - run: export TAG=docker.pkg.github.com/neelkamath/omni-chat/omni-chat:$(./gradlew -q printVersion)
+      - run: ::set-env name=TAG::docker.pkg.github.com/neelkamath/omni-chat/omni-chat:$(./gradlew -q printVersion)
       - run: docker build -t $TAG -f docker/Dockerfile .
       - run: docker push $TAG
