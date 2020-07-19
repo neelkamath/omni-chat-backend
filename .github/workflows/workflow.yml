@@ -41,5 +41,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat'
-      - run: ./gradlew githubRelease -PGITHUB_PAT=${{ secrets.GITHUB_PAT }}
+      - run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
+      - run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+  docker-registry-upload:
+    if: github.ref == 'refs/heads/master'
+    needs: [test-server, lint-openapi-spec]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u neelkamath --password-stdin
+      - run: TAG=docker.pkg.github.com/neelkamath/omni-chat/omni-chat:$(./gradlew -q printVersion)
+      - run: docker build -t $TAG -f docker/Dockerfile .
+      - run: docker push $TAG

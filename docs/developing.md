@@ -58,7 +58,25 @@
         down
     ```
 
-### [Production](production.md)
+### Production
+
+1. Start the server on http://localhost:80:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.prod.yml \
+        --project-directory . \
+        up --build -d
+    ```
+1. [Set up the auth system](auth_setup.md) if you haven't already.
+1. To shut down:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.prod.yml \
+        --project-directory . \
+        down
+    ```
 
 ## OpenAPI Spec
 
@@ -108,11 +126,9 @@ When updating [`db/Brokers.kt`](../src/main/kotlin/db/Brokers.kt), name the inst
 - The test source set should mirror the main source set's directory structure. For example, a file in the main source set named `directory/Filename.kt` should have its tests in `directory/FilenameTest.kt`. Create a `io.kotest.core.spec.style.FunSpec` (`FunSpec`) for each `class` getting tested (e.g., a class `MyClass` would have a corresponding `MyClassTest` `FunSpec`). Keep tests for top-level functions in a `FunSpec` named after the file (e.g., a top-level function `myFun` in a file `MyFile.kt` would have its test placed in a `MyFileTest` `FunSpec`).
 - Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to the `context` must be the function's name and variables. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`. Name the `context` `"init"` when testing a `class`'s `init`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested. If you're testing a function through another function (e.g., a private function, a function which converts `vararg` arguments to a `List` for another function), place the tests in the `context` of the function which is getting tested (i.e., the private function's `context`, etc.). 
 
-## [Auth](auth_admin_panel.md)
-
 ## Releasing
 
 1. Update the version in the [build file](../build.gradle.kts).
 1. Update the version in the [OpenAPI spec](openapi.yaml).
 1. Add an entry to the [changelog](CHANGELOG.md).
-1. Commit to the `master` branch. If the CI/CD pipeline passes, a new GitHub release will be created.
+1. Commit to the `master` branch.
