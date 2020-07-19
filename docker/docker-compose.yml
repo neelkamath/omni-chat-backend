@@ -1,11 +1,7 @@
-# Certain services cannot be scaled due to their stateful nature, and hence <container_name>s are provided to prevent
-# them from being scaled.
-
 version: '3.8'
 services:
   auth:
     image: jboss/keycloak:10.0.2
-    container_name: auth
     entrypoint: docker/dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [proxy, auth-db]
@@ -28,11 +24,14 @@ services:
   auth-db:
     image: postgres:12.3
     networks: [auth-db]
-    container_name: auth-db
     expose: [5432]
     restart: always
     environment:
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - type: volume
+        source: auth-db
+        target: /var/lib/postgresql/data
   chat:
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 3m
     networks: [proxy, chat-db]
@@ -54,16 +53,18 @@ services:
       POSTGRES_URL: chat-db:5432
   chat-db:
     image: postgres:12.3
-    container_name: chat-db
     restart: always
     expose: [5432]
     networks: [chat-db]
     environment:
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
+    volumes:
+      - type: volume
+        source: chat-db
+        target: /var/lib/postgresql/data
   proxy:
     image: caddy:2.1.1
     networks: [proxy]
-    container_name: proxy
     expose: [80, 443, 2019]
     ports: [80:80, 443:443]
     restart: always
@@ -79,8 +80,10 @@ services:
         source: caddy-data
         target: /data
 volumes:
+  auth-db:
   caddy-config:
   caddy-data:
+  chat-db:
 networks:
   auth-db:
   chat-db:

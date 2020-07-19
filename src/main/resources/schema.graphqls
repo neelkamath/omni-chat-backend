@@ -145,10 +145,10 @@ type Query {
 
 type Mutation {
     """
-    Deletes the user's account.
+    Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
+    chats with the user will have their chats deleted, etc.
 
-    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` returns `false`
-    ).
+    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` is `false`).
 
     You must send an access token with this request.
     """
@@ -206,6 +206,12 @@ type Mutation {
     `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
     `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
     one of the fields were invalid.
+
+    If the user updates their email address, they'll be required to verify it before their next login via an email which
+    is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
+    to contact the service's admin to correctly update their address. You could prevent this mistake by asking them to
+    confirm their address. For example, a UI could require the user to enter their email address twice if they're
+    updating it, and only allow the update to take place if both the entered addresses match.
 
     Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
 

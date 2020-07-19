@@ -47,7 +47,7 @@ Here's an example:
 
 ### Schema
 
-Here is the current version's [schema](../src/main/resources/schema.graphqls).
+Here's the current version's [schema](../src/main/resources/schema.graphqls).
 
 The schema contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message gets returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
 
