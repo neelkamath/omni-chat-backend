@@ -2,15 +2,15 @@ version: '3.8'
 services:
   auth:
     image: jboss/keycloak:10.0.2
-    entrypoint: docker/dockerize -wait tcp://auth-db:5432
+    entrypoint: /dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [proxy, auth-db]
     restart: always
     expose: [8080]
     volumes:
       - type: bind
-        source: ./docker/dockerize
-        target: /docker/dockerize
+        source: ./dockerize
+        target: /dockerize
         read_only: true
     environment:
       DB_ADDR: auth-db
