@@ -36,9 +36,9 @@ object TypingStatuses : Table() {
     /** Inserts the record into the table. */
     private fun insert(chatId: Int, userId: Int, isTyping: Boolean): Unit = transaction {
         insert {
-            it[TypingStatuses.chatId] = chatId
-            it[TypingStatuses.userId] = userId
-            it[TypingStatuses.isTyping] = isTyping
+            it[this.chatId] = chatId
+            it[this.userId] = userId
+            it[this.isTyping] = isTyping
         }
     }
 

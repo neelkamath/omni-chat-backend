@@ -59,6 +59,7 @@ private fun create(): Unit = transaction {
         GroupChatUsers,
         PrivateChats,
         PrivateChatDeletions,
+        Stargazers,
         Messages,
         MessageStatuses,
         Users,

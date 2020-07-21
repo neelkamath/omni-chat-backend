@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.TypingStatus
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.TypingStatusesAsset
+import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.typingStatusesBroker
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse

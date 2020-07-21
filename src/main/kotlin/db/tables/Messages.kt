@@ -17,7 +17,10 @@ import java.time.LocalDateTime
 /** Messages checked to exist can optionally be filtered by this [Op]. */
 private typealias Filter = Op<Boolean>?
 
-/** @see [MessageStatuses] */
+/**
+ * @see [Stargazers]
+ * @see [MessageStatuses]
+ */
 object Messages : IntIdTable() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
     private val sent: Column<LocalDateTime> = datetime("sent").clientDefault { LocalDateTime.now() }
@@ -46,22 +49,27 @@ object Messages : IntIdTable() {
      *
      * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
      */
-    fun create(chatId: Int, userId: Int, text: TextMessage) {
+    fun create(userId: Int, chatId: Int, text: TextMessage) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
-                it[Messages.text] = text.value
+                it[this.text] = text.value
                 it[senderId] = userId
             }.resultedValues!![0]
         }
-        messagesBroker.notify(buildMessage(row).toNewMessage()) { isUserInChat(it.userId, chatId) }
+        val message = NewMessage.build(row[id].value, buildMessage(row))
+        messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
     }
 
-    /** Case-insensitively [query]s the [chatId]'s text messages. */
-    fun searchGroupChat(chatId: Int, query: String, pagination: BackwardPagination? = null): List<MessageEdge> =
-        search(readGroupChat(chatId, pagination), query)
+    /** Case-insensitively [query]s the [chatId]'s messages for the [userId]. */
+    fun searchGroupChat(
+        userId: Int,
+        chatId: Int,
+        query: String,
+        pagination: BackwardPagination? = null
+    ): List<MessageEdge> = search(readGroupChat(userId, chatId, pagination), query)
 
     /**
      * [query]s the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions])
@@ -72,7 +80,7 @@ object Messages : IntIdTable() {
         userId: Int,
         query: String,
         pagination: BackwardPagination? = null
-    ): List<MessageEdge> = search(readPrivateChat(chatId, userId, pagination), query)
+    ): List<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
      * Case-insensitively [query]s [MessageEdge.node]s.
@@ -84,28 +92,37 @@ object Messages : IntIdTable() {
         edges.filter { it.node.text.value.contains(query, ignoreCase = true) }
 
     /**
-     * The private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by the
-     * [userId].
+     * The [chatId]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by the [userId].
      *
      * @see [readPrivateChatConnection]
      */
-    fun readPrivateChat(id: Int, userId: Int, pagination: BackwardPagination? = null): List<MessageEdge> {
-        val op = PrivateChatDeletions.readLastDeletion(id, userId)?.let { sent greater it }
-        return readChat(id, pagination, op)
+    fun readPrivateChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> {
+        val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
+        return readChat(userId, chatId, pagination, op)
     }
 
-    /** @see [readGroupChatConnection] */
-    fun readGroupChat(id: Int, pagination: BackwardPagination? = null): List<MessageEdge> = readChat(id, pagination)
+    /**
+     * The [userId]'s [chatId]'s [MessageEdge]s.
+     *
+     * @see [readGroupChatConnection]
+     */
+    fun readGroupChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> =
+        readChat(userId, chatId, pagination)
 
     /**
-     * The [MessageEdge]s in the chat [id].
+     * The [userId] reading the [chatId]'s [MessageEdge]s.
      *
      * @see [readPrivateChat]
      * @see [readGroupChat]
      */
-    private fun readChat(id: Int, pagination: BackwardPagination? = null, filter: Filter = null): List<MessageEdge> {
+    private fun readChat(
+        userId: Int,
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        filter: Filter = null
+    ): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
-        var op = chatId eq id
+        var op = this.chatId eq chatId
         before?.let { op = op and (Messages.id less it) }
         filter?.let { op = op and it }
         return transaction {
@@ -113,7 +130,11 @@ object Messages : IntIdTable() {
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
-                .map { MessageEdge(buildMessage(it), cursor = it[Messages.id].value) }
+                .map {
+                    val messageId = it[Messages.id].value
+                    val message = Message.build(userId, messageId, buildMessage(it))
+                    MessageEdge(message, cursor = messageId)
+                }
         }
     }
 
@@ -122,9 +143,12 @@ object Messages : IntIdTable() {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }
 
-    fun read(id: Int): Message = transaction {
-        select { Messages.id eq id }.first().let(::buildMessage)
-    }
+    /**
+     * Returns the [messageId] for the [userId].
+     *
+     * @see [readBareMessage]
+     */
+    fun readMessage(userId: Int, messageId: Int): Message = Message.build(userId, messageId, readBareMessage(messageId))
 
     /**
      * The ID of the chat which contains the [messageId].
@@ -136,36 +160,42 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages] and [MessageStatuses] in the [chatId]. Clients will be notified of a
+     * Deletes all [Messages], [MessageStatuses], and [Stargazers] in the [chatId]. Clients will be notified of a
      * [DeletionOfEveryMessage] via [messagesBroker].
      */
     fun deleteChat(chatId: Int) {
         val messageIdList = readMessageIdList(chatId)
         MessageStatuses.delete(messageIdList)
+        Stargazers.deleteStars(messageIdList)
         transaction {
             deleteWhere { Messages.chatId eq chatId }
         }
         messagesBroker.notify(DeletionOfEveryMessage(chatId)) { isUserInChat(it.userId, chatId) }
     }
 
-    /** Deletes all [Messages] and [MessageStatuses] in the [chatId] [until] the specified [LocalDateTime]. */
-    fun deleteChatMessagesUntil(chatId: Int, until: LocalDateTime) {
+    /**
+     * Deletes all [Messages], [MessageStatuses], and [Stargazers] in the [chatId] [until] the specified
+     * [LocalDateTime]. [Broker.subscribe]rs will be notified of the [MessageDeletionPoint] via [messagesBroker].
+     */
+    fun deleteMessagesUntil(chatId: Int, until: LocalDateTime) {
         val idList = readMessageIdList(chatId, sent less until)
         MessageStatuses.delete(idList)
+        Stargazers.deleteStars(idList)
         transaction {
             deleteWhere { (Messages.chatId eq chatId) and (sent less until) }
         }
+        messagesBroker.notify(MessageDeletionPoint(chatId, until)) { isUserInChat(it.userId, chatId) }
     }
 
     /**
-     * Deletes all [Messages] and [MessageStatuses] the [userId] created in the [chatId]. Clients who have
-     * [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will be be notified of the
-     * [UserChatMessagesRemoval].
+     * Deletes all [Messages], [MessageStatuses], and [Stargazers] the [userId] created in the [chatId].
+     * [Broker.subscribe]rs will be [Broker.notify]d of the [UserChatMessagesRemoval] via [messagesBroker].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
         val idList = readMessageIdList(chatId, senderId eq userId)
         MessageStatuses.delete(idList)
+        Stargazers.deleteStars(idList)
         transaction {
             deleteWhere { Messages.id inList idList }
         }
@@ -173,28 +203,29 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages] and [MessageStatuses] the [userId] has. Clients who have [Broker.subscribe]d to
-     * [MessagesSubscription]s via [messagesBroker] will be notified of the [UserChatMessagesRemoval].
+     * Deletes all [Messages], [MessageStatuses], and [Stargazers] the [userId] has. [Broker.subscribe]rs will be
+     * [Broker.notify]d of the [UserChatMessagesRemoval] via [messagesBroker].
      */
     fun deleteUserMessages(userId: Int) {
         MessageStatuses.deleteUserStatuses(userId)
         val chatMessages = readChatMessages(userId)
-        MessageStatuses.delete(chatMessages.map { it.messageId })
+        val messageIdList = chatMessages.map { it.messageId }
+        MessageStatuses.delete(messageIdList)
+        Stargazers.deleteStars(messageIdList)
         transaction {
             deleteWhere { senderId eq userId }
         }
-        chatMessages.forEach { (chatId) ->
+        for ((chatId) in chatMessages)
             messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
-        }
     }
 
     /**
-     * Deletes the message [id] in the [chatId] from [Messages] and [MessageStatuses]. Clients who have
-     * [Broker.subscribe]d to [MessagesSubscription] via [messagesBroker] will be notified of the
-     * [DeletedMessage].
+     * Deletes the message [id] in the [chatId] from [Messages], [MessageStatuses], and [Stargazers].
+     * [Broker.subscribe]rs will be [Broker.notify]d of the [DeletedMessage] via [messagesBroker].
      */
     fun delete(id: Int) {
         MessageStatuses.delete(id)
+        Stargazers.deleteStar(id)
         val chatId = readChatFromMessage(id)
         transaction {
             deleteWhere { Messages.id eq id }
@@ -219,24 +250,24 @@ object Messages : IntIdTable() {
         select(op).map { it[Messages.id].value }
     }
 
-    /** Whether the [messageId] exists in the [chatId]. */
-    fun existsInChat(messageId: Int, chatId: Int): Boolean = transaction {
-        !select { (Messages.chatId eq chatId) and (Messages.id eq messageId) }.empty()
-    }
-
     fun exists(id: Int): Boolean = transaction {
         !select { Messages.id eq id }.empty()
     }
 
-    private fun buildMessage(row: ResultRow): Message {
-        val id = row[id].value
-        val dateTimes = MessageDateTimes(row[sent], MessageStatuses.read(id))
-        val sender = readUserById(row[senderId])
-        return Message(id, sender, TextMessage(row[text]), dateTimes)
+    /** @see [readMessage] */
+    fun readBareMessage(messageId: Int): BareMessage = transaction {
+        select { Messages.id eq messageId }.first().let(::buildMessage)
     }
 
-    fun readGroupChatConnection(chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
-        MessagesConnection(readGroupChat(chatId, pagination), buildPageInfo(chatId, pagination?.before))
+    /** @see [readBareMessage] */
+    private fun buildMessage(row: ResultRow): BareMessage = object : BareMessage {
+        override val sender: Account = readUserById(row[senderId])
+        override val text: TextMessage = TextMessage(row[Messages.text])
+        override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(row[id].value))
+    }
+
+    fun readGroupChatConnection(userId: Int, chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
+        MessagesConnection(readGroupChat(userId, chatId, pagination), buildPageInfo(chatId, pagination?.before))
 
     fun readPrivateChatConnection(
         chatId: Int,
@@ -245,7 +276,7 @@ object Messages : IntIdTable() {
     ): MessagesConnection {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
         return MessagesConnection(
-            readPrivateChat(chatId, userId, pagination),
+            readPrivateChat(userId, chatId, pagination),
             buildPageInfo(chatId, pagination?.before, op)
         )
     }
@@ -287,13 +318,21 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Whether the [userId] can see the message [id].
+     * Whether the [userId] can see the [messageId].
      *
-     * Returns `true` if the [userId] never deleted the chat. `false` if the message was sent before the [userId]
-     * deleted the chat, and `true` otherwise.
+     * @return
+     * - `false` if the [messageId] doesn't exist.
+     * - `false` if the [messageId] is from a chat the user isn't in.
+     * - `true` if the [messageId] is from a group chat the [userId] is in.
+     * - `true` if the [messageId] is from a private chat the [userId] hasn't deleted.
+     * - `false` if the [messageId] was sent before the [userId] deleted the private chat.
      */
-    fun isVisible(id: Int, userId: Int): Boolean {
-        val deletion = PrivateChatDeletions.readLastDeletion(readChatFromMessage(id), userId) ?: return true
-        return read(id).dateTimes.sent >= deletion
+    fun isVisible(userId: Int, messageId: Int): Boolean {
+        if (!exists(messageId)) return false
+        val chatId = readChatFromMessage(messageId)
+        if (!isUserInChat(userId, chatId)) return false
+        if (chatId in GroupChatUsers.readChatIdList(userId)) return true
+        val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return true
+        return readMessage(userId, messageId).dateTimes.sent >= deletion
     }
 }

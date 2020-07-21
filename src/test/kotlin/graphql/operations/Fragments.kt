@@ -77,6 +77,7 @@ const val MESSAGE_FRAGMENT = """
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
+        hasStar
     }
 """
 
@@ -171,6 +172,20 @@ const val UPDATED_CONTACT_FRAGMENT = """
         firstName
         lastName
         bio
+    }
+"""
+
+const val STARRED_MESSAGE_FRAGMENT = """
+    ... on StarredMessage {
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        text
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
     }
 """
 

@@ -19,6 +19,21 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 
+const val READ_STARS_QUERY = """
+    query ReadStars {
+        readStars {
+            $STARRED_MESSAGE_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadStars(userId: Int): GraphQlResponse = executeGraphQlViaEngine(READ_STARS_QUERY, userId = userId)
+
+fun readStars(userId: Int): List<StarredMessage> {
+    val data = operateReadStars(userId).data!!["readStars"] as List<*>
+    return objectMapper.convertValue(data)
+}
+
 const val READ_ONLINE_STATUSES_QUERY = """
     query ReadOnlineStatuses {
         readOnlineStatuses {
@@ -470,7 +485,7 @@ class ChatMessagesDtoTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
             val message = TextMessage("t")
-            val messageIdList = (1..10).map { Messages.message(chatId, adminId, message) }
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }
             return AdminMessages(adminId, message, messageIdList)
         }
 
@@ -502,6 +517,16 @@ class ChatMessagesDtoTest : FunSpec({
 })
 
 class QueriesTest : FunSpec({
+    context("readStars(DataFetchingEnvironment)") {
+        test("Only the user's starred messages should be read") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId, TextMessage("t")) }
+            listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
+            readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(it) }
+        }
+    }
+
     context("readOnlineStatuses(DataFetchingEnvironment)") {
         test("Reading online statuses should only retrieve users the user has in their contacts, or has a chat with") {
             val (contactOwnerId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
@@ -639,10 +664,10 @@ class QueriesTest : FunSpec({
         test("Messages should be searched case-insensitively") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(chatId, user1Id, TextMessage("Hey!"))
-            Messages.create(chatId, user2Id, TextMessage(":) hey"))
-            Messages.create(chatId, user1Id, TextMessage("How are you?"))
-            searchChatMessages(user1Id, chatId, "hey") shouldBe Messages.readPrivateChat(chatId, user1Id).dropLast(1)
+            Messages.create(user1Id, chatId, TextMessage("Hey!"))
+            Messages.create(user2Id, chatId, TextMessage(":) hey"))
+            Messages.create(user1Id, chatId, TextMessage("How are you?"))
+            searchChatMessages(user1Id, chatId, "hey") shouldBe Messages.readPrivateChat(user1Id, chatId).dropLast(1)
         }
 
         test("Searching in a chat the user isn't in should return an error") {
@@ -696,15 +721,15 @@ class QueriesTest : FunSpec({
     context("searchMessages(DataFetchingEnvironment)") {
         test(
             """
-            Given a user who created a private chat, sent a message, and deleted the chat,
-            when searching for the message,
-            then it shouldn't be retrieved
-            """
+                Given a user who created a private chat, sent a message, and deleted the chat,
+                when searching for the message,
+                then it shouldn't be retrieved
+                """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val text = "text"
-            Messages.message(chatId, user1Id, TextMessage(text))
+            Messages.message(user1Id, chatId, TextMessage(text))
             PrivateChatDeletions.create(chatId, user1Id)
             searchMessages(user1Id, text).shouldBeEmpty()
         }
@@ -805,7 +830,7 @@ fun testMessagesPagination(operation: MessagesOperationName) {
     val chat = buildNewGroupChat()
     val chatId = GroupChats.create(adminId, chat)
     val text = TextMessage("t")
-    val messageIdList = (1..10).map { Messages.message(chatId, adminId, text) }
+    val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
     val last = 4
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
@@ -843,7 +868,7 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val groupChat = buildNewGroupChat(userIdList)
     val chatId = GroupChats.create(adminId, groupChat)
     val text = "text"
-    Messages.create(chatId, adminId, TextMessage(text))
+    Messages.create(adminId, chatId, TextMessage(text))
     val first = 3
     val userCursors = GroupChatUsers.read()
     val index = 5

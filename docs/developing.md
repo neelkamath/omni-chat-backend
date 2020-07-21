@@ -1,28 +1,6 @@
 # Developing
 
-## [Spec](spec.md)
-
 ## Server
-
-### Development
-
-1. Run the server on http://localhost:80 with autoreload enabled:
-    ```
-    docker-compose \
-        -f docker/docker-compose.yml \
-        -f docker/docker-compose.override.yml \
-        --project-directory . \
-        up -d
-    ```
-1. [Set up the auth system](auth_setup.md) if you haven't already.
-1. To shut down:
-    ```
-    docker-compose \
-        -f docker/docker-compose.yml \
-        -f docker/docker-compose.override.yml \
-        --project-directory . \
-        down
-    ```
 
 ### Testing
 
@@ -50,6 +28,26 @@
         1. Run `exit` in the debugger's terminal once you're done. 
 1. Run `exit` to shut down the shell.
 1. To shut down the services:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
+        --project-directory . \
+        down
+    ```
+
+### Development
+
+1. Run the server on http://localhost:80 with autoreload enabled:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
+        --project-directory . \
+        up -d
+    ```
+1. [Set up the auth system](auth_setup.md) if you haven't already.
+1. To shut down:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -129,7 +127,6 @@ When updating [`db/Brokers.kt`](../src/main/kotlin/db/Brokers.kt), name the inst
 
 ## Releasing
 
-1. Update the version in the [build file](../build.gradle.kts).
-1. Update the version in the [OpenAPI spec](openapi.yaml).
+1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
 1. Add an entry to the [changelog](CHANGELOG.md).
 1. Commit to the `master` branch.

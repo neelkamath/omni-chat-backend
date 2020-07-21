@@ -36,7 +36,7 @@ fun createStatus(env: DataFetchingEnvironment): Placeholder {
     val messageId = env.getArgument<Int>("messageId")
     val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
     verifyCanCreateStatus(messageId, env.userId!!, status)
-    MessageStatuses.create(messageId, env.userId!!, status)
+    MessageStatuses.create(env.userId!!, messageId, status)
     return Placeholder
 }
 
@@ -45,10 +45,17 @@ fun createStatus(env: DataFetchingEnvironment): Placeholder {
  * [messageId].
  */
 private fun verifyCanCreateStatus(messageId: Int, userId: Int, status: MessageStatus) {
-    if (!Messages.exists(messageId) || !Messages.isVisible(messageId, userId)) throw InvalidMessageIdException
+    if (!Messages.exists(messageId) || !Messages.isVisible(userId, messageId)) throw InvalidMessageIdException
     val chatId = Messages.readChatFromMessage(messageId)
-    if (!isUserInChat(userId, chatId) || Messages.read(messageId).sender.id == userId) throw InvalidMessageIdException
+    if (!isUserInChat(userId, chatId) || Messages.readMessage(userId, messageId).sender.id == userId)
+        throw InvalidMessageIdException
     if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException
+}
+
+fun deleteStar(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    Stargazers.deleteUserStar(env.userId!!, env.getArgument<Int>("messageId"))
+    return Placeholder
 }
 
 fun createGroupChat(env: DataFetchingEnvironment): Int {
@@ -72,7 +79,15 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     val message = env.parseArgument<TextMessage>("text")
-    Messages.create(chatId, env.userId!!, message)
+    Messages.create(env.userId!!, chatId, message)
+    return Placeholder
+}
+
+fun star(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    Stargazers.create(env.userId!!, messageId)
     return Placeholder
 }
 
@@ -105,8 +120,8 @@ fun deleteMessage(env: DataFetchingEnvironment): Placeholder {
     if (!Messages.exists(messageId)) throw InvalidMessageIdException
     val chatId = Messages.readChatFromMessage(messageId)
     if (!isUserInChat(env.userId!!, chatId) ||
-        Messages.read(messageId).sender.id != env.userId!! ||
-        !Messages.isVisible(messageId, env.userId!!)
+        Messages.readMessage(env.userId!!, messageId).sender.id != env.userId!! ||
+        !Messages.isVisible(env.userId!!, messageId)
     ) {
         throw InvalidMessageIdException
     }

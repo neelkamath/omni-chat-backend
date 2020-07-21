@@ -24,10 +24,10 @@ class BrokersTest : FunSpec({
 
         test(
             """
-            Given subscribers to updated chats,
-            when a user updates their account,
-            then only the users who share their group chat should be notified of the updated account, except the updater
-            """
+                Given subscribers to updated chats,
+                when a user updates their account,
+                then only the users who share their group chat should be notified of the updated account, except the updater
+                """
         ) {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             listOf(user1Id, user2Id).forEach { GroupChats.create(adminId, buildNewGroupChat(it)) }
@@ -40,10 +40,10 @@ class BrokersTest : FunSpec({
 
         test(
             """
-            Given two users subscribed to the private chat,
-            when one user updates their account,
-            then only the other user should be notified
-            """
+                Given two users subscribed to the private chat,
+                when one user updates their account,
+                then only the other user should be notified
+                """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)

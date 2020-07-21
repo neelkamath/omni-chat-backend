@@ -47,6 +47,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] We'll have unlimited chat history so that new participants don't miss older messages.
 - [x] Every message has the date and time it was sent, delivered, and read.
 - [x] Delete messages.
+- [x] Star messages.
 - [ ] The group chat's creator is the admin. There can only be one admin in a chat. If the admin decides to leave the chat, they will have to appoint a member to become the admin once they leave (unless they are the only member left). Regular users can only send messages. Moderators can do everything a regular user can do, add/remove users/bots, and update the chat's title/description. Admins can do everything a moderator can do in addition to add/remove moderators, and delete the chat. The admin can make everyone in the chat a moderator if they wish it.
 - [ ] You'll be able to switch on notifications for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
 - [ ] API for integrations (e.g., bots).
@@ -78,7 +79,6 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] Emoji will be larger than usual if the entire message is a single emoji.
 - [ ] Reply to a message so that the context isn't lost.
 - [ ] Send drawings, contacts, locations, live locations for a specified duration, audio recordings, photos, videos, polls, memoji, stickers, and any type of file.
-- [ ] Star messages. If you open a chat's starred messages, you will see only the messages you starred in that chat. If you open your starred messages globally, you'll see every chat's starred messages. Clicking on a starred message will take you to that point in history in the respective chat. Before you delete a chat, it'll ask you what to do with your starred messages. Deleted messages will automatically disappear from people's starred messages.
 - [ ] Polls.
 - [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.
