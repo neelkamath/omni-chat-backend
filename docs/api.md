@@ -12,8 +12,9 @@ Here's the usual flow for using the API:
 ## Notes
 
 - The base URL is http://localhost:80.
-- The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API's docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
-- Unless explicitly states, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
+- The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
+- When the docs refer to CommonMarks, they're referring to the [Markdown spec](https://commonmark.org/).
+- Unless explicitly stated, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
 

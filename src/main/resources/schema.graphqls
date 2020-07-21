@@ -7,7 +7,7 @@ scalar Cursor
 """A username which has non-whitespace characters, is less than 256 characters, and is lowercase."""
 scalar Username
 
-"""A user's bio which cannot exceed 2,500 characters."""
+"""A user's bio which cannot exceed 2,500 characters, and uses CommonMark."""
 scalar Bio
 
 """A password which contains non-whitespace characters."""
@@ -16,10 +16,10 @@ scalar Password
 """1-70 characters, of which at least one isn't whitespace."""
 scalar GroupChatTitle
 
-"""At most 1,000 characters. An empty string corresponds to no description."""
+"""At most 1,000 characters, and uses CommonMark. An empty string corresponds to no description."""
 scalar GroupChatDescription
 
-"""1-10,000 characters, of which at least one isn't whitespace."""
+"""1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark."""
 scalar TextMessage
 
 """

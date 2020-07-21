@@ -127,6 +127,8 @@ When updating [`db/Brokers.kt`](../src/main/kotlin/db/Brokers.kt), name the inst
 
 ## Releasing
 
+Only commit to the `master` branch if you're releasing a new version.
+
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
 1. Add an entry to the [changelog](CHANGELOG.md).
 1. Commit to the `master` branch.
