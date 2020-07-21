@@ -55,6 +55,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Delete messages.
 - [x] Star messages.
 - [x] Markdown support.
+- [ ] Reply to a message to prevent context loss.
 - [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
 - [ ] Disappearing messages.
 - [ ] Forum chats.
@@ -65,7 +66,6 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] You can toggle between online and offline mode. Messages and calls will send via your SIM card offline. Similar to how FaceTime and iMessage makes calls and messages free by converting SIM usages to internet messages under the hood, we could provide free offline (SIM use) services.
 - [ ] Background noise cancellation for an audio or video call.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
-- [ ] Reply to a message so that the context isn't lost.
 - [ ] Send drawings, contacts, locations, live locations for a specified duration, audio recordings, photos, videos, polls, memoji, stickers, and any type of file.
 - [ ] Polls.
 - [ ] Use @username or @all for notifications.
