@@ -108,20 +108,20 @@ fun deleteProfilePic(userId: Int): Placeholder {
 }
 
 const val CREATE_ACCOUNTS_QUERY = """
-    mutation CreateAccount(${"$"}account: NewAccount!) {
+    mutation CreateAccount(${"$"}account: AccountInput!) {
         createAccount(account: ${"$"}account)
     }
 """
 
-private fun operateCreateAccount(account: NewAccount): GraphQlResponse =
+private fun operateCreateAccount(account: AccountInput): GraphQlResponse =
     executeGraphQlViaEngine(CREATE_ACCOUNTS_QUERY, mapOf("account" to account))
 
-fun createAccount(account: NewAccount): Placeholder {
+fun createAccount(account: AccountInput): Placeholder {
     val data = operateCreateAccount(account).data!!["createAccount"] as String
     return objectMapper.convertValue(data)
 }
 
-fun errCreateAccount(account: NewAccount): String = operateCreateAccount(account).errors!![0].message
+fun errCreateAccount(account: AccountInput): String = operateCreateAccount(account).errors!![0].message
 
 const val CREATE_CONTACTS_QUERY = """
     mutation CreateContacts(${"$"}userIdList: [Int!]!) {
@@ -141,18 +141,18 @@ fun errCreateContacts(userId: Int, userIdList: List<Int>): String =
     operateCreateContacts(userId, userIdList).errors!![0].message
 
 const val CREATE_GROUP_CHAT_QUERY = """
-    mutation CreateGroupChat(${"$"}chat: NewGroupChat!) {
+    mutation CreateGroupChat(${"$"}chat: GroupChatInput!) {
         createGroupChat(chat: ${"$"}chat)
     }
 """
 
-private fun operateCreateGroupChat(userId: Int, chat: NewGroupChat): GraphQlResponse =
+private fun operateCreateGroupChat(userId: Int, chat: GroupChatInput): GraphQlResponse =
     executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), userId)
 
-fun createGroupChat(userId: Int, chat: NewGroupChat): Int =
+fun createGroupChat(userId: Int, chat: GroupChatInput): Int =
     operateCreateGroupChat(userId, chat).data!!["createGroupChat"] as Int
 
-fun errCreateGroupChat(userId: Int, chat: NewGroupChat): String =
+fun errCreateGroupChat(userId: Int, chat: GroupChatInput): String =
     operateCreateGroupChat(userId, chat).errors!![0].message
 
 const val CREATE_MESSAGE_QUERY = """
@@ -444,7 +444,7 @@ class MutationsTest : FunSpec({
 
     context("createAccount(DataFetchingEnvironment)") {
         test("Creating an account should save it to the auth system, and the DB") {
-            val account = NewAccount(Username("username"), Password("password"), "username@example.com")
+            val account = AccountInput(Username("username"), Password("password"), "username@example.com")
             createAccount(account)
             with(readUserByUsername(account.username)) {
                 username shouldBe account.username
@@ -454,16 +454,16 @@ class MutationsTest : FunSpec({
         }
 
         test("An account with a taken username shouldn't be created") {
-            val account = NewAccount(Username("username"), Password("password"), "username@example.com")
+            val account = AccountInput(Username("username"), Password("password"), "username@example.com")
             createAccount(account)
             errCreateAccount(account) shouldBe UsernameTakenException.message
         }
 
         test("An account with a taken email shouldn't be created") {
             val address = "username@example.com"
-            val account = NewAccount(Username("username1"), Password("password"), address)
+            val account = AccountInput(Username("username1"), Password("password"), address)
             createAccount(account)
-            val duplicateAccount = NewAccount(Username("username2"), Password("password"), address)
+            val duplicateAccount = AccountInput(Username("username2"), Password("password"), address)
             errCreateAccount(duplicateAccount) shouldBe EmailAddressTakenException.message
         }
     }
@@ -746,7 +746,7 @@ class MutationsTest : FunSpec({
     context("sendEmailAddressVerification(DataFetchingEnvironment)") {
         test("A verification email should be sent") {
             val address = "username@example.com"
-            val account = NewAccount(Username("username"), Password("password"), address)
+            val account = AccountInput(Username("username"), Password("password"), address)
             createUser(account)
             sendEmailAddressVerification(address)
         }

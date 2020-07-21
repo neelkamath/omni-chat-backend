@@ -24,11 +24,15 @@ Many times you only want to switch on notifications for important chats. The use
 
 Certain systems (e.g., Twitter DMs) will exist even if our app is a success because the creators of those services want to roll their own. The creators of those services will not use our app because they want to be "different" from the other services, even though they'll only build a suboptimal system. We can only hope that users on such platforms will prefer to exchange usernames to chat on our platform.
 
-The core software will be open source so that user requiring libre software (e.g., open source enthusiasts, organizations requiring data to be hosted on their servers) will be able to use the service. Although you can host your own instance, there will be the default free public instance nontechnical users, or people who are just trying it out, use.
+The core software will be open source so that user requiring FOSS (e.g., open source enthusiasts, organizations requiring data to be hosted on their servers) will be able to use the service. Although you can host your own instance, there will be the default free public instance nontechnical users, or people who are just trying it out, use.
 
 ## Features
 
 Checkboxes indicate which features have been implemented.
+
+Since this repo is for the backend, here are recommendations for a frontend dev:
+- Messages consisting solely of a single emoji will have the emoji enlarged.
+- You can require a password or biometric to unlock the app.
 
 ### Free
 
@@ -51,19 +55,16 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Delete messages.
 - [x] Star messages.
 - [x] Markdown support.
-- [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username. Useful information can be displayed publicly, such as an organization they went to (e.g., you can search users using Google or Stanford as an organization filter if they went/go there).
-- [ ] Forum chats.
-- [ ] Search for chats (e.g., official Android chat, random groups individuals have created).
 - [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
+- [ ] Disappearing messages.
+- [ ] Forum chats.
+- [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] By default, group chats disallow anonymous users, and users without an account.
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
 - [ ] You can toggle between online and offline mode. Messages and calls will send via your SIM card offline. Similar to how FaceTime and iMessage makes calls and messages free by converting SIM usages to internet messages under the hood, we could provide free offline (SIM use) services.
-- [ ] Background noise cancellation for an audio or video call. This needs to be free so that people like homemakers will prefer it over WhatsApp's shitty service.
-- [ ] Make it a federated chat system so that you can chat with people on other instances. Let's say that there are two instances, `instance1` and `instance2`. `instance1` has two users, `black` and `gray`. `instance2` has a  user `pink`. If `blue` wanted to message `gray`, `blue` could either specify `gray`'s username as `@instance1/gray` or `@gray`. If `blue` wanted to message `purple`, `blue` would have to specify `purple`'s username as `@instance2/purple`.
+- [ ] Background noise cancellation for an audio or video call.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
-- [ ] Easily switch between multiple accounts.
-- [ ] Emoji will be larger than usual if the entire message is a single emoji.
 - [ ] Reply to a message so that the context isn't lost.
 - [ ] Send drawings, contacts, locations, live locations for a specified duration, audio recordings, photos, videos, polls, memoji, stickers, and any type of file.
 - [ ] Polls.
@@ -74,7 +75,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] Video calls with multiple people.
 - [ ] Filters on video calls. The others will be able to see which filter you're using.
 - [ ] Screen sharing.
-- [ ] Have add-ons for video calls like games, and bunny ear effects.
+- [ ] Have add-ons for video calls like games, and bunny ear effects. Developers can create their own add-ons.
 - [ ] Allow instances to pick one of the following access types.
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
@@ -86,14 +87,10 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] If a bot messages a user, and the user has never messaged the bot, it'll come up in a section separate to the regular chats. This bot's chat will only be moved to the accepted chats if the user allows it. Otherwise, bots will spam users.
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.
 - [ ] Encryption.
-- [ ] Report someone.
-- [ ] Share as much, or as little, information as you want. You can share your address, phone, email, profile photo, etc. You can choose who can see what info. If a bot is messaging you, it'll have to ask for permissions for every type of data it wants to access.
 - [ ] Chat without an account.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
 - [ ] Incognito chats whose messages automatically disappear after a set amount of time, or shortly after the user reads them.
-- [ ] Choose who can see when you were last online, or whether they saw your message.
 - [ ] You can toggle chat history so that it automatically gets deleted in a particular manner (e.g., new participants can't see old messages).
-- [ ] App-wide, and chat-specific lock. You will need to enter a password or biometric to unlock the app or chat.
 - [ ] Run a production instance taking care of the following:
     - [ ] Automate backups.
     - [ ] Don't run images as the `root` user.

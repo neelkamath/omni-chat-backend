@@ -9,7 +9,7 @@ import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import graphql.schema.DataFetchingEnvironment
 
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
-    val account = env.parseArgument<NewAccount>("account")
+    val account = env.parseArgument<AccountInput>("account")
     if (isUsernameTaken(account.username)) throw UsernameTakenException
     if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
     createUser(account)
@@ -60,7 +60,7 @@ fun deleteStar(env: DataFetchingEnvironment): Placeholder {
 
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
-    val chat = env.parseArgument<NewGroupChat>("chat")
+    val chat = env.parseArgument<GroupChatInput>("chat")
     val userIdList = chat.userIdList.filter { it != env.userId!! }
     if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
     return GroupChats.create(env.userId!!, chat)

@@ -56,10 +56,10 @@ object GroupChats : Table() {
     /**
      * Returns the [chat]'s ID after creating it.
      *
-     * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via
+     * [Broker.notify]s the [GroupChatInput.userIdList], excluding the admin, of the [GroupChatInput] via
      * [newGroupChatsBroker].
      */
-    fun create(adminId: Int, chat: NewGroupChat): Int {
+    fun create(adminId: Int, chat: GroupChatInput): Int {
         val chatId = transaction {
             insert {
                 it[id] = Chats.create()

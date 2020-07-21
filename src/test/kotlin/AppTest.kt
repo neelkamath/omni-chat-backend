@@ -53,7 +53,7 @@ class SpecComplianceTest : FunSpec({
     }
 
     test("""null fields in the "data" key should be returned""") {
-        val account = NewAccount(Username("username"), Password("password"), "username@example.com")
+        val account = AccountInput(Username("username"), Password("password"), "username@example.com")
         createUser(account)
         val userId = readUserByUsername(account.username).id
         val accessToken = buildAuthToken(userId).accessToken

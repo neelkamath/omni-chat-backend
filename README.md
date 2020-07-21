@@ -4,7 +4,7 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-For people who need to communicate via instant messaging, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
+For people who need to communicate via instant messaging, Omni Chat is a free and open core chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
 
 The [spec](docs/spec.md) explains how Omni Chat differentiates itself from existing services, and which features have been implemented so far. This repo is for the backend API. There's no frontend UI yet.
 

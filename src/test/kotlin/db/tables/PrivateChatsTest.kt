@@ -101,11 +101,11 @@ class PrivateChatsTest : FunSpec({
         ) {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
-                NewAccount(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                NewAccount(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
-                NewAccount(Username("vader"), Password("p"), emailAddress = "vader@example.com", firstName = "Tommy"),
-                NewAccount(Username("leia"), Password("p"), emailAddress = "leia@example.com", lastName = "Tomas"),
-                NewAccount(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
+                AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
+                AccountInput(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
+                AccountInput(Username("vader"), Password("p"), emailAddress = "vader@example.com", firstName = "Tommy"),
+                AccountInput(Username("leia"), Password("p"), emailAddress = "leia@example.com", lastName = "Tomas"),
+                AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {
                 createUser(it)
                 val otherUserId = readUserByUsername(it.username).id

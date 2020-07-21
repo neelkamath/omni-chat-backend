@@ -649,7 +649,7 @@ class QueriesTest : FunSpec({
 
         test("A token set shouldn't be created for a user who hasn't verified their email") {
             val login = Login(Username("username"), Password("password"))
-            createUser(NewAccount(login.username, login.password, "username@example.com"))
+            createUser(AccountInput(login.username, login.password, "username@example.com"))
             errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException.message
         }
 
@@ -697,10 +697,15 @@ class QueriesTest : FunSpec({
     context("searchContacts(DataFetchingEnvironment)") {
         test("Contacts should be searched case-insensitively") {
             val accounts = listOf(
-                NewAccount(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
-                NewAccount(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
-                NewAccount(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
-                NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
+                AccountInput(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
+                AccountInput(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
+                AccountInput(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
+                AccountInput(
+                    Username("iron_man"),
+                    Password("p"),
+                    emailAddress = "roger@example.com",
+                    firstName = "John"
+                )
             ).map {
                 createUser(it)
                 it.toAccount()
@@ -744,9 +749,9 @@ class QueriesTest : FunSpec({
     context("searchUsers(DataFetchingEnvironment)") {
         test("Users should be searched") {
             val accounts = listOf(
-                NewAccount(Username("iron_man"), Password("p"), "tony@example.com"),
-                NewAccount(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
-                NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
+                AccountInput(Username("iron_man"), Password("p"), "tony@example.com"),
+                AccountInput(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
+                AccountInput(Username("hulk"), Password("p"), "bruce@example.com")
             ).map {
                 createUser(it)
                 it.toAccount()
@@ -754,16 +759,16 @@ class QueriesTest : FunSpec({
             searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
         }
 
-        fun createAccounts(): List<NewAccount> {
+        fun createAccounts(): List<AccountInput> {
             val accounts = listOf(
-                NewAccount(Username("iron_man"), Password("p"), "iron.man@example.com"),
-                NewAccount(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
-                NewAccount(Username("lol"), Password("p"), "iron.fist@example.com"),
-                NewAccount(Username("another_one"), Password("p"), "another_one@example.com"),
-                NewAccount(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
-                NewAccount(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
-                NewAccount(Username("black_widow"), Password("p"), "black.widow@example.com"),
-                NewAccount(Username("iron_spider"), Password("p"), "iron.spider@example.com")
+                AccountInput(Username("iron_man"), Password("p"), "iron.man@example.com"),
+                AccountInput(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
+                AccountInput(Username("lol"), Password("p"), "iron.fist@example.com"),
+                AccountInput(Username("another_one"), Password("p"), "another_one@example.com"),
+                AccountInput(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
+                AccountInput(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
+                AccountInput(Username("black_widow"), Password("p"), "black.widow@example.com"),
+                AccountInput(Username("iron_spider"), Password("p"), "iron.spider@example.com")
             )
             accounts.forEach(::createUser)
             return accounts

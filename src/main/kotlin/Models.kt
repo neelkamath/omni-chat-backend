@@ -60,7 +60,7 @@ data class Login(val username: Username, val password: Password)
 
 data class TokenSet(val accessToken: String, val refreshToken: String)
 
-data class NewAccount(
+data class AccountInput(
     val username: Username,
     val password: Password,
     val emailAddress: String,
@@ -147,7 +147,7 @@ data class AccountUpdate(
     val bio: Bio? = null
 )
 
-data class NewGroupChat(
+data class GroupChatInput(
     val title: GroupChatTitle,
     val description: GroupChatDescription,
     val userIdList: List<Int> = listOf()
@@ -241,8 +241,8 @@ data class GroupChatUpdate(
     val chatId: Int,
     val title: GroupChatTitle? = null,
     val description: GroupChatDescription? = null,
-    val newUserIdList: List<Int>? = listOf(),
-    val removedUserIdList: List<Int>? = listOf(),
+    val newUserIdList: List<Int>? = null,
+    val removedUserIdList: List<Int>? = null,
     val newAdminId: Int? = null
 ) {
     init {
@@ -353,7 +353,7 @@ data class UpdatedMessage(
     }
 }
 
-data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
+data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus>)
 
 data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime, val status: MessageStatus)
 

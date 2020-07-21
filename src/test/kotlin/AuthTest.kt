@@ -59,10 +59,10 @@ class AuthTest : FunSpec({
     context("searchUsers(String)") {
         /** Creates users, and returns their IDs. */
         fun createUsers(): List<Int> = listOf(
-            NewAccount(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
-            NewAccount(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
-            NewAccount(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-            NewAccount(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", firstName = "John")
+            AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
+            AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
+            AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
+            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", firstName = "John")
         ).map {
             createUser(it)
             readUserByUsername(it.username).id
@@ -80,8 +80,8 @@ class AuthTest : FunSpec({
 
         test("Searching users shouldn't include duplicate results") {
             val userIdList = listOf(
-                NewAccount(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                NewAccount(Username("username"), Password("p"), "tony@example.com", firstName = "Tony")
+                AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
+                AccountInput(Username("username"), Password("p"), "tony@example.com", firstName = "Tony")
             ).map {
                 createUser(it)
                 readUserByUsername(it.username).id

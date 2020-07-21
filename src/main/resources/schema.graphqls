@@ -29,392 +29,393 @@ and types don't have relevant data. This type, which is an empty `String`, indic
 scalar Placeholder
 
 schema {
-  query: Query
-  mutation: Mutation
-  subscription: Subscription
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
 }
 
 type Query {
-  """
-  Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is the
-  admin of a group chat containing users other than themselves. In this case, they must first appoint a different user
-  as the admin.
+    """
+    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
+    the admin of a group chat containing users other than themselves. In this case, they must first appoint a different
+    user as the admin.
 
-  You must send an access token with this request.
-  """
-  canDeleteAccount: Boolean!
+    You must send an access token with this request.
+    """
+    canDeleteAccount: Boolean!
 
-  """
-  Returns the user's starred messages.
+    """
+    Returns the user's starred messages.
 
-  You must send an access token with this request.
-  """
-  readStars: [StarredMessage!]!
+    You must send an access token with this request.
+    """
+    readStars: [StarredMessage!]!
 
-  """
-  The online statuses of users the user has in their contacts, or is in a chat with.
+    """
+    The online statuses of users the user has in their contacts, or is in a chat with.
 
-  You must send an access token with this request.
-  """
-  readOnlineStatuses: [OnlineStatus!]!
+    You must send an access token with this request.
+    """
+    readOnlineStatuses: [OnlineStatus!]!
 
-  """
-  Case-insensitively `query`s text messages in the `chatId`.
+    """
+    Case-insensitively `query`s text messages in the `chatId`.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
+    You must send an access token with this request.
+    """
+    searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
-  """
-  Case-insensitively `query`s every text message in every chat the user is in. Each item in the returned
-  `ChatMessages` will be for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search
-  results.
+    """
+    Case-insensitively `query`s every text message in every chat the user is in. Each item in the returned
+    `ChatMessages` will be for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search
+    results.
 
-  You must send an access token with this request.
-  """
-  searchMessages(query: String!): [ChatMessages!]!
+    You must send an access token with this request.
+    """
+    searchMessages(query: String!): [ChatMessages!]!
 
-  """
-  Returns the user's account info.
+    """
+    Returns the user's account info.
 
-  You must send an access token with this request.
-  """
-  readAccount: Account!
+    You must send an access token with this request.
+    """
+    readAccount: Account!
 
-  """Returns whether the `username` has been taken."""
-  isUsernameTaken(username: Username!): Boolean!
+    """Returns whether the `username` has been taken."""
+    isUsernameTaken(username: Username!): Boolean!
 
-  """Returns whether the `emailAddress` has been taken."""
-  isEmailAddressTaken(emailAddress: String!): Boolean!
+    """Returns whether the `emailAddress` has been taken."""
+    isEmailAddressTaken(emailAddress: String!): Boolean!
 
-  """
-  Returns the chats the user is in.
+    """
+    Returns the chats the user is in.
 
-  You must send an access token with this request.
-  """
-  readChats: [Chat!]!
+    You must send an access token with this request.
+    """
+    readChats: [Chat!]!
 
-  """
-  Returns the chat `id`.
+    """
+    Returns the chat `id`.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
 
-  You must send an access token with this request.
-  """
-  readChat(id: Int!): Chat!
+    You must send an access token with this request.
+    """
+    readChat(id: Int!): Chat!
 
-  """
-  Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with the
-  username, first name, and last name of users the user has chats with. Group chats are searched by matching the `query`
-  with the title of group chats the user is in.
+    """
+    Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with
+    the username, first name, and last name of users the user has chats with. Group chats are searched by matching the
+    `query` with the title of group chats the user is in.
 
-  You must send an access token with this request.
-  """
-  searchChats(query: String!): [Chat!]!
+    You must send an access token with this request.
+    """
+    searchChats(query: String!): [Chat!]!
 
-  """
-  Retrieves saved contacts.
+    """
+    Retrieves saved contacts.
 
-  You must send an access token with this request.
-  """
-  readContacts(first: Int, after: Cursor): AccountsConnection!
+    You must send an access token with this request.
+    """
+    readContacts(first: Int, after: Cursor): AccountsConnection!
 
-  """
-  Case-insensitively searches contacts using the `query`.
+    """
+    Case-insensitively searches contacts using the `query`.
 
-  You must send an access token with this request.
-  """
-  searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
+    You must send an access token with this request.
+    """
+    searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
 
-  """
-  Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-  authenticate the user by passing their `Login` to this operation.
+    """
+    Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
+    authenticate the user by passing their `Login` to this operation.
 
-  Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
-  `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
-  """
-  requestTokenSet(login: Login!): TokenSet!
+    Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
+    `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
+    """
+    requestTokenSet(login: Login!): TokenSet!
 
-  """
-  The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by passing
-  the `refreshToken` to this operation to request a new set of tokens.
-  """
-  refreshTokenSet(refreshToken: ID!): TokenSet!
+    """
+    The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
+    passing the `refreshToken` to this operation to request a new set of tokens.
+    """
+    refreshTokenSet(refreshToken: ID!): TokenSet!
 
-  """
-  Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names, and
-  last names. Returns the users found.
-  """
-  searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
+    """
+    Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names,
+    and last names. Returns the users found.
+    """
+    searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
 }
 
 type Mutation {
-  """
-  Deletes the user's account. All the user's data will be wiped from the system. This means that users in private chats
-  with the user will have their chats deleted, etc.
+    """
+    Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
+    chats with the user will have their chats deleted, etc.
 
-  Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` is `false`).
+    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` is `false`).
 
-  You must send an access token with this request.
-  """
-  deleteAccount: Placeholder!
+    You must send an access token with this request.
+    """
+    deleteAccount: Placeholder!
 
-  """
-  Stars the `messageId`. You can star your own messages. Starring an already starred message will do nothing.
+    """
+    Stars the `messageId`. You can star your own messages. Starring an already starred message will do nothing.
 
-  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the `messageId` doesn't exist for the user).
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the `messageId` doesn't exist for the user).
 
-  You must send an access token with this request.
-  """
-  star(messageId: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    star(messageId: Int!): Placeholder!
 
-  """
-  Unstars the `messageId`. Does nothing if the message wasn't starred.
+    """
+    Unstars the `messageId`. Does nothing if the message wasn't starred.
 
-  You must send an access token with this request.
-  """
-  deleteStar(messageId: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    deleteStar(messageId: Int!): Placeholder!
 
-  """
-  Sets the current user's status to `isOnline`.
+    """
+    Sets the current user's status to `isOnline`.
 
-  You must send an access token with this request.
-  """
-  setOnlineStatus(isOnline: Boolean!): Placeholder!
+    You must send an access token with this request.
+    """
+    setOnlineStatus(isOnline: Boolean!): Placeholder!
 
-  """
-  Sets whether the user `isTyping` in the `chatId`.
+    """
+    Sets whether the user `isTyping` in the `chatId`.
 
-  Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing status
-  on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
+    Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing
+    status on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  setTyping(chatId: Int!, isTyping: Boolean!): Placeholder!
+    You must send an access token with this request.
+    """
+    setTyping(chatId: Int!, isTyping: Boolean!): Placeholder!
 
-  """
-  Deletes the user's profile pic.
+    """
+    Deletes the user's profile pic.
 
-  You must send an access token with this request.
-  """
-  deleteProfilePic: Placeholder!
+    You must send an access token with this request.
+    """
+    deleteProfilePic: Placeholder!
 
-  """
-  Deletes the group chat's profile pic. The user must be the admin.
+    """
+    Deletes the group chat's profile pic. The user must be the admin.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
 
-  You must send an access token with this request.
-  """
-  deleteGroupChatPic(chatId: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    deleteGroupChatPic(chatId: Int!): Placeholder!
 
-  """
-  Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
-  `MessageStatus.DELIVERED` record, the delivery status will be created.
+    """
+    Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
+    `MessageStatus.DELIVERED` record, the delivery status will be created.
 
-  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
-  in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
-  had the message delivered to them).
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
+    in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
+    had the message delivered to them).
 
-  You must send an access token with this request.
-  """
-  createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
+    You must send an access token with this request.
+    """
+    createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
 
-  """
-  Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
-  `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
-  `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
-  one of the fields were invalid.
+    """
+    Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
+    `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
+    `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
+    one of the fields were invalid.
 
-  If the user updates their email address, they'll be required to verify it before their next login via an email which
-  is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have to
-  contact the service's admin to correctly update their address. You could prevent this mistake by asking them to
-  confirm their address. For example, a UI could require the user to enter their email address twice if they're updating
-  it, and only allow the update to take place if both the entered addresses match.
+    If the user updates their email address, they'll be required to verify it before their next login via an email which
+    is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
+    to contact the service's admin to correctly update their address. You could prevent this mistake by asking them to
+    confirm their address. For example, a UI could require the user to enter their email address twice if they're
+    updating it, and only allow the update to take place if both the entered addresses match.
 
-  Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
 
-  You must send an access token with this request.
-  """
-  updateAccount(update: AccountUpdate!): Placeholder!
+    You must send an access token with this request.
+    """
+    updateAccount(update: AccountUpdate!): Placeholder!
 
-  """
-  Creates an account, and sends the user a verification email. The user will not be allowed to log in until they verify
-  their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use the
-  requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
+    """
+    Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
+    verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
+    the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-  Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
-  """
-  createAccount(account: NewAccount!): Placeholder!
+    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    """
+    createAccount(account: AccountInput!): Placeholder!
 
-  """
-  Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
-  resent because the one which was automatically sent when their account was created timed out. Use
-  `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
+    """
+    Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
+    resent because the one which was automatically sent when their account was created timed out. Use
+    `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
 
-  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
-  """
-  sendEmailAddressVerification(emailAddress: String!): Placeholder!
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    """
+    sendEmailAddressVerification(emailAddress: String!): Placeholder!
 
-  """
-  Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the supplied
-  `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update their
-  password, you should use `Mutation.updateAccount` instead.
+    """
+    Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the
+    supplied `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update
+    their password, you should use `Mutation.updateAccount` instead.
 
-  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
-  """
-  resetPassword(emailAddress: String!): Placeholder!
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    """
+    resetPassword(emailAddress: String!): Placeholder!
 
-  """
-  Leaves the group chat.
+    """
+    Leaves the group chat.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-  `"ADMIN_CANNOT_LEAVE"` (i.e., the user is the admin, and they aren't the last user in the chat, so they can't leave
-  without transferring the admin status first).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+    `"ADMIN_CANNOT_LEAVE"` (i.e., the user is the admin, and they aren't the last user in the chat, so they can't leave
+    without transferring the admin status first).
 
-  You must send an access token with this request.
-  """
-  leaveGroupChat(chatId: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    leaveGroupChat(chatId: Int!): Placeholder!
 
-  """
-  Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
+    """
+    Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"INVALID_GROUP_CHAT"`
-  (i.e., the lists of users to add and remove both contained the same user ID), `"INVALID_USER_ID"` (i.e., a user to be
-  added to the chat doesn't exist), or `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"INVALID_GROUP_CHAT"`
+    (i.e., the lists of users to add and remove both contained the same user ID), `"INVALID_USER_ID"` (i.e., a user to
+    be added to the chat doesn't exist), or `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  updateGroupChat(update: GroupChatUpdate!): Placeholder!
+    You must send an access token with this request.
+    """
+    updateGroupChat(update: GroupChatUpdate!): Placeholder!
 
-  """
-  Creates a group chat. Returns the new chat's ID.
+    """
+    Creates a group chat. Returns the new chat's ID.
 
-  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist).
 
-  You must send an access token with this request.
-  """
-  createGroupChat(chat: NewGroupChat!): Int!
+    You must send an access token with this request.
+    """
+    createGroupChat(chat: GroupChatInput!): Int!
 
-  """
-  Deletes a private chat.
+    """
+    Deletes a private chat.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  deletePrivateChat(chatId: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    deletePrivateChat(chatId: Int!): Placeholder!
 
-  """
-  Creates a private chat with the `userId`. Returns the chat's ID.
+    """
+    Creates a private chat with the `userId`. Returns the chat's ID.
 
-  Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
-  exist).
+    Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
+    exist).
 
-  You must send an access token with this request.
-  """
-  createPrivateChat(userId: Int!): Int!
+    You must send an access token with this request.
+    """
+    createPrivateChat(userId: Int!): Int!
 
-  """
-  Sends a message in a chat. Use `Subscription.subscribeToMessages` to get the message's ID and sending
-  `scalar.DateTime`.
+    """
+    Sends a message in a chat. Use `Subscription.subscribeToMessages` to get the message's ID and sending
+    `scalar.DateTime`.
 
-  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-  You must send an access token with this request.
-  """
-  createMessage(chatId: Int!, text: TextMessage!): Placeholder!
+    You must send an access token with this request.
+    """
+    createMessage(chatId: Int!, text: TextMessage!): Placeholder!
 
-  """
-  Deletes the message `id` from the chat it's from. The user can only delete their own messages.
+    """
+    Deletes the message `id` from the chat it's from. The user can only delete their own messages.
 
-  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message isn't in a chat the user is in, the
-  message isn't visible to the user because they deleted the private chat, or the message isn't the user's own).
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message isn't in a chat the user is in, the
+    message isn't visible to the user because they deleted the private chat, or the message isn't the user's own).
 
-  You must send an access token with this request.
-  """
-  deleteMessage(id: Int!): Placeholder!
+    You must send an access token with this request.
+    """
+    deleteMessage(id: Int!): Placeholder!
 
-  """
-  Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
+    """
+    Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
 
-  You must send an access token with this request.
-  """
-  deleteContacts(userIdList: [Int!]!): Placeholder!
+    You must send an access token with this request.
+    """
+    deleteContacts(userIdList: [Int!]!): Placeholder!
 
-  """
-  Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-  Existing contacts will be ignored.
+    """
+    Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
+    Existing contacts will be ignored.
 
-  Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
+    Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
 
-  You must send an access token with this request.
-  """
-  createContacts(userIdList: [Int!]!): Placeholder!
+    You must send an access token with this request.
+    """
+    createContacts(userIdList: [Int!]!): Placeholder!
 }
 
 type Subscription {
-  """
-  Yields created, updated, and deleted messages (including your own) in every chat the user is in. A message from a chat
-  the user wasn't previously in can be sent as well (e.g., when the other user in a private chat the user deleted sends
-  a message in it). The subscription will be stopped if the user deletes their account.
+    """
+    Yields created, updated, and deleted messages (including your own) in every chat the user is in. A message from a
+    chat the user wasn't previously in can be sent as well (e.g., when the other user in a private chat the user deleted
+    sends a message in it). The subscription will be stopped if the user deletes their account.
 
-  You must send an access token with this request.
-  """
-  subscribeToMessages: MessagesSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToMessages: MessagesSubscription!
 
-  """
-  Yields the online statuses of users the user has in their contacts, or is in a chat with. The subscription will be
-  stopped if the user deletes their account.
+    """
+    Yields the online statuses of users the user has in their contacts, or is in a chat with. The subscription will be
+    stopped if the user deletes their account.
 
-  You must send an access token with this request.
-  """
-  subscribeToOnlineStatuses: OnlineStatusesSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToOnlineStatuses: OnlineStatusesSubscription!
 
-  """
-  Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription will
-  be stopped if the user deletes their account.
+    """
+    Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
+    will be stopped if the user deletes their account.
 
-  You must send an access token with this request.
-  """
-  subscribeToTypingStatuses: TypingStatusesSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToTypingStatuses: TypingStatusesSubscription!
 
-  """
-  Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
-  subscription will be stopped if the user deletes their account.
+    """
+    Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
+    subscription will be stopped if the user deletes their account.
 
-  You must send an access token with this request.
-  """
-  subscribeToContacts: ContactsSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToContacts: ContactsSubscription!
 
-  """
-  Yields updated accounts of users the user has private chats with, and metadata updates on group chats the user is in.
-  Updates will be sent for private chats the user has deleted because it's possible that the user recreated the chat but
-  hasn't finished sending a message in it yet. The subscription will be stopped if the user deletes their account.
+    """
+    Yields updated accounts of users the user has private chats with, and metadata updates on group chats the user is
+    in. Updates will be sent for private chats the user has deleted because it's possible that the user recreated the
+    chat but hasn't finished sending a message in it yet. The subscription will be stopped if the user deletes their
+    account.
 
-  You must send an access token with this request.
-  """
-  subscribeToUpdatedChats: UpdatedChatsSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToUpdatedChats: UpdatedChatsSubscription!
 
-  """
-  Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
+    """
+    Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
 
-  You must send an access token with this request.
-  """
-  subscribeToNewGroupChats: NewGroupChatsSubscription!
+    You must send an access token with this request.
+    """
+    subscribeToNewGroupChats: NewGroupChatsSubscription!
 }
 
 union MessagesSubscription = CreatedSubscription
-  | NewMessage
-  | UpdatedMessage
-  | DeletedMessage
-  | MessageDeletionPoint
-  | DeletionOfEveryMessage
-  | UserChatMessagesRemoval
+    | NewMessage
+    | UpdatedMessage
+    | DeletedMessage
+    | MessageDeletionPoint
+    | DeletionOfEveryMessage
+    | UserChatMessagesRemoval
 
 union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
@@ -439,42 +440,42 @@ A `GroupChatId` is the ID of the chat the user was added to, excluding a chat th
 union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
 
 type UpdatedOnlineStatus {
-  userId: Int!
-  isOnline: Boolean!
+    userId: Int!
+    isOnline: Boolean!
 }
 
 type OnlineStatus {
-  userId: Int!
-  isOnline: Boolean!
-  """`null` if the `userId` has never set an online status."""
-  lastOnline: DateTime
+    userId: Int!
+    isOnline: Boolean!
+    """`null` if the `userId` has never set an online status."""
+    lastOnline: DateTime
 }
 
 """Whether the `userId` `isTyping` in the `chatId`."""
 type TypingStatus {
-  chatId: Int!
-  userId: Int!
-  isTyping: Boolean!
+    chatId: Int!
+    userId: Int!
+    isTyping: Boolean!
 }
 
 type GroupChatId {
-  id: Int!
+    id: Int!
 }
 
 """The user who left the group chat."""
 type ExitedUser {
-  chatId: Int!
-  userId: Int!
+    chatId: Int!
+    userId: Int!
 }
 
 """null fields correspond to the field not existing."""
 type UpdatedAccount {
-  userId: Int!
-  username: Username!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+    userId: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 """
@@ -482,12 +483,12 @@ A group chat which had its metadata updated. null fields haven't been updated. T
 (e.g., `adminId` may still be the previous admin's ID).
 """
 type UpdatedGroupChat {
-  chatId: Int!
-  title: GroupChatTitle
-  description: GroupChatDescription
-  newUsers: [Account!]
-  removedUsers: [Account!]
-  adminId: Int
+    chatId: Int!
+    title: GroupChatTitle
+    description: GroupChatDescription
+    newUsers: [Account!]
+    removedUsers: [Account!]
+    adminId: Int
 }
 
 """
@@ -497,7 +498,7 @@ This happens in private chats when the user deleted it, or the other user delete
 chats when the last user left the chat.
 """
 type DeletionOfEveryMessage {
-  chatId: Int!
+    chatId: Int!
 }
 
 """
@@ -505,73 +506,73 @@ Every message the `userId` sent in the `chatId` has been deleted. This happens w
 account.
 """
 type UserChatMessagesRemoval {
-  chatId: Int!
-  userId: Int!
+    chatId: Int!
+    userId: Int!
 }
 
 """
 Indicates that the `Subscription` has been created. This will only be sent only once, and will be the first event sent.
 """
 type CreatedSubscription {
-  placeholder: Placeholder!
+    placeholder: Placeholder!
 }
 
 """Indicates that the every message `until` the `DateTime` has been deleted in the `chatId`."""
 type MessageDeletionPoint {
-  chatId: Int!
-  until: DateTime!
+    chatId: Int!
+    until: DateTime!
 }
 
 """The `messageId` has been deleted from the `chatId`."""
 type DeletedMessage {
-  chatId: Int!
-  messageId: Int!
+    chatId: Int!
+    messageId: Int!
 }
 
 type AccountsConnection {
-  edges: [AccountEdge!]!
-  pageInfo: PageInfo!
+    edges: [AccountEdge!]!
+    pageInfo: PageInfo!
 }
 
 type AccountEdge {
-  node: Account!
-  cursor: Cursor!
+    node: Account!
+    cursor: Cursor!
 }
 
 interface AccountData {
-  id: Int!
-  username: Username!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+    id: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 type Account implements AccountData {
-  id: Int!
-  username: Username!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+    id: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 type NewContact implements AccountData {
-  id: Int!
-  username: Username!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+    id: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 type UpdatedContact implements AccountData {
-  id: Int!
-  username: Username!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+    id: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 """
@@ -579,162 +580,162 @@ The `id` of the contact which has been deleted for the user. This happens when t
 contact's account gets deleted.
 """
 type DeletedContact {
-  id: Int!
+    id: Int!
 }
 
-input NewAccount {
-  """Must be lowercase."""
-  username: Username!
-  password: Password!
-  emailAddress: String!
-  firstName: String
-  lastName: String
-  bio: Bio
+input AccountInput {
+    """Must be lowercase."""
+    username: Username!
+    password: Password!
+    emailAddress: String!
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 type ChatMessages {
-  chat: Chat!
-  messages(last: Int, before: Cursor): [MessageEdge!]!
+    chat: Chat!
+    messages(last: Int, before: Cursor): [MessageEdge!]!
 }
 
 interface Chat {
-  id: Int!
-  messages(last: Int, before: Cursor): MessagesConnection!
+    id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type MessagesConnection {
-  edges: [MessageEdge!]!
-  pageInfo: PageInfo!
+    edges: [MessageEdge!]!
+    pageInfo: PageInfo!
 }
 
 type MessageEdge {
-  node: Message!
-  cursor: Cursor!
+    node: Message!
+    cursor: Cursor!
 }
 
 type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: Cursor
-  endCursor: Cursor
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: Cursor
+    endCursor: Cursor
 }
 
 type GroupChat implements Chat {
-  id: Int!
-  messages(last: Int, before: Cursor): MessagesConnection!
-  title: GroupChatTitle!
-  description: GroupChatDescription
-  """The ID of the admin present who is present in the `users`."""
-  adminId: Int!
-  users(first: Int, after: Cursor): AccountsConnection!
+    id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
+    title: GroupChatTitle!
+    description: GroupChatDescription
+    """The ID of the admin present who is present in the `users`."""
+    adminId: Int!
+    users(first: Int, after: Cursor): AccountsConnection!
 }
 
 type PrivateChat implements Chat {
-  id: Int!
-  messages(last: Int, before: Cursor): MessagesConnection!
-  """The user being chatted with."""
-  user: Account!
+    id: Int!
+    messages(last: Int, before: Cursor): MessagesConnection!
+    """The user being chatted with."""
+    user: Account!
 }
 
 interface BareMessage {
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
 }
 
 type Message implements BareMessage {
-  id: Int!
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
-  hasStar: Boolean!
+    id: Int!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
+    hasStar: Boolean!
 }
 
 interface MessageData implements BareMessage {
-  chatId: Int!
-  messageId: Int!
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
 }
 
 type StarredMessage implements MessageData, BareMessage {
-  chatId: Int!
-  messageId: Int!
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
 }
 
 type NewMessage implements MessageData, BareMessage {
-  chatId: Int!
-  messageId: Int!
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
 }
 
 """An existing `messageId` in the `chatId` which was updated."""
 type UpdatedMessage implements MessageData, BareMessage {
-  chatId: Int!
-  messageId: Int!
-  sender: Account!
-  text: TextMessage!
-  dateTimes: MessageDateTimes!
-  hasStar: Boolean!
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    text: TextMessage!
+    dateTimes: MessageDateTimes!
+    hasStar: Boolean!
 }
 
 type MessageDateTimes {
-  sent: DateTime!
-  statuses: [MessageDateTimeStatus!]!
+    sent: DateTime!
+    statuses: [MessageDateTimeStatus!]!
 }
 
 """The `dateTime` the `user` created the `status`."""
 type MessageDateTimeStatus {
-  user: Account!
-  dateTime: DateTime!
-  status: MessageStatus!
+    user: Account!
+    dateTime: DateTime!
+    status: MessageStatus!
 }
 
 enum MessageStatus {
-  DELIVERED
-  READ
+    DELIVERED
+    READ
 }
 
 type TokenSet {
-  accessToken: ID!
-  refreshToken: ID!
+    accessToken: ID!
+    refreshToken: ID!
 }
 
 input Login {
-  username: Username!
-  password: Password!
+    username: Username!
+    password: Password!
 }
 
 """Only non-null fields will be updated."""
 input AccountUpdate {
-  username: Username
-  password: Password
-  emailAddress: String
-  firstName: String
-  lastName: String
-  bio: Bio
+    username: Username
+    password: Password
+    emailAddress: String
+    firstName: String
+    lastName: String
+    bio: Bio
 }
 
 input GroupChatUpdate {
-  chatId: Int!
-  title: GroupChatTitle
-  description: GroupChatDescription
-  """The ID of every new user to add."""
-  newUserIdList: [Int!]
-  """The ID of every user to remove."""
-  removedUserIdList: [Int!]
-  """Transfers the admin status to the specified user ID."""
-  newAdminId: Int
+    chatId: Int!
+    title: GroupChatTitle
+    description: GroupChatDescription
+    """The ID of every new user to add."""
+    newUserIdList: [Int!]
+    """The ID of every user to remove."""
+    removedUserIdList: [Int!]
+    """Transfers the admin status to the specified user ID."""
+    newAdminId: Int
 }
 
-input NewGroupChat {
-  title: GroupChatTitle!
-  description: GroupChatDescription!
-  userIdList: [Int!]!
+input GroupChatInput {
+    title: GroupChatTitle!
+    description: GroupChatDescription!
+    userIdList: [Int!]! = []
 }

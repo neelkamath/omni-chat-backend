@@ -104,7 +104,7 @@ fun emailAddressExists(email: String): Boolean = email in realm.users().list().m
  * Creates a new account in the auth system, saves it to the DB via [Users.create], and sends the user a verification
  * email.
  */
-fun createUser(account: NewAccount) {
+fun createUser(account: AccountInput) {
     realm.users().create(account.toUserRepresentation())
     val userId = realm
         .users()
@@ -127,7 +127,7 @@ fun resetPassword(email: String) {
     realm.users().get(Users.read(userId).uuid.toString()).executeActionsEmail(listOf("UPDATE_PASSWORD"))
 }
 
-private fun NewAccount.toUserRepresentation(): UserRepresentation = UserRepresentation().also {
+private fun AccountInput.toUserRepresentation(): UserRepresentation = UserRepresentation().also {
     it.username = username.value
     it.credentials = createCredentials(password)
     it.email = emailAddress

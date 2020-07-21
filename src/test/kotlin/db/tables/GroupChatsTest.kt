@@ -156,9 +156,9 @@ class GroupChatsTest : FunSpec({
         test("Chats should be searched case-insensitively") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chats = listOf(
-                NewGroupChat(GroupChatTitle("Title 1"), GroupChatDescription("")),
-                NewGroupChat(GroupChatTitle("Title 2"), GroupChatDescription("")),
-                NewGroupChat(GroupChatTitle("Iron Man Fan Club"), GroupChatDescription(""))
+                GroupChatInput(GroupChatTitle("Title 1"), GroupChatDescription("")),
+                GroupChatInput(GroupChatTitle("Title 2"), GroupChatDescription("")),
+                GroupChatInput(GroupChatTitle("Iron Man Fan Club"), GroupChatDescription(""))
             )
             chats.forEach { GroupChats.create(adminId, it) }
             GroupChats.search(adminId, "itle ").map { it.title } shouldBe listOf(chats[0].title, chats[1].title)
