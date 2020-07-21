@@ -35,16 +35,16 @@ private data class GraphQlSubscription(
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
 fun routeGraphQlSubscriptions(context: Routing) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    mapOf(
+    val subscriptions = mapOf(
         "messages-subscription" to "subscribeToMessages",
         "contacts-subscription" to "subscribeToContacts",
         "updated-chats-subscription" to "subscribeToUpdatedChats",
         "new-group-chats-subscription" to "subscribeToNewGroupChats",
         "typing-statuses-subscription" to "subscribeToTypingStatuses",
         "online-statuses-subscription" to "subscribeToOnlineStatuses"
-    ).forEach { (path, operation) ->
+    )
+    for ((path, operation) in subscriptions)
         routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
-    }
 }
 
 /**

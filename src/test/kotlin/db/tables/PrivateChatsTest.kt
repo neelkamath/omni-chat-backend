@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.ChatEdges
+import com.neelkamath.omniChat.db.count
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -25,15 +26,13 @@ class PrivateChatsTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             TypingStatuses.set(chatId, user1Id, isTyping = true)
-            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
-            MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
+            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
+            Stargazers.create(user1Id, messageId)
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChats.delete(chatId)
-            Chats.count().shouldBeZero()
-            PrivateChats.count().shouldBeZero()
-            Messages.count().shouldBeZero()
-            MessageStatuses.count().shouldBeZero()
-            TypingStatuses.count().shouldBeZero()
+            listOf(Chats, Messages, MessageStatuses, PrivateChatDeletions, PrivateChats, Stargazers, TypingStatuses)
+                .forEach { it.count().shouldBeZero() }
         }
     }
 
@@ -54,7 +53,7 @@ class PrivateChatsTest : FunSpec({
             val chat2Id = PrivateChats.create(user1Id, user3Id)
             val chat3Id = PrivateChats.create(user1Id, user4Id)
             PrivateChatDeletions.create(chat2Id, user1Id)
-            Messages.create(chat2Id, user1Id, TextMessage("t"))
+            Messages.create(user1Id, chat2Id, TextMessage("t"))
             PrivateChatDeletions.create(chat3Id, user1Id)
             PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
         }
@@ -80,14 +79,13 @@ class PrivateChatsTest : FunSpec({
     context("queryUserChatEdges(String, String)") {
         test("Chats should be queried") {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
+            val (chat1Id, chat2Id, chat3Id) = listOf(user2Id, user3Id, user4Id).map { PrivateChats.create(user1Id, it) }
             val queryText = "hi"
-            val (chat1Id, chat2Id) = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
-                val id = Messages.message(it, user1Id, TextMessage(queryText))
-                MessageEdge(Messages.read(id), cursor = id)
+                val messageId = Messages.message(user1Id, it, TextMessage(queryText))
+                MessageEdge(Messages.readMessage(user1Id, messageId), cursor = messageId)
             }
-            val chat3Id = PrivateChats.create(user1Id, user4Id)
-            Messages.create(chat3Id, user1Id, TextMessage("bye"))
+            Messages.create(user1Id, chat3Id, TextMessage("bye"))
             val chat1Edges = ChatEdges(chat1Id, listOf(message1))
             val chat2Edges = ChatEdges(chat2Id, listOf(message2))
             PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe listOf(chat1Edges, chat2Edges)
@@ -97,9 +95,9 @@ class PrivateChatsTest : FunSpec({
     context("search(String, String, BackwardPagination?)") {
         test(
             """
-            Chats should be searched by case-insensitively querying usernames, email addresses, first names, and last 
-            names
-            """
+                Chats should be searched by case-insensitively querying usernames, email addresses, first names, and 
+                last names
+                """
         ) {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(

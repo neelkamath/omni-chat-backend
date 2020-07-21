@@ -40,8 +40,8 @@ object PrivateChatDeletions : IntIdTable() {
     /** Records in the DB that the [userId] deleted the [chatId]. */
     private fun insert(chatId: Int, userId: Int): Unit = transaction {
         insert {
-            it[PrivateChatDeletions.chatId] = chatId
-            it[PrivateChatDeletions.userId] = userId
+            it[this.chatId] = chatId
+            it[this.userId] = userId
         }
     }
 
@@ -67,7 +67,7 @@ object PrivateChatDeletions : IntIdTable() {
 
     /** Deletes [Messages] and [MessageStatuses] deleted by both users. */
     private fun deleteCommonlyDeletedMessages(chatId: Int) {
-        readLastChatDeletion(chatId)?.let { Messages.deleteChatMessagesUntil(chatId, until = it) }
+        readLastChatDeletion(chatId)?.let { Messages.deleteMessagesUntil(chatId, until = it) }
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */

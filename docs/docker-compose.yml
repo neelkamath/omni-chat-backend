@@ -33,7 +33,7 @@ services:
         source: auth-db
         target: /var/lib/postgresql/data
   chat:
-    image: docker.pkg.github.com/neelkamath/omni-chat/omni-chat:0.1.0
+    image: docker.pkg.github.com/neelkamath/omni-chat/omni-chat:0.1.1
     entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 3m
     command: java -server -jar omni-chat-all.jar
     networks: [proxy, chat-db]

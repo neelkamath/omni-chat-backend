@@ -16,6 +16,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("Chat") { wireType(it, ::readChat) }
     .type("AccountData") { wireType(it, ::readAccountData) }
     .type("MessageData") { wireType(it, ::readMessageData) }
+    .type("BareMessage") { wireType(it, ::readBareMessage) }
 
 private inline fun wireType(
     builder: TypeRuntimeWiring.Builder,
@@ -97,4 +98,12 @@ private fun readMessageData(obj: Any): String = when (obj) {
     is NewMessage -> "NewMessage"
     is UpdatedMessage -> "UpdatedMessage"
     else -> throw IllegalArgumentException("$obj wasn't a NewMessage, or UpdatedMessage.")
+}
+
+private fun readBareMessage(obj: Any): String = when (obj) {
+    is Message -> "Message"
+    is StarredMessage -> "StarredMessage"
+    is NewMessage -> "NewMessage"
+    is UpdatedMessage -> "UpdatedMessage"
+    else -> throw IllegalArgumentException("$obj wasn't a Message, StarredMessage, NewMessage, or UpdatedMessage.")
 }

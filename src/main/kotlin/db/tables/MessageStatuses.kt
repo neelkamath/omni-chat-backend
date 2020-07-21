@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.MessageDateTimeStatus
-import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.MessagesSubscription
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -43,15 +40,15 @@ object MessageStatuses : Table() {
      * - The status has already been recorded (you can check if the [status] [exists]).
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
      */
-    fun create(messageId: Int, userId: Int, status: MessageStatus) {
-        if (!Messages.isVisible(messageId, userId))
+    fun create(userId: Int, messageId: Int, status: MessageStatus) {
+        if (!Messages.isVisible(userId, messageId))
             throw IllegalArgumentException(
                 """
-                The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted 
-                the chat.
-                """.trimIndent()
+                    The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they 
+                    deleted the chat.
+                    """.trimIndent()
             )
-        if (Messages.read(messageId).sender.id == userId)
+        if (Messages.readMessage(userId, messageId).sender.id == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
         if (exists(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
@@ -65,28 +62,31 @@ object MessageStatuses : Table() {
     }
 
     /**
-     * Inserts the status into the DB, and notifies clients who have [Broker.subscribe]d to [MessagesSubscription]s via
+     * Inserts the status into the table. [Broker.notify]s [Broker.subscribe]rs of the [UpdatedMessage]s via
      * [messagesBroker].
      */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transaction {
             insert {
-                it[MessageStatuses.messageId] = messageId
-                it[MessageStatuses.userId] = userId
-                it[MessageStatuses.status] = status
+                it[this.messageId] = messageId
+                it[this.userId] = userId
+                it[this.status] = status
             }
         }
         val chatId = Messages.readChatFromMessage(messageId)
-        messagesBroker.notify(Messages.read(messageId).toUpdatedMessage()) { isUserInChat(userId, chatId) }
+        messagesBroker.notify(
+            update = { UpdatedMessage.build(it.userId, messageId) },
+            filter = { isUserInChat(it.userId, chatId) }
+        )
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
-    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = !transaction {
+    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = transaction {
         select {
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
                     (MessageStatuses.status eq status)
-        }.empty()
+        }.empty().not()
     }
 
     /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */

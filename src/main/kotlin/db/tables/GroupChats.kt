@@ -63,7 +63,7 @@ object GroupChats : Table() {
         val chatId = transaction {
             insert {
                 it[id] = Chats.create()
-                it[GroupChats.adminId] = adminId
+                it[this.adminId] = adminId
                 it[title] = chat.title.value
                 it[description] = chat.description.value
             }[GroupChats.id]
@@ -73,16 +73,21 @@ object GroupChats : Table() {
         return chatId
     }
 
-    /** @param[messagesPagination] pagination for [GroupChat.messages]. */
+    /**
+     * Returns the [chatId] for the [userId].
+     *
+     * @param[messagesPagination] pagination for [GroupChat.messages].
+     */
     fun readChat(
-        id: Int,
+        userId: Int,
+        chatId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): GroupChat {
         val row = transaction {
-            select { GroupChats.id eq id }.first()
+            select { GroupChats.id eq chatId }.first()
         }
-        return buildGroupChat(row, id, usersPagination, messagesPagination)
+        return buildGroupChat(row, userId, chatId, usersPagination, messagesPagination)
     }
 
     /**
@@ -96,7 +101,7 @@ object GroupChats : Table() {
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transaction {
-        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination) }
+        GroupChatUsers.readChatIdList(userId).map { readChat(userId, it, usersPagination, messagesPagination) }
     }
 
     /**
@@ -116,8 +121,7 @@ object GroupChats : Table() {
      * @see [updatePic]
      */
     fun update(update: GroupChatUpdate) {
-        val existingUserIdList =
-            readChat(update.chatId, messagesPagination = BackwardPagination(last = 0)).users.edges.map { it.node.id }
+        val existingUserIdList = GroupChatUsers.readUserIdList(update.chatId)
         val removedUserIdList =
             if (update.removedUserIdList == null) null
             else update.removedUserIdList.intersect(existingUserIdList).toList()
@@ -195,17 +199,18 @@ object GroupChats : Table() {
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transaction {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
-            .map { buildGroupChat(it, it[GroupChats.id], usersPagination, messagesPagination) }
+            .map { buildGroupChat(it, userId, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
     /**
-     * Builds the [chatId] from the [row].
+     * Builds the [chatId] from the [row] for the [userId].
      *
      * @param[messagesPagination] pagination for [GroupChat.messages].
      * @param[usersPagination] pagination for [GroupChat.users].
      */
     private fun buildGroupChat(
         row: ResultRow,
+        userId: Int,
         chatId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
@@ -215,7 +220,7 @@ object GroupChats : Table() {
         GroupChatUsers.readUsers(chatId, usersPagination),
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
-        Messages.readGroupChatConnection(chatId, messagesPagination)
+        Messages.readGroupChatConnection(userId, chatId, messagesPagination)
     )
 
     /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
@@ -230,7 +235,7 @@ object GroupChats : Table() {
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
     fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
-        .associateWith { Messages.searchGroupChat(it, query) }
+        .associateWith { Messages.searchGroupChat(userId, it, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 }

@@ -36,16 +36,21 @@ class Broker<A : Asset, U> {
             .toFlowable(BackpressureStrategy.BUFFER)
     }
 
-    /** Sends the [update] to the [filter]ed [subscribe]rs. */
-    fun notify(update: U, filter: (A) -> Boolean): Unit =
-        notifiers.forEach { if (filter(it.data)) it.subject.onNext(update) }
+    /**
+     * Sends the [update] to the [filter]ed [subscribe]rs. The [update] lambda is only executed if the [filter] returns
+     * `true`.
+     */
+    fun notify(update: (A) -> U, filter: (A) -> Boolean): Unit =
+        notifiers.forEach { if (filter(it.data)) it.subject.onNext(update(it.data)) }
+
+    fun notify(update: U, filter: (A) -> Boolean): Unit = notify({ update }, filter)
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */
     fun unsubscribe(filter: (A) -> Boolean): Unit =
         /*
         <subscribe()> removes the notifier from the list once it completes. This means we can't write
-        <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException> would
-        get thrown.
+        <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException>
+        would get thrown.
          */
         notifiers.filter { filter(it.data) }.forEach { it.subject.onComplete() }
 

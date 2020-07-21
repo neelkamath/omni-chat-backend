@@ -28,9 +28,7 @@ object Contacts : IntIdTable() {
                 this[contactId] = it
             }
         }
-        newContacts.forEach { userId ->
-            contactsBroker.notify(NewContact.build(userId)) { it.userId == ownerId }
-        }
+        for (newContact in newContacts) contactsBroker.notify(NewContact.build(newContact)) { it.userId == ownerId }
     }
 
     /** The user ID list of the contacts saved by the contact [ownerId]. */
@@ -64,9 +62,7 @@ object Contacts : IntIdTable() {
         transaction {
             deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
         }
-        contacts.forEach { contact ->
-            contactsBroker.notify(DeletedContact(contact)) { it.userId == ownerId }
-        }
+        for (contact in contacts) contactsBroker.notify(DeletedContact(contact)) { it.userId == ownerId }
     }
 
     /**

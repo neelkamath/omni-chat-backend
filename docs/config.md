@@ -16,5 +16,5 @@
     |`KEYCLOAK_SMTP_HOST`|Your email service provider's hostname.|
     |`KEYCLOAK_SMTP_TLS_PORT`|The TLS port your email service provider runs on.|
     |`KEYCLOAK_SMTP_USER`|Your email account's username.|
-    |`KEYCLOAK_SMTP_PASSWORD`|Your email account's password.|
+    |`KEYCLOAK_SMTP_PASSWORD`|Your email account's password. If your email account requires multi-factor authentication, you'll have to use an app password (e.g., [Gmail app password](https://support.google.com/accounts/answer/185833?hl=en)).|
     |`JWT_SECRET`|The password used internally to create JWTs.|

@@ -16,7 +16,7 @@ class GroupChatsTest : FunSpec({
         test("A chat should be created which includes the admin in the list of users") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            GroupChats.readChat(chatId).users.edges.map { it.node.id } shouldContainExactlyInAnyOrder
+            GroupChats.readChat(adminId, chatId).users.edges.map { it.node.id } shouldContainExactlyInAnyOrder
                     listOf(adminId, userId)
         }
 
@@ -90,7 +90,7 @@ class GroupChatsTest : FunSpec({
         test("Messages from a user who left should be retained") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(chatId, userId, TextMessage("t"))
+            val messageId = Messages.message(userId, chatId, TextMessage("t"))
             GroupChatUsers.removeUsers(chatId, userId)
             Messages.readIdList(chatId) shouldBe listOf(messageId)
         }
@@ -106,15 +106,13 @@ class GroupChatsTest : FunSpec({
         test("Deleting a chat should wipe it from the DB") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(chatId, adminId, TextMessage("t"))
-            MessageStatuses.create(messageId, userId, MessageStatus.READ)
+            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            MessageStatuses.create(userId, messageId, MessageStatus.READ)
             TypingStatuses.set(chatId, adminId, isTyping = true)
+            Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
-            Chats.count().shouldBeZero()
-            GroupChats.count().shouldBeZero()
-            Messages.count().shouldBeZero()
-            MessageStatuses.count().shouldBeZero()
-            TypingStatuses.count().shouldBeZero()
+            listOf(Chats, GroupChats, GroupChatUsers, Messages, MessageStatuses, Stargazers, TypingStatuses)
+                .forEach { it.count().shouldBeZero() }
         }
     }
 
@@ -144,10 +142,10 @@ class GroupChatsTest : FunSpec({
             val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(adminId) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
-                val id = Messages.message(it, adminId, TextMessage(queryText))
-                MessageEdge(Messages.read(id), cursor = id)
+                val messageId = Messages.message(adminId, it, TextMessage(queryText))
+                MessageEdge(Messages.readMessage(adminId, messageId), cursor = messageId)
             }
-            Messages.create(chat3Id, adminId, TextMessage("bye"))
+            Messages.create(adminId, chat3Id, TextMessage("bye"))
             val chat1Edges = ChatEdges(chat1Id, listOf(message1))
             val chat2Edges = ChatEdges(chat2Id, listOf(message2))
             GroupChats.queryUserChatEdges(adminId, queryText) shouldBe listOf(chat1Edges, chat2Edges)

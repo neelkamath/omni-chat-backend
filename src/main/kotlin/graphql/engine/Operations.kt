@@ -6,7 +6,7 @@ import graphql.schema.idl.TypeRuntimeWiring
 
 /** Wires the GraphQL queries, mutations, and subscriptions to the [builder]. */
 fun wireGraphQlOperations(builder: RuntimeWiring.Builder): RuntimeWiring.Builder =
-    builder.type("Query", ::wireQuery).type("Mutation", ::wireMutation).type("Subscription", ::wireSubscription)
+        builder.type("Query", ::wireQuery).type("Mutation", ::wireMutation).type("Subscription", ::wireSubscription)
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("canDeleteAccount", ::canDeleteAccount)
@@ -17,6 +17,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("readChat", ::readChat)
     .dataFetcher("readChats", ::readChats)
     .dataFetcher("searchChats", ::searchChats)
+    .dataFetcher("readStars", ::readStars)
     .dataFetcher("readContacts", ::readContacts)
     .dataFetcher("searchContacts", ::searchContacts)
     .dataFetcher("searchMessages", ::searchMessages)
@@ -37,11 +38,13 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("leaveGroupChat", ::leaveGroupChat)
     .dataFetcher("updateGroupChat", ::updateGroupChat)
     .dataFetcher("createStatus", ::createStatus)
+    .dataFetcher("deleteStar", ::deleteStar)
     .dataFetcher("createGroupChat", ::createGroupChat)
     .dataFetcher("setTyping", ::setTyping)
     .dataFetcher("deletePrivateChat", ::deletePrivateChat)
     .dataFetcher("createPrivateChat", ::createPrivateChat)
     .dataFetcher("createMessage", ::createMessage)
+    .dataFetcher("star", ::star)
     .dataFetcher("deleteContacts", ::deleteContacts)
     .dataFetcher("createContacts", ::createContacts)
     .dataFetcher("deleteMessage", ::deleteMessage)

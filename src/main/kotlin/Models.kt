@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.Stargazers
 import com.neelkamath.omniChat.db.tables.Users
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
@@ -91,6 +92,12 @@ data class Account(
      */
     fun matches(query: String): Boolean =
         listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
+}
+
+interface BareMessage {
+    val sender: Account
+    val text: TextMessage
+    val dateTimes: MessageDateTimes
 }
 
 interface ContactsSubscription
@@ -276,24 +283,45 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
-interface MessageData {
+interface MessageData : BareMessage {
     val chatId: Int
     val messageId: Int
-    val sender: Account
-    val text: TextMessage
-    val dateTimes: MessageDateTimes
+    override val sender: Account
+    override val text: TextMessage
+    override val dateTimes: MessageDateTimes
+}
+
+data class StarredMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val text: TextMessage,
+    override val dateTimes: MessageDateTimes
+) : MessageData, BareMessage {
+    companion object {
+        fun build(messageId: Int): StarredMessage = with(Messages.readBareMessage(messageId)) {
+            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes)
+        }
+    }
 }
 
 data class Message(
     val id: Int,
-    val sender: Account,
-    val text: TextMessage,
-    val dateTimes: MessageDateTimes
-) {
+    override val sender: Account,
+    override val text: TextMessage,
+    override val dateTimes: MessageDateTimes,
+    val hasStar: Boolean
+) : BareMessage {
     fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
 
     fun toUpdatedMessage(): UpdatedMessage =
-        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
+        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar)
+
+    companion object {
+        /** The [userId] the [Message] is for. */
+        fun build(userId: Int, messageId: Int, message: BareMessage): Message =
+            with(message) { Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId)) }
+    }
 }
 
 interface MessagesSubscription
@@ -304,15 +332,26 @@ data class NewMessage(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription
+) : MessageData, BareMessage, MessagesSubscription {
+    companion object {
+        fun build(id: Int, message: BareMessage): NewMessage =
+            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes) }
+    }
+}
 
 data class UpdatedMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData, MessagesSubscription
+    override val dateTimes: MessageDateTimes,
+    val hasStar: Boolean
+) : MessageData, BareMessage, MessagesSubscription {
+    companion object {
+        fun build(userId: Int, messageId: Int): UpdatedMessage =
+            Messages.readMessage(userId, messageId).toUpdatedMessage()
+    }
+}
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
 
@@ -342,6 +381,7 @@ object CreatedSubscription :
     TypingStatusesSubscription,
     OnlineStatusesSubscription {
 
+    @Suppress("unused")
     val placeholder = Placeholder
 }
 

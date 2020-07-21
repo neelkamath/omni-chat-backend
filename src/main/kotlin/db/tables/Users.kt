@@ -44,8 +44,8 @@ object Users : IntIdTable() {
      */
     fun create(uuid: String, bio: Bio?): Unit = transaction {
         insert {
-            it[Users.uuid] = UUID.fromString(uuid)
-            it[Users.bio] = bio?.value
+            it[this.uuid] = UUID.fromString(uuid)
+            it[this.bio] = bio?.value
         }
     }
 

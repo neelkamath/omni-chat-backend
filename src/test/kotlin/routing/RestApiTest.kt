@@ -88,9 +88,9 @@ class RestApiTest : FunSpec({
 
         test(
             """
-            Uploading a large pic shouldn't cause the profile pic to be updated, and should cause an HTTP status code of
-            400 to be received
-            """
+                Uploading a large pic shouldn't cause the profile pic to be updated, and should cause an HTTP status 
+                code of 400 to be received
+                """
         ) {
             val user = createVerifiedUsers(1)[0]
             patchProfilePic(user.accessToken, "734kB.jpg").status() shouldBe HttpStatusCode.BadRequest

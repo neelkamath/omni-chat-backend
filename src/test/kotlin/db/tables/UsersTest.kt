@@ -12,7 +12,7 @@ class UsersTest : FunSpec({
         test("Updating the user's online status to the current value shouldn't cause notifications to be sent") {
             val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
             val subscriber =
-                onlineStatusesBroker.subscribe(OnlineStatusesAsset(contactOwnerId)).subscribeWith(TestSubscriber())
+                    onlineStatusesBroker.subscribe(OnlineStatusesAsset(contactOwnerId)).subscribeWith(TestSubscriber())
             Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
             subscriber.assertNoValues()
         }

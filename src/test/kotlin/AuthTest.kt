@@ -22,10 +22,10 @@ class AuthTest : FunSpec({
     context("isUsernameTaken(String)") {
         test(
             """
-            Given an existing username, and a nonexistent username similar to the one which exists,
-            when checking if the nonexistent username exists,
-            then it should be said to not exist
-            """
+                Given an existing username, and a nonexistent username similar to the one which exists,
+                when checking if the nonexistent username exists,
+                then it should be said to not exist
+                """
         ) {
             val username = createVerifiedUsers(1)[0].info.username
             val similarUsername = Username(username.value.dropLast(1))
@@ -112,18 +112,18 @@ class AuthTest : FunSpec({
 
         test(
             """
-            Given an account with a verified email address,
-            when its email address is changed,
-            then its email address should become unverified
-            """
+                Given an account with a verified email address,
+                when its email address is changed,
+                then its email address should become unverified
+                """
         ) { assertEmailAddressUpdate(changeAddress = true) }
 
         test(
             """
-            Given an account with a verified email address,
-            when its email address is updated to the same address,
-            then its email address shouldn't become unverified
-            """
+                Given an account with a verified email address,
+                when its email address is updated to the same address,
+                then its email address shouldn't become unverified
+                """
         ) { assertEmailAddressUpdate(changeAddress = false) }
     }
 })

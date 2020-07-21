@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
+import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.messagesBroker
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -18,8 +19,8 @@ class MessageStatusesTest : FunSpec({
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(chatId, adminId, TextMessage("t"))
-            val createStatus = { MessageStatuses.create(messageId, userId, MessageStatus.DELIVERED) }
+            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val createStatus = { MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED) }
             createStatus()
             shouldThrowExactly<IllegalArgumentException>(createStatus)
         }
@@ -27,49 +28,52 @@ class MessageStatusesTest : FunSpec({
         test("""Recording a "read" status shouldn't create a "delivered" status if one was already recorded""") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
+            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
+            MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
             MessageStatuses.count() shouldBe 2
         }
 
         test(""""Recording a "read" status should automatically record a "delivered" status if there wasn't one""") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            MessageStatuses.create(messageId, user2Id, MessageStatus.READ)
+            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
             MessageStatuses.count() shouldBe 2
         }
 
         test("Creating a status for the user on their own message should throw an exception") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
             shouldThrowExactly<IllegalArgumentException> {
-                MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
+                MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
             }
         }
 
         test("The user shouldn't be able to create a status on a message sent before they deleted the chat") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
             PrivateChatDeletions.create(chatId, user1Id)
             shouldThrowExactly<IllegalArgumentException> {
-                MessageStatuses.create(messageId, user1Id, MessageStatus.READ)
+                MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
             }
         }
     }
 
     context("insertAndNotify(Int, String, MessageStatus)") {
-        test("A subscriber should be notified of updated statuses") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+        test("Only subscribers in the chat should be notified of updated statuses") {
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user1Id, TextMessage("t"))
-            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
-            MessageStatuses.create(messageId, user2Id, MessageStatus.DELIVERED)
-            val message = Messages.readPrivateChat(chatId, user1Id)[0].node
-            subscriber.assertValue(message.toUpdatedMessage())
+            PrivateChats.create(user2Id, user3Id)
+            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
+                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+            MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
+            val message = Messages.readPrivateChat(user1Id, chatId)[0].node
+            listOf(user1Subscriber, user2Subscriber).forEach { it.assertValue(message.toUpdatedMessage()) }
+            user3Subscriber.assertNoValues()
         }
     }
 
@@ -80,24 +84,24 @@ class MessageStatusesTest : FunSpec({
          */
         fun createUsedChat(user1Id: Int, user2Id: Int): Int {
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(chatId, user2Id, TextMessage("t"))
-            MessageStatuses.create(messageId, user1Id, MessageStatus.DELIVERED)
+            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            MessageStatuses.create(user1Id, messageId, MessageStatus.DELIVERED)
             return chatId
         }
 
         test(
             """
-            Given a user in two chats,
-            when deleting the user's statuses in one of the chats,
-            then only the statuses the user created in that chat should be deleted
-            """
+                Given a user in two chats,
+                when deleting the user's statuses in one of the chats,
+                then only the statuses the user created in that chat should be deleted
+                """
         ) {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chat1Id = createUsedChat(user1Id, user2Id)
             val chat2Id = createUsedChat(user1Id, user3Id)
             MessageStatuses.deleteUserChatStatuses(chat1Id, user1Id)
-            Messages.readPrivateChat(chat1Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldBeEmpty()
-            Messages.readPrivateChat(chat2Id, user1Id).flatMap { it.node.dateTimes.statuses }.shouldNotBeEmpty()
+            Messages.readPrivateChat(user1Id, chat1Id).flatMap { it.node.dateTimes.statuses }.shouldBeEmpty()
+            Messages.readPrivateChat(user1Id, chat2Id).flatMap { it.node.dateTimes.statuses }.shouldNotBeEmpty()
         }
     }
 })

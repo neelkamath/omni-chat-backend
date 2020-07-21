@@ -38,8 +38,8 @@ object PrivateChats : Table() {
     private fun insert(user1Id: Int, user2Id: Int): Int = transaction {
         insert {
             it[id] = Chats.create()
-            it[PrivateChats.user1Id] = user1Id
-            it[PrivateChats.user2Id] = user2Id
+            it[this.user1Id] = user1Id
+            it[this.user2Id] = user2Id
         }[PrivateChats.id]
     }
 
@@ -57,8 +57,8 @@ object PrivateChats : Table() {
      * @see [readIdList]
      * @see [readUserChatIdList]
      */
-    fun readUserChats(userId: Int, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChatsRows(userId).map { buildPrivateChat(it, userId, pagination) }
+    fun readUserChats(userId: Int, messagesPagination: BackwardPagination? = null): List<PrivateChat> =
+        readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
