@@ -94,10 +94,13 @@ data class Account(
         listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
 }
 
+data class MessageContext(val hasContext: Boolean, val id: Int?)
+
 interface BareMessage {
     val sender: Account
     val text: TextMessage
     val dateTimes: MessageDateTimes
+    val context: MessageContext
 }
 
 interface ContactsSubscription
@@ -286,9 +289,6 @@ data class MessageEdge(val node: Message, val cursor: Cursor)
 interface MessageData : BareMessage {
     val chatId: Int
     val messageId: Int
-    override val sender: Account
-    override val text: TextMessage
-    override val dateTimes: MessageDateTimes
 }
 
 data class StarredMessage(
@@ -296,11 +296,12 @@ data class StarredMessage(
     override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData, BareMessage {
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : MessageData {
     companion object {
         fun build(messageId: Int): StarredMessage = with(Messages.readBareMessage(messageId)) {
-            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes)
+            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes, context)
         }
     }
 }
@@ -310,17 +311,19 @@ data class Message(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean
+    val hasStar: Boolean,
+    override val context: MessageContext
 ) : BareMessage {
-    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
+    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context)
 
     fun toUpdatedMessage(): UpdatedMessage =
-        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar)
+        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar, context)
 
     companion object {
         /** The [userId] the [Message] is for. */
-        fun build(userId: Int, messageId: Int, message: BareMessage): Message =
-            with(message) { Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId)) }
+        fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
+            Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId), context)
+        }
     }
 }
 
@@ -331,11 +334,12 @@ data class NewMessage(
     override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData, BareMessage, MessagesSubscription {
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : MessageData, MessagesSubscription {
     companion object {
         fun build(id: Int, message: BareMessage): NewMessage =
-            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes) }
+            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context) }
     }
 }
 
@@ -345,8 +349,9 @@ data class UpdatedMessage(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean
-) : MessageData, BareMessage, MessagesSubscription {
+    val hasStar: Boolean,
+    override val context: MessageContext
+) : MessageData, MessagesSubscription {
     companion object {
         fun build(userId: Int, messageId: Int): UpdatedMessage =
             Messages.readMessage(userId, messageId).toUpdatedMessage()

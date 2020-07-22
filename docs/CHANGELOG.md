@@ -4,6 +4,9 @@
 
 ### GraphQL API
 
+- Features:
+    - `Mutation.createMessage` takes an optional `contextMessageId` parameter to allow for replying to specific messages.
+    - A `context` field has been added to the `BareMessage` `interface`, `Message` `type`, `MessageData` `interface`, `StarredMessage` `type`, `NewMessage` `type`, and `UpdatedMessage` `type`.
 - Breaking changes:
     - The `Bio`, `GroupChatDescription`, and `TextMessage` `scalar`s now use [CommonMark](https://commonmark.org) instead of plain text.
     - The `NewAccount` `type` has been renamed to `AccountInput`.

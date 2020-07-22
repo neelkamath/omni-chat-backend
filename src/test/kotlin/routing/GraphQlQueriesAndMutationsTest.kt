@@ -47,18 +47,18 @@ class GraphQlQueriesAndMutationsTest : FunSpec({
 
         test(
             """
-                Given multiple operations, 
-                when an operation name is supplied, 
-                then the specified operation should be executed
-                """
+            Given multiple operations, 
+            when an operation name is supplied, 
+            then the specified operation should be executed
+            """
         ) { testOperationName(shouldSupplyOperationName = true) }
 
         test(
             """
-                Given multiple operations, 
-                when no operation name is supplied, 
-                then an error should be returned
-                """
+            Given multiple operations, 
+            when no operation name is supplied, 
+            then an error should be returned
+            """
         ) { testOperationName(shouldSupplyOperationName = false) }
 
         test("An HTTP status code of 401 should be received when a mandatory access token wasn't supplied") {
@@ -68,10 +68,10 @@ class GraphQlQueriesAndMutationsTest : FunSpec({
 
         test(
             """
-                Given an operation requiring an access token,
-                when supplying an invalid token to the operation,
-                then an HTTP status code of 401 should be received
-                """
+            Given an operation requiring an access token,
+            when supplying an invalid token to the operation,
+            then an HTTP status code of 401 should be received
+            """
         ) {
             executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
                 .shouldHaveUnauthorizedStatus()
@@ -79,10 +79,10 @@ class GraphQlQueriesAndMutationsTest : FunSpec({
 
         test(
             """
-                Given an operation which can only be called by particular users,
-                when supplying the access token of a user who lacks the required permissions,
-                then an HTTP status code of 401 should be received
-                """
+            Given an operation which can only be called by particular users,
+            when supplying the access token of a user who lacks the required permissions,
+            then an HTTP status code of 401 should be received
+            """
         ) {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))

@@ -521,7 +521,7 @@ class QueriesTest : FunSpec({
         test("Only the user's starred messages should be read") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId, TextMessage("t")) }
+            val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId) }
             listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
             readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(it) }
         }
@@ -726,10 +726,10 @@ class QueriesTest : FunSpec({
     context("searchMessages(DataFetchingEnvironment)") {
         test(
             """
-                Given a user who created a private chat, sent a message, and deleted the chat,
-                when searching for the message,
-                then it shouldn't be retrieved
-                """
+            Given a user who created a private chat, sent a message, and deleted the chat,
+            when searching for the message,
+            then it shouldn't be retrieved
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)

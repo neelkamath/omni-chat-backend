@@ -10,7 +10,7 @@ import java.time.ZoneOffset
 
 private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
-            LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
+        LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
 
     override fun parseValue(input: Any): LocalDateTime = dissectValue { parseDate(input as String) }
 

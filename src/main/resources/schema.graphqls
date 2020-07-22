@@ -320,14 +320,17 @@ type Mutation {
     createPrivateChat(userId: Int!): Int!
 
     """
-    Sends a message in a chat. Use `Subscription.subscribeToMessages` to get the message's ID and sending
-    `scalar.DateTime`.
+    Sends the `text` in the `chatId`.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    The user might want to give their message a context, such as when replying to a message sent several messages ago.
+    In this case, the `contextMessageId` is to be the ID of the message being replied to.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+    `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist).
 
     You must send an access token with this request.
     """
-    createMessage(chatId: Int!, text: TextMessage!): Placeholder!
+    createMessage(chatId: Int!, text: TextMessage!, contextMessageId: Int): Placeholder!
 
     """
     Deletes the message `id` from the chat it's from. The user can only delete their own messages.
@@ -641,6 +644,21 @@ interface BareMessage {
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+type MessageContext {
+    """Whether this message was in reply to a particular message."""
+    hasContext: Boolean!
+    """
+    The ID of the context message.
+
+    If this message doesn't `hasContext`, this will be null. If this message `hasContext`, this will be null only if the
+    context message was deleted. Since this message might not make any sense without the context, if this message
+    `hasContext`, but the context message was deleted, a frontend could replace what should've been the context message
+    with something similar to "Message deleted".
+    """
+    id: Int
 }
 
 type Message implements BareMessage {
@@ -649,6 +667,7 @@ type Message implements BareMessage {
     text: TextMessage!
     dateTimes: MessageDateTimes!
     hasStar: Boolean!
+    context: MessageContext!
 }
 
 interface MessageData implements BareMessage {
@@ -657,6 +676,7 @@ interface MessageData implements BareMessage {
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
+    context: MessageContext!
 }
 
 type StarredMessage implements MessageData, BareMessage {
@@ -665,6 +685,7 @@ type StarredMessage implements MessageData, BareMessage {
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
+    context: MessageContext!
 }
 
 type NewMessage implements MessageData, BareMessage {
@@ -673,6 +694,7 @@ type NewMessage implements MessageData, BareMessage {
     sender: Account!
     text: TextMessage!
     dateTimes: MessageDateTimes!
+    context: MessageContext!
 }
 
 """An existing `messageId` in the `chatId` which was updated."""
@@ -683,6 +705,7 @@ type UpdatedMessage implements MessageData, BareMessage {
     text: TextMessage!
     dateTimes: MessageDateTimes!
     hasStar: Boolean!
+    context: MessageContext!
 }
 
 type MessageDateTimes {

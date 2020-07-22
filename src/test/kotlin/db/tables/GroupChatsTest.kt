@@ -90,7 +90,7 @@ class GroupChatsTest : FunSpec({
         test("Messages from a user who left should be retained") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(userId, chatId, TextMessage("t"))
+            val messageId = Messages.message(userId, chatId)
             GroupChatUsers.removeUsers(chatId, userId)
             Messages.readIdList(chatId) shouldBe listOf(messageId)
         }
@@ -106,7 +106,7 @@ class GroupChatsTest : FunSpec({
         test("Deleting a chat should wipe it from the DB") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             MessageStatuses.create(userId, messageId, MessageStatus.READ)
             TypingStatuses.set(chatId, adminId, isTyping = true)
             Stargazers.create(userId, messageId)

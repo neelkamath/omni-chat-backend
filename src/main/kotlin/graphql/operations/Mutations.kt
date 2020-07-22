@@ -78,8 +78,9 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    val message = env.parseArgument<TextMessage>("text")
-    Messages.create(env.userId!!, chatId, message)
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
+    Messages.create(env.userId!!, chatId, env.parseArgument("text"), contextMessageId)
     return Placeholder
 }
 

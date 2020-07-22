@@ -55,7 +55,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Delete messages.
 - [x] Star messages.
 - [x] Markdown support.
-- [ ] Reply to a message to prevent context loss.
+- [x] Reply to a message to prevent context loss.
 - [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
 - [ ] Disappearing messages.
 - [ ] Forum chats.

@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.count
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -30,7 +29,7 @@ class PrivateChatDeletionsTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            Messages.create(user2Id, chatId, TextMessage("t"))
+            Messages.create(user2Id, chatId)
             PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeFalse()
         }
 
@@ -38,16 +37,16 @@ class PrivateChatDeletionsTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
             PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeFalse()
         }
 
         test(
             """
-                Given a chat deleted by the user which had no activity after its deletion,
-                when checking if the chat is deleted for the other user,
-                then it should be false
-                """
+            Given a chat deleted by the user which had no activity after its deletion,
+            when checking if the chat is deleted for the other user,
+            then it should be false
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
@@ -73,11 +72,11 @@ class PrivateChatDeletionsTest : FunSpec({
         test("Only messages deleted by both users should be deleted") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            val message1Id = Messages.message(user2Id, chatId, TextMessage("t"))
+            val message1Id = Messages.message(user2Id, chatId)
             PrivateChatDeletions.create(chatId, user2Id)
-            val message2Id = Messages.message(user1Id, chatId, TextMessage("t"))
+            val message2Id = Messages.message(user1Id, chatId)
             Messages.readPrivateChat(user1Id, chatId).map { it.cursor } shouldBe listOf(message1Id, message2Id)
         }
     }
@@ -95,37 +94,36 @@ class PrivateChatDeletionsTest : FunSpec({
         test("Messages deleted by one user shouldn't be deleted for the other user") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.readPrivateChat(user2Id, chatId).shouldNotBeEmpty()
         }
 
         test(
             """
-                Given a chat deleted by the user which had no activity after its deletion,
-                when the other user deletes the chat,
-                then the chat's records should be deleted
-                """
+            Given a chat deleted by the user which had no activity after its deletion,
+            when the other user deletes the chat,
+            then the chat's records should be deleted
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChatDeletions.create(chatId, user2Id)
-            PrivateChats.count().shouldBeZero()
-            PrivateChatDeletions.count().shouldBeZero()
+            listOf(PrivateChats, PrivateChatDeletions).forEach { it.count().shouldBeZero() }
         }
 
         test(
             """
-                Given a chat deleted by the user which had activity after its deletion,
-                when the other user deletes the chat,
-                then the chat shouldn't be deleted
-                """
+            Given a chat deleted by the user which had activity after its deletion,
+            when the other user deletes the chat,
+            then the chat shouldn't be deleted
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            Messages.create(user2Id, chatId, TextMessage("t"))
+            Messages.create(user2Id, chatId)
             PrivateChatDeletions.create(chatId, user2Id)
             PrivateChats.count() shouldBe 1
         }

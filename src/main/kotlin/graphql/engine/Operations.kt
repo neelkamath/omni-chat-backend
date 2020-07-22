@@ -6,7 +6,7 @@ import graphql.schema.idl.TypeRuntimeWiring
 
 /** Wires the GraphQL queries, mutations, and subscriptions to the [builder]. */
 fun wireGraphQlOperations(builder: RuntimeWiring.Builder): RuntimeWiring.Builder =
-        builder.type("Query", ::wireQuery).type("Mutation", ::wireMutation).type("Subscription", ::wireSubscription)
+    builder.type("Query", ::wireQuery).type("Mutation", ::wireMutation).type("Subscription", ::wireSubscription)
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("canDeleteAccount", ::canDeleteAccount)

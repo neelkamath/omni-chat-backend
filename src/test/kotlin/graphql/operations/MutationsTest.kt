@@ -156,21 +156,29 @@ fun errCreateGroupChat(userId: Int, chat: GroupChatInput): String =
     operateCreateGroupChat(userId, chat).errors!![0].message
 
 const val CREATE_MESSAGE_QUERY = """
-    mutation CreateMessage(${"$"}chatId: Int!, ${"$"}text: TextMessage!) {
-        createMessage(chatId: ${"$"}chatId, text: ${"$"}text)
+    mutation CreateMessage(${"$"}chatId: Int!, ${"$"}text: TextMessage!, ${"$"}contextMessageId: Int) {
+        createMessage(chatId: ${"$"}chatId, text: ${"$"}text, contextMessageId: ${"$"}contextMessageId)
     }
 """
 
-private fun operateCreateMessage(userId: Int, chatId: Int, message: TextMessage): GraphQlResponse =
-    executeGraphQlViaEngine(CREATE_MESSAGE_QUERY, mapOf("chatId" to chatId, "text" to message), userId)
+private fun operateCreateMessage(
+    userId: Int,
+    chatId: Int,
+    message: TextMessage,
+    contextMessageId: Int? = null
+): GraphQlResponse = executeGraphQlViaEngine(
+    CREATE_MESSAGE_QUERY,
+    mapOf("chatId" to chatId, "text" to message, "contextMessageId" to contextMessageId),
+    userId
+)
 
-fun createMessage(userId: Int, chatId: Int, message: TextMessage): Placeholder {
-    val data = operateCreateMessage(userId, chatId, message).data!!["createMessage"] as String
+fun createMessage(userId: Int, chatId: Int, message: TextMessage, contextMessageId: Int? = null): Placeholder {
+    val data = operateCreateMessage(userId, chatId, message, contextMessageId).data!!["createMessage"] as String
     return objectMapper.convertValue(data)
 }
 
-fun errCreateMessage(userId: Int, chatId: Int, message: TextMessage): String =
-    operateCreateMessage(userId, chatId, message).errors!![0].message
+fun errCreateMessage(userId: Int, chatId: Int, message: TextMessage, contextMessageId: Int? = null): String =
+    operateCreateMessage(userId, chatId, message, contextMessageId).errors!![0].message
 
 const val CREATE_PRIVATE_CHAT_QUERY = """
     mutation CreatePrivateChat(${"$"}userId: Int!) {
@@ -357,7 +365,7 @@ class MutationsTest : FunSpec({
         test("A message should be starred") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             deleteStar(adminId, messageId)
             Stargazers.hasStar(adminId, messageId).shouldBeFalse()
@@ -368,7 +376,7 @@ class MutationsTest : FunSpec({
         test("A message should be starred") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             star(adminId, messageId)
             Stargazers.read(adminId) shouldBe listOf(messageId)
         }
@@ -376,7 +384,7 @@ class MutationsTest : FunSpec({
         test("Starring a message from a chat the user isn't in should fail") {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(admin1Id)
-            val messageId = Messages.message(admin1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(admin1Id, chatId)
             errStar(admin2Id, messageId) shouldBe InvalidMessageIdException.message
         }
     }
@@ -521,6 +529,30 @@ class MutationsTest : FunSpec({
             GroupChats.create(user1Id)
             errCreateMessage(user2Id, chatId, TextMessage("t")) shouldBe InvalidChatIdException.message
         }
+
+        test("The message should be created sans context") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(adminId)
+            createMessage(adminId, chatId, TextMessage("t"))
+            Messages.readGroupChat(adminId, chatId).map { it.node.context } shouldBe
+                    listOf(MessageContext(hasContext = false, id = null))
+        }
+
+        test("The message should be created with a context") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(adminId)
+            val messageId = Messages.message(adminId, chatId)
+            createMessage(adminId, chatId, TextMessage("t"), contextMessageId = messageId)
+            Messages.readGroupChat(adminId, chatId)[1].node.context shouldBe
+                    MessageContext(hasContext = true, id = messageId)
+        }
+
+        test("Using a nonexistent message context should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(adminId)
+            errCreateMessage(adminId, chatId, TextMessage("t"), contextMessageId = 1) shouldBe
+                    InvalidMessageIdException.message
+        }
     }
 
     context("createPrivateChat(DataFetchingEnvironment)") {
@@ -538,10 +570,10 @@ class MutationsTest : FunSpec({
 
         test(
             """
-                Given a chat which was deleted by the user,
-                when the user recreates the chat,
-                then the existing chat's ID should be received
-                """
+            Given a chat which was deleted by the user,
+            when the user recreates the chat,
+            then the existing chat's ID should be received
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = createPrivateChat(user1Id, user2Id)
@@ -567,7 +599,7 @@ class MutationsTest : FunSpec({
         fun createUtilizedPrivateChat(): UtilizedPrivateChat {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             return UtilizedPrivateChat(messageId, user1Id, user2Id)
         }
 
@@ -605,21 +637,21 @@ class MutationsTest : FunSpec({
         test("Creating a status in a private chat the user deleted should fail") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
             errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
         }
 
         test(
             """
-                Given a private chat in which the first user sent a message, and the second user deleted the chat,
-                when the second user creates a status on the message,
-                then it should fail
-                """
+            Given a private chat in which the first user sent a message, and the second user deleted the chat,
+            when the second user creates a status on the message,
+            then it should fail
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user2Id)
             errCreateStatus(user2Id, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
         }
@@ -653,7 +685,7 @@ class MutationsTest : FunSpec({
         test("The user's message should be deleted") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             deleteMessage(adminId, messageId)
             Messages.readGroupChat(adminId, chatId).shouldBeEmpty()
         }
@@ -666,27 +698,27 @@ class MutationsTest : FunSpec({
         test("Deleting a message from a chat the user isn't in should throw an exception") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(user2Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             errDeleteMessage(user1Id, messageId) shouldBe InvalidMessageIdException.message
         }
 
         test("Deleting another user's message should return an error") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             errDeleteMessage(user1Id, messageId) shouldBe InvalidMessageIdException.message
         }
 
         test(
             """
-                Given a user who created a private chat, sent a message, and deleted the chat,
-                when deleting the message,
-                then it should fail
-                """
+            Given a user who created a private chat, sent a message, and deleted the chat,
+            when deleting the message,
+            then it should fail
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
             errDeleteMessage(user1Id, messageId) shouldBe InvalidMessageIdException.message
         }

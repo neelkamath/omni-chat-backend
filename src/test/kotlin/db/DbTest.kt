@@ -28,10 +28,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given a private chat deleted by the user,
-                when they delete their data from the DB,
-                then the chat should be deleted for the other chat
-                """
+            Given a private chat deleted by the user,
+            when they delete their data from the DB,
+            then the chat should be deleted for the other chat
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
@@ -88,10 +88,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given multiple users,
-                when retrieving only the first user,
-                then the page's info should state that there are users after, but none before, the first user
-                """
+            Given multiple users,
+            when retrieving only the first user,
+            then the page's info should state that there are users after, but none before, the first user
+            """
         ) {
             AccountsConnection.build(createAccountEdges(), ForwardPagination(first = 1)).pageInfo.run {
                 hasNextPage.shouldBeTrue()
@@ -101,10 +101,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given multiple users,
-                when retrieving only the last user,
-                then the page's info should state that there are users before, but none after, the last user
-                """
+            Given multiple users,
+            when retrieving only the last user,
+            then the page's info should state that there are users before, but none after, the last user
+            """
         ) {
             val edges = createAccountEdges()
             AccountsConnection.build(edges, ForwardPagination(after = edges[1].cursor)).pageInfo.run {
@@ -134,10 +134,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given both a limit and cursor, 
-                when retrieving users, 
-                then the number of users specified by the limit should be returned from after the cursor
-                """
+            Given both a limit and cursor, 
+            when retrieving users, 
+            then the number of users specified by the limit should be returned from after the cursor
+            """
         ) {
             val edges = createAccountEdges(10)
             val first = 3
@@ -148,10 +148,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given a limit without a cursor, 
-                when retrieving users, 
-                then the number of users specified by the limit from the first user should be retrieved
-                """
+            Given a limit without a cursor, 
+            when retrieving users, 
+            then the number of users specified by the limit from the first user should be retrieved
+            """
         ) {
             val edges = createAccountEdges(5)
             val first = 3
@@ -160,10 +160,10 @@ class DbTest : FunSpec({
 
         test(
             """
-                Given a cursor without a limit, 
-                when retrieving users, 
-                then every user after the cursor should be retrieved
-                """
+            Given a cursor without a limit, 
+            when retrieving users, 
+            then every user after the cursor should be retrieved
+            """
         ) {
             val edges = createAccountEdges(10)
             val index = 5

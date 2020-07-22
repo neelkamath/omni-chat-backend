@@ -32,7 +32,7 @@ val graphQl: GraphQL = run {
  * classes, etc.
  */
 inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
-        objectMapper.convertValue(getArgument(arg))
+    objectMapper.convertValue(getArgument(arg))
 
 /**
  * Throws an [UnauthorizedException] if the user isn't authenticated.

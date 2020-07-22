@@ -23,7 +23,7 @@ object GroupChatUsers : IntIdTable() {
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
     fun readFellowParticipants(userId: Int): Set<Int> =
-            readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
+        readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
 
     /**
      * The user ID list from the specified [groupChatId].

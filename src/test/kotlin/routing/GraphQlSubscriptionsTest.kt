@@ -46,18 +46,18 @@ class GraphQlSubscriptionsTest : FunSpec({
 
         test(
             """
-                Given multiple operations, 
-                when an operation name is supplied, 
-                then the specified operation should be executed
-                """
+            Given multiple operations, 
+            when an operation name is supplied, 
+            then the specified operation should be executed
+            """
         ) { testOperationName(shouldSupplyOperationName = true) }
 
         test(
             """
-                Given multiple operations, 
-                when no operation name is supplied, 
-                then an error should be returned
-                """
+            Given multiple operations, 
+            when no operation name is supplied, 
+            then an error should be returned
+            """
         ) { testOperationName(shouldSupplyOperationName = false) }
     }
 
@@ -83,10 +83,10 @@ class GraphQlSubscriptionsTest : FunSpec({
     context("subscribe(DefaultWebSocketServerSession, GraphQlSubscription, ExecutionResult)") {
         test(
             """
-                Given a client who recreated a GraphQL subscription,
-                when they receive an event,
-                then they should only receive it once because their previous notifier should've been removed
-                """
+            Given a client who recreated a GraphQL subscription,
+            when they receive an event,
+            then they should only receive it once because their previous notifier should've been removed
+            """
         ) {
             val (owner, user) = createVerifiedUsers(2)
             subscribeToContacts(owner.accessToken) {}
@@ -103,10 +103,10 @@ class GraphQlSubscriptionsTest : FunSpec({
     context("closeWithError(DefaultWebSocketServerSession, ExecutionResult)") {
         test(
             """
-                Given an operation requiring an access token,
-                when calling the operation without a token,
-                then the connection should be closed
-                """
+            Given an operation requiring an access token,
+            when calling the operation without a token,
+            then the connection should be closed
+            """
         ) {
             subscribeToContacts { incoming -> incoming.receive().frameType shouldBe FrameType.CLOSE }
         }

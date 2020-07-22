@@ -67,7 +67,7 @@ object PrivateChatDeletions : IntIdTable() {
 
     /** Deletes [Messages] and [MessageStatuses] deleted by both users. */
     private fun deleteCommonlyDeletedMessages(chatId: Int) {
-        readLastChatDeletion(chatId)?.let { Messages.deleteMessagesUntil(chatId, until = it) }
+        readLastChatDeletion(chatId)?.let { Messages.deleteChatUntil(chatId, it) }
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */

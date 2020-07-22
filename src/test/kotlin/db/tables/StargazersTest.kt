@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.TextMessage
 import com.neelkamath.omniChat.UpdatedMessage
 import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
@@ -14,7 +13,7 @@ class StargazersTest : FunSpec({
         test("Starring should only notify the stargazer") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.create(user1Id, messageId)
@@ -27,7 +26,7 @@ class StargazersTest : FunSpec({
         test("Deleting a star should only notify the deleter") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             Stargazers.create(user1Id, messageId)
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
@@ -39,7 +38,7 @@ class StargazersTest : FunSpec({
         test("Deleting a nonexistent star shouldn't cause anything to happen") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Stargazers.deleteUserStar(adminId, messageId)
             subscriber.assertNoValues()
@@ -50,7 +49,7 @@ class StargazersTest : FunSpec({
         test("Deleting a message's stars should only notify its stargazers") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id, user2Id))
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val messageId = Messages.message(adminId, chatId)
             listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
