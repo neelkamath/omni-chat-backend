@@ -14,10 +14,7 @@ object MessageStatuses : Table() {
     private val status: Column<MessageStatus> = customEnumeration(
         name = "status",
         sql = "message_status",
-        fromDb = {
-            val status = it as String
-            MessageStatus.valueOf(status.toUpperCase())
-        },
+        fromDb = { MessageStatus.valueOf((it as String).toUpperCase()) },
         toDb = { PostgresEnum("message_status", it) }
     )
 

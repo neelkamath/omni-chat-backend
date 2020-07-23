@@ -33,6 +33,8 @@ Checkboxes indicate which features have been implemented.
 Since this repo is for the backend, here are recommendations for a frontend dev:
 - Messages consisting solely of a single emoji will have the emoji enlarged.
 - You can require a password or biometric to unlock the app.
+- Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
+- Allow users to create record audio in-app.
 
 ### Free
 
@@ -57,17 +59,25 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
 - [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
-- [ ] Disappearing messages.
+- Message types:
+    - [ ] Audio
+    - [ ] Polls
+    - [ ] Contacts
+    - [ ] Locations
+    - [ ] Live locations for a specified duration
+    - [ ] Pictures
+    - [ ] Videos
+    - [ ] Memoji
+    - [ ] Stickers
+    - [ ] Any file type
 - [ ] Forum chats.
+- [ ] Encryption.
 - [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] By default, group chats disallow anonymous users, and users without an account.
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
-- [ ] You can toggle between online and offline mode. Messages and calls will send via your SIM card offline. Similar to how FaceTime and iMessage makes calls and messages free by converting SIM usages to internet messages under the hood, we could provide free offline (SIM use) services.
 - [ ] Background noise cancellation for an audio or video call.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
-- [ ] Send drawings, contacts, locations, live locations for a specified duration, audio recordings, photos, videos, polls, memoji, stickers, and any type of file.
-- [ ] Polls.
 - [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.
 - [ ] Spatial audio calls (important for gamers).
@@ -86,11 +96,8 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
 - [ ] If a bot messages a user, and the user has never messaged the bot, it'll come up in a section separate to the regular chats. This bot's chat will only be moved to the accepted chats if the user allows it. Otherwise, bots will spam users.
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.
-- [ ] Encryption.
 - [ ] Chat without an account.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
-- [ ] Incognito chats whose messages automatically disappear after a set amount of time, or shortly after the user reads them.
-- [ ] You can toggle chat history so that it automatically gets deleted in a particular manner (e.g., new participants can't see old messages).
 - [ ] Run a production instance taking care of the following:
     - [ ] Automate backups.
     - [ ] Don't run images as the `root` user.

@@ -2,25 +2,25 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.db.tables.Users.MAX_PIC_BYTES
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
 
-class User(
+data class User(
     val id: Int,
     val uuid: UUID,
-    val bio: Bio? = null,
-    val pic: ByteArray? = null,
-    val isOnline: Boolean = false,
+    val isOnline: Boolean,
     /** Ignore if [isOnline]. `null` if the user's never been online. */
-    val lastOnline: LocalDateTime? = null
+    val lastOnline: LocalDateTime?,
+    val bio: Bio?,
+    val pic: Pic?
 )
 
-/** Replacement for Keycloak's cumbersome custom user attributes. Pics cannot exceed [MAX_PIC_BYTES]. */
+/** Replacement for Keycloak's cumbersome custom user attributes. Pics cannot exceed [Pics.MAX_PIC_BYTES]. */
 object Users : IntIdTable() {
     /** The ID given to the user by Keycloak. */
     private val uuid: Column<UUID> = uuid("uuid")
@@ -28,12 +28,8 @@ object Users : IntIdTable() {
     /** Bios cannot exceed this many characters. */
     const val MAX_BIO_LENGTH = 2500
 
+    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
     private val bio: Column<String?> = varchar("bio", MAX_BIO_LENGTH).nullable()
-
-    /** Pics cannot exceed 100 KiB. */
-    const val MAX_PIC_BYTES = 100 * 1024
-
-    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
     private val lastOnline: Column<LocalDateTime?> = datetime("last_online").nullable()
 
@@ -61,8 +57,14 @@ object Users : IntIdTable() {
         select { Users.uuid eq UUID.fromString(uuid) }.first()
     }.let(::buildUser)
 
-    private fun buildUser(row: ResultRow): User =
-        User(row[id].value, row[uuid], row[bio]?.let(::Bio), row[pic], row[isOnline], row[lastOnline])
+    private fun buildUser(row: ResultRow): User = User(
+        row[id].value,
+        row[uuid],
+        row[isOnline],
+        row[lastOnline],
+        row[bio]?.let(::Bio),
+        row[picId]?.let(Pics::read)
+    )
 
     /** [Broker.notify]s [Broker.subscribe]rs if [isOnline] differs from the user's current status. */
     fun setOnlineStatus(id: Int, isOnline: Boolean): Unit = transaction {
@@ -84,10 +86,12 @@ object Users : IntIdTable() {
         negotiateUserUpdate(id)
     }
 
-    /** Deletes the pic if [pic] is `null`. Calls [negotiateUserUpdate]. */
-    fun updatePic(userId: Int, pic: ByteArray?) {
+    /** Deletes the [pic] if it's `null`. Calls [negotiateUserUpdate]. */
+    fun updatePic(userId: Int, pic: Pic?) {
         transaction {
-            update({ Users.id eq userId }) { it[Users.pic] = pic }
+            val op = Users.id eq userId
+            val picId = select(op).first()[picId]
+            update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
         negotiateUserUpdate(userId)
     }

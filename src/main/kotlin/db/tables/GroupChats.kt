@@ -2,12 +2,12 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.db.tables.GroupChats.MAX_PIC_BYTES
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
- * Pics cannot exceed [MAX_PIC_BYTES].
+ * Pics cannot exceed [Pics.MAX_PIC_BYTES].
  *
  * @see [GroupChatUsers]
  * @see [Messages]
@@ -28,11 +28,7 @@ object GroupChats : Table() {
     const val MAX_DESCRIPTION_LENGTH = 1000
 
     private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
-
-    /** The pic cannot exceed 100 KiB. */
-    const val MAX_PIC_BYTES = 100 * 1024
-
-    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
+    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
 
     /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
@@ -154,20 +150,23 @@ object GroupChats : Table() {
     }
 
     /**
-     * Deletes the [pic] if it's `null`. [Broker.subscribe]rs will be [Broker.notify]d of the [UpdatedGroupChat].
+     * Deletes the [pic] if it's `null`. [updatedChatsBroker] [Broker.subscribe]rs will be [Broker.notify]d of the
+     * [UpdatedGroupChat].
      *
      * @see [update]
      */
-    fun updatePic(chatId: Int, pic: ByteArray?) {
+    fun updatePic(chatId: Int, pic: Pic?) {
         transaction {
-            update({ GroupChats.id eq chatId }) { it[this.pic] = pic }
+            val op = GroupChats.id eq chatId
+            val picId = select(op).first()[picId]
+            update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
         updatedChatsBroker.notify(UpdatedGroupChat(chatId)) { isUserInChat(it.userId, chatId) }
     }
 
-    fun readPic(chatId: Int): ByteArray? = transaction {
-        select { GroupChats.id eq chatId }.first()[pic]
-    }
+    fun readPic(chatId: Int): Pic? = transaction {
+        select { GroupChats.id eq chatId }.first()[picId]
+    }?.let(Pics::read)
 
     /**
      * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who

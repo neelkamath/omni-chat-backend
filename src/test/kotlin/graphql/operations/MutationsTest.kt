@@ -423,7 +423,7 @@ class MutationsTest : FunSpec({
         test("Deleting the pic should remove it") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(adminId)
-            GroupChats.updatePic(chatId, readImage("31kB.png"))
+            GroupChats.updatePic(chatId, readPic("31kB.png"))
             deleteGroupChatPic(adminId, chatId)
             GroupChats.readPic(chatId).shouldBeNull()
         }
@@ -444,7 +444,7 @@ class MutationsTest : FunSpec({
     context("deleteProfilePic(DataFetchingEnvironment)") {
         test("The user's profile pic should be deleted") {
             val userId = createVerifiedUsers(1)[0].info.id
-            Users.updatePic(userId, readImage("31kB.png"))
+            Users.updatePic(userId, readPic("31kB.png"))
             deleteProfilePic(userId)
             Users.read(userId).pic.shouldBeNull()
         }

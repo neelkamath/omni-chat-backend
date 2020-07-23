@@ -53,6 +53,7 @@ private fun connect() {
 private fun create(): Unit = transaction {
     createTypes()
     SchemaUtils.create(
+        Pics,
         Contacts,
         Chats,
         GroupChats,
@@ -72,17 +73,11 @@ fun shareChat(user1Id: Int, user2Id: Int): Boolean =
     PrivateChats.exists(user1Id, user2Id) || user1Id in GroupChatUsers.readFellowParticipants(user2Id)
 
 /** Creates custom types if required. */
-private fun createTypes() {
-    val values = MessageStatus.values().joinToString(", ") { "'${it.name.toLowerCase()}'" }
-    createType("message_status", "ENUM ($values)")
-}
-
-/**
- * Creates the [name]'s (e.g., `"message_status"`) [definition] (e.g., `"ENUM ('delivered', 'read')"`) if it doesn't
- * exist.
- */
-private fun createType(name: String, definition: String) {
-    if (!exists(name)) transaction { exec("CREATE TYPE $name AS $definition;") }
+private fun createTypes(): Unit = transaction {
+    mapOf("message_status" to MessageStatus.values(), "pic_type" to Pic.Type.values()).forEach { (name, enum) ->
+        val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
+        if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")
+    }
 }
 
 /** Whether the [type] has been created. */

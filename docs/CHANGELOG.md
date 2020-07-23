@@ -12,6 +12,11 @@
     - The `NewAccount` `type` has been renamed to `AccountInput`.
     - The `NewGroupChat` `type` has been replaced by `GroupChatInput`.
 
+### REST API
+
+- Breaking changes:
+    - Images must be PNGs or JPEGs not exceeding 100 KiB.
+
 ## v0.1.1
 
 ### GraphQL API

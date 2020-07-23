@@ -20,7 +20,8 @@ private val tables: List<Table> = listOf(
     PrivateChatDeletions,
     PrivateChats,
     Chats,
-    Users
+    Users,
+    Pics
 )
 
 /** Deletes every row from every table created. */
@@ -29,11 +30,7 @@ fun wipeDb(): Unit = transaction {
 }
 
 /** Drops every table and type created. */
-fun tearDownDb() {
-    dropTables()
-    dropTypes()
+fun tearDownDb(): Unit = transaction {
+    SchemaUtils.drop(*tables.toTypedArray())
+    listOf("message_status", "pic_type").forEach { exec("DROP TYPE IF EXISTS $it;") }
 }
-
-private fun dropTables(): Unit = transaction { SchemaUtils.drop(*tables.toTypedArray()) }
-
-private fun dropTypes(): Unit = transaction { exec("DROP TYPE IF EXISTS message_status;") }
