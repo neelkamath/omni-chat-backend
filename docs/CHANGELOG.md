@@ -4,7 +4,7 @@
 
 ### GraphQL API
 
-- Features:
+- Backwards compatible changes:
     - `Mutation.createMessage` takes an optional `contextMessageId` parameter to allow for replying to specific messages.
     - A `context` field has been added to the `BareMessage` `interface`, `Message` `type`, `MessageData` `interface`, `StarredMessage` `type`, `NewMessage` `type`, and `UpdatedMessage` `type`.
 - Breaking changes:
@@ -21,7 +21,7 @@
 
 ### GraphQL API
 
-- Features:
+- Backwards compatible changes:
     - `Query.readStars`
     - `Mutation.star`
     - `Mutation.deleteStar`

@@ -469,9 +469,9 @@ class MutationsTest : FunSpec({
 
         test("An account with a taken email shouldn't be created") {
             val address = "username@example.com"
-            val account = AccountInput(Username("username1"), Password("password"), address)
+            val account = AccountInput(Username("username1"), Password("p"), address)
             createAccount(account)
-            val duplicateAccount = AccountInput(Username("username2"), Password("password"), address)
+            val duplicateAccount = AccountInput(Username("username2"), Password("p"), address)
             errCreateAccount(duplicateAccount) shouldBe EmailAddressTakenException.message
         }
     }

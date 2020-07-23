@@ -71,7 +71,7 @@ Features must be free if they are a unique selling point, are useful for the ave
     - [ ] Stickers
     - [ ] Any file type
 - [ ] Forum chats.
-- [ ] Encryption.
+- [ ] E2E Encryption.
 - [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] By default, group chats disallow anonymous users, and users without an account.
 - [ ] Every chat and message has a URL.

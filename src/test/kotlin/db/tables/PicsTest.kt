@@ -11,7 +11,7 @@ import io.kotest.matchers.shouldBe
 class PicTest : FunSpec({
     context("init") {
         test("Passing an excessively large image should cause an exception to be thrown") {
-            shouldThrowExactly<IllegalArgumentException> { readPic("734kB.png") }
+            shouldThrowExactly<IllegalArgumentException> { readPic("734kB.jpg") }
         }
     }
 
