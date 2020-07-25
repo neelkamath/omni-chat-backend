@@ -35,6 +35,7 @@ Since this repo is for the backend, here are recommendations for a frontend dev:
 - You can require a password or biometric to unlock the app.
 - Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
 - Allow users to create record audio in-app.
+- When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab.
 
 ### Free
 
@@ -42,7 +43,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that no one takes seriously.
 - [x] Private chats.
-- [x] Group chats.
+- [x] Group chats with multiple admins.
 - [x] See who else is in the group.
 - [x] Group descriptions and icons.
 - [x] See whether someone's typing.
@@ -90,7 +91,6 @@ Features must be free if they are a unique selling point, are useful for the ave
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
     - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
-- [ ] Allow people you don't know to not directly contact you (i.e., they will go to an "Invites" tab where you'll have to go to allow, ignore, or block them).
 - [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
 - [ ] API for integrations (e.g., bots).
 - [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
