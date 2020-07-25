@@ -122,7 +122,7 @@ const val GROUP_CHAT_FRAGMENT = """
         id
         title
         description
-        adminId
+        adminIdList
         users(first: ${"$"}groupChat_users_first, after: ${"$"}groupChat_users_after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
         }

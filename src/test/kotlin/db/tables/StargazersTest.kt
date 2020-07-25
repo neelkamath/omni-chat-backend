@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.UpdatedMessage
-import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesBroker
@@ -37,7 +36,7 @@ class StargazersTest : FunSpec({
 
         test("Deleting a nonexistent star shouldn't cause anything to happen") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Stargazers.deleteUserStar(adminId, messageId)
@@ -48,7 +47,7 @@ class StargazersTest : FunSpec({
     context("deleteStar(Int)") {
         test("Deleting a message's stars should only notify its stargazers") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id, user2Id))
+            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId)
             listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)

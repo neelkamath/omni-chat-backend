@@ -100,7 +100,8 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 /**
- * Deletes the [userId]'s data from the DB.
+ * Deletes the [userId]'s data from the DB. An [IllegalArgumentException] will be thrown if the not
+ * [GroupChatUsers.canUserLeave].
  *
  * ## Users
  *
@@ -139,13 +140,15 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
  * - Deletes [TypingStatuses] the [userId] created.
  * - The [userId] will be [Broker.unsubscribe]d via [typingStatusesBroker].
  *
- * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
  * @see [deleteUser]
  */
 fun deleteUserFromDb(userId: Int) {
-    if (GroupChats.isNonemptyChatAdmin(userId))
+    if (!GroupChatUsers.canUserLeave(userId))
         throw IllegalArgumentException(
-            "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
+            """
+            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
+            users.
+            """
         )
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
@@ -154,5 +157,7 @@ fun deleteUserFromDb(userId: Int) {
     Messages.deleteUserMessages(userId)
     Users.delete(userId)
     listOf(updatedChatsBroker, newGroupChatsBroker, contactsBroker, typingStatusesBroker, messagesBroker)
-        .forEach { broker -> broker.unsubscribe { it.userId == userId } }
+        .forEach { broker ->
+            broker.unsubscribe { it.userId == userId }
+        }
 }

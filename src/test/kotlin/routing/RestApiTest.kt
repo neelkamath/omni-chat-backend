@@ -125,7 +125,7 @@ class RestApiTest : FunSpec({
     context("patchGroupChatPic(Route)") {
         test("Updating the pic should cause an HTTP status code of 204 to be received, and the DB to be updated") {
             val admin = createVerifiedUsers(1)[0]
-            val chatId = GroupChats.create(admin.info.id)
+            val chatId = GroupChats.create(listOf(admin.info.id))
             val fileName = "31kB.png"
             patchGroupChatPic(admin.accessToken, chatId, fileName).status() shouldBe HttpStatusCode.NoContent
             GroupChats.readPic(chatId) shouldBe readPic(fileName)
@@ -142,7 +142,7 @@ class RestApiTest : FunSpec({
 
         test("An HTTP status code of 401 should be received when a non-admin updates the pic") {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             patchGroupChatPic(user.accessToken, chatId, "31kB.png").status() shouldBe HttpStatusCode.Unauthorized
             GroupChats.readPic(chatId).shouldBeNull()
         }
@@ -151,7 +151,7 @@ class RestApiTest : FunSpec({
     context("getGroupChatPic(Route)") {
         test("A pic should be retrieved with an HTTP status code of 200") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val pic = readPic("31kB.png")
             GroupChats.updatePic(chatId, pic)
             with(getGroupChatPic(chatId)) {
@@ -162,7 +162,7 @@ class RestApiTest : FunSpec({
 
         test("An HTTP status code of 204 should be received when reading a nonexistent pic") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             getGroupChatPic(chatId).status() shouldBe HttpStatusCode.NoContent
         }
 

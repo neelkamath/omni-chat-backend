@@ -57,18 +57,16 @@ fun buildExecutionInput(request: GraphQlRequest, call: ApplicationCall): Executi
  * Returns the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with
  * empty `"errors"`.
  *
- * @throws [UnauthorizedException] if an [UnauthorizedException] is present.
+ * An [UnauthorizedException] will be thrown if an [UnauthorizedException] is present.
  */
 fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpecification()
     .mapValues { if (it.key == "errors") result.errors.map(::maskError) else it.value }
-    .filterNot {
-        (it.key == "data" && it.value == null) || (it.key == "errors" && (it.value as List<*>).isEmpty())
-    }
+    .filterNot { (it.key == "data" && it.value == null) || (it.key == "errors" && (it.value as List<*>).isEmpty()) }
 
 /**
  * Masks the [error], and returns its [GraphQLError.toSpecification].
  *
- * @throws [UnauthorizedException] if the [error] is an [UnauthorizedException].
+ * An [UnauthorizedException] will be thrown if the [error] is an [UnauthorizedException].
  */
 private fun maskError(error: GraphQLError): Map<String, Any> {
     val result = error.toSpecification()

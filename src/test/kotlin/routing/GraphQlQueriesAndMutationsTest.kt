@@ -4,8 +4,9 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
+import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_QUERY
+import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -85,10 +86,12 @@ class GraphQlQueriesAndMutationsTest : FunSpec({
             """
         ) {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(admin.info.id, buildNewGroupChat(user.info.id))
-            val variables = mapOf("update" to GroupChatUpdate(chatId))
-            executeGraphQlViaHttp(UPDATE_GROUP_CHAT_QUERY, variables, user.accessToken)
-                .shouldHaveUnauthorizedStatus()
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
+            executeGraphQlViaHttp(
+                UPDATE_GROUP_CHAT_TITLE_QUERY,
+                mapOf("chatId" to chatId, "title" to "T"),
+                user.accessToken
+            ).shouldHaveUnauthorizedStatus()
         }
     }
 })

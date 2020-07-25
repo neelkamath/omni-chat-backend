@@ -32,7 +32,7 @@ object MessageStatuses : Table() {
      * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
      * [MessageStatus.DELIVERED] too.
      *
-     * @throws [IllegalArgumentException] if:
+     * An [IllegalArgumentException] will be thrown if:
      * - The [messageId] was sent by the [userId].
      * - The status has already been recorded (you can check if the [status] [exists]).
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).

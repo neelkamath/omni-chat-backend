@@ -4,32 +4,54 @@
 
 ### GraphQL API
 
-- Backwards compatible changes:
-    - `Mutation.createMessage` takes an optional `contextMessageId` parameter to allow for replying to specific messages.
-    - A `context` field has been added to the `BareMessage` `interface`, `Message` `type`, `MessageData` `interface`, `StarredMessage` `type`, `NewMessage` `type`, and `UpdatedMessage` `type`.
-- Breaking changes:
+- New:
+    - `Mutation.updateGroupChatTitle`
+    - `Mutation.updateGroupChatDescription`
+    - `Mutation.addGroupChatUsers`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.makeGroupChatAdmins`
+    - `AccountInput` `input`
+    - `GroupChatInput` `input`
+- Updated:
+    - `Mutation.createGroupChat`
+    - `Mutation.createMessage`
+    - `BareMessage` `interface`
+    - `Message` `type`
+    - `MessageData` `interface`
+    - `StarredMessage` `type`
+    - `NewMessage` `type`
+    - `UpdatedMessage` `type`
+    - `UpdatedGroupChat` `type`
+    - `GroupChat` `type`
+    - `GroupChatUpdate` `input`
+    - `GroupChatInput` `input`
+    - `NewGroupChatsSubscription` `union`
     - The `Bio`, `GroupChatDescription`, and `TextMessage` `scalar`s now use [CommonMark](https://commonmark.org) instead of plain text.
-    - The `NewAccount` `type` has been renamed to `AccountInput`.
-    - The `NewGroupChat` `type` has been replaced by `GroupChatInput`.
+- Removed:
+    - `Mutation.leaveGroupChat`
+    - `Mutation.updateGroupChat`
+    - `NewAccount` `input`
+    - `NewGroupChat` `input`
 
 ### REST API
 
-- Breaking changes:
-    - Images must be PNGs or JPEGs not exceeding 100 KiB.
+- Updated:
+    - `/profile-pic`
+    - `/group-chat-pic`
 
 ## v0.1.1
 
 ### GraphQL API
 
-- Backwards compatible changes:
+- New:
     - `Query.readStars`
     - `Mutation.star`
     - `Mutation.deleteStar`
-    - A `hasStar` field has been added to the `Message` and `UpdatedMessage` `type`s. 
+- Updated:
+    - `Message` `type`
+    - `UpdatedMessage` `type`
 - Bug fixes:
     - `Subscription.subscribeToMessages` never sent back `MessageDeletionPoint`s.
     - `Subscription.subscribeToMessages` didn't send `UpdatedMessage`s to all subscribers.
 
-## v0.1.0
-
-- First release.
+## v0.1.0 (First Release)

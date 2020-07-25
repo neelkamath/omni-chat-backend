@@ -13,9 +13,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
  * @see [Messages]
- * @see [TypingStatuses]
  * @see [PrivateChatDeletions]
- * @see [Chats]
  */
 object PrivateChats : Table() {
     override val tableName get() = "private_chats"
@@ -26,7 +24,7 @@ object PrivateChats : Table() {
     /**
      * Returns the created chat's ID.
      *
-     * @throws [IllegalArgumentException] if the chat exists.
+     * An [IllegalArgumentException] will be thrown if the chat exists.
      */
     fun create(user1Id: Int, user2Id: Int): Int {
         if (exists(user1Id, user2Id))

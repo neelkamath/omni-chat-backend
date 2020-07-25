@@ -37,6 +37,10 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 - The `chat` service is dependent on other services, such as `auth`. Please see the docs of the other services to operate them in production. For example, the `auth` service uses the [Keycloak](https://hub.docker.com/r/jboss/keycloak) image, which documents how to back up, restore, etc. it.
 - When restoring backups for the `chat-db` and `auth` services, make sure the backups had been taken at the same time because they're dependent on each other's state.
 
+### Migrating to a Newer Version
+
+Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
+
 ## [Contributing](docs/CONTRIBUTING.md)
 
 ## Credits

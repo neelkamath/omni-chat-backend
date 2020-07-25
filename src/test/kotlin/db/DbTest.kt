@@ -15,7 +15,7 @@ class DbTest : FunSpec({
     context("deleteUserFromDb(String)") {
         test("An exception should be thrown when the admin of a nonempty group chat deletes their data") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, buildNewGroupChat(userId))
+            GroupChats.create(listOf(adminId), listOf(userId))
             shouldThrowExactly<IllegalArgumentException> { deleteUserFromDb(adminId) }
         }
 
@@ -50,11 +50,11 @@ class DbTest : FunSpec({
 
         test("Only the deleted subscriber should be unsubscribed from updated chats") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             deleteUserFromDb(userId)
-            adminSubscriber.assertValue(ExitedUser(chatId, userId))
+            adminSubscriber.assertValue(ExitedUser(userId, chatId))
             userSubscriber.assertComplete()
         }
 

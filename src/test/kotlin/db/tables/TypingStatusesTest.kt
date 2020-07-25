@@ -25,7 +25,7 @@ class TypingStatusesTest : FunSpec({
 
         fun assertSet(repetitions: Int) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             repeat(repetitions) {
                 TypingStatuses.set(chatId, adminId, isTyping = true)
                 TypingStatuses.count() shouldBe 1
@@ -42,7 +42,7 @@ class TypingStatusesTest : FunSpec({
     context("read(Int, Int)") {
         test("The status should be read") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val isTyping = true
             TypingStatuses.set(chatId, adminId, isTyping)
             TypingStatuses.read(chatId, adminId) shouldBe isTyping

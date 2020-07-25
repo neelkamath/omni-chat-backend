@@ -37,8 +37,8 @@ schema {
 type Query {
     """
     Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
-    the admin of a group chat containing users other than themselves. In this case, they must first appoint a different
-    user as the admin.
+    the only admin of a group chat containing users other than themselves. In this case, they must first appoint a
+    different user as the admin.
 
     You must send an access token with this request.
     """
@@ -155,7 +155,7 @@ type Mutation {
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
     chats with the user will have their chats deleted, etc.
 
-    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if `Query.canDeleteAccount` is `false`).
+    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if not `Query.canDeleteAccount`).
 
     You must send an access token with this request.
     """
@@ -270,31 +270,62 @@ type Mutation {
     resetPassword(emailAddress: String!): Placeholder!
 
     """
-    Leaves the group chat.
+    Only an admin can perform this operation.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
+
+    """
+    Only an admin can perform this operation.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
+
+    """
+    Users already in the chat will be ignored. Only an admin can perform this operation.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"ADMIN_CANNOT_LEAVE"` (i.e., the user is the admin, and they aren't the last user in the chat, so they can't leave
-    without transferring the admin status first).
+    `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
 
     You must send an access token with this request.
     """
-    leaveGroupChat(chatId: Int!): Placeholder!
+    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Updates a group chat. Only the admin can update it. Only non-null fields will be updated.
+    Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't the chat), `"INVALID_GROUP_CHAT"`
-    (i.e., the lists of users to add and remove both contained the same user ID), `"INVALID_USER_ID"` (i.e., a user to
-    be added to the chat doesn't exist), or `"INVALID_NEW_ADMIN_ID"` (i.e., the to-be admin isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+    `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat, or the user must first appoint another
+    user as an admin because they're the last admin).
 
     You must send an access token with this request.
     """
-    updateGroupChat(update: GroupChatUpdate!): Placeholder!
+    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Creates a group chat. Returns the new chat's ID.
+    Makes every user in the `userIdList` an admin of the `chatId`. If the `userId`'s already an admin, nothing will
+    happen. Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_USER_ID"`
+    (i.e., one of the users in the `userIdList` isn't in the chat).
+
+    You must send an access token with this request.
+    """
+    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+
+    """
+    Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
+    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
+
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
+    `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
+    `GroupChatInput.userIdList`).
 
     You must send an access token with this request.
     """
@@ -437,9 +468,7 @@ An `UpdatedGroupChat` might be sent if the chat's pic was updated.
 """
 union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
-"""
-A `GroupChatId` is the ID of the chat the user was added to, excluding a chat the user just created themselves.
-"""
+"""A `GroupChatId` is the ID of the chat the user was added to."""
 union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
 
 type UpdatedOnlineStatus {
@@ -481,17 +510,14 @@ type UpdatedAccount {
     bio: Bio
 }
 
-"""
-A group chat which had its metadata updated. null fields haven't been updated. The previous data may be sent again
-(e.g., `adminId` may still be the previous admin's ID).
-"""
+"""Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before."""
 type UpdatedGroupChat {
     chatId: Int!
     title: GroupChatTitle
     description: GroupChatDescription
     newUsers: [Account!]
     removedUsers: [Account!]
-    adminId: Int
+    adminIdList: [Int!]
 }
 
 """
@@ -627,9 +653,9 @@ type GroupChat implements Chat {
     id: Int!
     messages(last: Int, before: Cursor): MessagesConnection!
     title: GroupChatTitle!
-    description: GroupChatDescription
-    """The ID of the admin present who is present in the `users`."""
-    adminId: Int!
+    description: GroupChatDescription!
+    """The ID of the `users` who are the admins. There will be at least one admin."""
+    adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
 }
 
@@ -745,20 +771,9 @@ input AccountUpdate {
     bio: Bio
 }
 
-input GroupChatUpdate {
-    chatId: Int!
-    title: GroupChatTitle
-    description: GroupChatDescription
-    """The ID of every new user to add."""
-    newUserIdList: [Int!]
-    """The ID of every user to remove."""
-    removedUserIdList: [Int!]
-    """Transfers the admin status to the specified user ID."""
-    newAdminId: Int
-}
-
 input GroupChatInput {
     title: GroupChatTitle!
     description: GroupChatDescription!
-    userIdList: [Int!]! = []
+    userIdList: [Int!]!
+    adminIdList: [Int!]!
 }

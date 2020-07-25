@@ -2,10 +2,7 @@ package com.neelkamath.omniChat.routing
 
 import com.neelkamath.omniChat.InvalidGroupChatPic
 import com.neelkamath.omniChat.InvalidGroupChatPicReason
-import com.neelkamath.omniChat.db.tables.Chats
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.Pic
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.userId
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
@@ -76,7 +73,7 @@ private fun patchGroupChatPic(route: Route): Unit = with(route) {
         when {
             !Chats.exists(chatId) ->
                 call.respond(HttpStatusCode.BadRequest, InvalidGroupChatPic(InvalidGroupChatPicReason.NONEXISTENT_CHAT))
-            !GroupChats.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            !GroupChatUsers.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
             else -> {
                 GroupChats.updatePic(chatId, pic)
                 call.respond(HttpStatusCode.NoContent)

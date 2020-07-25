@@ -58,7 +58,7 @@ object Messages : IntIdTable() {
     /**
      * Clients who have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will be notified.
      *
-     * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?) {
         if (!isUserInChat(userId, chatId))

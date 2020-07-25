@@ -28,7 +28,7 @@ object PrivateChatDeletions : IntIdTable() {
      * they've deleted it, the [chatId] is deleted from [PrivateChats], [PrivateChatDeletions] [Messages],
      * [MessageStatuses], and [TypingStatuses].
      *
-     * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: Int) {
         if (!isUserInChat(userId, chatId))

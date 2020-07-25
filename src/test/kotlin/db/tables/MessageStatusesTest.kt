@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.MessageStatus
-import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.count
@@ -17,7 +16,7 @@ class MessageStatusesTest : FunSpec({
     context("create(Int, String, MessageStatus)") {
         test("Saving a duplicate message status should throw an exception") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
             val createStatus = { MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED) }
             createStatus()

@@ -483,7 +483,7 @@ class ChatMessagesDtoTest : FunSpec({
 
         fun createUtilizedChat(): AdminMessages {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val message = TextMessage("t")
             val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }
             return AdminMessages(adminId, message, messageIdList)
@@ -538,15 +538,15 @@ class QueriesTest : FunSpec({
     }
 
     context("canDeleteAccount(DataFetchingEnvironment)") {
-        test("An account should be deletable if the user is the admin of an empty group chat") {
-            val userId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(userId)
-            canDeleteAccount(userId).shouldBeTrue()
+        test("An account should be deletable if the user is the admin of an otherwise empty chat") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            GroupChats.create(listOf(adminId))
+            canDeleteAccount(adminId).shouldBeTrue()
         }
 
-        test("An account shouldn't be deletable if the user is the admin of a nonempty group chat") {
+        test("An account shouldn't be deletable if the user is the last admin of a group chat with other users") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, buildNewGroupChat(userId))
+            GroupChats.create(listOf(adminId), listOf(userId))
             canDeleteAccount(adminId).shouldBeFalse()
         }
     }
@@ -832,8 +832,13 @@ enum class GroupChatUsersOperationName {
 /** Asserts that the [operation] paginates correctly. */
 fun testMessagesPagination(operation: MessagesOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
-    val chat = buildNewGroupChat()
-    val chatId = GroupChats.create(adminId, chat)
+    val chat = GroupChatInput(
+        GroupChatTitle("T"),
+        GroupChatDescription(""),
+        userIdList = listOf(adminId),
+        adminIdList = listOf(adminId)
+    )
+    val chatId = GroupChats.create(chat)
     val text = TextMessage("t")
     val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
     val last = 4
@@ -870,8 +875,8 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
-    val groupChat = buildNewGroupChat(userIdList)
-    val chatId = GroupChats.create(adminId, groupChat)
+    val groupChat = GroupChatInput(GroupChatTitle("T"), GroupChatDescription(""), userIdList + adminId, listOf(adminId))
+    val chatId = GroupChats.create(groupChat)
     val text = "text"
     Messages.create(adminId, chatId, TextMessage(text))
     val first = 3

@@ -1,5 +1,19 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.buildNewGroupChat
+import com.neelkamath.omniChat.GroupChatDescription
+import com.neelkamath.omniChat.GroupChatInput
+import com.neelkamath.omniChat.GroupChatTitle
 
-fun GroupChats.create(adminId: Int): Int = create(adminId, buildNewGroupChat())
+/**
+ * Returns the created chat's ID. It doesn't matter whether [adminIdList] and [userIdList] intersect. The chat's title
+ * and description will be `"T"` and `""` respectively.
+ */
+fun GroupChats.create(adminIdList: List<Int>, userIdList: List<Int> = listOf()): Int {
+    val chat = GroupChatInput(
+        GroupChatTitle("t"),
+        GroupChatDescription(""),
+        userIdList = userIdList + adminIdList,
+        adminIdList = adminIdList
+    )
+    return create(chat)
+}
