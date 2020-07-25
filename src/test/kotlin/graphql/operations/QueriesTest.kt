@@ -483,7 +483,7 @@ class ChatMessagesDtoTest : FunSpec({
 
         fun createUtilizedChat(): AdminMessages {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val message = TextMessage("t")
             val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }
             return AdminMessages(adminId, message, messageIdList)
@@ -521,7 +521,7 @@ class QueriesTest : FunSpec({
         test("Only the user's starred messages should be read") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId, TextMessage("t")) }
+            val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId) }
             listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
             readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(it) }
         }
@@ -538,15 +538,15 @@ class QueriesTest : FunSpec({
     }
 
     context("canDeleteAccount(DataFetchingEnvironment)") {
-        test("An account should be deletable if the user is the admin of an empty group chat") {
-            val userId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(userId)
-            canDeleteAccount(userId).shouldBeTrue()
+        test("An account should be deletable if the user is the admin of an otherwise empty chat") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            GroupChats.create(listOf(adminId))
+            canDeleteAccount(adminId).shouldBeTrue()
         }
 
-        test("An account shouldn't be deletable if the user is the admin of a nonempty group chat") {
+        test("An account shouldn't be deletable if the user is the last admin of a group chat with other users") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(adminId, buildNewGroupChat(userId))
+            GroupChats.create(listOf(adminId), listOf(userId))
             canDeleteAccount(adminId).shouldBeFalse()
         }
     }
@@ -649,7 +649,7 @@ class QueriesTest : FunSpec({
 
         test("A token set shouldn't be created for a user who hasn't verified their email") {
             val login = Login(Username("username"), Password("password"))
-            createUser(NewAccount(login.username, login.password, "username@example.com"))
+            createUser(AccountInput(login.username, login.password, "username@example.com"))
             errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException.message
         }
 
@@ -697,10 +697,15 @@ class QueriesTest : FunSpec({
     context("searchContacts(DataFetchingEnvironment)") {
         test("Contacts should be searched case-insensitively") {
             val accounts = listOf(
-                NewAccount(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
-                NewAccount(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
-                NewAccount(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
-                NewAccount(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", firstName = "John")
+                AccountInput(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
+                AccountInput(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
+                AccountInput(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
+                AccountInput(
+                    Username("iron_man"),
+                    Password("p"),
+                    emailAddress = "roger@example.com",
+                    firstName = "John"
+                )
             ).map {
                 createUser(it)
                 it.toAccount()
@@ -721,10 +726,10 @@ class QueriesTest : FunSpec({
     context("searchMessages(DataFetchingEnvironment)") {
         test(
             """
-                Given a user who created a private chat, sent a message, and deleted the chat,
-                when searching for the message,
-                then it shouldn't be retrieved
-                """
+            Given a user who created a private chat, sent a message, and deleted the chat,
+            when searching for the message,
+            then it shouldn't be retrieved
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
@@ -744,9 +749,9 @@ class QueriesTest : FunSpec({
     context("searchUsers(DataFetchingEnvironment)") {
         test("Users should be searched") {
             val accounts = listOf(
-                NewAccount(Username("iron_man"), Password("p"), "tony@example.com"),
-                NewAccount(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
-                NewAccount(Username("hulk"), Password("p"), "bruce@example.com")
+                AccountInput(Username("iron_man"), Password("p"), "tony@example.com"),
+                AccountInput(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
+                AccountInput(Username("hulk"), Password("p"), "bruce@example.com")
             ).map {
                 createUser(it)
                 it.toAccount()
@@ -754,16 +759,16 @@ class QueriesTest : FunSpec({
             searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
         }
 
-        fun createAccounts(): List<NewAccount> {
+        fun createAccounts(): List<AccountInput> {
             val accounts = listOf(
-                NewAccount(Username("iron_man"), Password("p"), "iron.man@example.com"),
-                NewAccount(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
-                NewAccount(Username("lol"), Password("p"), "iron.fist@example.com"),
-                NewAccount(Username("another_one"), Password("p"), "another_one@example.com"),
-                NewAccount(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
-                NewAccount(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
-                NewAccount(Username("black_widow"), Password("p"), "black.widow@example.com"),
-                NewAccount(Username("iron_spider"), Password("p"), "iron.spider@example.com")
+                AccountInput(Username("iron_man"), Password("p"), "iron.man@example.com"),
+                AccountInput(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
+                AccountInput(Username("lol"), Password("p"), "iron.fist@example.com"),
+                AccountInput(Username("another_one"), Password("p"), "another_one@example.com"),
+                AccountInput(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
+                AccountInput(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
+                AccountInput(Username("black_widow"), Password("p"), "black.widow@example.com"),
+                AccountInput(Username("iron_spider"), Password("p"), "iron.spider@example.com")
             )
             accounts.forEach(::createUser)
             return accounts
@@ -827,8 +832,13 @@ enum class GroupChatUsersOperationName {
 /** Asserts that the [operation] paginates correctly. */
 fun testMessagesPagination(operation: MessagesOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
-    val chat = buildNewGroupChat()
-    val chatId = GroupChats.create(adminId, chat)
+    val chat = GroupChatInput(
+        GroupChatTitle("T"),
+        GroupChatDescription(""),
+        userIdList = listOf(adminId),
+        adminIdList = listOf(adminId)
+    )
+    val chatId = GroupChats.create(chat)
     val text = TextMessage("t")
     val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
     val last = 4
@@ -865,8 +875,8 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
-    val groupChat = buildNewGroupChat(userIdList)
-    val chatId = GroupChats.create(adminId, groupChat)
+    val groupChat = GroupChatInput(GroupChatTitle("T"), GroupChatDescription(""), userIdList + adminId, listOf(adminId))
+    val chatId = GroupChats.create(groupChat)
     val text = "text"
     Messages.create(adminId, chatId, TextMessage(text))
     val first = 3

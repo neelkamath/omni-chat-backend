@@ -3,15 +3,14 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.messagesBroker
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.longs.shouldBeZero
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import java.time.LocalDateTime
@@ -27,15 +26,15 @@ class MessagesTest : FunSpec({
 
         test("The message shouldn't be visible if the user isn't in the chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
             Messages.isVisible(userId, messageId).shouldBeFalse()
         }
 
         test("The message should be visible if the user is in the group chat") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
             Messages.isVisible(adminId, messageId).shouldBeTrue()
         }
 
@@ -43,7 +42,7 @@ class MessagesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             if (shouldDelete) PrivateChatDeletions.create(chatId, user1Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             Messages.isVisible(user1Id, messageId).shouldBeTrue()
         }
 
@@ -58,7 +57,7 @@ class MessagesTest : FunSpec({
         test("The message shouldn't be visible if it was sent before the user deleted the chat") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.isVisible(user1Id, messageId).shouldBeFalse()
         }
@@ -67,10 +66,10 @@ class MessagesTest : FunSpec({
     context("create(Int, String, TextMessage)") {
         test("Subscribers should receive notifications of created messages") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(user1Id, user2Id))
+            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
-            repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId, TextMessage("t")) }
+            repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
                 .forEach { (userId, subscriber) ->
                     val updates = Messages.readGroupChat(userId, chatId).map { it.node.toNewMessage() }
@@ -83,7 +82,7 @@ class MessagesTest : FunSpec({
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             subscriber.assertValue(Messages.readMessage(user1Id, messageId).toNewMessage())
         }
 
@@ -114,37 +113,48 @@ class MessagesTest : FunSpec({
 
         test(
             """
-                Given a chat deleted by the user which had activity after its deletion,
-                when the chat is retrieved for the user,
-                then it should exclude messages sent before its deletion
-                """
+            Given a chat deleted by the user which had activity after its deletion,
+            when the chat is retrieved for the user,
+            then it should exclude messages sent before its deletion
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
-            Messages.create(user2Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
+            Messages.create(user2Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
-            Messages.readPrivateChat(user1Id, chatId).map { it.node } shouldBe listOf(
-                Messages.readMessage(
-                    user1Id,
-                    messageId
-                )
-            )
+            val messageId = Messages.message(user2Id, chatId)
+            Messages.readPrivateChat(user1Id, chatId).map { it.node } shouldBe
+                    listOf(Messages.readMessage(user1Id, messageId))
+        }
+    }
+
+    context("deleteChatMessages(List<Int>)") {
+        test("Deleting a chat containing message contexts should be deleted successfully") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val contextId = Messages.message(adminId, chatId)
+            Messages.create(adminId, chatId, TextMessage("t"), contextId)
+            shouldNotThrowAny { Messages.deleteChat(chatId) }
+        }
+
+        test(
+            """
+            Given message 1 from user 1, and message 2 from user 2 which has message 1 as its context,
+            when user 1 deletes their messages,
+            then message 2's context should be set to null
+            """
+        ) {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val contextId = Messages.message(userId, chatId)
+            val messageId = Messages.message(adminId, chatId, contextMessageId = contextId)
+            Messages.deleteUserChatMessages(chatId, userId)
+            Messages.readBareMessage(messageId).context.id.shouldBeNull()
         }
     }
 
     context("deleteChat(Int)") {
-        test("Deleting a chat should delete its messages and messages statuses") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
-            Messages.deleteChat(chatId)
-            Messages.count().shouldBeZero()
-            MessageStatuses.count().shouldBeZero()
-        }
-
         test("The subscriber should be notified of every message being deleted") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
@@ -154,46 +164,31 @@ class MessagesTest : FunSpec({
         }
     }
 
-    context("deleteMessagesUntil(Int, LocalDateTime)") {
-        test("Every message and message status should be deleted until the specified point only") {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val message1Id = Messages.message(user1Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user2Id, message1Id, MessageStatus.READ)
+    context("deleteChatUntil(Int, LocalDateTime)") {
+        test("Every message should be deleted until the specified point") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            Messages.create(adminId, chatId)
             val now = LocalDateTime.now()
-            val message2Id = Messages.message(user2Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user1Id, message2Id, MessageStatus.DELIVERED)
-            Messages.deleteMessagesUntil(chatId, until = now)
-            Messages.readIdList(chatId) shouldBe listOf(message2Id)
-            MessageStatuses.count() shouldBe 1
+            val messageId = Messages.message(adminId, chatId)
+            Messages.deleteChatUntil(chatId, now)
+            Messages.readIdList(chatId) shouldBe listOf(messageId)
         }
 
         test("Subscribers should be notified of the message deletion point") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             val until = LocalDateTime.now()
-            Messages.deleteMessagesUntil(chatId, until)
+            Messages.deleteChatUntil(chatId, until)
             subscriber.assertValue(MessageDeletionPoint(chatId, until))
         }
     }
 
     context("deleteUserChatMessages(Int, String)") {
-        test("Every message and message status the user has in the chat should be deleted") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val message1Id = Messages.message(adminId, chatId, TextMessage("t"))
-            MessageStatuses.create(userId, message1Id, MessageStatus.READ)
-            val message2Id = Messages.message(userId, chatId, TextMessage("t"))
-            MessageStatuses.create(adminId, message2Id, MessageStatus.READ)
-            Messages.deleteUserChatMessages(chatId, userId)
-            Messages.readIdList(chatId) shouldBe listOf(message1Id)
-            MessageStatuses.count().shouldBeZero()
-        }
-
         test("A subscriber should be notified when a user's messages have been deleted from the chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Messages.deleteUserChatMessages(chatId, userId)
             subscriber.assertValue(UserChatMessagesRemoval(chatId, userId))
@@ -201,48 +196,11 @@ class MessagesTest : FunSpec({
     }
 
     context("deleteUserMessages(String)") {
-        fun createUtilizedPrivateChat(user1Id: Int, user2Id: Int): Int {
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val message1Id = Messages.message(user1Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user2Id, message1Id, MessageStatus.READ)
-            val message2Id = Messages.message(user2Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user1Id, message2Id, MessageStatus.READ)
-            return chatId
-        }
-
-        fun createUtilizedGroupChat(user1Id: Int, user2Id: Int): Int {
-            val chatId = GroupChats.create(user1Id, buildNewGroupChat(user2Id))
-            val message1Id = Messages.message(user1Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user2Id, message1Id, MessageStatus.READ)
-            val message2Id = Messages.message(user2Id, chatId, TextMessage("t"))
-            MessageStatuses.create(user1Id, message2Id, MessageStatus.READ)
-            GroupChatUsers.removeUsers(chatId, user2Id)
-            return chatId
-        }
-
-        test(
-            """
-                Given a user in a private chat, and a group chat they've left,
-                when deleting the user's messages,
-                then their messages, created message statues, and received message statuses should be deleted
-                """
-        ) {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val privateChatId = createUtilizedPrivateChat(user1Id, user2Id)
-            val groupChatId = createUtilizedGroupChat(user1Id, user2Id)
-            Messages.deleteUserMessages(user2Id)
-            listOf(Messages.readPrivateChat(user2Id, privateChatId), Messages.readGroupChat(user2Id, groupChatId))
-                .forEach { messages ->
-                    messages.map { it.node.sender.id } shouldBe listOf(user1Id)
-                    messages.flatMap { it.node.dateTimes.statuses }.map { it.user.id }.shouldBeEmpty()
-                }
-        }
-
         test("Subscribers should be notified when every message the user sent is deleted") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val (chat1Id, chat2Id) = (1..2).map {
-                val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-                Messages.create(userId, chatId, TextMessage("t"))
+                val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+                Messages.create(userId, chatId)
                 chatId
             }
             val (chat1Subscriber, chat2Subscriber) = (1..2)
@@ -255,20 +213,10 @@ class MessagesTest : FunSpec({
     }
 
     context("delete(Int)") {
-        test("Deleting a message should delete it and its statuses") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(adminId, buildNewGroupChat(userId))
-            val messageId = Messages.message(adminId, chatId, TextMessage("t"))
-            MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED)
-            Messages.delete(messageId)
-            Messages.readIdList(chatId).shouldBeEmpty()
-            MessageStatuses.count().shouldBeZero()
-        }
-
         test("Deleting a message should trigger a notification") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user1Id, chatId)
             val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             Messages.delete(messageId)
             subscriber.assertValue(DeletedMessage(chatId, messageId))
@@ -278,28 +226,28 @@ class MessagesTest : FunSpec({
     context("existsFrom(Int, LocalDateTime)") {
         test(
             """
-                Given messages sent after a particular time,
-                when searching for messages from that time,
-                then they should be found
-                """
+            Given messages sent after a particular time,
+            when searching for messages from that time,
+            then they should be found
+            """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val now = LocalDateTime.now()
-            Messages.create(adminId, chatId, TextMessage("t"))
+            Messages.create(adminId, chatId)
             Messages.existsFrom(chatId, now).shouldBeTrue()
         }
 
         test(
             """
-                Given messages were only sent before a particular time, 
-                when searching for messages from that time, 
-                then none should be found
-                """
+            Given messages were only sent before a particular time, 
+            when searching for messages from that time, 
+            then none should be found
+            """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            Messages.create(adminId, chatId, TextMessage("t"))
+            val chatId = GroupChats.create(listOf(adminId))
+            Messages.create(adminId, chatId)
             Messages.existsFrom(chatId, LocalDateTime.now()).shouldBeFalse()
         }
     }
@@ -308,9 +256,9 @@ class MessagesTest : FunSpec({
         test("Messages deleted by the user via a private chat deletion should only be visible to the other user") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            Messages.create(user1Id, chatId, TextMessage("t"))
+            Messages.create(user1Id, chatId)
             Messages.readPrivateChat(user1Id, chatId) shouldHaveSize 1
             Messages.readPrivateChat(user2Id, chatId) shouldHaveSize 2
         }
@@ -320,7 +268,7 @@ class MessagesTest : FunSpec({
         test("Messages should only be retrieved from the specified chat") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val create = {
-                GroupChats.create(adminId).also { Messages.create(adminId, it, TextMessage("t")) }
+                GroupChats.create(listOf(adminId)).also { Messages.create(adminId, it) }
             }
             create()
             Messages.readGroupChat(adminId, create()) shouldHaveSize 1
@@ -328,28 +276,28 @@ class MessagesTest : FunSpec({
 
         test("Messages should be retrieved in the order of their creation.") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messagesIdList = (1..3).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messagesIdList = (1..3).map { Messages.message(adminId, chatId) }
             Messages.readGroupChat(adminId, chatId).map { it.cursor } shouldBe messagesIdList
         }
 
         test("Every message should be retrieved if neither the cursor nor the limit are supplied") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageIdList = (1..3).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..3).map { Messages.message(adminId, chatId) }
             Messages.readGroupChat(adminId, chatId).map { it.cursor } shouldBe messageIdList
         }
 
         test(
             """
-                Given both a limit and cursor,
-                when retrieving messages,
-                then the number of messages specified by the limit should be retrieved from before the cursor
-                """
+            Given both a limit and cursor,
+            when retrieving messages,
+            then the number of messages specified by the limit should be retrieved from before the cursor
+            """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val last = 3
             val cursorIndex = 7
             Messages
@@ -360,14 +308,14 @@ class MessagesTest : FunSpec({
 
         test(
             """
-                Given a limit without a cursor,
-                when retrieving messages,
-                then the number of messages specified by the limit from the last message should be retrieved 
-                """
+            Given a limit without a cursor,
+            when retrieving messages,
+            then the number of messages specified by the limit from the last message should be retrieved 
+            """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageIdList = (1..5).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
             val last = 3
             Messages.readGroupChat(adminId, chatId, BackwardPagination(last)).map { it.cursor } shouldBe
                     messageIdList.takeLast(last)
@@ -375,15 +323,15 @@ class MessagesTest : FunSpec({
 
         test(
             """
-                Given a cursor without a limit, 
-                when retrieving messages, 
-                then every message before the cursor should be retrieved
-                """
+            Given a cursor without a limit, 
+            when retrieving messages, 
+            then every message before the cursor should be retrieved
+            """
         ) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
+            val chatId = GroupChats.create(listOf(adminId))
             val messages = 5
-            val messageIdList = (1..messages).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }
             val index = 3
             val cursor = messageIdList[index]
             Messages.readGroupChat(adminId, chatId, BackwardPagination(before = cursor)).map { it.cursor } shouldBe
@@ -392,8 +340,8 @@ class MessagesTest : FunSpec({
 
         test("Using a deleted message's cursor shouldn't cause pagination to behave differently") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val index = 5
             val deletedMessageId = messageIdList[index]
             Messages.delete(deletedMessageId)
@@ -408,9 +356,9 @@ class MessagesTest : FunSpec({
         test("Messages deleted via a private chat deletion shouldn't be retrieved only for the user who deleted it") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val message1Id = Messages.message(user1Id, chatId, TextMessage("t"))
+            val message1Id = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            val message2Id = Messages.message(user1Id, chatId, TextMessage("t"))
+            val message2Id = Messages.message(user1Id, chatId)
             val assert = { userId: Int, messageIdList: List<Int> ->
                 Messages.readPrivateChatConnection(chatId, userId).edges.map { it.cursor } shouldBe messageIdList
             }
@@ -424,8 +372,8 @@ class MessagesTest : FunSpec({
 
         fun createChat(): CreatedChat {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val message = { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val message = { Messages.message(adminId, chatId) }
             return CreatedChat(adminId, chatId, firstMessageId = message(), secondMessageId = message())
         }
 
@@ -465,8 +413,8 @@ class MessagesTest : FunSpec({
     context("readCursor(Int, CursorType, Filter)") {
         fun assertCursor(hasMessage: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageId = if (hasMessage) Messages.message(adminId, chatId, TextMessage("t")) else null
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = if (hasMessage) Messages.message(adminId, chatId) else null
             with(Messages.readGroupChatConnection(adminId, chatId).pageInfo) {
                 startCursor shouldBe messageId
                 endCursor shouldBe messageId
@@ -481,8 +429,8 @@ class MessagesTest : FunSpec({
 
         test("The first and last message IDs should be retrieved for the start and end cursors respectively") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(adminId)
-            val messageIdList = (1..5).map { Messages.message(adminId, chatId, TextMessage("t")) }
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
             with(Messages.readGroupChatConnection(adminId, chatId).pageInfo) {
                 startCursor shouldBe messageIdList.first()
                 endCursor shouldBe messageIdList.last()

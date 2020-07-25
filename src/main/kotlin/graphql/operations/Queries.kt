@@ -25,8 +25,10 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
     val title: GroupChatTitle
 
     @Suppress("MemberVisibilityCanBePrivate")
-    val description: GroupChatDescription?
-    val adminId: Int
+    val description: GroupChatDescription
+
+    @Suppress("unused")
+    val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
 
     init {
         val chat = GroupChats.readChat(
@@ -37,7 +39,6 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
         )
         title = chat.title
         description = chat.description
-        adminId = chat.adminId
     }
 
     @Suppress("unused")
@@ -87,7 +88,7 @@ private class SearchPrivateChatMessagesDto(
 
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    return !GroupChats.isNonemptyChatAdmin(env.userId!!)
+    return GroupChatUsers.canUserLeave(env.userId!!)
 }
 
 fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {

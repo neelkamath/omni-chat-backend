@@ -41,6 +41,7 @@ object Stargazers : Table() {
      * Deletes every user's star from the [messageId]. [Broker.notify]s stargazers via [messagesBroker].
      *
      * @see [deleteUserStar]
+     * @see [deleteStars]
      */
     fun deleteStar(messageId: Int) {
         val stargazers = readStargazers(messageId)
@@ -68,7 +69,11 @@ object Stargazers : Table() {
         messagesBroker.notify(UpdatedMessage.build(userId, messageId)) { it.userId == userId }
     }
 
-    /** Deletes every star from the [messageIdList]. */
+    /**
+     * Deletes every star from the [messageIdList].
+     *
+     * @see [deleteStar]
+     */
     fun deleteStars(messageIdList: List<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
     }

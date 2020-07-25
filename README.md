@@ -4,11 +4,11 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-For people who need to communicate via instant messaging, Omni Chat is a free, open core, federated chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
+For people who need to communicate via instant messaging, Omni Chat is a free and open core chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
 
 The [spec](docs/spec.md) explains how Omni Chat differentiates itself from existing services, and which features have been implemented so far. This repo is for the backend API. There's no frontend UI yet.
 
-To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the release tag (e.g., `v0.1.0`).
+To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the release tag (e.g., `v0.1.1`).
 
 ## Installation
 
@@ -18,6 +18,7 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 1. Install [Docker](https://docs.docker.com/get-docker/).
 1. [Configure](docs/config.md).
 1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on [`schema.graphqls`](src/main/resources/schema.graphqls).
+1. Optionally, generate a wrapper for the REST API using [OpenAPI Generator](https://openapi-generator.tech/) on [`openapi.yaml`](docs/openapi.yaml).
 
 ## Usage
 
@@ -35,6 +36,10 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 - The `chat` service can be scaled freely.
 - The `chat` service is dependent on other services, such as `auth`. Please see the docs of the other services to operate them in production. For example, the `auth` service uses the [Keycloak](https://hub.docker.com/r/jboss/keycloak) image, which documents how to back up, restore, etc. it.
 - When restoring backups for the `chat-db` and `auth` services, make sure the backups had been taken at the same time because they're dependent on each other's state.
+
+### Migrating to a Newer Version
+
+Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
 
 ## [Contributing](docs/CONTRIBUTING.md)
 

@@ -15,8 +15,8 @@ enum class InvalidGroupChatPicReason { NONEXISTENT_CHAT, PIC_TOO_BIG }
 data class InvalidGroupChatPic(val reason: InvalidGroupChatPicReason)
 
 /**
- * @throws [IllegalArgumentException] if the [value] isn't lowercase, isn't shorter than 256 characters, or doesn't
- * contain non-whitespace characters.
+ * An [IllegalArgumentException] will be thrown if the [value] isn't lowercase, isn't shorter than 256 characters, or
+ * doesn't contain non-whitespace characters.
  */
 data class Username(val value: String) {
     init {
@@ -28,7 +28,7 @@ data class Username(val value: String) {
     }
 }
 
-/** @throws [IllegalArgumentException] if the [value] exceeds [Users.MAX_BIO_LENGTH] */
+/** An [IllegalArgumentException] will be thrown if the [value] exceeds [Users.MAX_BIO_LENGTH] */
 data class Bio(val value: String) {
     init {
         if (value.length > Users.MAX_BIO_LENGTH)
@@ -36,7 +36,7 @@ data class Bio(val value: String) {
     }
 }
 
-/** @throws [IllegalArgumentException] if the [value] doesn't contain non-whitespace characters. */
+/** An [IllegalArgumentException] will be thrown if the [value] doesn't contain non-whitespace characters. */
 data class Password(val value: String) {
     init {
         if (value.trim().isEmpty()) throw IllegalArgumentException("""The password ("$value") mustn't be empty.""")
@@ -60,7 +60,7 @@ data class Login(val username: Username, val password: Password)
 
 data class TokenSet(val accessToken: String, val refreshToken: String)
 
-data class NewAccount(
+data class AccountInput(
     val username: Username,
     val password: Password,
     val emailAddress: String,
@@ -94,10 +94,13 @@ data class Account(
         listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
 }
 
+data class MessageContext(val hasContext: Boolean, val id: Int?)
+
 interface BareMessage {
     val sender: Account
     val text: TextMessage
     val dateTimes: MessageDateTimes
+    val context: MessageContext
 }
 
 interface ContactsSubscription
@@ -147,18 +150,21 @@ data class AccountUpdate(
     val bio: Bio? = null
 )
 
-data class NewGroupChat(
+/**
+ * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, or if the [adminIdList] isn't a subset of
+ * the [userIdList].
+ */
+data class GroupChatInput(
     val title: GroupChatTitle,
     val description: GroupChatDescription,
-    val userIdList: List<Int> = listOf()
-)
-
-private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?) {
-    if (newUsers != null && removedUsers != null) {
-        val intersection = newUsers.intersect(removedUsers)
-        if (intersection.isNotEmpty())
+    val userIdList: List<Int>,
+    val adminIdList: List<Int>
+) {
+    init {
+        if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
+        if (!userIdList.containsAll(adminIdList))
             throw IllegalArgumentException(
-                "The list of new and removed users must be distinct. Users in both lists: $intersection"
+                "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
             )
     }
 }
@@ -166,8 +172,8 @@ private fun <T> verifyGroupChatUsers(newUsers: List<T>?, removedUsers: List<T>?)
 interface UpdatedChatsSubscription
 
 /**
- * @throws [IllegalArgumentException] if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at least one
- * non-whitespace.
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at
+ * least one non-whitespace.
  */
 data class TextMessage(val value: String) {
     init {
@@ -179,8 +185,8 @@ data class TextMessage(val value: String) {
 }
 
 /**
- * @throws [IllegalArgumentException] if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of which at
- * least one isn't whitespace.
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of
+ * which at least one isn't whitespace.
  */
 data class GroupChatTitle(val value: String) {
     init {
@@ -194,7 +200,10 @@ data class GroupChatTitle(val value: String) {
     }
 }
 
-/** @throws [IllegalArgumentException] if the [value] isn't at most [GroupChats.MAX_DESCRIPTION_LENGTH] characters. */
+/**
+ * An [IllegalArgumentException] will be thrown if the [value] isn't at most [GroupChats.MAX_DESCRIPTION_LENGTH]
+ * characters.
+ */
 data class GroupChatDescription(val value: String) {
     init {
         if (value.length > GroupChats.MAX_DESCRIPTION_LENGTH)
@@ -204,17 +213,23 @@ data class GroupChatDescription(val value: String) {
     }
 }
 
-/** @throws [IllegalArgumentException] if the [newUsers] and [removedUsers] aren't distinct. */
+/** An [IllegalArgumentException] will be thrown if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(
     val chatId: Int,
     val title: GroupChatTitle? = null,
     val description: GroupChatDescription? = null,
     val newUsers: List<Account>? = null,
     val removedUsers: List<Account>? = null,
-    val adminId: Int? = null
+    val adminIdList: List<Int>? = null
 ) : UpdatedChatsSubscription {
     init {
-        verifyGroupChatUsers(newUsers, removedUsers)
+        if (newUsers != null && removedUsers != null) {
+            val intersection = newUsers.intersect(removedUsers)
+            if (intersection.isNotEmpty())
+                throw IllegalArgumentException(
+                    "The list of new and removed users must be distinct. Users in both lists: $intersection."
+                )
+        }
     }
 }
 
@@ -236,29 +251,6 @@ data class UpdatedAccount(
     }
 }
 
-/** @throws [IllegalArgumentException] if the [newUserIdList] and [removedUserIdList] aren't distinct. */
-data class GroupChatUpdate(
-    val chatId: Int,
-    val title: GroupChatTitle? = null,
-    val description: GroupChatDescription? = null,
-    val newUserIdList: List<Int>? = listOf(),
-    val removedUserIdList: List<Int>? = listOf(),
-    val newAdminId: Int? = null
-) {
-    init {
-        verifyGroupChatUsers(newUserIdList, removedUserIdList)
-    }
-
-    fun toUpdatedGroupChat(): UpdatedGroupChat = UpdatedGroupChat(
-        chatId,
-        title,
-        description,
-        newUserIdList?.map(::readUserById),
-        removedUserIdList?.map(::readUserById),
-        newAdminId
-    )
-}
-
 interface Chat {
     val id: Int
     val messages: MessagesConnection
@@ -272,10 +264,10 @@ data class PrivateChat(
 
 data class GroupChat(
     override val id: Int,
-    val adminId: Int,
+    val adminIdList: List<Int>,
     val users: AccountsConnection,
     val title: GroupChatTitle,
-    val description: GroupChatDescription? = null,
+    val description: GroupChatDescription,
     override val messages: MessagesConnection
 ) : Chat
 
@@ -286,9 +278,6 @@ data class MessageEdge(val node: Message, val cursor: Cursor)
 interface MessageData : BareMessage {
     val chatId: Int
     val messageId: Int
-    override val sender: Account
-    override val text: TextMessage
-    override val dateTimes: MessageDateTimes
 }
 
 data class StarredMessage(
@@ -296,11 +285,12 @@ data class StarredMessage(
     override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData, BareMessage {
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : MessageData {
     companion object {
         fun build(messageId: Int): StarredMessage = with(Messages.readBareMessage(messageId)) {
-            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes)
+            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes, context)
         }
     }
 }
@@ -310,17 +300,19 @@ data class Message(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean
+    val hasStar: Boolean,
+    override val context: MessageContext
 ) : BareMessage {
-    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes)
+    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context)
 
     fun toUpdatedMessage(): UpdatedMessage =
-        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar)
+        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar, context)
 
     companion object {
         /** The [userId] the [Message] is for. */
-        fun build(userId: Int, messageId: Int, message: BareMessage): Message =
-            with(message) { Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId)) }
+        fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
+            Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId), context)
+        }
     }
 }
 
@@ -331,11 +323,12 @@ data class NewMessage(
     override val messageId: Int,
     override val sender: Account,
     override val text: TextMessage,
-    override val dateTimes: MessageDateTimes
-) : MessageData, BareMessage, MessagesSubscription {
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : MessageData, MessagesSubscription {
     companion object {
         fun build(id: Int, message: BareMessage): NewMessage =
-            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes) }
+            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context) }
     }
 }
 
@@ -345,15 +338,16 @@ data class UpdatedMessage(
     override val sender: Account,
     override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean
-) : MessageData, BareMessage, MessagesSubscription {
+    val hasStar: Boolean,
+    override val context: MessageContext
+) : MessageData, MessagesSubscription {
     companion object {
         fun build(userId: Int, messageId: Int): UpdatedMessage =
             Messages.readMessage(userId, messageId).toUpdatedMessage()
     }
 }
 
-data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus> = listOf())
+data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus>)
 
 data class MessageDateTimeStatus(val user: Account, val dateTime: LocalDateTime, val status: MessageStatus)
 
@@ -365,7 +359,7 @@ data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : Mes
 
 data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesSubscription
 
-data class ExitedUser(val chatId: Int, val userId: Int) : UpdatedChatsSubscription
+data class ExitedUser(val userId: Int, val chatId: Int) : UpdatedChatsSubscription
 
 interface NewGroupChatsSubscription
 

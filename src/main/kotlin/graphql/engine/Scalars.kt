@@ -10,7 +10,7 @@ import java.time.ZoneOffset
 
 private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
-            LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
+        LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
 
     override fun parseValue(input: Any): LocalDateTime = dissectValue { parseDate(input as String) }
 
@@ -29,7 +29,7 @@ private object CursorCoercing : Coercing<Cursor, String> {
 }
 
 private object PlaceholderCoercing : Coercing<Placeholder, String> {
-    /** @throws [IllegalArgumentException] if the [input] isn't an empty [String]. */
+    /** An [IllegalArgumentException] will be thrown if the [input] isn't an empty [String]. */
     private fun parse(input: String): Placeholder {
         if (input != "") throw IllegalArgumentException("""input ("$input") must be an empty string.""")
         return Placeholder
@@ -98,8 +98,7 @@ private object BioCoercing : Coercing<Bio, String> {
 }
 
 /**
- * @throws [CoercingParseValueException] if [parse] threw an [Exception].
- * @return the result of [parse].
+ * The [parse]d value will be returned. A [CoercingParseValueException] will be thrown if [parse] threw an [Exception].
  */
 private inline fun <T> dissectValue(parse: () -> T): T = try {
     parse()
@@ -107,10 +106,7 @@ private inline fun <T> dissectValue(parse: () -> T): T = try {
     throw CoercingParseValueException(exception.message)
 }
 
-/**
- * @throws [CoercingParseLiteralException] if [parse] threw an [Exception].
- * @return the result of [parse].
- */
+/** The [parse]d data will be returned. An [IllegalArgumentException] will be thrown if [parse] threw an [Exception]. */
 private inline fun <T> dissectLiteral(parse: () -> T): T = try {
     parse()
 } catch (exception: Exception) {
@@ -118,8 +114,7 @@ private inline fun <T> dissectLiteral(parse: () -> T): T = try {
 }
 
 /**
- * @throws [CoercingSerializeException] if [serialize] threw an [Exception].
- * @return the result of [serialize].
+ * Returns the [serialize]d value. A [CoercingSerializeException] will be thrown if [serialize] threw an [Exception].
  */
 private inline fun <T> translate(serialize: () -> T): T = try {
     serialize()

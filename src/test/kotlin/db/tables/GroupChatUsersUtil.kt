@@ -7,3 +7,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 fun GroupChatUsers.read(): List<Int> = transaction {
     selectAll().map { it[GroupChatUsers.id].value }
 }
+
+fun GroupChatUsers.canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean =
+    canUsersLeave(chatId, userIdList.toList())
+
+fun GroupChatUsers.addUsers(chatId: Int, vararg userIdList: Int): Unit = addUsers(chatId, userIdList.toList())
+
+fun GroupChatUsers.makeAdmins(chatId: Int, vararg userIdList: Int): Unit = makeAdmins(chatId, userIdList.toList())

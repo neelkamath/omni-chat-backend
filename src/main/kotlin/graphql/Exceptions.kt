@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.graphql
 
 object UnauthorizedException :
-        Exception("The user didn't supply an auth token, supplied an invalid one, or lacks the required permissions.")
+    Exception("The user didn't supply an auth token, supplied an invalid one, or lacks the required permissions.")
 
 /** Used when the client sends invalid data in a valid GraphQL document. */
 sealed class GraphQlDocDataException(message: String) : Exception(message)
@@ -21,6 +21,8 @@ object InvalidChatIdException : GraphQlDocDataException("INVALID_CHAT_ID")
 object InvalidGroupChatUsersException : GraphQlDocDataException("INVALID_GROUP_CHAT_USERS")
 
 object InvalidNewAdminIdException : GraphQlDocDataException("INVALID_NEW_ADMIN_ID")
+
+object InvalidAdminIdException : GraphQlDocDataException("INVALID_ADMIN_ID")
 
 object UnregisteredEmailAddressException : GraphQlDocDataException("UNREGISTERED_EMAIL_ADDRESS")
 

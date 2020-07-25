@@ -2,11 +2,11 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.UpdatedAccount
 import com.neelkamath.omniChat.UpdatedContact
-import com.neelkamath.omniChat.buildNewGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.PrivateChats
+import com.neelkamath.omniChat.db.tables.create
 import io.kotest.core.spec.style.FunSpec
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
@@ -24,13 +24,13 @@ class BrokersTest : FunSpec({
 
         test(
             """
-                Given subscribers to updated chats,
-                when a user updates their account,
-                then only the users who share their group chat should be notified of the updated account, except the updater
-                """
+            Given subscribers to updated chats,
+            when a user updates their account,
+            then only the users who share their group chat should be notified of the updated account, except the updater
+            """
         ) {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
-            listOf(user1Id, user2Id).forEach { GroupChats.create(adminId, buildNewGroupChat(it)) }
+            listOf(user1Id, user2Id).forEach { GroupChats.create(listOf(adminId), listOf(it)) }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             negotiateUserUpdate(user1Id)
@@ -40,10 +40,10 @@ class BrokersTest : FunSpec({
 
         test(
             """
-                Given two users subscribed to the private chat,
-                when one user updates their account,
-                then only the other user should be notified
-                """
+            Given two users subscribed to the private chat,
+            when one user updates their account,
+            then only the other user should be notified
+            """
         ) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)

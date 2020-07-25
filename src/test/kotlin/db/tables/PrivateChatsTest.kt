@@ -26,7 +26,7 @@ class PrivateChatsTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             TypingStatuses.set(chatId, user1Id, isTyping = true)
-            val messageId = Messages.message(user2Id, chatId, TextMessage("t"))
+            val messageId = Messages.message(user2Id, chatId)
             MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
             Stargazers.create(user1Id, messageId)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -53,7 +53,7 @@ class PrivateChatsTest : FunSpec({
             val chat2Id = PrivateChats.create(user1Id, user3Id)
             val chat3Id = PrivateChats.create(user1Id, user4Id)
             PrivateChatDeletions.create(chat2Id, user1Id)
-            Messages.create(user1Id, chat2Id, TextMessage("t"))
+            Messages.create(user1Id, chat2Id)
             PrivateChatDeletions.create(chat3Id, user1Id)
             PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
         }
@@ -95,17 +95,17 @@ class PrivateChatsTest : FunSpec({
     context("search(String, String, BackwardPagination?)") {
         test(
             """
-                Chats should be searched by case-insensitively querying usernames, email addresses, first names, and 
-                last names
-                """
+            Chats should be searched by case-insensitively querying usernames, email addresses, first names, and 
+            last names
+            """
         ) {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
-                NewAccount(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                NewAccount(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
-                NewAccount(Username("vader"), Password("p"), emailAddress = "vader@example.com", firstName = "Tommy"),
-                NewAccount(Username("leia"), Password("p"), emailAddress = "leia@example.com", lastName = "Tomas"),
-                NewAccount(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
+                AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
+                AccountInput(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
+                AccountInput(Username("vader"), Password("p"), emailAddress = "vader@example.com", firstName = "Tommy"),
+                AccountInput(Username("leia"), Password("p"), emailAddress = "leia@example.com", lastName = "Tomas"),
+                AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {
                 createUser(it)
                 val otherUserId = readUserByUsername(it.username).id

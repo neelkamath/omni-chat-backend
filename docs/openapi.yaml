@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.1.1
+  version: 0.2.0
   title: Omni Chat
   description: Functionality supplementary to the GraphQL API such as image uploading.
   contact:
@@ -110,14 +110,14 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
     Pic:
-      description: Pic.
+      description: A PNG or JPEG image not exceeding 100 KiB.
       content:
-        image/*:
+        image/png, image/jpeg:
           schema:
             type: string
             format: binary
     InvalidPic:
-      description: Pic was bigger than 100 KiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 100 KiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
@@ -125,9 +125,16 @@ components:
       content:
         multipart/form-data:
           schema:
-            description: Mustn't exceed 100 KiB.
-            type: string
-            format: binary
+            type: object
+            required: [pic]
+            properties:
+              pic:
+                description: Must be a PNG or JPEG not exceeding 100 KiB.
+                type: string
+                format: binary
+          encoding:
+            pic:
+              contentType: image/png, image/jpeg
   parameters:
     UserId:
       name: user-id

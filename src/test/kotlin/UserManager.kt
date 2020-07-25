@@ -8,7 +8,7 @@ data class VerifiedUser(val info: Account, val password: Password) {
     val accessToken = buildAuthToken(info.id).accessToken
 
     companion object {
-        fun build(account: NewAccount): VerifiedUser = with(account) {
+        fun build(account: AccountInput): VerifiedUser = with(account) {
             val userId = readUserByUsername(username).id
             VerifiedUser(Account(userId, username, emailAddress, firstName, lastName, bio), password)
         }
@@ -23,7 +23,7 @@ data class VerifiedUser(val info: Account, val password: Password) {
  * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
  */
 fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
-    val account = NewAccount(
+    val account = AccountInput(
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",

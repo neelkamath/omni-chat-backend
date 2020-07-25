@@ -1,5 +1,12 @@
 package com.neelkamath.omniChat.graphql.operations
 
+const val MESSAGE_CONTEXT_FRAGMENT = """
+    ... on MessageContext {
+        hasContext
+        id
+    }
+"""
+
 const val ONLINE_STATUS_FRAGMENT = """
     ... on OnlineStatus {
         userId
@@ -78,6 +85,9 @@ const val MESSAGE_FRAGMENT = """
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
         hasStar
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
     }
 """
 
@@ -112,7 +122,7 @@ const val GROUP_CHAT_FRAGMENT = """
         id
         title
         description
-        adminId
+        adminIdList
         users(first: ${"$"}groupChat_users_first, after: ${"$"}groupChat_users_after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
         }
@@ -185,6 +195,9 @@ const val STARRED_MESSAGE_FRAGMENT = """
         text
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
         }
     }
 """

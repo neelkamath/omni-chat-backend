@@ -102,7 +102,7 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 
-Here's how to create Kotlin [models](../src/main/kotlin/Models.kt) for GraphQL types:
+Here's how to create Kotlin [models](../src/main/kotlin/ApiModels.kt) for GraphQL types:
 
 |GraphQL|Kotlin|
 |---|---|
@@ -123,9 +123,11 @@ When updating [`db/Brokers.kt`](../src/main/kotlin/db/Brokers.kt), name the inst
 - Should you require extra functionality for a file, create a mirror utility file in the test source set. For example, [`GroupChatsUtil.kt`](../src/test/kotlin/db/tables/GroupChatsUtil.kt) for [`GroupChats.kt`](../src/main/kotlin/db/tables/GroupChats.kt).
 - These test cases which must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
 - The test source set should mirror the main source set's directory structure. For example, a file in the main source set named `directory/Filename.kt` should have its tests in `directory/FilenameTest.kt`. Create a `io.kotest.core.spec.style.FunSpec` (`FunSpec`) for each `class` getting tested (e.g., a class `MyClass` would have a corresponding `MyClassTest` `FunSpec`). Keep tests for top-level functions in a `FunSpec` named after the file (e.g., a top-level function `myFun` in a file `MyFile.kt` would have its test placed in a `MyFileTest` `FunSpec`).
-- Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to the `context` must be the function's name and variables. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`. Name the `context` `"init"` when testing a `class`'s `init`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested. If you're testing a function through another function (e.g., a private function, a function which converts `vararg` arguments to a `List` for another function), place the tests in the `context` of the function which is getting tested (i.e., the private function's `context`, etc.). 
+- Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to the `context` must be the function's name and variables. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`, and the `context` for a function `build()` on a `class`'s `companion object` would be `Companion.build()`. Name the `context` `"init"` when testing a `class`'s `init`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested. If you're testing a function through another function (e.g., a private function, a function which converts `vararg` arguments to a `List` for another function), place the tests in the `context` of the function which is getting tested (i.e., the private function's `context`, etc.). 
 
 ## Releasing
+
+Only commit to the `master` branch if you're releasing a new version.
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
 1. Add an entry to the [changelog](CHANGELOG.md).

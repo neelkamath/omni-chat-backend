@@ -3,9 +3,34 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.Users
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
+
+class GroupChatInputTest : FunSpec({
+    context("init") {
+        test("Having zero admins should fail") {
+            shouldThrowExactly<IllegalArgumentException> {
+                GroupChatInput(
+                    GroupChatTitle("T"),
+                    GroupChatDescription(""),
+                    userIdList = listOf(1),
+                    adminIdList = listOf()
+                )
+            }
+        }
+
+        test("An exception should be thrown if the admin ID list isn't a subset of the user ID list") {
+            shouldThrowExactly<IllegalArgumentException> {
+                GroupChatInput(
+                    GroupChatTitle("T"),
+                    GroupChatDescription(""),
+                    userIdList = listOf(1),
+                    adminIdList = listOf(1, 2)
+                )
+            }
+        }
+    }
+})
 
 class BioTest : FunSpec({
     context("init") {
@@ -84,19 +109,13 @@ class PasswordTest : FunSpec({
     }
 })
 
-class VerifyGroupChatUsersTest : FunSpec({
-    test("An exception should be thrown if the list of users to add isn't distinct from the list of users to remove") {
-        val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-        shouldThrowExactly<IllegalArgumentException> {
-            GroupChatUpdate(
-                chatId = 1,
-                newUserIdList = listOf(user1Id, user2Id),
-                removedUserIdList = listOf(user2Id, user3Id)
-            )
+class UpdatedGroupChatTest : FunSpec({
+    context("init") {
+        test("An exception should be thrown if the new and removed users intersect") {
+            val (user1, user2) = createVerifiedUsers(2).map { it.info }
+            shouldThrowExactly<IllegalArgumentException> {
+                UpdatedGroupChat(chatId = 1, newUsers = listOf(user1), removedUsers = listOf(user1, user2))
+            }
         }
-    }
-
-    test("An exception shouldn't be thrown if the list of users to add is distinct from the list of users to remove") {
-        shouldNotThrowAny { GroupChatUpdate(chatId = 1, newUserIdList = listOf(1), removedUserIdList = listOf(2)) }
     }
 })

@@ -22,10 +22,10 @@ class AuthTest : FunSpec({
     context("isUsernameTaken(String)") {
         test(
             """
-                Given an existing username, and a nonexistent username similar to the one which exists,
-                when checking if the nonexistent username exists,
-                then it should be said to not exist
-                """
+            Given an existing username, and a nonexistent username similar to the one which exists,
+            when checking if the nonexistent username exists,
+            then it should be said to not exist
+            """
         ) {
             val username = createVerifiedUsers(1)[0].info.username
             val similarUsername = Username(username.value.dropLast(1))
@@ -59,10 +59,10 @@ class AuthTest : FunSpec({
     context("searchUsers(String)") {
         /** Creates users, and returns their IDs. */
         fun createUsers(): List<Int> = listOf(
-            NewAccount(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
-            NewAccount(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
-            NewAccount(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-            NewAccount(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", firstName = "John")
+            AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
+            AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
+            AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
+            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", firstName = "John")
         ).map {
             createUser(it)
             readUserByUsername(it.username).id
@@ -80,8 +80,8 @@ class AuthTest : FunSpec({
 
         test("Searching users shouldn't include duplicate results") {
             val userIdList = listOf(
-                NewAccount(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                NewAccount(Username("username"), Password("p"), "tony@example.com", firstName = "Tony")
+                AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
+                AccountInput(Username("username"), Password("p"), "tony@example.com", firstName = "Tony")
             ).map {
                 createUser(it)
                 readUserByUsername(it.username).id
@@ -112,18 +112,18 @@ class AuthTest : FunSpec({
 
         test(
             """
-                Given an account with a verified email address,
-                when its email address is changed,
-                then its email address should become unverified
-                """
+            Given an account with a verified email address,
+            when its email address is changed,
+            then its email address should become unverified
+            """
         ) { assertEmailAddressUpdate(changeAddress = true) }
 
         test(
             """
-                Given an account with a verified email address,
-                when its email address is updated to the same address,
-                then its email address shouldn't become unverified
-                """
+            Given an account with a verified email address,
+            when its email address is updated to the same address,
+            then its email address shouldn't become unverified
+            """
         ) { assertEmailAddressUpdate(changeAddress = false) }
     }
 })

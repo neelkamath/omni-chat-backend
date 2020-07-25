@@ -28,7 +28,7 @@ object PrivateChatDeletions : IntIdTable() {
      * they've deleted it, the [chatId] is deleted from [PrivateChats], [PrivateChatDeletions] [Messages],
      * [MessageStatuses], and [TypingStatuses].
      *
-     * @throws [IllegalArgumentException] if the [userId] isn't in the [chatId].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: Int) {
         if (!isUserInChat(userId, chatId))
@@ -67,7 +67,7 @@ object PrivateChatDeletions : IntIdTable() {
 
     /** Deletes [Messages] and [MessageStatuses] deleted by both users. */
     private fun deleteCommonlyDeletedMessages(chatId: Int) {
-        readLastChatDeletion(chatId)?.let { Messages.deleteMessagesUntil(chatId, until = it) }
+        readLastChatDeletion(chatId)?.let { Messages.deleteChatUntil(chatId, it) }
     }
 
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */

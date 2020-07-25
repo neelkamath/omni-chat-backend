@@ -53,6 +53,7 @@ private fun connect() {
 private fun create(): Unit = transaction {
     createTypes()
     SchemaUtils.create(
+        Pics,
         Contacts,
         Chats,
         GroupChats,
@@ -72,17 +73,11 @@ fun shareChat(user1Id: Int, user2Id: Int): Boolean =
     PrivateChats.exists(user1Id, user2Id) || user1Id in GroupChatUsers.readFellowParticipants(user2Id)
 
 /** Creates custom types if required. */
-private fun createTypes() {
-    val values = MessageStatus.values().joinToString(", ") { "'${it.name.toLowerCase()}'" }
-    createType("message_status", "ENUM ($values)")
-}
-
-/**
- * Creates the [name]'s (e.g., `"message_status"`) [definition] (e.g., `"ENUM ('delivered', 'read')"`) if it doesn't
- * exist.
- */
-private fun createType(name: String, definition: String) {
-    if (!exists(name)) transaction { exec("CREATE TYPE $name AS $definition;") }
+private fun createTypes(): Unit = transaction {
+    mapOf("message_status" to MessageStatus.values(), "pic_type" to Pic.Type.values()).forEach { (name, enum) ->
+        val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
+        if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")
+    }
 }
 
 /** Whether the [type] has been created. */
@@ -105,7 +100,8 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 /**
- * Deletes the [userId]'s data from the DB.
+ * Deletes the [userId]'s data from the DB. An [IllegalArgumentException] will be thrown if the not
+ * [GroupChatUsers.canUserLeave].
  *
  * ## Users
  *
@@ -144,13 +140,15 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
  * - Deletes [TypingStatuses] the [userId] created.
  * - The [userId] will be [Broker.unsubscribe]d via [typingStatusesBroker].
  *
- * @throws [IllegalArgumentException] if the [userId] [GroupChats.isNonemptyChatAdmin].
  * @see [deleteUser]
  */
 fun deleteUserFromDb(userId: Int) {
-    if (GroupChats.isNonemptyChatAdmin(userId))
+    if (!GroupChatUsers.canUserLeave(userId))
         throw IllegalArgumentException(
-            "The user's (ID: $userId) data cannot be deleted because they're the admin of a nonempty group chat."
+            """
+            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
+            users.
+            """
         )
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
@@ -159,5 +157,7 @@ fun deleteUserFromDb(userId: Int) {
     Messages.deleteUserMessages(userId)
     Users.delete(userId)
     listOf(updatedChatsBroker, newGroupChatsBroker, contactsBroker, typingStatusesBroker, messagesBroker)
-        .forEach { broker -> broker.unsubscribe { it.userId == userId } }
+        .forEach { broker ->
+            broker.unsubscribe { it.userId == userId }
+        }
 }

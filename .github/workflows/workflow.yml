@@ -1,11 +1,24 @@
 on: push
 jobs:
-  validate-caddyfile:
+  validate-example-docker-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Validate
+        working-directory: docs
+        run: docker-compose config -q
+  validate-example-caddyfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Validate
         run: docker run --mount type=bind,src=$PWD/docs/Caddyfile,dst=/srv/Caddyfile caddy:2.1.1 caddy validate
+  lint-openapi-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Lint
+        run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
   test-server:
     runs-on: ubuntu-latest
     steps:
@@ -31,12 +44,6 @@ jobs:
         with:
           name: server-test-results
           path: build/reports/tests/test/
-  lint-openapi-spec:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Lint
-        run: npx @stoplight/spectral lint docs/openapi.yaml -F hint
   create-github-release:
     if: github.ref == 'refs/heads/master'
     needs: [test-server, lint-openapi-spec]

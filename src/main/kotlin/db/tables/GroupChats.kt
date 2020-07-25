@@ -2,74 +2,40 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.db.tables.GroupChats.MAX_PIC_BYTES
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
- * Pics cannot exceed [MAX_PIC_BYTES].
+ * Pics cannot exceed [Pics.MAX_PIC_BYTES].
  *
  * @see [GroupChatUsers]
  * @see [Messages]
- * @see [TypingStatuses]
- * @see [Chats]
  */
 object GroupChats : Table() {
     override val tableName get() = "group_chats"
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
-    private val adminId: Column<Int> = integer("admin_id").references(Users.id)
-
-    /** Titles cannot exceed this length. */
     const val MAX_TITLE_LENGTH = 70
-
     private val title: Column<String> = varchar("title", MAX_TITLE_LENGTH)
-
-    /** Descriptions cannot exceed this length. */
     const val MAX_DESCRIPTION_LENGTH = 1000
-
     private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
-
-    /** The pic cannot exceed 100 KiB. */
-    const val MAX_PIC_BYTES = 100 * 1024
-
-    private val pic: Column<ByteArray?> = binary("pic", MAX_PIC_BYTES).nullable()
-
-    /** Whether the [userId] is the admin of [chatId] (assumed to exist). */
-    fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
-        select { GroupChats.id eq chatId }.first()[adminId] == userId
-    }
-
-    /**
-     * Sets the [userId] as the admin of the [chatId]. A
-     *
-     * @throws [IllegalArgumentException] if the [userId] isn't in the chat.
-     */
-    fun setAdmin(chatId: Int, userId: Int) {
-        val userIdList = GroupChatUsers.readUserIdList(chatId)
-        if (userId !in userIdList)
-            throw IllegalArgumentException("The new admin (ID: $userId) isn't in the chat (users: $userIdList).")
-        transaction {
-            update({ GroupChats.id eq chatId }) { it[adminId] = userId }
-        }
-    }
+    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
 
     /**
      * Returns the [chat]'s ID after creating it.
      *
-     * [Broker.notify]s the [NewGroupChat.userIdList], excluding the admin, of the [NewGroupChat] via
-     * [newGroupChatsBroker].
+     * [Broker.notify]s the [GroupChatInput.userIdList] of the [GroupChatId] via [newGroupChatsBroker].
      */
-    fun create(adminId: Int, chat: NewGroupChat): Int {
+    fun create(chat: GroupChatInput): Int {
         val chatId = transaction {
             insert {
                 it[id] = Chats.create()
-                it[this.adminId] = adminId
                 it[title] = chat.title.value
                 it[description] = chat.description.value
             }[GroupChats.id]
         }
-        GroupChatUsers.addUsers(chatId, chat.userIdList + adminId)
-        newGroupChatsBroker.notify(GroupChatId(chatId)) { it.userId in chat.userIdList - adminId }
+        GroupChatUsers.addUsers(chatId, chat.userIdList)
+        GroupChatUsers.makeAdmins(chatId, chat.adminIdList)
         return chatId
     }
 
@@ -104,76 +70,48 @@ object GroupChats : Table() {
         GroupChatUsers.readChatIdList(userId).map { readChat(userId, it, usersPagination, messagesPagination) }
     }
 
-    /**
-     * [update]s the chat.
-     *
-     * Users in the [GroupChatUpdate.newUserIdList] who are already in the chat are ignored.
-     *
-     * Users in the [GroupChatUpdate.removedUserIdList] who aren't in the chat are ignored. Removed users will be
-     * [Broker.unsubscribe]d via [updatedChatsBroker]. The chat is deleted if every user is removed.
-     *
-     * A [UpdatedGroupChat] is sent to clients who have [Broker.subscribe]d via [updatedChatsBroker]. Clients who have
-     * [Broker.subscribe]d via [newGroupChatsBroker] will be [Broker.notify]d of the [GroupChat].
-     *
-     * @see [GroupChatUsers.addUsers]
-     * @see [GroupChatUsers.removeUsers]
-     * @see [updateTitleAndDescription]
-     * @see [updatePic]
-     */
-    fun update(update: GroupChatUpdate) {
-        val existingUserIdList = GroupChatUsers.readUserIdList(update.chatId)
-        val removedUserIdList =
-            if (update.removedUserIdList == null) null
-            else update.removedUserIdList.intersect(existingUserIdList).toList()
-        if (removedUserIdList != null) {
-            GroupChatUsers.removeUsers(update.chatId, removedUserIdList)
-            if (removedUserIdList.containsAll(existingUserIdList)) return
+    /** [Broker.notify]s [Broker.subscribe]rs of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    fun updateTitle(chatId: Int, title: GroupChatTitle) {
+        transaction {
+            update({ GroupChats.id eq chatId }) { it[this.title] = title.value }
         }
-        updateTitleAndDescription(update)
-        with(update) { if (newAdminId != null) setAdmin(chatId, newAdminId) }
-        val newUserIdList = if (update.newUserIdList == null) null else update.newUserIdList - existingUserIdList
-        if (newUserIdList != null) {
-            GroupChatUsers.addUsers(update.chatId, newUserIdList)
-            newGroupChatsBroker.notify(GroupChatId(update.chatId)) { it.userId in newUserIdList }
+        updatedChatsBroker.notify(UpdatedGroupChat(chatId, title)) { isUserInChat(it.userId, chatId) }
+    }
+
+    /** [Broker.notify]s [Broker.subscribe]rs of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    fun updateDescription(chatId: Int, description: GroupChatDescription) {
+        transaction {
+            update({ GroupChats.id eq chatId }) { it[this.description] = description.value }
         }
-        val chat =
-            update.copy(newUserIdList = newUserIdList, removedUserIdList = removedUserIdList).toUpdatedGroupChat()
-        updatedChatsBroker.notify(chat) { isUserInChat(it.userId, update.chatId) }
+        updatedChatsBroker
+            .notify(UpdatedGroupChat(chatId, description = description)) { isUserInChat(it.userId, chatId) }
     }
 
     /**
-     * [update]s the [GroupChatUpdate.chatId]'s title and description if they aren't `null`.
-     *
-     * @see [GroupChats.update]
-     */
-    private fun updateTitleAndDescription(update: GroupChatUpdate): Unit = transaction {
-        update({ GroupChats.id eq update.chatId }) { statement ->
-            update.title?.let { statement[title] = it.value }
-            update.description?.let { statement[description] = it.value }
-        }
-    }
-
-    /**
-     * Deletes the [pic] if it's `null`. [Broker.subscribe]rs will be [Broker.notify]d of the [UpdatedGroupChat].
+     * Deletes the [pic] if it's `null`. [updatedChatsBroker] [Broker.subscribe]rs will be [Broker.notify]d of the
+     * [UpdatedGroupChat].
      *
      * @see [update]
      */
-    fun updatePic(chatId: Int, pic: ByteArray?) {
+    fun updatePic(chatId: Int, pic: Pic?) {
         transaction {
-            update({ GroupChats.id eq chatId }) { it[this.pic] = pic }
+            val op = GroupChats.id eq chatId
+            update({ op }) { it[this.picId] = null }
+            val picId = select(op).first()[picId]
+            update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
         updatedChatsBroker.notify(UpdatedGroupChat(chatId)) { isUserInChat(it.userId, chatId) }
     }
 
-    fun readPic(chatId: Int): ByteArray? = transaction {
-        select { GroupChats.id eq chatId }.first()[pic]
-    }
+    fun readPic(chatId: Int): Pic? = transaction {
+        select { GroupChats.id eq chatId }.first()[picId]
+    }?.let(Pics::read)
 
     /**
      * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who
      * have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
      *
-     * @throws [IllegalArgumentException] if the [chatId] has users in it.
+     * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
     fun delete(chatId: Int) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
@@ -216,19 +154,12 @@ object GroupChats : Table() {
         messagesPagination: BackwardPagination? = null
     ): GroupChat = GroupChat(
         chatId,
-        row[adminId],
+        GroupChatUsers.readAdminIdList(chatId),
         GroupChatUsers.readUsers(chatId, usersPagination),
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
         Messages.readGroupChatConnection(userId, chatId, messagesPagination)
     )
-
-    /** Whether the [userId] is the admin of a group chat containing members other than themselves. */
-    fun isNonemptyChatAdmin(userId: Int): Boolean = readUserChats(
-        userId,
-        usersPagination = ForwardPagination(first = 2),
-        messagesPagination = BackwardPagination(last = 0)
-    ).filter { it.users.edges.size > 1 }.map { it.adminId }.contains(userId)
 
     /**
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the

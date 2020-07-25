@@ -30,10 +30,10 @@ class ContactsTest : FunSpec({
     context("delete(String, List<String>)") {
         test(
             """
-                Given saved contacts, duplicate contacts, unsaved contacts, and invalid contacts,
-                when the subscriber deletes them,
-                then they should only be notified of the deletion of unique saved contacts
-                """
+            Given saved contacts, duplicate contacts, unsaved contacts, and invalid contacts,
+            when the subscriber deletes them,
+            then they should only be notified of the deletion of unique saved contacts
+            """
         ) {
             val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
             Contacts.create(ownerId, setOf(contact1Id, contact2Id))

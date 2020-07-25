@@ -20,21 +20,30 @@ Here are examples of existing chat systems that we can replace even though they 
 
 These systems may seem to be highly specialized and out of our reach. However, this isn't the case. These chat systems have embedded components. Our embeddable chat system could be used in their place. Since our app integrates with bots, and can make buttons, we can easily have our system embedded into the same sites and provide the same features. Since our app doesn't require logging in, even people without accounts can easily use it. However, if you are logged in, you'll be able to chat with the Swiggy bot even on your other devices because the chat will be saved to your account.
 
+Many times you only want to switch on notifications for important chats. The user will be able to switch on notifications only for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
+
 Certain systems (e.g., Twitter DMs) will exist even if our app is a success because the creators of those services want to roll their own. The creators of those services will not use our app because they want to be "different" from the other services, even though they'll only build a suboptimal system. We can only hope that users on such platforms will prefer to exchange usernames to chat on our platform.
 
-The core software will be open source so that user requiring libre software (e.g., open source enthusiasts, organizations requiring data to be hosted on their servers) will be able to use the service. Although you can host your own instance, there will be the default free public instance nontechnical users, or people who are just trying it out, use.
+The core software will be open source so that user requiring FOSS (e.g., open source enthusiasts, organizations requiring data to be hosted on their servers) will be able to use the service. Although you can host your own instance, there will be the default free public instance nontechnical users, or people who are just trying it out, use.
 
 ## Features
 
 Checkboxes indicate which features have been implemented.
+
+Since this repo is for the backend, here are recommendations for a frontend dev:
+- Messages consisting solely of a single emoji will have the emoji enlarged.
+- You can require a password or biometric to unlock the app.
+- Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
+- Allow users to create record audio in-app.
+- When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab.
 
 ### Free
 
 Features must be free if they are a unique selling point, are useful for the average user, or if they're already free in another popular service (e.g., video-mail in Google Duo).
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that no one takes seriously.
-- [x] Private chats.
-- [x] Group chats.
+- [x] Private chats. These are for conversations between two people, like you and your friend.
+- [x] Group chats with multiple admins. These are for groups of people, like your school class's chat.
 - [x] See who else is in the group.
 - [x] Group descriptions and icons.
 - [x] See whether someone's typing.
@@ -48,38 +57,28 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Every message has the date and time it was sent, delivered, and read.
 - [x] Delete messages.
 - [x] Star messages.
-- [ ] The group chat's creator is the admin. There can only be one admin in a chat. If the admin decides to leave the chat, they will have to appoint a member to become the admin once they leave (unless they are the only member left). Regular users can only send messages. Moderators can do everything a regular user can do, add/remove users/bots, and update the chat's title/description. Admins can do everything a moderator can do in addition to add/remove moderators, and delete the chat. The admin can make everyone in the chat a moderator if they wish it.
-- [ ] You'll be able to switch on notifications for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
-- [ ] API for integrations (e.g., bots).
-- [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
-- [ ] If a bot messages a user, and the user has never messaged the bot, it'll come up in a section separate to the regular chats. This bot's chat will only be moved to the accepted chats if the user allows it. Otherwise, bots will spam users.
-- [ ] Although we allow users to set only particular chats' notifications on, it still won't be enough to know if there's an important message from a particular chat. For example, your mom might only text you occasionally - half the time it's important, and half the time she's just sharing a joke. To deal with this case, we'll have each message associated with a priority. The priorities are:
-    - Urgent: Needs attention within a minute (e.g., you need help to fill out a time-sensitive bank form). Such messages could have a phone vibrate three times.
-    - Important: Needs attention within an hour (e.g., you need to know what the HW assignment is, so I can start before I go to bed). Such messages could have a phone vibrate twice.
-    - Useful: Need attention within this day (e.g., you need to schedule a meeting for tomorrow; can be scheduled any time today). Such messages could have a phone vibrate once.
-    - Default: Doesn't need attention within this day. Such messages could have a phone not vibrate.
-    
-    By default, messages get sent with the _Default_ priority to not waste time picking priorities on every text. By default, priorities will be honored. If the user finds other user's ideas of priority incorrect, then they can choose to ignore priorities associated with messages for all chats, individual chats, or all users except handpicked chats.
-- [ ] See saved contacts from both people you've chatted with, and people you've saved but haven't yet chatted with. For example, your phone book or mail book might automatically find contacts which are on the service by searching and saving them for you via searching their phone numbers or emails if they're listed publicly. 
-- [ ] Search users based on their public information. For example, if a user's phone number and email is public, you can see if your friend is on the service using that in the case that you don't know their username. Useful information can be displayed publicly, such as an organization they went to (e.g., you can search users using Google or Stanford as an organization filter if they went/go there).
-- [ ] Forum chats.
-- [ ] Pinned messages.
-- [ ] Search for chats (e.g., official Android chat, random groups individuals have created).
-- [ ] Archive chats.
-- [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
+- [x] Markdown support.
+- [x] Reply to a message to prevent context loss.
+- [ ] Broadcast groups where only admins can send messages. This is for group chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
+- Message types:
+    - [ ] Audio
+    - [ ] Polls
+    - [ ] Contacts
+    - [ ] Locations
+    - [ ] Live locations for a specified duration
+    - [ ] Pictures
+    - [ ] Videos
+    - [ ] Memoji
+    - [ ] Stickers
+    - [ ] Any file type
+- [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
+- [ ] E2E Encryption.
+- [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] By default, group chats disallow anonymous users, and users without an account.
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
-- [ ] You can toggle between online and offline mode. Messages and calls will send via your SIM card offline. Similar to how FaceTime and iMessage makes calls and messages free by converting SIM usages to internet messages under the hood, we could provide free offline (SIM use) services.
-- [ ] Background noise cancellation for an audio or video call. This needs to be free so that people like homemakers will prefer it over WhatsApp's shitty service.
-- [ ] Make it a federated chat system so that you can chat with people on other instances. Let's say that there are two instances, `instance1` and `instance2`. `instance1` has two users, `black` and `gray`. `instance2` has a  user `pink`. If `blue` wanted to message `gray`, `blue` could either specify `gray`'s username as `@instance1/gray` or `@gray`. If `blue` wanted to message `purple`, `blue` would have to specify `purple`'s username as `@instance2/purple`.
+- [ ] Background noise cancellation for an audio or video call.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
-- [ ] Easily switch between multiple accounts.
-- [ ] Markdown support.
-- [ ] Emoji will be larger than usual if the entire message is a single emoji.
-- [ ] Reply to a message so that the context isn't lost.
-- [ ] Send drawings, contacts, locations, live locations for a specified duration, audio recordings, photos, videos, polls, memoji, stickers, and any type of file.
-- [ ] Polls.
 - [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.
 - [ ] Spatial audio calls (important for gamers).
@@ -87,23 +86,18 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [ ] Video calls with multiple people.
 - [ ] Filters on video calls. The others will be able to see which filter you're using.
 - [ ] Screen sharing.
-- [ ] Have add-ons for video calls like games, and bunny ear effects.
+- [ ] Have add-ons for video calls like games, and bunny ear effects. Developers can create their own add-ons.
 - [ ] Allow instances to pick one of the following access types.
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
     - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
-- [ ] Allow people you don't know to not directly contact you (i.e., they will go to an "Invites" tab where you'll have to go to allow, ignore, or block them).
 - [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
+- [ ] API for integrations (e.g., bots).
+- [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
+- [ ] If a bot messages a user, and the user has never messaged the bot, it'll come up in a section separate to the regular chats. This bot's chat will only be moved to the accepted chats if the user allows it. Otherwise, bots will spam users.
 - [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.
-- [ ] Encryption.
-- [ ] Report someone.
-- [ ] Share as much, or as little, information as you want. You can share your address, phone, email, profile photo, etc. You can choose who can see what info. If a bot is messaging you, it'll have to ask for permissions for every type of data it wants to access.
 - [ ] Chat without an account.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
-- [ ] Incognito chats whose messages automatically disappear after a set amount of time, or shortly after the user reads them.
-- [ ] Choose who can see when you were last online, or whether they saw your message.
-- [ ] You can toggle chat history so that it automatically gets deleted in a particular manner (e.g., new participants can't see old messages).
-- [ ] App-wide, and chat-specific lock. You will need to enter a password or biometric to unlock the app or chat.
 - [ ] Run a production instance taking care of the following:
     - [ ] Automate backups.
     - [ ] Don't run images as the `root` user.
