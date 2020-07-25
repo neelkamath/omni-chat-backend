@@ -42,8 +42,8 @@ Since this repo is for the backend, here are recommendations for a frontend dev:
 Features must be free if they are a unique selling point, are useful for the average user, or if they're already free in another popular service (e.g., video-mail in Google Duo).
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that no one takes seriously.
-- [x] Private chats.
-- [x] Group chats with multiple admins.
+- [x] Private chats. These are for conversations between two people, like you and your friend.
+- [x] Group chats with multiple admins. These are for groups of people, like your school class's chat.
 - [x] See who else is in the group.
 - [x] Group descriptions and icons.
 - [x] See whether someone's typing.
@@ -59,7 +59,7 @@ Features must be free if they are a unique selling point, are useful for the ave
 - [x] Star messages.
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
-- [ ] Broadcast groups where only admins can send messages. This way you don't need to worry about spam from hundreds of imbeciles asking repetitive questions.
+- [ ] Broadcast groups where only admins can send messages. This is for group chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
 - Message types:
     - [ ] Audio
     - [ ] Polls
@@ -71,7 +71,7 @@ Features must be free if they are a unique selling point, are useful for the ave
     - [ ] Memoji
     - [ ] Stickers
     - [ ] Any file type
-- [ ] Forum chats.
+- [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
 - [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] By default, group chats disallow anonymous users, and users without an account.
