@@ -30,6 +30,8 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
     @Suppress("unused")
     val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
 
+    val isBroadcast: Boolean
+
     init {
         val chat = GroupChats.readChat(
             userId,
@@ -39,6 +41,7 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
         )
         title = chat.title
         description = chat.description
+        isBroadcast = chat.isBroadcast
     }
 
     @Suppress("unused")

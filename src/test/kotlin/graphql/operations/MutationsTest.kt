@@ -15,6 +15,24 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.ktor.http.HttpStatusCode
+
+const val SET_BROADCAST_STATUS_QUERY = """
+    mutation SetBroadcastStatus(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
+        setBroadcastStatus(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
+    }
+"""
+
+private fun operateSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_BROADCAST_STATUS_QUERY, mapOf("chatId" to chatId, "isBroadcast" to isBroadcast), userId)
+
+fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
+    val data = operateSetBroadcastStatus(userId, chatId, isBroadcast).data!!["setBroadcastStatus"] as String
+    return objectMapper.convertValue(data)
+}
+
+fun errSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): String =
+    operateSetBroadcastStatus(userId, chatId, isBroadcast).errors!![0].message
 
 const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
     mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
@@ -235,21 +253,21 @@ const val CREATE_MESSAGE_QUERY = """
 private fun operateCreateMessage(
     userId: Int,
     chatId: Int,
-    message: TextMessage,
+    text: TextMessage,
     contextMessageId: Int? = null
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_MESSAGE_QUERY,
-    mapOf("chatId" to chatId, "text" to message, "contextMessageId" to contextMessageId),
+    mapOf("chatId" to chatId, "text" to text, "contextMessageId" to contextMessageId),
     userId
 )
 
-fun createMessage(userId: Int, chatId: Int, message: TextMessage, contextMessageId: Int? = null): Placeholder {
-    val data = operateCreateMessage(userId, chatId, message, contextMessageId).data!!["createMessage"] as String
+fun createMessage(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int? = null): Placeholder {
+    val data = operateCreateMessage(userId, chatId, text, contextMessageId).data!!["createMessage"] as String
     return objectMapper.convertValue(data)
 }
 
-fun errCreateMessage(userId: Int, chatId: Int, message: TextMessage, contextMessageId: Int? = null): String =
-    operateCreateMessage(userId, chatId, message, contextMessageId).errors!![0].message
+fun errCreateMessage(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int? = null): String =
+    operateCreateMessage(userId, chatId, text, contextMessageId).errors!![0].message
 
 const val CREATE_PRIVATE_CHAT_QUERY = """
     mutation CreatePrivateChat(${"$"}userId: Int!) {
@@ -398,6 +416,32 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
     operateUpdateAccount(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("setBroadcastStatus(DataFetchingEnvironment)") {
+        test("Only an admin should be allowed to set the broadcast status") {
+            val (admin, user) = createVerifiedUsers(2)
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
+            executeGraphQlViaHttp(
+                SET_BROADCAST_STATUS_QUERY,
+                mapOf("chatId" to chatId, "isBroadcast" to true),
+                user.accessToken
+            ).status() shouldBe HttpStatusCode.Unauthorized
+        }
+
+        test("The user shouldn't be allowed to update a chat they aren't in") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            errSetBroadcastStatus(userId, chatId, isBroadcast = true) shouldBe InvalidChatIdException.message
+        }
+
+        test("The broadcast status should be updated") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val isBroadcast = true
+            setBroadcastStatus(adminId, chatId, isBroadcast)
+            GroupChats.readChat(adminId, chatId).isBroadcast shouldBe isBroadcast
+        }
+    }
+
     context("makeGroupChatAdmins(DataFetchingEnvironment)") {
         test("Making a user who isn't in the chat an admin should fail") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
@@ -605,7 +649,8 @@ class MutationsTest : FunSpec({
                 "title" to "Title",
                 "description" to "description",
                 "userIdList" to listOf(user1Id, user2Id),
-                "adminIdList" to listOf<Int>()
+                "adminIdList" to listOf<Int>(),
+                "isBroadcast" to false
             )
             val chatId = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
                 .data!!["createGroupChat"] as Int
@@ -625,7 +670,8 @@ class MutationsTest : FunSpec({
                 GroupChatTitle("T"),
                 GroupChatDescription(""),
                 userIdList = listOf(userId, invalidUserId),
-                adminIdList = listOf(userId)
+                adminIdList = listOf(userId),
+                isBroadcast = false
             )
             errCreateGroupChat(userId, chat) shouldBe InvalidUserIdException.message
         }
@@ -636,7 +682,8 @@ class MutationsTest : FunSpec({
                 "title" to "Title",
                 "description" to "description",
                 "userIdList" to listOf<Int>(),
-                "adminIdList" to listOf(user2Id)
+                "adminIdList" to listOf(user2Id),
+                "isBroadcast" to false
             )
             executeGraphQlViaEngine(
                 CREATE_GROUP_CHAT_QUERY,
@@ -683,6 +730,23 @@ class MutationsTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId))
             errCreateMessage(adminId, chatId, TextMessage("t"), contextMessageId = 1) shouldBe
                     InvalidMessageIdException.message
+        }
+
+        test("A non-admin shouldn't be allowed to message in a broadcast chat") {
+            val (admin, user) = createVerifiedUsers(2)
+            val chat = GroupChatInput(
+                GroupChatTitle("T"),
+                GroupChatDescription(""),
+                userIdList = listOf(admin.info.id, user.info.id),
+                adminIdList = listOf(admin.info.id),
+                isBroadcast = true
+            )
+            val chatId = GroupChats.create(chat)
+            executeGraphQlViaHttp(
+                CREATE_MESSAGE_QUERY,
+                mapOf("chatId" to chatId, "text" to "Hi"),
+                user.accessToken
+            ).status() shouldBe HttpStatusCode.Unauthorized
         }
     }
 

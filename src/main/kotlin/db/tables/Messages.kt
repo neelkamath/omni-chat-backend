@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.*
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -56,13 +53,30 @@ object Messages : IntIdTable() {
     private enum class Chronology { BEFORE, AFTER }
 
     /**
+     * Returns whether the [chatId] is a broadcast group with the [userId] as an admin. It's assumed the [userId] is in
+     * the [chatId]. The [chatId] needn't be a broadcast group.
+     */
+    fun isInvalidBroadcast(userId: Int, chatId: Int): Boolean {
+        if (chatId in PrivateChats.readIdList(userId)) return false
+        val isBroadcast = GroupChats.readChat(
+            userId,
+            chatId,
+            usersPagination = ForwardPagination(first = 0),
+            messagesPagination = BackwardPagination(last = 0)
+        ).isBroadcast
+        return isBroadcast && !GroupChatUsers.isAdmin(userId, chatId)
+    }
+
+    /**
      * Clients who have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will be notified.
      *
-     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
     fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
+        if (isInvalidBroadcast(userId, chatId))
+            throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
         val row = transaction {
             insert {
                 it[this.chatId] = chatId

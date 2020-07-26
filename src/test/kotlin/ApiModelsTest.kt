@@ -14,7 +14,9 @@ class GroupChatInputTest : FunSpec({
                     GroupChatTitle("T"),
                     GroupChatDescription(""),
                     userIdList = listOf(1),
-                    adminIdList = listOf()
+                    adminIdList = listOf(),
+                    isBroadcast = false
+
                 )
             }
         }
@@ -25,7 +27,8 @@ class GroupChatInputTest : FunSpec({
                     GroupChatTitle("T"),
                     GroupChatDescription(""),
                     userIdList = listOf(1),
-                    adminIdList = listOf(1, 2)
+                    adminIdList = listOf(1, 2),
+                    isBroadcast = false
                 )
             }
         }

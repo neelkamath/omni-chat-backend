@@ -9,6 +9,19 @@ import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
 class GroupChatsTest : FunSpec({
+    context("setBroadcastStatus(Int, Boolean)") {
+        test("Only participants should be notified of the status update") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
+                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            val isBroadcast = true
+            GroupChats.setBroadcastStatus(chatId, isBroadcast)
+            adminSubscriber.assertValue(UpdatedGroupChat(chatId, isBroadcast = isBroadcast))
+            userSubscriber.assertNoValues()
+        }
+    }
+
     context("create(GroupChatInput") {
         test("Creating a chat should only notify participants") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
@@ -103,7 +116,8 @@ class GroupChatsTest : FunSpec({
                     GroupChatTitle(it),
                     GroupChatDescription(""),
                     userIdList = listOf(adminId),
-                    adminIdList = listOf(adminId)
+                    adminIdList = listOf(adminId),
+                    isBroadcast = false
                 )
                 GroupChats.create(chat)
             }

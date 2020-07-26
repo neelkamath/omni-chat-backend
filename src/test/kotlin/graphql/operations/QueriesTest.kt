@@ -836,7 +836,8 @@ fun testMessagesPagination(operation: MessagesOperationName) {
         GroupChatTitle("T"),
         GroupChatDescription(""),
         userIdList = listOf(adminId),
-        adminIdList = listOf(adminId)
+        adminIdList = listOf(adminId),
+        isBroadcast = false
     )
     val chatId = GroupChats.create(chat)
     val text = TextMessage("t")
@@ -875,7 +876,13 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
-    val groupChat = GroupChatInput(GroupChatTitle("T"), GroupChatDescription(""), userIdList + adminId, listOf(adminId))
+    val groupChat = GroupChatInput(
+        GroupChatTitle("T"),
+        GroupChatDescription(""),
+        userIdList = userIdList + adminId,
+        adminIdList = listOf(adminId),
+        isBroadcast = false
+    )
     val chatId = GroupChats.create(groupChat)
     val text = "text"
     Messages.create(adminId, chatId, TextMessage(text))
