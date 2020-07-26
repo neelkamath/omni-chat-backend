@@ -47,6 +47,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("deletePrivateChat", ::deletePrivateChat)
     .dataFetcher("createPrivateChat", ::createPrivateChat)
     .dataFetcher("createMessage", ::createMessage)
+    .dataFetcher("setBroadcastStatus", ::setBroadcastStatus)
     .dataFetcher("star", ::star)
     .dataFetcher("deleteContacts", ::deleteContacts)
     .dataFetcher("createContacts", ::createContacts)

@@ -158,7 +158,8 @@ data class GroupChatInput(
     val title: GroupChatTitle,
     val description: GroupChatDescription,
     val userIdList: List<Int>,
-    val adminIdList: List<Int>
+    val adminIdList: List<Int>,
+    val isBroadcast: Boolean
 ) {
     init {
         if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
@@ -220,7 +221,8 @@ data class UpdatedGroupChat(
     val description: GroupChatDescription? = null,
     val newUsers: List<Account>? = null,
     val removedUsers: List<Account>? = null,
-    val adminIdList: List<Int>? = null
+    val adminIdList: List<Int>? = null,
+    val isBroadcast: Boolean? = null
 ) : UpdatedChatsSubscription {
     init {
         if (newUsers != null && removedUsers != null) {
@@ -268,7 +270,8 @@ data class GroupChat(
     val users: AccountsConnection,
     val title: GroupChatTitle,
     val description: GroupChatDescription,
-    override val messages: MessagesConnection
+    override val messages: MessagesConnection,
+    val isBroadcast: Boolean
 ) : Chat
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)

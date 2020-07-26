@@ -35,32 +35,32 @@ Since this repo is for the backend, here are recommendations for a frontend dev:
 - You can require a password or biometric to unlock the app.
 - Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
 - Allow users to create record audio in-app.
-- When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab.
+- When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
 
 ### Free
 
-Features must be free if they are a unique selling point, are useful for the average user, or if they're already free in another popular service (e.g., video-mail in Google Duo).
+Features must be free if they're a unique selling point, are useful for the average user, or if they're already free in another popular service (e.g., video-mail in Google Duo).
 
-- [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that no one takes seriously.
+- [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that you have to constantly update, and no one takes seriously.
 - [x] Private chats. These are for conversations between two people, like you and your friend.
-- [x] Group chats with multiple admins. These are for groups of people, like your school class's chat.
-- [x] See who else is in the group.
-- [x] Group descriptions and icons.
-- [x] See whether someone's typing.
-- [x] Unlimited people per group.
+- [x] See who's typing in the chat.
 - [x] See when someone's online, or when they were last online.
-- [x] Search chat.
-- [x] If you are added to a group chat, or are added back to a group chat after leaving it, you'll be able to see the entire chat's history.
-- [x] If you leave a group chat, your messages will remain in the chat until you delete your account, or join the group chat again to delete them.
+- [x] Search the chat.
 - [x] When a private chat gets deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved when requesting their chats. However, the user they were chatting with will still have the chat in the same state it was in before the user deleted it. If the other user sends a message to the user, it will show up as the first message in the user's chat.
-- [x] We'll have unlimited chat history so that new participants don't miss older messages.
-- [x] Every message has the date and time it was sent, delivered, and read.
+- [x] Every message has the date and time it was sent, delivered, and read for each user.
 - [x] Delete messages.
 - [x] Star messages.
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
-- [ ] Broadcast groups where only admins can send messages. This is for group chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
+- Group chats, like your school class's chat.
+    - [x] Multiple admins.
+    - [x] If you are added to a chat, or are added back to a chat after leaving it, you'll be able to see the entire chat's history so that new participants don't miss older messages.
+    - [x] If you leave a chat, your messages will remain in the chat until you delete your account, or join the chat again to delete them.
+    - [x] Descriptions and icons.
+    - [x] Unlimited participants.
+    - [x] Have an option to only allow admins to message. This option can be turned on or off any number of times. This is for group chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
 - Message types:
+    - [x] Text
     - [ ] Audio
     - [ ] Polls
     - [ ] Contacts
@@ -73,11 +73,10 @@ Features must be free if they are a unique selling point, are useful for the ave
     - [ ] Any file type
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
-- [ ] Search for chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
-- [ ] By default, group chats disallow anonymous users, and users without an account.
+- [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
-- [ ] Background noise cancellation for an audio or video call.
+- [ ] Background noise cancellation for an audio and video calls.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
 - [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.
@@ -91,12 +90,8 @@ Features must be free if they are a unique selling point, are useful for the ave
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
     - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
-- [ ] Allow certain people (e.g., family, friends) to always see your live location (or at least during certain preconfigured times).
 - [ ] API for integrations (e.g., bots).
-- [ ] Bots can have buttons so that integrations can execute code easily. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
-- [ ] If a bot messages a user, and the user has never messaged the bot, it'll come up in a section separate to the regular chats. This bot's chat will only be moved to the accepted chats if the user allows it. Otherwise, bots will spam users.
-- [ ] Allow people without an account (or people who have an account who wish to remain anonymous) to message in group chats.
-- [ ] Chat without an account.
+- [ ] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
 - [ ] Run a production instance taking care of the following:
     - [ ] Automate backups.

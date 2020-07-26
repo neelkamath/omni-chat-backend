@@ -26,7 +26,7 @@ fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val saved = Contacts.readIdList(env.userId!!)
     val userIdList = env.getArgument<List<Int>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
-    if (!userIdList.all { Users.exists(it) }) throw InvalidContactException
+    if (!userIdList.all(Users::exists)) throw InvalidContactException
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }
@@ -69,7 +69,8 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
         args["title"] as GroupChatTitle,
         args["description"] as GroupChatDescription,
         userIdList + env.userId!!,
-        adminIdList + env.userId!!
+        adminIdList + env.userId!!,
+        args["isBroadcast"] as Boolean
     )
     return GroupChats.create(chat)
 }
@@ -86,9 +87,19 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
     Messages.create(env.userId!!, chatId, env.getArgument("text"), contextMessageId)
+    return Placeholder
+}
+
+fun setBroadcastStatus(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    GroupChats.setBroadcastStatus(chatId, env.getArgument("isBroadcast"))
     return Placeholder
 }
 
@@ -230,7 +241,7 @@ fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = readGroupChatUpdate(env)
     val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (userIdList.any { !isUserInChat(it, chatId) }) throw InvalidUserIdException
+    if (!userIdList.all { isUserInChat(it, chatId) }) throw InvalidUserIdException
     GroupChatUsers.makeAdmins(chatId, userIdList)
     return Placeholder
 }

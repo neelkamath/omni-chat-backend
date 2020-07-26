@@ -18,6 +18,35 @@ import java.time.LocalDateTime
 class MessagesTest : FunSpec({
     data class CreatedMessage(val creatorId: Int, val message: String)
 
+    context("isInvalidBroadcast(Int, Int)") {
+        test("Messaging in a private chat shouldn't count as an invalid broadcast") {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            Messages.isInvalidBroadcast(user1Id, chatId).shouldBeFalse()
+        }
+
+        test("Admins and users messaging in non-broadcast group chats shouldn't be invalid broadcasts") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            Messages.isInvalidBroadcast(userId, chatId).shouldBeFalse()
+            Messages.isInvalidBroadcast(adminId, chatId).shouldBeFalse()
+        }
+
+        test("Only an admin should be able to message in a broadcast group chat") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chat = GroupChatInput(
+                GroupChatTitle("T"),
+                GroupChatDescription(""),
+                userIdList = listOf(adminId, userId),
+                adminIdList = listOf(adminId),
+                isBroadcast = true
+            )
+            val chatId = GroupChats.create(chat)
+            Messages.isInvalidBroadcast(adminId, chatId).shouldBeFalse()
+            Messages.isInvalidBroadcast(userId, chatId).shouldBeTrue()
+        }
+    }
+
     context("isVisible(Int, String)") {
         test("A nonexistent message shouldn't be said to be visible") {
             val userId = createVerifiedUsers(1)[0].info.id

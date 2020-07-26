@@ -129,6 +129,7 @@ const val GROUP_CHAT_FRAGMENT = """
         messages(last: ${"$"}groupChat_messages_last, before: ${"$"}groupChat_messages_before) {
             $MESSAGES_CONNECTION_FRAGMENT
         }
+        isBroadcast
     }
 """
 

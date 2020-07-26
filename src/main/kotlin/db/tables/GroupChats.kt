@@ -20,6 +20,7 @@ object GroupChats : Table() {
     const val MAX_DESCRIPTION_LENGTH = 1000
     private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
+    private val isBroadcast: Column<Boolean> = bool("is_broadcast")
 
     /**
      * Returns the [chat]'s ID after creating it.
@@ -32,6 +33,7 @@ object GroupChats : Table() {
                 it[id] = Chats.create()
                 it[title] = chat.title.value
                 it[description] = chat.description.value
+                it[isBroadcast] = chat.isBroadcast
             }[GroupChats.id]
         }
         GroupChatUsers.addUsers(chatId, chat.userIdList)
@@ -140,6 +142,15 @@ object GroupChats : Table() {
             .map { buildGroupChat(it, userId, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
+    /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    fun setBroadcastStatus(chatId: Int, isBroadcast: Boolean) {
+        transaction {
+            update({ GroupChats.id eq chatId }) { it[this.isBroadcast] = isBroadcast }
+        }
+        updatedChatsBroker
+            .notify(UpdatedGroupChat(chatId, isBroadcast = isBroadcast)) { isUserInChat(it.userId, chatId) }
+    }
+
     /**
      * Builds the [chatId] from the [row] for the [userId].
      *
@@ -158,7 +169,8 @@ object GroupChats : Table() {
         GroupChatUsers.readUsers(chatId, usersPagination),
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
-        Messages.readGroupChatConnection(userId, chatId, messagesPagination)
+        Messages.readGroupChatConnection(userId, chatId, messagesPagination),
+        row[isBroadcast]
     )
 
     /**

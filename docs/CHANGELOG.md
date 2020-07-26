@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.1
+
+### GraphQL API
+
+- New:
+    - `Mutation.setBroadcastStatus`
+- Updated:
+    - `Mutation.createMessage`
+    - `UpdatedGroupChat` `type`
+    - `GroupChat` `type`
+    - `GroupChatInput` `input`
+
 ## v0.2.0
 
 ### GraphQL API

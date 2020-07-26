@@ -332,6 +332,15 @@ type Mutation {
     createGroupChat(chat: GroupChatInput!): Int!
 
     """
+    Sets whether the `chatId` `isBroadcast`. The user must be an admin to perform this operation.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`).
+
+    You must send an access token with this request.
+    """
+    setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
+
+    """
     Deletes a private chat.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
@@ -351,10 +360,9 @@ type Mutation {
     createPrivateChat(userId: Int!): Int!
 
     """
-    Sends the `text` in the `chatId`.
-
-    The user might want to give their message a context, such as when replying to a message sent several messages ago.
-    In this case, the `contextMessageId` is to be the ID of the message being replied to.
+    Sends the `text` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
+    user might want to give their message a context, such as when replying to a message sent several messages ago. In
+    this case, the `contextMessageId` is to be the ID of the message being replied to.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
     `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist).
@@ -518,6 +526,7 @@ type UpdatedGroupChat {
     newUsers: [Account!]
     removedUsers: [Account!]
     adminIdList: [Int!]
+    isBroadcast: Boolean
 }
 
 """
@@ -657,6 +666,7 @@ type GroupChat implements Chat {
     """The ID of the `users` who are the admins. There will be at least one admin."""
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
+    isBroadcast: Boolean!
 }
 
 type PrivateChat implements Chat {
@@ -776,4 +786,5 @@ input GroupChatInput {
     description: GroupChatDescription!
     userIdList: [Int!]!
     adminIdList: [Int!]!
+    isBroadcast: Boolean!
 }
