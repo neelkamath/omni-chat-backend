@@ -32,7 +32,7 @@ data class Mp3(
     }
 }
 
-/** IDs refer to [Messages.id]s. [AudioMessages] cannot exceed [AudioMessages.MAX_AUDIO_BYTES]. */
+/** IDs refer to [Messages.id]s. */
 object AudioMessages : Table() {
     /** An audio message cannot exceed 1 MiB. */
     const val MAX_AUDIO_BYTES = 1024 * 1024

@@ -59,18 +59,17 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Descriptions and icons.
     - [x] Unlimited participants.
     - [x] Broadcast chats (i.e., only admins can message). This option can be toggled for a chat any time. This is for chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
-- Message types:
+- Messages support any format, and won't be degraded (e.g., pics won't have their resolution lowered like in WhatsApp). Message types:
     - [x] Text
-    - [ ] Audio
+    - [x] Audio
+    - [ ] Pictures
+    - [ ] Any file type
     - [ ] Polls
     - [ ] Contacts
     - [ ] Locations
     - [ ] Live locations for a specified duration
-    - [ ] Pictures
     - [ ] Videos
     - [ ] Memoji
-    - [ ] Stickers
-    - [ ] Any file type
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
 - [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).

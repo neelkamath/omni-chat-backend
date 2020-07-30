@@ -16,11 +16,11 @@ servers:
 tags:
   - name: profilePic
   - name: groupChatPic
-  - name: status
   - name: audioMessage
+  - name: status
 paths:
   /audio-message:
-    description: Manipulate audio chat messages.
+    description: Create and read audio chat messages.
     get:
       tags: [audioMessage]
       description: Reads an audio message.
@@ -76,7 +76,7 @@ paths:
       security:
         - bearerAuth: []
       requestBody:
-        $ref: '#/components/requestBodies/PicUpdate'
+        $ref: '#/components/requestBodies/Pic'
       responses:
         '204':
           description: Pic updated.
@@ -107,7 +107,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ChatId'
       requestBody:
-        $ref: '#/components/requestBodies/PicUpdate'
+        $ref: '#/components/requestBodies/Pic'
       responses:
         '204':
           description: Pic updated.
@@ -185,7 +185,7 @@ components:
           encoding:
             pic:
               contentType: audio/mp3
-    PicUpdate:
+    Pic:
       content:
         multipart/form-data:
           schema:
