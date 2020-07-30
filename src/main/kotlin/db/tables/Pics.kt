@@ -62,8 +62,8 @@ data class Pic(
 }
 
 object Pics : IntIdTable() {
-    /** The pic cannot exceed 100 KiB. */
-    const val MAX_PIC_BYTES = 100 * 1024
+    /** The pic cannot exceed 1 MiB. */
+    const val MAX_PIC_BYTES = 1024 * 1024
 
     private val bytes: Column<ByteArray> = binary("bytes", MAX_PIC_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(

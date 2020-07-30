@@ -1,18 +1,15 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.Stargazers
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.db.tables.*
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
 typealias Cursor = Int
 
-enum class InvalidGroupChatPicReason { NONEXISTENT_CHAT, PIC_TOO_BIG }
-
-data class InvalidGroupChatPic(val reason: InvalidGroupChatPicReason)
+data class InvalidFileUpload(val reason: Reason) {
+    enum class Reason { INVALID_CHAT_ID, INVALID_FILE }
+}
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't lowercase, isn't shorter than 256 characters, or
@@ -96,9 +93,13 @@ data class Account(
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
 
+enum class MessageType { TEXT, AUDIO }
+
 interface BareMessage {
+    val messageId: Int
+    val messageType: MessageType
+    val text: TextMessage?
     val sender: Account
-    val text: TextMessage
     val dateTimes: MessageDateTimes
     val context: MessageContext
 }
@@ -173,14 +174,14 @@ data class GroupChatInput(
 interface UpdatedChatsSubscription
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[Messages.MAX_TEXT_LENGTH] characters with at
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[TextMessages.MAX_TEXT_LENGTH] characters with at
  * least one non-whitespace.
  */
 data class TextMessage(val value: String) {
     init {
-        if (value.trim().isEmpty() || value.length > Messages.MAX_TEXT_LENGTH)
+        if (value.trim().isEmpty() || value.length > TextMessages.MAX_TEXT_LENGTH)
             throw IllegalArgumentException(
-                "The text must be 1-${Messages.MAX_TEXT_LENGTH} characters, with at least one non-whitespace."
+                "The text must be 1-${TextMessages.MAX_TEXT_LENGTH} characters, with at least one non-whitespace."
             )
     }
 }
@@ -279,42 +280,63 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
 interface MessageData : BareMessage {
+    override val messageId: Int
     val chatId: Int
-    val messageId: Int
+    override val messageType: MessageType
+    override val text: TextMessage?
+}
+
+data class Message(
+    override val messageId: Int,
+    override val messageType: MessageType,
+    override val text: TextMessage?,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    val hasStar: Boolean,
+    override val context: MessageContext
+) : BareMessage {
+    fun toNewMessage(): NewMessage =
+        NewMessage(messageId, Messages.readChatFromMessage(messageId), messageType, text, sender, dateTimes, context)
+
+    fun toUpdatedMessage(): UpdatedMessage = UpdatedMessage(
+        messageId,
+        Messages.readChatFromMessage(messageId),
+        messageType,
+        text,
+        sender,
+        dateTimes,
+        hasStar,
+        context
+    )
+
+    companion object {
+        /** The [userId] the [Message] is for. */
+        fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
+            Message(messageId, messageType, text, sender, dateTimes, Stargazers.hasStar(userId, messageId), context)
+        }
+    }
 }
 
 data class StarredMessage(
-    override val chatId: Int,
     override val messageId: Int,
+    override val chatId: Int,
+    override val messageType: MessageType,
+    override val text: TextMessage?,
     override val sender: Account,
-    override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext
 ) : MessageData {
     companion object {
         fun build(messageId: Int): StarredMessage = with(Messages.readBareMessage(messageId)) {
-            StarredMessage(Messages.readChatFromMessage(messageId), messageId, sender, text, dateTimes, context)
-        }
-    }
-}
-
-data class Message(
-    val id: Int,
-    override val sender: Account,
-    override val text: TextMessage,
-    override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean,
-    override val context: MessageContext
-) : BareMessage {
-    fun toNewMessage(): NewMessage = NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context)
-
-    fun toUpdatedMessage(): UpdatedMessage =
-        UpdatedMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, hasStar, context)
-
-    companion object {
-        /** The [userId] the [Message] is for. */
-        fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
-            Message(messageId, sender, text, dateTimes, Stargazers.hasStar(userId, messageId), context)
+            StarredMessage(
+                messageId,
+                Messages.readChatFromMessage(messageId),
+                messageType,
+                text,
+                sender,
+                dateTimes,
+                context
+            )
         }
     }
 }
@@ -322,24 +344,35 @@ data class Message(
 interface MessagesSubscription
 
 data class NewMessage(
-    override val chatId: Int,
     override val messageId: Int,
+    override val chatId: Int,
+    override val messageType: MessageType,
+    override val text: TextMessage?,
     override val sender: Account,
-    override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext
 ) : MessageData, MessagesSubscription {
     companion object {
-        fun build(id: Int, message: BareMessage): NewMessage =
-            with(message) { NewMessage(Messages.readChatFromMessage(id), id, sender, text, dateTimes, context) }
+        fun build(id: Int, message: BareMessage): NewMessage = with(message) {
+            NewMessage(
+                id,
+                Messages.readChatFromMessage(id),
+                messageType,
+                text,
+                sender,
+                dateTimes,
+                context
+            )
+        }
     }
 }
 
 data class UpdatedMessage(
-    override val chatId: Int,
     override val messageId: Int,
+    override val chatId: Int,
+    override val messageType: MessageType,
+    override val text: TextMessage?,
     override val sender: Account,
-    override val text: TextMessage,
     override val dateTimes: MessageDateTimes,
     val hasStar: Boolean,
     override val context: MessageContext

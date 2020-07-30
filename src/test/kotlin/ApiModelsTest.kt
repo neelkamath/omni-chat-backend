@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.TextMessages
 import com.neelkamath.omniChat.db.tables.Users
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -55,7 +55,7 @@ class TextMessageTest : FunSpec({
         }
 
         test("An exception should be thrown if the value is too long") {
-            val text = CharArray(Messages.MAX_TEXT_LENGTH + 1) { 'a' }.joinToString("")
+            val text = CharArray(TextMessages.MAX_TEXT_LENGTH + 1) { 'a' }.joinToString("")
             shouldThrowExactly<IllegalArgumentException> { TextMessage(text) }
         }
     }

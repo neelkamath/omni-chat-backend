@@ -15,6 +15,7 @@ import java.time.LocalDateTime
 private typealias Filter = Op<Boolean>?
 
 /**
+ * @see [TextMessages]
  * @see [Stargazers]
  * @see [MessageStatuses]
  */
@@ -22,6 +23,12 @@ object Messages : IntIdTable() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
     private val sent: Column<LocalDateTime> = datetime("sent").clientDefault { LocalDateTime.now() }
     private val senderId: Column<Int> = integer("sender_id").references(Users.id)
+    private val type: Column<MessageType> = customEnumeration(
+        name = "type",
+        sql = "message_type",
+        fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("message_type", it) }
+    )
 
     /** Whether this message was in reply to a particular message. */
     private val hasContext: Column<Boolean> = bool("has_context")
@@ -33,11 +40,6 @@ object Messages : IntIdTable() {
      * to was deleted.
      */
     private val contextMessageId: Column<Int?> = integer("context_message_id").references(Messages.id).nullable()
-
-    /** Text messages cannot exceed this length. */
-    const val MAX_TEXT_LENGTH = 10_000
-
-    private val text: Column<String> = varchar("text", MAX_TEXT_LENGTH)
 
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
@@ -68,11 +70,25 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Clients who have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will be notified.
+     * Subscribers will be notified of the [NewMessage] via [messagesBroker].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
-    fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?) {
+    fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId -> TextMessages.create(messageId, text) }
+
+    fun create(userId: Int, chatId: Int, audio: Mp3, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
+            AudioMessages.create(messageId, audio)
+        }
+
+    private fun create(
+        userId: Int,
+        chatId: Int,
+        type: MessageType,
+        contextMessageId: Int?,
+        creator: (messageId: Int) -> Unit
+    ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         if (isInvalidBroadcast(userId, chatId))
@@ -80,17 +96,18 @@ object Messages : IntIdTable() {
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
-                it[this.text] = text.value
                 it[senderId] = userId
+                it[this.type] = type
                 it[hasContext] = contextMessageId != null
                 it[this.contextMessageId] = contextMessageId
             }.resultedValues!![0]
         }
+        creator(row[id].value)
         val message = NewMessage.build(row[id].value, buildMessage(row))
         messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
     }
 
-    /** Case-insensitively [query]s the [chatId]'s messages for the [userId]. */
+    /** Case-insensitively [query]s the [chatId]'s messages as seen by the [userId]. */
     fun searchGroupChat(
         userId: Int,
         chatId: Int,
@@ -116,7 +133,7 @@ object Messages : IntIdTable() {
      * @see [searchPrivateChat]
      */
     private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> =
-        edges.filter { it.node.text.value.contains(query, ignoreCase = true) }
+        edges.filter { it.node.text != null && it.node.text.value.contains(query, ignoreCase = true) }
 
     /**
      * The [chatId]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by the [userId].
@@ -187,12 +204,15 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes the [filter]ed [Messages] in the [chatId] along with their [MessageStatuses] and [Stargazers]. [Messages]
-     * with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`.
+     * Deletes the [filter]ed [Messages] in the [chatId] along with their [TextMessages], [AudioMessages],
+     * [MessageStatuses] and [Stargazers]. [Messages] with [contextMessageId]s of deleted messages will have their
+     * [contextMessageId] set to `null`.
      */
     private fun deleteChatMessages(messageIdList: List<Int>) {
         MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
+        TextMessages.delete(messageIdList)
+        AudioMessages.delete(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
@@ -269,7 +289,7 @@ object Messages : IntIdTable() {
     }
 
     fun exists(id: Int): Boolean = transaction {
-        !select { Messages.id eq id }.empty()
+        select { Messages.id eq id }.empty().not()
     }
 
     /** @see [readMessage] */
@@ -280,8 +300,10 @@ object Messages : IntIdTable() {
     /** @see [readBareMessage] */
     private fun buildMessage(row: ResultRow): BareMessage = object : BareMessage {
         override val sender: Account = readUserById(row[senderId])
-        override val text: TextMessage = TextMessage(row[Messages.text])
-        override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(row[id].value))
+        override val messageId: Int = row[id].value
+        override val messageType: MessageType = row[type]
+        override val text: TextMessage? = if (messageType == MessageType.TEXT) TextMessages.read(messageId) else null
+        override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
         override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
     }
 

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  version: 0.2.1
+  version: 0.3.0
   title: Omni Chat
-  description: Functionality supplementary to the GraphQL API such as image uploading.
+  description: Functionality supplementary to the GraphQL API such as manipulating images and audio files.
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat
@@ -17,9 +17,45 @@ tags:
   - name: profilePic
   - name: groupChatPic
   - name: status
+  - name: audioMessage
 paths:
+  /audio-message:
+    description: Manipulate audio chat messages.
+    get:
+      tags: [audioMessage]
+      description: Reads an audio message.
+      operationId: getAudioMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Audio'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [audioMessage]
+      description: Creates an audio message. If the chat is a broadcast group, then the user must be an admin.
+      operationId: postAudioMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+      requestBody:
+        $ref: '#/components/requestBodies/AudioMessage'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidAudioMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /profile-pic:
-    description: A user's profile pic which doesn't exceed 100 KiB.
+    description: A user's profile pic which doesn't exceed 1 MiB.
     get:
       tags: [profilePic]
       description: Get the user's profile pic.
@@ -54,7 +90,7 @@ paths:
       description: Retrieves the group chat's pic.
       operationId: getGroupChatPic
       parameters:
-        - $ref: '#/components/parameters/GroupChatId'
+        - $ref: '#/components/parameters/ChatId'
       responses:
         '200':
           $ref: '#/components/responses/Pic'
@@ -64,12 +100,12 @@ paths:
           description: The chat doesn't exist.
     patch:
       tags: [groupChatPic]
-      description: Update the group chat's pic. The user must be the admin.
+      description: Update the group chat's pic. The user must be an admin of the chat.
       operationId: patchGroupChatPic
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/GroupChatId'
+        - $ref: '#/components/parameters/ChatId'
       requestBody:
         $ref: '#/components/requestBodies/PicUpdate'
       responses:
@@ -90,37 +126,65 @@ paths:
           description: Healthy.
 components:
   schemas:
-    InvalidGroupChatPicUpdate:
+    InvalidFileUpload:
       type: object
       properties:
         reason:
+          description: An `"INVALID_CHAT_ID"` means the user isn't in the chat. An `"INVALID_FILE"` means the file's
+            type or size was unacceptable.
           type: string
-          enum: [NONEXISTENT_CHAT, PIC_TOO_BIG]
+          enum: [INVALID_CHAT_ID, INVALID_FILE]
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   responses:
-    InvalidGroupChatPicUpdate:
-      description: The group chat's pic couldn't be updated because the chat didn't exist, or the pic was larger than
-        100 KiB.
+    InvalidAudioMessage:
+      description: Couldn't create message.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
+            $ref: '#/components/schemas/InvalidFileUpload'
+    InvalidGroupChatPicUpdate:
+      description: Couldn't update pic.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidFileUpload'
+    Audio:
+      description: An MP3 not exceeding 1 MiB.
+      content:
+        audio/mp3:
+          schema:
+            type: string
+            format: binary
     Pic:
-      description: A PNG or JPEG image not exceeding 100 KiB.
+      description: A PNG or JPEG image not exceeding 1 MiB.
       content:
         image/png, image/jpeg:
           schema:
             type: string
             format: binary
     InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 100 KiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 1 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
+    AudioMessage:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [audio]
+            properties:
+              audio:
+                description: An MP3 not exceeding 1 MiB.
+                type: string
+                format: binary
+          encoding:
+            pic:
+              contentType: audio/mp3
     PicUpdate:
       content:
         multipart/form-data:
@@ -129,7 +193,7 @@ components:
             required: [pic]
             properties:
               pic:
-                description: Must be a PNG or JPEG not exceeding 100 KiB.
+                description: A PNG or JPEG not exceeding 1 MiB.
                 type: string
                 format: binary
           encoding:
@@ -143,10 +207,23 @@ components:
       required: true
       schema:
         type: integer
-    GroupChatId:
+    ChatId:
       name: chat-id
       in: query
-      description: Group chat ID.
+      description: Chat ID.
       required: true
+      schema:
+        type: integer
+    MessageId:
+      name: message-id
+      in: query
+      description: Message ID.
+      required: true
+      schema:
+        type: integer
+    ContextMessageId:
+      name: context-message-id
+      in: query
+      description: The ID of the message this message is in reply to.
       schema:
         type: integer

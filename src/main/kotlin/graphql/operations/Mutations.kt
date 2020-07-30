@@ -90,7 +90,7 @@ fun createMessage(env: DataFetchingEnvironment): Placeholder {
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, env.getArgument("text"), contextMessageId)
+    Messages.create(env.userId!!, chatId, env.getArgument<TextMessage>("text"), contextMessageId)
     return Placeholder
 }
 

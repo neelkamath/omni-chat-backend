@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.routing
 
-import com.neelkamath.omniChat.InvalidGroupChatPic
-import com.neelkamath.omniChat.InvalidGroupChatPicReason
+import com.neelkamath.omniChat.InvalidFileUpload
+import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.userId
 import io.ktor.application.ApplicationCall
@@ -20,6 +20,63 @@ import java.io.File
 
 fun routeHealthCheck(routing: Routing): Unit = with(routing) {
     get("health-check") { call.respond(HttpStatusCode.NoContent) }
+}
+
+fun routeAudioMessage(routing: Routing): Unit = with(routing) {
+    authenticate {
+        route("audio-message") {
+            getAudioMessage(this)
+            postAudioMessage(this)
+        }
+    }
+}
+
+private fun getAudioMessage(route: Route): Unit = with(route) {
+    get {
+        val messageId = call.parameters["message-id"]!!.toInt()
+        if (Messages.isVisible(call.userId!!, messageId)) call.respondBytes(AudioMessages.read(messageId).bytes)
+        else call.respond(HttpStatusCode.BadRequest)
+    }
+}
+
+private fun postAudioMessage(route: Route): Unit = with(route) {
+    post {
+        val chatId = call.parameters["chat-id"]!!.toInt()
+        val audio = readMp3()
+        when {
+            !isUserInChat(call.userId!!, chatId) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID))
+            audio == null ->
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
+            Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            else -> {
+                Messages.create(call.userId!!, chatId, audio, call.parameters["context-message-id"]?.toInt())
+                call.respond(HttpStatusCode.NoContent)
+            }
+        }
+    }
+}
+
+/**
+ * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
+ * the [Mp3] is invalid.
+ */
+private suspend fun PipelineContext<Unit, ApplicationCall>.readMp3(): Mp3? {
+    var audio: Mp3? = null
+    call.receiveMultipart().forEachPart { part ->
+        when (part) {
+            is PartData.FileItem -> {
+                val bytes = part.streamProvider().use { it.readBytes() }
+                audio =
+                    if (File(part.originalFileName!!).extension != "mp3" || bytes.size > AudioMessages.MAX_AUDIO_BYTES)
+                        null
+                    else Mp3(bytes)
+            }
+            else -> throw NoWhenBranchMatchedException()
+        }
+        part.dispose()
+    }
+    return audio
 }
 
 fun routeProfilePic(routing: Routing): Unit = with(routing) {
@@ -42,7 +99,11 @@ private fun getProfilePic(route: Route): Unit = with(route) {
 
 private fun patchProfilePic(route: Route): Unit = with(route) {
     patch {
-        val pic = readPic() ?: return@patch
+        val pic = readPic()
+        if (pic == null) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@patch
+        }
         Users.updatePic(call.userId!!, pic)
         call.respond(HttpStatusCode.NoContent)
     }
@@ -68,11 +129,13 @@ private fun getGroupChatPic(route: Route): Unit = with(route) {
 
 private fun patchGroupChatPic(route: Route): Unit = with(route) {
     patch {
-        val pic = readPic() ?: return@patch
         val chatId = call.parameters["chat-id"]!!.toInt()
+        val pic = readPic()
         when {
-            !Chats.exists(chatId) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidGroupChatPic(InvalidGroupChatPicReason.NONEXISTENT_CHAT))
+            pic == null ->
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
+            chatId !in GroupChatUsers.readChatIdList(call.userId!!) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID))
             !GroupChatUsers.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
             else -> {
                 GroupChats.updatePic(chatId, pic)
@@ -83,8 +146,8 @@ private fun patchGroupChatPic(route: Route): Unit = with(route) {
 }
 
 /**
- * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. If the [Pic] is invalid,
- * an [HttpStatusCode.BadRequest] will be sent, and `null` will be returned.
+ * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
+ * the [Pic] is invalid.
  */
 private suspend fun PipelineContext<Unit, ApplicationCall>.readPic(): Pic? {
     var pic: Pic? = null
@@ -95,13 +158,12 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.readPic(): Pic? {
                 pic = try {
                     Pic.build(bytes, File(part.originalFileName!!).extension)
                 } catch (_: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@forEachPart
+                    null
                 }
-                part.dispose()
             }
             else -> throw NoWhenBranchMatchedException()
         }
+        part.dispose()
     }
     return pic
 }

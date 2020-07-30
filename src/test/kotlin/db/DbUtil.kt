@@ -13,6 +13,8 @@ private val tables: List<Table> = listOf(
     Contacts,
     MessageStatuses,
     Stargazers,
+    TextMessages,
+    AudioMessages,
     Messages,
     TypingStatuses,
     GroupChatUsers,
@@ -32,5 +34,5 @@ fun wipeDb(): Unit = transaction {
 /** Drops every table and type created. */
 fun tearDownDb(): Unit = transaction {
     SchemaUtils.drop(*tables.toTypedArray())
-    listOf("message_status", "pic_type").forEach { exec("DROP TYPE IF EXISTS $it;") }
+    listOf("message_status", "pic_type", "message_type").forEach { exec("DROP TYPE IF EXISTS $it;") }
 }

@@ -19,6 +19,6 @@ object Chats : IntIdTable() {
     }
 
     fun exists(id: Int): Boolean = transaction {
-        !select { Chats.id eq id }.empty()
+        select { Chats.id eq id }.empty().not()
     }
 }

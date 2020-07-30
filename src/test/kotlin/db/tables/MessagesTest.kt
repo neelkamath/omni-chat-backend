@@ -92,7 +92,7 @@ class MessagesTest : FunSpec({
         }
     }
 
-    context("create(Int, String, TextMessage)") {
+    context("create(Int, Int, Int? = null, (Int) -> Unit)") {
         test("Subscribers should receive notifications of created messages") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
@@ -136,7 +136,7 @@ class MessagesTest : FunSpec({
             createdMessages.forEach { Messages.create(it.creatorId, chatId, TextMessage(it.message)) }
             Messages.readPrivateChat(user1Id, chatId).forEachIndexed { index, message ->
                 message.node.sender.id shouldBe createdMessages[index].creatorId
-                message.node.text.value shouldBe createdMessages[index].message
+                message.node.text!!.value shouldBe createdMessages[index].message
             }
         }
 

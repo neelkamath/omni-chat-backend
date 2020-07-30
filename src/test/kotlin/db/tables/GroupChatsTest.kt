@@ -65,7 +65,7 @@ class GroupChatsTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChats.updatePic(chatId, readPic("31kB.png"))
+            GroupChats.updatePic(chatId, Pic.build("31KB.png"))
             adminSubscriber.assertValue(UpdatedGroupChat(chatId))
             nonParticipantSubscriber.assertNoValues()
         }

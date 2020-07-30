@@ -58,7 +58,7 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] If you leave a chat, your messages will remain in the chat until you delete your account, or join the chat again to delete them.
     - [x] Descriptions and icons.
     - [x] Unlimited participants.
-    - [x] Have an option to only allow admins to message. This option can be turned on or off any number of times. This is for group chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
+    - [x] Broadcast chats (i.e., only admins can message). This option can be toggled for a chat any time. This is for chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
 - Message types:
     - [x] Text
     - [ ] Audio
@@ -76,7 +76,7 @@ Features must be free if they're a unique selling point, are useful for the aver
 - [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
-- [ ] Background noise cancellation for an audio and video calls.
+- [ ] Background noise cancellation for audio and video calls.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
 - [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.

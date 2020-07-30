@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.0
+
+### GraphQL API
+
+- New:
+    - `MessageType` `enum`
+- Updated:
+    - `BareMessage` `interface`
+    - `Message` `type`
+    - `MessageData` `interface`
+    - `StarredMessage` `type`
+    - `NewMessage` `type`
+    - `UpdatedMessage` `type`
+
+### REST API
+
+- New:
+    - `/audio-message`
+- Updated:
+    - `/profile-pic`
+    - `/group-chat-pic`
+
 ## v0.2.1
 
 ### GraphQL API
@@ -38,7 +60,9 @@
     - `GroupChatUpdate` `input`
     - `GroupChatInput` `input`
     - `NewGroupChatsSubscription` `union`
-    - The `Bio`, `GroupChatDescription`, and `TextMessage` `scalar`s now use [CommonMark](https://commonmark.org) instead of plain text.
+    - `Bio` `scalar`
+    - `GroupChatDescription` `scalar`
+    - `TextMessage` `scalar`
 - Removed:
     - `Mutation.leaveGroupChat`
     - `Mutation.updateGroupChat`

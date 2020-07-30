@@ -677,10 +677,18 @@ type PrivateChat implements Chat {
 }
 
 interface BareMessage {
+    messageId: Int!
+    messageType: MessageType!
+    """Only non-null if the `messageType` is `MessageType.TEXT`."""
+    text: TextMessage
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
+}
+
+enum MessageType {
+    TEXT,
+    AUDIO
 }
 
 type MessageContext {
@@ -698,47 +706,52 @@ type MessageContext {
 }
 
 type Message implements BareMessage {
-    id: Int!
+    messageId: Int!
+    messageType: MessageType!
+    text: TextMessage
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     hasStar: Boolean!
     context: MessageContext!
 }
 
 interface MessageData implements BareMessage {
-    chatId: Int!
     messageId: Int!
+    messageType: MessageType!
+    text: TextMessage
+    chatId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
 type StarredMessage implements MessageData, BareMessage {
-    chatId: Int!
     messageId: Int!
+    messageType: MessageType!
+    text: TextMessage
+    chatId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
 type NewMessage implements MessageData, BareMessage {
-    chatId: Int!
     messageId: Int!
+    messageType: MessageType!
+    text: TextMessage
+    chatId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
 """An existing `messageId` in the `chatId` which was updated."""
 type UpdatedMessage implements MessageData, BareMessage {
-    chatId: Int!
     messageId: Int!
+    messageType: MessageType!
+    text: TextMessage
+    chatId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     hasStar: Boolean!
     context: MessageContext!

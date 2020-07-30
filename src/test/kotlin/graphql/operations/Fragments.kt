@@ -76,11 +76,12 @@ const val MESSAGE_DATE_TIMES_FRAGMENT = """
 
 const val MESSAGE_FRAGMENT = """
     ... on Message {
-        id
+        messageId
+        messageType
+        text
         sender {
             $ACCOUNT_FRAGMENT
         }
-        text
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -190,10 +191,11 @@ const val STARRED_MESSAGE_FRAGMENT = """
     ... on StarredMessage {
         chatId
         messageId
+        messageType
+        text
         sender {
             $ACCOUNT_FRAGMENT
         }
-        text
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }

@@ -17,15 +17,10 @@ data class BackwardPagination(val last: Int? = null, val before: Int? = null)
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
  * assumed that all enum values are lowercase in the DB.
  */
-class PostgresEnum<T : Enum<T>>(
-    /** The name of the enum in Postgres. */
-    typeName: String,
-    /** The name of the enum in Kotlin. */
-    value: T?
-) : PGobject() {
+class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject() {
     init {
-        type = typeName
-        this.value = value?.name?.toLowerCase()
+        type = postgresName
+        this.value = kotlinName?.name?.toLowerCase()
     }
 }
 
@@ -53,6 +48,8 @@ private fun connect() {
 private fun create(): Unit = transaction {
     createTypes()
     SchemaUtils.create(
+        TextMessages,
+        AudioMessages,
         Pics,
         Contacts,
         Chats,
@@ -74,7 +71,11 @@ fun shareChat(user1Id: Int, user2Id: Int): Boolean =
 
 /** Creates custom types if required. */
 private fun createTypes(): Unit = transaction {
-    mapOf("message_status" to MessageStatus.values(), "pic_type" to Pic.Type.values()).forEach { (name, enum) ->
+    mapOf(
+        "message_status" to MessageStatus.values(),
+        "pic_type" to Pic.Type.values(),
+        "message_type" to MessageType.values()
+    ).forEach { (name, enum) ->
         val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
         if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")
     }
