@@ -17,6 +17,7 @@ data class Pic(
             throw IllegalArgumentException("The pic mustn't exceed ${Pics.MAX_PIC_BYTES} bytes.")
     }
 
+    /** @see [buildType] */
     enum class Type {
         PNG {
             override fun toString() = "png"
@@ -48,22 +49,18 @@ data class Pic(
 
     companion object {
         /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-        fun build(bytes: ByteArray, extension: String): Pic {
-            val type = when (extension) {
-                "png" -> Type.PNG
-                "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
-                else -> throw IllegalArgumentException(
-                    "The image ($extension) must be one of ${Type.values().joinToString()}."
-                )
-            }
-            return Pic(bytes, type)
+        fun buildType(extension: String): Type = when (extension) {
+            "png" -> Type.PNG
+            "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
+            else ->
+                throw IllegalArgumentException("The pic ($extension) must be one of ${Type.values().joinToString()}.")
         }
     }
 }
 
 object Pics : IntIdTable() {
-    /** The pic cannot exceed 1 MiB. */
-    const val MAX_PIC_BYTES = 1024 * 1024
+    /** The pic cannot exceed 25 MiB. */
+    const val MAX_PIC_BYTES = 25 * 1024 * 1024
 
     private val bytes: Column<ByteArray> = binary("bytes", MAX_PIC_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(

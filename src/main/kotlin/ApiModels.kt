@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 typealias Cursor = Int
 
 data class InvalidFileUpload(val reason: Reason) {
-    enum class Reason { INVALID_CHAT_ID, INVALID_FILE }
+    enum class Reason { USER_NOT_IN_CHAT, INVALID_FILE }
 }
 
 /**

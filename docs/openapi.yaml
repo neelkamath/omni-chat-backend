@@ -55,7 +55,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
-    description: A user's profile pic which doesn't exceed 1 MiB.
+    description: A user's profile pic which doesn't exceed 25 MiB.
     get:
       tags: [profilePic]
       description: Get the user's profile pic.
@@ -130,10 +130,9 @@ components:
       type: object
       properties:
         reason:
-          description: An `"INVALID_CHAT_ID"` means the user isn't in the chat. An `"INVALID_FILE"` means the file's
-            type or size was unacceptable.
+          description: An `"INVALID_FILE"` means the file's type or size was unacceptable.
           type: string
-          enum: [INVALID_CHAT_ID, INVALID_FILE]
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE]
   securitySchemes:
     bearerAuth:
       type: http
@@ -153,21 +152,21 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidFileUpload'
     Audio:
-      description: An MP3 not exceeding 1 MiB.
+      description: An MP3 audio not exceeding 25 MiB.
       content:
         audio/mp3:
           schema:
             type: string
             format: binary
     Pic:
-      description: A PNG or JPEG image not exceeding 1 MiB.
+      description: A PNG or JPEG image not exceeding 25 MiB.
       content:
         image/png, image/jpeg:
           schema:
             type: string
             format: binary
     InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 1 MiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 25 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
@@ -179,7 +178,7 @@ components:
             required: [audio]
             properties:
               audio:
-                description: An MP3 not exceeding 1 MiB.
+                description: An MP3 audio not exceeding 25 MiB.
                 type: string
                 format: binary
           encoding:
@@ -193,7 +192,7 @@ components:
             required: [pic]
             properties:
               pic:
-                description: A PNG or JPEG not exceeding 1 MiB.
+                description: A PNG or JPEG image not exceeding 25 MiB.
                 type: string
                 format: binary
           encoding:

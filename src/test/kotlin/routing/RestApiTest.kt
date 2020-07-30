@@ -15,7 +15,11 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 import io.ktor.utils.io.streams.asInput
-import java.lang.ClassLoader.getSystemClassLoader
+
+/** Creates a [file] which doesn't get saved to the filesystem. An example of a [name] is `"pic.png"`. */
+private data class DummyFile(val name: String, val bytes: Int) {
+    val file = ByteArray(bytes)
+}
 
 private fun getHealthCheck(): TestApplicationResponse =
     withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }.response
@@ -25,7 +29,7 @@ private fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplic
     handleRequest(HttpMethod.Get, "profile-pic?$parameters").response
 }
 
-private fun patchProfilePic(accessToken: String, fileName: String): TestApplicationResponse =
+private fun patchProfilePic(accessToken: String, dummy: DummyFile): TestApplicationResponse =
     withTestApplication(Application::main) {
         handleRequest(HttpMethod.Patch, "profile-pic") {
             addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
@@ -38,13 +42,13 @@ private fun patchProfilePic(accessToken: String, fileName: String): TestApplicat
                 boundary,
                 listOf(
                     PartData.FileItem(
-                        { getSystemClassLoader().getResource(fileName)!!.openStream().asInput() },
+                        { dummy.file.inputStream().asInput() },
                         {},
                         headersOf(
                             HttpHeaders.ContentDisposition,
                             ContentDisposition.File
                                 .withParameter(ContentDisposition.Parameters.Name, "file")
-                                .withParameter(ContentDisposition.Parameters.FileName, fileName)
+                                .withParameter(ContentDisposition.Parameters.FileName, dummy.name)
                                 .toString()
                         )
                     )
@@ -53,9 +57,9 @@ private fun patchProfilePic(accessToken: String, fileName: String): TestApplicat
         }
     }.response
 
-private fun patchGroupChatPic(accessToken: String, chatId: Int, fileName: String): TestApplicationResponse {
+private fun patchGroupChatPic(accessToken: String, chatId: Int, dummy: DummyFile): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString()).formUrlEncode()
-    return uploadFile(accessToken, parameters, fileName, HttpMethod.Patch, "group-chat-pic")
+    return uploadFile(accessToken, parameters, dummy, HttpMethod.Patch, "group-chat-pic")
 }
 
 private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestApplication(Application::main) {
@@ -66,14 +70,14 @@ private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestAppl
 private fun postAudioMessage(
     accessToken: String,
     chatId: Int,
-    fileName: String,
+    dummy: DummyFile,
     contextMessageId: Int? = null
 ): TestApplicationResponse {
     val parameters = listOf(
         "chat-id" to chatId.toString(),
         "context-message-id" to contextMessageId?.toString()
     ).filter { it.second != null }.formUrlEncode()
-    return uploadFile(accessToken, parameters, fileName, HttpMethod.Post, "audio-message")
+    return uploadFile(accessToken, parameters, dummy, HttpMethod.Post, "audio-message")
 }
 
 private fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
@@ -87,7 +91,7 @@ private fun getAudioMessage(accessToken: String, messageId: Int): TestApplicatio
 private fun uploadFile(
     accessToken: String,
     parameters: String,
-    fileName: String,
+    dummy: DummyFile,
     method: HttpMethod,
     path: String
 ): TestApplicationResponse = withTestApplication(Application::main) {
@@ -102,13 +106,13 @@ private fun uploadFile(
             boundary,
             listOf(
                 PartData.FileItem(
-                    { getSystemClassLoader().getResource(fileName)!!.openStream().asInput() },
+                    { dummy.file.inputStream().asInput() },
                     {},
                     headersOf(
                         HttpHeaders.ContentDisposition,
                         ContentDisposition.File
                             .withParameter(ContentDisposition.Parameters.Name, "file")
-                            .withParameter(ContentDisposition.Parameters.FileName, fileName)
+                            .withParameter(ContentDisposition.Parameters.FileName, dummy.name)
                             .toString()
                     )
                 )
@@ -127,10 +131,11 @@ class RestApiTest : FunSpec({
     context("getProfilePic(Route)") {
         test("Requesting an existing pic should cause the pic to be received with an HTTP status code of 200") {
             val userId = createVerifiedUsers(1)[0].info.id
-            Users.updatePic(userId, Pic.build("31KB.png"))
+            val pic = Pic(ByteArray(1), Pic.Type.PNG)
+            Users.updatePic(userId, pic)
             with(getProfilePic(userId)) {
                 status() shouldBe HttpStatusCode.OK
-                byteContent shouldBe Users.read(userId).pic!!.bytes
+                byteContent shouldBe pic.bytes
             }
         }
 
@@ -147,67 +152,75 @@ class RestApiTest : FunSpec({
     context("patchProfilePic(Route)") {
         test("Updating the pic should update the DB, and respond with an HTTP status code of 204") {
             val user = createVerifiedUsers(1)[0]
-            val fileName = "31KB.png"
-            patchProfilePic(user.accessToken, fileName).status() shouldBe HttpStatusCode.NoContent
-            Users.read(user.info.id).pic shouldBe Pic.build(fileName)
+            val dummy = DummyFile("pic.png", bytes = 1)
+            val pic = Pic(dummy.file, Pic.Type.PNG)
+            patchProfilePic(user.accessToken, dummy).status() shouldBe HttpStatusCode.NoContent
+            Users.read(user.info.id).pic shouldBe pic
         }
 
-        fun testBadRequest(fileName: String) {
+        fun testBadRequest(dummy: DummyFile) {
             val token = createVerifiedUsers(1)[0].accessToken
-            patchProfilePic(token, fileName).status() shouldBe HttpStatusCode.BadRequest
+            patchProfilePic(token, dummy).status() shouldBe HttpStatusCode.BadRequest
         }
 
-        test("Uploading an invalid file type should fail") { testBadRequest("17KB.webp") }
+        test("Uploading an invalid file type should fail") { testBadRequest(DummyFile("pic.webp", bytes = 1)) }
 
-        test("Uploading an excessively large file should fail") { testBadRequest("2MB.jpg") }
+        test("Uploading an excessively large file should fail") {
+            testBadRequest(DummyFile("pic.png", Pics.MAX_PIC_BYTES + 1))
+        }
     }
 
     context("patchGroupChatPic(Route)") {
         test("Updating the pic should cause an HTTP status code of 204 to be received, and the DB to be updated") {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            val fileName = "31KB.png"
-            patchGroupChatPic(admin.accessToken, chatId, fileName).status() shouldBe HttpStatusCode.NoContent
-            GroupChats.readPic(chatId) shouldBe Pic.build(fileName)
+            val dummy = DummyFile("pic.png", bytes = 1)
+            patchGroupChatPic(admin.accessToken, chatId, dummy).status() shouldBe HttpStatusCode.NoContent
+            GroupChats.readPic(chatId) shouldBe Pic(dummy.file, Pic.Type.PNG)
         }
 
         test("Updating a nonexistent chat should cause an error to be returned") {
             val token = createVerifiedUsers(1)[0].accessToken
-            with(patchGroupChatPic(token, chatId = 1, fileName = "31KB.png")) {
+            val dummy = DummyFile("pic.png", bytes = 1)
+            with(patchGroupChatPic(token, chatId = 1, dummy = dummy)) {
                 status() shouldBe HttpStatusCode.BadRequest
                 objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID)
+                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
             }
         }
 
         test("Using a private chat should fail") {
             val (user1, user2) = createVerifiedUsers(2)
             val chatId = PrivateChats.create(user1.info.id, user2.info.id)
-            with(patchGroupChatPic(user1.accessToken, chatId, "31KB.png")) {
+            val dummy = DummyFile("pic.png", bytes = 1)
+            with(patchGroupChatPic(user1.accessToken, chatId, dummy)) {
                 status() shouldBe HttpStatusCode.BadRequest
                 objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID)
+                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
             }
         }
 
-        fun testBadRequest(fileName: String) {
+        fun testBadRequest(dummy: DummyFile) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(patchGroupChatPic(admin.accessToken, chatId, fileName)) {
+            with(patchGroupChatPic(admin.accessToken, chatId, dummy)) {
                 status() shouldBe HttpStatusCode.BadRequest
                 objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
                         InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE)
             }
         }
 
-        test("Uploading an invalid file type should fail") { testBadRequest("17KB.webp") }
+        test("Uploading an invalid file type should fail") { testBadRequest(DummyFile("pic.webp", bytes = 1)) }
 
-        test("Uploading an excessively large file should fail") { testBadRequest("2MB.jpg") }
+        test("Uploading an excessively large file should fail") {
+            testBadRequest(DummyFile("pic.png", Pics.MAX_PIC_BYTES + 1))
+        }
 
         test("An HTTP status code of 401 should be received when a non-admin updates the pic") {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            patchGroupChatPic(user.accessToken, chatId, "31KB.png").status() shouldBe HttpStatusCode.Unauthorized
+            patchGroupChatPic(user.accessToken, chatId, DummyFile("pic.png", bytes = 1)).status() shouldBe
+                    HttpStatusCode.Unauthorized
             GroupChats.readPic(chatId).shouldBeNull()
         }
     }
@@ -216,7 +229,7 @@ class RestApiTest : FunSpec({
         test("A pic should be retrieved with an HTTP status code of 200") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val pic = Pic.build("31KB.png")
+            val pic = Pic(ByteArray(1), Pic.Type.PNG)
             GroupChats.updatePic(chatId, pic)
             with(getGroupChatPic(chatId)) {
                 status() shouldBe HttpStatusCode.OK
@@ -239,7 +252,7 @@ class RestApiTest : FunSpec({
         test("An audio message should be read with an HTTP status code of 200") {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            val audio = buildMp3("215KB.mp3")
+            val audio = Mp3(ByteArray(1))
             val messageId = Messages.message(admin.info.id, chatId, audio)
             with(getAudioMessage(admin.accessToken, messageId)) {
                 status() shouldBe HttpStatusCode.OK
@@ -258,7 +271,8 @@ class RestApiTest : FunSpec({
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val messageId = Messages.message(admin.info.id, chatId)
-            postAudioMessage(admin.accessToken, chatId, "215KB.mp3", contextMessageId = messageId).status() shouldBe
+            val dummy = DummyFile("audio.mp3", bytes = 1)
+            postAudioMessage(admin.accessToken, chatId, dummy, contextMessageId = messageId).status() shouldBe
                     HttpStatusCode.NoContent
             Messages.readGroupChat(admin.info.id, chatId).last().node.context.id shouldBe messageId
             AudioMessages.count() shouldBe 1
@@ -266,26 +280,29 @@ class RestApiTest : FunSpec({
 
         test("Messaging in a nonexistent chat should fail") {
             val token = createVerifiedUsers(1)[0].accessToken
-            with(postAudioMessage(token, chatId = 1, fileName = "215KB.mp3")) {
+            val dummy = DummyFile("audio.mp3", bytes = 1)
+            with(postAudioMessage(token, chatId = 1, dummy = dummy)) {
                 status() shouldBe HttpStatusCode.BadRequest
                 objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID)
+                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
             }
         }
 
-        fun testBadRequest(fileName: String) {
+        fun testBadRequest(dummy: DummyFile) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(postAudioMessage(admin.accessToken, chatId, fileName)) {
+            with(postAudioMessage(admin.accessToken, chatId, dummy)) {
                 status() shouldBe HttpStatusCode.BadRequest
                 objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
                         InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE)
             }
         }
 
-        test("Uploading an invalid file type should fail") { testBadRequest("193KB.flac") }
+        test("Uploading an invalid file type should fail") { testBadRequest(DummyFile("audio.flac", bytes = 1)) }
 
-        test("Uploading an excessively large audio file should fail") { testBadRequest("2MB.mp3") }
+        test("Uploading an excessively large audio file should fail") {
+            testBadRequest(DummyFile("audio.mp3", AudioMessages.MAX_AUDIO_BYTES + 1))
+        }
 
         test("An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chatƒ") {
             val (admin, user) = createVerifiedUsers(2)
@@ -297,7 +314,8 @@ class RestApiTest : FunSpec({
                 isBroadcast = true
             )
             val chatId = GroupChats.create(chat)
-            postAudioMessage(user.accessToken, chatId, "215KB.mp3").status() shouldBe HttpStatusCode.Unauthorized
+            postAudioMessage(user.accessToken, chatId, DummyFile("audio.mp3", bytes = 1)).status() shouldBe
+                    HttpStatusCode.Unauthorized
         }
     }
 })

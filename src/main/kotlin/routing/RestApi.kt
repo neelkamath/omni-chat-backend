@@ -45,7 +45,7 @@ private fun postAudioMessage(route: Route): Unit = with(route) {
         val audio = readMp3()
         when {
             !isUserInChat(call.userId!!, chatId) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID))
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT))
             audio == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
@@ -135,7 +135,7 @@ private fun patchGroupChatPic(route: Route): Unit = with(route) {
             pic == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
             chatId !in GroupChatUsers.readChatIdList(call.userId!!) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_CHAT_ID))
+                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT))
             !GroupChatUsers.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
             else -> {
                 GroupChats.updatePic(chatId, pic)
@@ -156,7 +156,8 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.readPic(): Pic? {
             is PartData.FileItem -> {
                 val bytes = part.streamProvider().use { it.readBytes() }
                 pic = try {
-                    Pic.build(bytes, File(part.originalFileName!!).extension)
+                    val type = Pic.buildType(File(part.originalFileName!!).extension)
+                    Pic(bytes, type)
                 } catch (_: IllegalArgumentException) {
                     null
                 }

@@ -34,8 +34,8 @@ data class Mp3(
 
 /** IDs refer to [Messages.id]s. */
 object AudioMessages : Table() {
-    /** An audio message cannot exceed 1 MiB. */
-    const val MAX_AUDIO_BYTES = 1024 * 1024
+    /** An audio message cannot exceed 25 MiB. */
+    const val MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
     private val id: Column<Int> = integer("id").uniqueIndex().references(Messages.id)
     private val audio: Column<ByteArray> = binary("audio", MAX_AUDIO_BYTES)
