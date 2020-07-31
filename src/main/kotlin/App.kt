@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.routing.*
+import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
+import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
+import com.neelkamath.omniChat.restApi.*
 import graphql.schema.DataFetchingEnvironment
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -56,6 +58,7 @@ fun Application.main() {
     }
     routing {
         routeHealthCheck(this)
+        routePicMessage(this)
         routeAudioMessage(this)
         routeProfilePic(this)
         routeGroupChatPic(this)

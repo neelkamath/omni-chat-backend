@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.Stargazers
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
@@ -25,11 +26,15 @@ data class Username(val value: String) {
     }
 }
 
-/** An [IllegalArgumentException] will be thrown if the [value] exceeds [Users.MAX_BIO_LENGTH] */
+/** An [IllegalArgumentException] will be thrown if the [value] exceeds [Bio.MAX_LENGTH] */
 data class Bio(val value: String) {
     init {
-        if (value.length > Users.MAX_BIO_LENGTH)
-            throw IllegalArgumentException("The value ($value) cannot exceed ${Users.MAX_BIO_LENGTH} characters.")
+        if (value.length > MAX_LENGTH)
+            throw IllegalArgumentException("The value ($value) cannot exceed $MAX_LENGTH characters.")
+    }
+
+    companion object {
+        const val MAX_LENGTH = 2500
     }
 }
 
@@ -93,12 +98,13 @@ data class Account(
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
 
-enum class MessageType { TEXT, AUDIO }
+enum class MessageType { TEXT, PIC, AUDIO }
 
 interface BareMessage {
     val messageId: Int
     val messageType: MessageType
     val text: TextMessage?
+    val caption: TextMessage?
     val sender: Account
     val dateTimes: MessageDateTimes
     val context: MessageContext
@@ -174,44 +180,56 @@ data class GroupChatInput(
 interface UpdatedChatsSubscription
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[TextMessages.MAX_TEXT_LENGTH] characters with at
- * least one non-whitespace.
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[TextMessage.MAX_LENGTH] characters with at least
+ * one non-whitespace.
  */
 data class TextMessage(val value: String) {
     init {
-        if (value.trim().isEmpty() || value.length > TextMessages.MAX_TEXT_LENGTH)
+        if (value.trim().isEmpty() || value.length > MAX_LENGTH)
             throw IllegalArgumentException(
-                "The text must be 1-${TextMessages.MAX_TEXT_LENGTH} characters, with at least one non-whitespace."
+                "The text must be 1-$MAX_LENGTH characters, with at least one non-whitespace."
             )
+    }
+
+    companion object {
+        const val MAX_LENGTH = 10_000
     }
 }
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[GroupChats.MAX_TITLE_LENGTH] characters, of
- * which at least one isn't whitespace.
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[GroupChatTitle.MAX_LENGTH] characters, of which
+ * at least one isn't whitespace.
  */
 data class GroupChatTitle(val value: String) {
     init {
-        if (value.trim().isEmpty() || value.length > GroupChats.MAX_TITLE_LENGTH)
+        if (value.trim().isEmpty() || value.length > MAX_LENGTH)
             throw IllegalArgumentException(
                 """
-                The title ("$value") must be 1-${GroupChats.MAX_TITLE_LENGTH} characters, with at least one 
+                The title ("$value") must be 1-$MAX_LENGTH characters, with at least one 
                 non-whitespace character.
                 """.trimIndent()
             )
     }
+
+    companion object {
+        const val MAX_LENGTH = 70
+    }
 }
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't at most [GroupChats.MAX_DESCRIPTION_LENGTH]
+ * An [IllegalArgumentException] will be thrown if the [value] isn't at most [GroupChatDescription.MAX_LENGTH]
  * characters.
  */
 data class GroupChatDescription(val value: String) {
     init {
-        if (value.length > GroupChats.MAX_DESCRIPTION_LENGTH)
+        if (value.length > MAX_LENGTH)
             throw IllegalArgumentException(
-                """The description ("$value") must be at most ${GroupChats.MAX_DESCRIPTION_LENGTH} characters"""
+                """The description ("$value") must be at most $MAX_LENGTH characters"""
             )
+    }
+
+    companion object {
+        const val MAX_LENGTH = 1000
     }
 }
 
@@ -281,28 +299,42 @@ data class MessageEdge(val node: Message, val cursor: Cursor)
 
 interface MessageData : BareMessage {
     override val messageId: Int
-    val chatId: Int
     override val messageType: MessageType
     override val text: TextMessage?
+    override val caption: TextMessage?
+    val chatId: Int
+    override val sender: Account
+    override val dateTimes: MessageDateTimes
+    override val context: MessageContext
 }
 
 data class Message(
     override val messageId: Int,
     override val messageType: MessageType,
     override val text: TextMessage?,
+    override val caption: TextMessage?,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     val hasStar: Boolean,
     override val context: MessageContext
 ) : BareMessage {
-    fun toNewMessage(): NewMessage =
-        NewMessage(messageId, Messages.readChatFromMessage(messageId), messageType, text, sender, dateTimes, context)
+    fun toNewMessage(): NewMessage = NewMessage(
+        messageId,
+        Messages.readChatFromMessage(messageId),
+        messageType,
+        text,
+        caption,
+        sender,
+        dateTimes,
+        context
+    )
 
     fun toUpdatedMessage(): UpdatedMessage = UpdatedMessage(
         messageId,
         Messages.readChatFromMessage(messageId),
         messageType,
         text,
+        caption,
         sender,
         dateTimes,
         hasStar,
@@ -312,7 +344,16 @@ data class Message(
     companion object {
         /** The [userId] the [Message] is for. */
         fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
-            Message(messageId, messageType, text, sender, dateTimes, Stargazers.hasStar(userId, messageId), context)
+            Message(
+                messageId,
+                messageType,
+                text,
+                caption,
+                sender,
+                dateTimes,
+                Stargazers.hasStar(userId, messageId),
+                context
+            )
         }
     }
 }
@@ -322,6 +363,7 @@ data class StarredMessage(
     override val chatId: Int,
     override val messageType: MessageType,
     override val text: TextMessage?,
+    override val caption: TextMessage?,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext
@@ -333,6 +375,7 @@ data class StarredMessage(
                 Messages.readChatFromMessage(messageId),
                 messageType,
                 text,
+                caption,
                 sender,
                 dateTimes,
                 context
@@ -348,6 +391,7 @@ data class NewMessage(
     override val chatId: Int,
     override val messageType: MessageType,
     override val text: TextMessage?,
+    override val caption: TextMessage?,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext
@@ -359,6 +403,7 @@ data class NewMessage(
                 Messages.readChatFromMessage(id),
                 messageType,
                 text,
+                caption,
                 sender,
                 dateTimes,
                 context
@@ -372,6 +417,7 @@ data class UpdatedMessage(
     override val chatId: Int,
     override val messageType: MessageType,
     override val text: TextMessage?,
+    override val caption: TextMessage?,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     val hasStar: Boolean,

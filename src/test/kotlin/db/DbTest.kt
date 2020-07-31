@@ -11,6 +11,14 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
+class PicTest : FunSpec({
+    context("init") {
+        test("Passing an excessively large image should cause an exception to be thrown") {
+            shouldThrowExactly<IllegalArgumentException> { Pic(ByteArray(Pic.MAX_BYTES + 1), Pic.Type.PNG) }
+        }
+    }
+})
+
 class DbTest : FunSpec({
     context("deleteUserFromDb(String)") {
         test("An exception should be thrown when the admin of a nonempty group chat deletes their data") {

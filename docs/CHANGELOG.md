@@ -18,6 +18,7 @@
 
 - New:
     - `/audio-message`
+    - `/pic-message`
 - Updated:
     - `/profile-pic`
     - `/group-chat-pic`

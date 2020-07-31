@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.MessagesAsset
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.messagesBroker
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -89,6 +90,23 @@ class MessagesTest : FunSpec({
             val messageId = Messages.message(user2Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
             Messages.isVisible(user1Id, messageId).shouldBeFalse()
+        }
+    }
+
+    context("search(List<MessageEdge>, String)") {
+        test("Only text messages and pic message captions should be searched") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val message1Id = Messages.message(adminId, chatId, TextMessage("Hi"))
+            Messages.message(adminId, chatId, TextMessage("Bye"))
+            val pic = Pic(ByteArray(1), Pic.Type.PNG)
+            val hiCaption = TextMessage("Hi")
+            val message2Id = Messages.message(adminId, chatId, PicMessage(pic, hiCaption))
+            Messages.message(adminId, chatId, PicMessage(pic, caption = null))
+            val byeCaption = TextMessage("Bye")
+            Messages.message(adminId, chatId, PicMessage(pic, byeCaption))
+            Messages.searchGroupChat(adminId, chatId, "Hi").map { it.node.messageId } shouldBe
+                    listOf(message1Id, message2Id)
         }
     }
 

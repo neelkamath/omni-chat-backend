@@ -79,6 +79,7 @@ const val MESSAGE_FRAGMENT = """
         messageId
         messageType
         text
+        caption
         sender {
             $ACCOUNT_FRAGMENT
         }
@@ -193,6 +194,7 @@ const val STARRED_MESSAGE_FRAGMENT = """
         messageId
         messageType
         text
+        caption
         sender {
             $ACCOUNT_FRAGMENT
         }

@@ -4,14 +4,14 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.annotation.Generated
 
-/** An MP3 audio. Throws an [IllegalArgumentException] if the [bytes] exceeds [AudioMessages.MAX_AUDIO_BYTES]. */
+/** An MP3 audio. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp3.MAX_BYTES]. */
 data class Mp3(
-    /** At most [AudioMessages.MAX_AUDIO_BYTES]. */
+    /** At most [Mp3.MAX_BYTES]. */
     val bytes: ByteArray
 ) {
     init {
-        if (bytes.size > AudioMessages.MAX_AUDIO_BYTES)
-            throw IllegalArgumentException("The audio mustn't exceed ${AudioMessages.MAX_AUDIO_BYTES} bytes.")
+        if (bytes.size > MAX_BYTES)
+            throw IllegalArgumentException("The audio mustn't exceed $MAX_BYTES bytes.")
     }
 
     @Generated
@@ -30,15 +30,16 @@ data class Mp3(
     override fun hashCode(): Int {
         return bytes.contentHashCode()
     }
+
+    companion object {
+        const val MAX_BYTES = 25 * 1024 * 1024
+    }
 }
 
 /** IDs refer to [Messages.id]s. */
 object AudioMessages : Table() {
-    /** An audio message cannot exceed 25 MiB. */
-    const val MAX_AUDIO_BYTES = 25 * 1024 * 1024
-
     private val id: Column<Int> = integer("id").uniqueIndex().references(Messages.id)
-    private val audio: Column<ByteArray> = binary("audio", MAX_AUDIO_BYTES)
+    private val audio: Column<ByteArray> = binary("audio", Mp3.MAX_BYTES)
 
     fun create(id: Int, audio: Mp3): Unit = transaction {
         insert {

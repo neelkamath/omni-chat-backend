@@ -1,19 +1,11 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
-import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
-
-class PicTest : FunSpec({
-    context("init") {
-        test("Passing an excessively large image should cause an exception to be thrown") {
-            shouldThrowExactly<IllegalArgumentException> { Pic(ByteArray(Pics.MAX_PIC_BYTES + 1), Pic.Type.PNG) }
-        }
-    }
-})
 
 class PicsTest : FunSpec({
     context("update(Int?, Pic?)") {

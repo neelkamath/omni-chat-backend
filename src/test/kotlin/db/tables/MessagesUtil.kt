@@ -25,3 +25,13 @@ fun Messages.message(
     create(userId, chatId, audio, contextMessageId)
     return readIdList(chatId).last()
 }
+
+fun Messages.message(
+    userId: Int,
+    chatId: Int,
+    message: PicMessage,
+    contextMessageId: Int? = null
+): Int {
+    create(userId, chatId, message, contextMessageId)
+    return readIdList(chatId).last()
+}

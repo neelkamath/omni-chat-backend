@@ -2,11 +2,12 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -582,7 +583,11 @@ class MutationsTest : FunSpec({
         test("An exception should be thrown when a non-admin updates the pic") {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(DELETE_GROUP_CHAT_PIC_QUERY, mapOf("chatId" to chatId), user.accessToken)
+            executeGraphQlViaHttp(
+                DELETE_GROUP_CHAT_PIC_QUERY,
+                mapOf("chatId" to chatId),
+                user.accessToken
+            )
                 .shouldHaveUnauthorizedStatus()
         }
 

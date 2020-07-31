@@ -16,9 +16,46 @@ servers:
 tags:
   - name: profilePic
   - name: groupChatPic
+  - name: picMessage
   - name: audioMessage
   - name: status
 paths:
+  /pic-message:
+    description: Create and read pic chat messages.
+    get:
+      tags: [picMessage]
+      description: Reads the pic from a message. To get the caption, use the GraphQL API.
+      operationId: getPicMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Pic'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [picMessage]
+      description: Creates a pic message. If the chat is a broadcast group, then the user must be an admin.
+      operationId: postPicMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+        - $ref: '#/components/parameters/Caption'
+      requestBody:
+        $ref: '#/components/requestBodies/Pic'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidFileUpload'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /audio-message:
     description: Create and read audio chat messages.
     get:
@@ -51,7 +88,7 @@ paths:
         '204':
           description: Message created.
         '400':
-          $ref: '#/components/responses/InvalidAudioMessage'
+          $ref: '#/components/responses/InvalidFileUpload'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
@@ -139,7 +176,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
   responses:
-    InvalidAudioMessage:
+    InvalidFileUpload:
       description: Couldn't create message.
       content:
         application/json:
@@ -226,3 +263,9 @@ components:
       description: The ID of the message this message is in reply to.
       schema:
         type: integer
+    Caption:
+      name: caption
+      in: query
+      description: The pic's caption.
+      schema:
+        type: string

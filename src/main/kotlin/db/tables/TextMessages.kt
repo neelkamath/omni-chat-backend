@@ -6,11 +6,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 /** IDs refer to [Messages.id]s. */
 object TextMessages : Table() {
-    /** Text messages cannot exceed this length. */
-    const val MAX_TEXT_LENGTH = 10_000
-
     private val id: Column<Int> = integer("id").uniqueIndex().references(Messages.id)
-    private val text: Column<String> = varchar("text", MAX_TEXT_LENGTH)
+    private val text: Column<String> = varchar("text", TextMessage.MAX_LENGTH)
 
     fun create(id: Int, text: TextMessage): Unit = transaction {
         insert {

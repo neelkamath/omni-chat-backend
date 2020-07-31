@@ -10,7 +10,7 @@ import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -631,7 +631,10 @@ class QueriesTest : FunSpec({
 
         test("An invalid refresh token should return an authorization error") {
             val variables = mapOf("refreshToken" to "invalid token")
-            executeGraphQlViaHttp(REFRESH_TOKEN_SET_QUERY, variables).shouldHaveUnauthorizedStatus()
+            executeGraphQlViaHttp(
+                REFRESH_TOKEN_SET_QUERY,
+                variables
+            ).shouldHaveUnauthorizedStatus()
         }
     }
 
@@ -639,7 +642,10 @@ class QueriesTest : FunSpec({
         test("The access token should work") {
             val login = createVerifiedUsers(1)[0].login
             val token = requestTokenSet(login).accessToken
-            executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = token).shouldNotHaveUnauthorizedStatus()
+            executeGraphQlViaHttp(
+                READ_ACCOUNT_QUERY,
+                accessToken = token
+            ).shouldNotHaveUnauthorizedStatus()
         }
 
         test("A token set shouldn't be created for a nonexistent user") {

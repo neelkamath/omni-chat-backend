@@ -14,6 +14,7 @@ private val tables: List<Table> = listOf(
     MessageStatuses,
     Stargazers,
     TextMessages,
+    PicMessages,
     AudioMessages,
     Messages,
     TypingStatuses,

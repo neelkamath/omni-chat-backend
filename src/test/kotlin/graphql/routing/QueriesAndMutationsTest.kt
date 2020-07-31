@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.routing
+package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -17,7 +17,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 
-class GraphQlQueriesAndMutationsTest : FunSpec({
+class QueriesAndMutationsTest : FunSpec({
     context("routeGraphQlQueriesAndMutations(Routing)") {
         test("The GraphQL engine should be queried via the HTTP interface") {
             val user = createVerifiedUsers(1)[0]

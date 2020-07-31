@@ -681,6 +681,8 @@ interface BareMessage {
     messageType: MessageType!
     """Only non-null if the `messageType` is `MessageType.TEXT`."""
     text: TextMessage
+    """Only non-null if the `messageType` is `MessageType.PIC`."""
+    caption: TextMessage
     sender: Account!
     dateTimes: MessageDateTimes!
     context: MessageContext!
@@ -688,6 +690,7 @@ interface BareMessage {
 
 enum MessageType {
     TEXT,
+    PIC,
     AUDIO
 }
 
@@ -709,6 +712,7 @@ type Message implements BareMessage {
     messageId: Int!
     messageType: MessageType!
     text: TextMessage
+    caption: TextMessage
     sender: Account!
     dateTimes: MessageDateTimes!
     hasStar: Boolean!
@@ -719,6 +723,7 @@ interface MessageData implements BareMessage {
     messageId: Int!
     messageType: MessageType!
     text: TextMessage
+    caption: TextMessage
     chatId: Int!
     sender: Account!
     dateTimes: MessageDateTimes!
@@ -729,6 +734,7 @@ type StarredMessage implements MessageData, BareMessage {
     messageId: Int!
     messageType: MessageType!
     text: TextMessage
+    caption: TextMessage
     chatId: Int!
     sender: Account!
     dateTimes: MessageDateTimes!
@@ -739,6 +745,7 @@ type NewMessage implements MessageData, BareMessage {
     messageId: Int!
     messageType: MessageType!
     text: TextMessage
+    caption: TextMessage
     chatId: Int!
     sender: Account!
     dateTimes: MessageDateTimes!
@@ -750,6 +757,7 @@ type UpdatedMessage implements MessageData, BareMessage {
     messageId: Int!
     messageType: MessageType!
     text: TextMessage
+    caption: TextMessage
     chatId: Int!
     sender: Account!
     dateTimes: MessageDateTimes!
