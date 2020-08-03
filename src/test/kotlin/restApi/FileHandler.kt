@@ -1,0 +1,57 @@
+package com.neelkamath.omniChat.restApi
+
+import com.neelkamath.omniChat.main
+import io.ktor.application.Application
+import io.ktor.http.*
+import io.ktor.http.content.PartData
+import io.ktor.server.testing.TestApplicationResponse
+import io.ktor.server.testing.handleRequest
+import io.ktor.server.testing.setBody
+import io.ktor.server.testing.withTestApplication
+import io.ktor.utils.io.streams.asInput
+
+/** Creates a [file] which doesn't get saved to the filesystem. An example of a [name] is `"pic.png"`. */
+data class DummyFile(val name: String, val bytes: Int) {
+    val file = ByteArray(bytes)
+}
+
+fun getFileMessage(accessToken: String, messageId: Int, path: String): TestApplicationResponse =
+    withTestApplication(Application::main) {
+        val parameters = listOf("message-id" to messageId.toString()).formUrlEncode()
+        handleRequest(HttpMethod.Get, "$path?$parameters") {
+            addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        }.response
+    }
+
+fun uploadFile(
+    accessToken: String,
+    dummy: DummyFile,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null
+): TestApplicationResponse = withTestApplication(Application::main) {
+    handleRequest(method, if (parameters == null) path else "$path?$parameters") {
+        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        val boundary = "boundary"
+        addHeader(
+            HttpHeaders.ContentType,
+            ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString()
+        )
+        setBody(
+            boundary,
+            listOf(
+                PartData.FileItem(
+                    { dummy.file.inputStream().asInput() },
+                    {},
+                    headersOf(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.File
+                            .withParameter(ContentDisposition.Parameters.Name, "file")
+                            .withParameter(ContentDisposition.Parameters.FileName, dummy.name)
+                            .toString()
+                    )
+                )
+            )
+        )
+    }.response
+}

@@ -1,11 +1,14 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.Pic.Companion.MAX_BYTES
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.deleteUser
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
+import javax.annotation.Generated
 
 data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
 
@@ -13,19 +16,70 @@ data class ForwardPagination(val first: Int? = null, val after: Int? = null)
 
 data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 
+/** Throws an [IllegalArgumentException] if the [bytes] exceeds [Pic.MAX_BYTES]. */
+data class Pic(
+    /** At most [MAX_BYTES]. */
+    val bytes: ByteArray,
+    val type: Type
+) {
+    init {
+        if (bytes.size > MAX_BYTES)
+            throw IllegalArgumentException("The pic mustn't exceed $MAX_BYTES bytes.")
+    }
+
+    /** @see [buildType] */
+    enum class Type {
+        PNG {
+            override fun toString() = "png"
+        },
+        JPEG {
+            override fun toString() = "jpg"
+        }
+    }
+
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Pic
+
+        if (!bytes.contentEquals(other.bytes)) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        var result = bytes.contentHashCode()
+        result = 31 * result + type.hashCode()
+        return result
+    }
+
+    companion object {
+        const val MAX_BYTES = 25 * 1024 * 1024
+
+        /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
+        fun buildType(extension: String): Type = when (extension) {
+            "png" -> Type.PNG
+            "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
+            else ->
+                throw IllegalArgumentException("The pic ($extension) must be one of ${Type.values().joinToString()}.")
+        }
+    }
+}
+
+enum class MessageType { TEXT, PIC, AUDIO, POLL }
+
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
  * assumed that all enum values are lowercase in the DB.
  */
-class PostgresEnum<T : Enum<T>>(
-    /** The name of the enum in Postgres. */
-    typeName: String,
-    /** The name of the enum in Kotlin. */
-    value: T?
-) : PGobject() {
+class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject() {
     init {
-        type = typeName
-        this.value = value?.name?.toLowerCase()
+        type = postgresName
+        this.value = kotlinName?.name?.toLowerCase()
     }
 }
 
@@ -53,6 +107,12 @@ private fun connect() {
 private fun create(): Unit = transaction {
     createTypes()
     SchemaUtils.create(
+        TextMessages,
+        PicMessages,
+        AudioMessages,
+        PollMessages,
+        PollOptions,
+        PollVotes,
         Pics,
         Contacts,
         Chats,
@@ -74,7 +134,11 @@ fun shareChat(user1Id: Int, user2Id: Int): Boolean =
 
 /** Creates custom types if required. */
 private fun createTypes(): Unit = transaction {
-    mapOf("message_status" to MessageStatus.values(), "pic_type" to Pic.Type.values()).forEach { (name, enum) ->
+    mapOf(
+        "message_status" to MessageStatus.values(),
+        "pic_type" to Pic.Type.values(),
+        "message_type" to MessageType.values()
+    ).forEach { (name, enum) ->
         val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
         if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")
     }
@@ -112,15 +176,13 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
  *
  * - The user's [Contacts] will be deleted.
  * - Everyone's [Contacts] of the user will be deleted.
- * - Clients who have [Broker.subscribe]d to [ContactsSubscription]s via the [contactsBroker], and have the
- *   [userId] in their [Contacts], will be notified of this [DeletedContact].
- * - The [userId] will be [Broker.unsubscribe]d from [ContactsSubscription]s if they've [Broker.subscribe]d via
- *   the [contactsBroker].
+ * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [contactsBroker].
+ * - The [userId] will be unsubscribed via [contactsBroker].
  *
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a [DeletionOfEveryMessage].
+ * - Subscribers will be notified of a [DeletionOfEveryMessage] via [messagesBroker].
  *
  * ## Group Chats
  *

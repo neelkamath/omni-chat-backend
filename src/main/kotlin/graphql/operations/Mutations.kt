@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
+import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
 
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
@@ -83,14 +84,14 @@ fun setTyping(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun createMessage(env: DataFetchingEnvironment): Placeholder {
+fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, env.getArgument("text"), contextMessageId)
+    Messages.create(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
     return Placeholder
 }
 
@@ -243,5 +244,32 @@ fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     val userIdList = env.getArgument<List<Int>>("userIdList")
     if (!userIdList.all { isUserInChat(it, chatId) }) throw InvalidUserIdException
     GroupChatUsers.makeAdmins(chatId, userIdList)
+    return Placeholder
+}
+
+fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val poll = try {
+        env.parseArgument<PollInput>("poll")
+    } catch (_: IllegalArgumentException) {
+        throw InvalidPollException
+    }
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
+    Messages.create(env.userId!!, chatId, poll, contextMessageId)
+    return Placeholder
+}
+
+fun setPollVote(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    val option = env.getArgument<MessageText>("option")
+    if (!PollMessages.hasOption(messageId, option)) throw NonexistentOptionException
+    val vote = env.getArgument<Boolean>("vote")
+    PollMessages.setVote(env.userId!!, messageId, option, vote)
     return Placeholder
 }

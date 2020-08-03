@@ -18,10 +18,6 @@ object EmailAddressTakenException : GraphQlDocDataException("EMAIL_ADDRESS_TAKEN
 
 object InvalidChatIdException : GraphQlDocDataException("INVALID_CHAT_ID")
 
-object InvalidGroupChatUsersException : GraphQlDocDataException("INVALID_GROUP_CHAT_USERS")
-
-object InvalidNewAdminIdException : GraphQlDocDataException("INVALID_NEW_ADMIN_ID")
-
 object InvalidAdminIdException : GraphQlDocDataException("INVALID_ADMIN_ID")
 
 object UnregisteredEmailAddressException : GraphQlDocDataException("UNREGISTERED_EMAIL_ADDRESS")
@@ -38,4 +34,6 @@ object DuplicateStatusException : GraphQlDocDataException("DUPLICATE_STATUS")
 
 object CannotDeleteAccountException : GraphQlDocDataException("CANNOT_DELETE_ACCOUNT")
 
-object AdminCannotLeaveException : GraphQlDocDataException("ADMIN_CANNOT_LEAVE")
+object InvalidPollException : GraphQlDocDataException("INVALID_POLL")
+
+object NonexistentOptionException : GraphQlDocDataException("NONEXISTENT_OPTION")

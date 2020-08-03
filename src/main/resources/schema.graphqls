@@ -20,7 +20,7 @@ scalar GroupChatTitle
 scalar GroupChatDescription
 
 """1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark."""
-scalar TextMessage
+scalar MessageText
 
 """
 GraphQL mandates data be returned for every operation, and data be present in every type. However, certain operations
@@ -59,7 +59,7 @@ type Query {
     readOnlineStatuses: [OnlineStatus!]!
 
     """
-    Case-insensitively `query`s text messages in the `chatId`.
+    Case-insensitively `query`s text messages, poll message title and options, and pic message captions in the `chatId`.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
@@ -68,9 +68,9 @@ type Query {
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
     """
-    Case-insensitively `query`s every text message in every chat the user is in. Each item in the returned
-    `ChatMessages` will be for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search
-    results.
+    Case-insensitively `query`s every text messages, poll message title and options, and pic message captions in every
+    chat the user is in. Each item in the returned `ChatMessages` will be for a particular `ChatMessages.chat`, and have
+    the `ChatMessages.messages` from the search results.
 
     You must send an access token with this request.
     """
@@ -298,7 +298,7 @@ type Mutation {
     addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Only an admin can perform this operation.
+    Only an admin can perform this operation. Messages sent by, and polls voted on, by removed users will remain.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
     `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat, or the user must first appoint another
@@ -369,7 +369,31 @@ type Mutation {
 
     You must send an access token with this request.
     """
-    createMessage(chatId: Int!, text: TextMessage!, contextMessageId: Int): Placeholder!
+    createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
+
+    """
+    Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
+    user might want to give their message a context, such as when replying to a message sent several messages ago. In
+    this case, the `contextMessageId` is to be the ID of the message being replied to.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat),
+    `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist), or `"INVALID_POLL"` (i.e., there were less than
+    two options, or an option was duplicated).
+
+    You must send an access token with this request.
+    """
+    createPollMessage(chatId: Int!, poll: PollInput!, contextMessageId: Int): Placeholder!
+
+    """
+    Updates the user's vote for the `option` on the `messageId`'s poll. If `vote` is `true`, the user's vote will be
+    added if it hasn't already. If `vote` is `false`, the user's vote will be removed if there is one.
+
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist), or
+    `"NONEXISTENT_OPTION"` (i.e., the `option` isn't in the poll).
+
+    You must send an access token with this request.
+    """
+    setPollVote(messageId: Int!, option: MessageText!, vote: Boolean!): Placeholder!
 
     """
     Deletes the message `id` from the chat it's from. The user can only delete their own messages.
@@ -452,8 +476,14 @@ type Subscription {
 }
 
 union MessagesSubscription = CreatedSubscription
-    | NewMessage
-    | UpdatedMessage
+    | NewTextMessage
+    | NewPicMessage
+    | NewAudioMessage
+    | NewPollMessage
+    | UpdatedTextMessage
+    | UpdatedPicMessage
+    | UpdatedAudioMessage
+    | UpdatedPollMessage
     | DeletedMessage
     | MessageDeletionPoint
     | DeletionOfEveryMessage
@@ -567,6 +597,26 @@ type DeletedMessage {
     messageId: Int!
 }
 
+input PollInput {
+    """For example, `"Restaraunt"`."""
+    title: MessageText!
+    """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
+    options: [MessageText!]!
+}
+
+type PollOption {
+    option: MessageText!
+    """The ID of every user who voted for this."""
+    votes: [Int!]!
+}
+
+"""A user can vote for each option at most once, but can vote for multiple options."""
+type Poll {
+    title: MessageText!
+    """There are at least two options, each of which are unique."""
+    options: [PollOption!]!
+}
+
 type AccountsConnection {
     edges: [AccountEdge!]!
     pageInfo: PageInfo!
@@ -676,13 +726,6 @@ type PrivateChat implements Chat {
     user: Account!
 }
 
-interface BareMessage {
-    sender: Account!
-    text: TextMessage!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-}
-
 type MessageContext {
     """Whether this message was in reply to a particular message."""
     hasContext: Boolean!
@@ -697,51 +740,197 @@ type MessageContext {
     id: Int
 }
 
-type Message implements BareMessage {
-    id: Int!
+interface BareMessage {
+    messageId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+interface Message implements BareMessage {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
     hasStar: Boolean!
-    context: MessageContext!
 }
 
-interface MessageData implements BareMessage {
+type TextMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    message: MessageText!
+}
+
+type PicMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    caption: MessageText
+}
+
+type PollMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    poll: Poll!
+}
+
+type AudioMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+}
+
+interface BareChatMessage implements BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
-type StarredMessage implements MessageData, BareMessage {
+interface StarredMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
-type NewMessage implements MessageData, BareMessage {
+type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    text: TextMessage!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    message: MessageText!
+}
+
+type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    caption: MessageText
+}
+
+type StarredPollMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    poll: Poll!
+}
+
+type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+interface NewMessage implements BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    message: MessageText!
+}
+
+type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    caption: MessageText
+}
+
+type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    poll: Poll!
+}
+
+type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
     dateTimes: MessageDateTimes!
     context: MessageContext!
 }
 
 """An existing `messageId` in the `chatId` which was updated."""
-type UpdatedMessage implements MessageData, BareMessage {
+interface UpdatedMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    text: TextMessage!
     dateTimes: MessageDateTimes!
-    hasStar: Boolean!
     context: MessageContext!
+    hasStar: Boolean!
+}
+
+type UpdatedTextMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    message: MessageText!
+}
+
+type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    caption: MessageText
+}
+
+type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    poll: Poll!
+}
+
+type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
 }
 
 type MessageDateTimes {

@@ -1,5 +1,61 @@
 # Changelog
 
+## v0.3.0
+
+### GraphQL API
+
+- New:
+    - `Mutation.createTextMessage`
+    - `Mutation.createPollMessage`
+    - `Mutation.setPollVote`
+    - `Message` `interface`
+    - `MessageText` `scalar`
+    - `PollInput` `input`
+    - `PollOption` `type`
+    - `Poll` `type`
+    - `TextMessage` `type`
+    - `PicMessage` `type`
+    - `PollMessage` `type`
+    - `AudioMessage` `type`
+    - `BareChatMessage` `interface`
+    - `StarredMessage` `interface`
+    - `StarredTextMessage` `type`
+    - `StarredPicMessage` `type`
+    - `StarredPollMessage` `type`
+    - `StarredAudioMessage` `type`
+    - `NewMessage` `interface`
+    - `NewTextMessage` `type`
+    - `NewPicMessage` `type`
+    - `NewPollMessage` `type`
+    - `NewAudioMessage` `type`
+    - `UpdatedMessage` `interface`
+    - `UpdatedTextMessage` `type`
+    - `UpdatedPicMessage` `type`
+    - `UpdatedPollMessage` `type`
+    - `UpdatedAudioMessage` `type`
+- Updated:
+    - `MessagesSubscription` `union`
+    - `Query.searchChatMessages`
+    - `Query.searchMessages`
+    - `BareMessage` `interface`
+- Removed:
+    - `Mutation.createMessage`
+    - `MessageData` `interface`
+    - `NewMessage` `type`
+    - `StarredMessage` `type`
+    - `TextMessage` `scalar`
+    - `Message` `type`
+    - `UpdatedMessage` `type`
+
+### REST API
+
+- New:
+    - `/audio-message`
+    - `/pic-message`
+- Updated:
+    - `/profile-pic`
+    - `/group-chat-pic`
+
 ## v0.2.1
 
 ### GraphQL API
@@ -38,7 +94,9 @@
     - `GroupChatUpdate` `input`
     - `GroupChatInput` `input`
     - `NewGroupChatsSubscription` `union`
-    - The `Bio`, `GroupChatDescription`, and `TextMessage` `scalar`s now use [CommonMark](https://commonmark.org) instead of plain text.
+    - `Bio` `scalar`
+    - `GroupChatDescription` `scalar`
+    - `TextMessage` `scalar`
 - Removed:
     - `Mutation.leaveGroupChat`
     - `Mutation.updateGroupChat`

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.neelkamath.omniChat.graphql.routing.*
+import kotlin.reflect.KClass
 
 private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Placeholder =
@@ -14,7 +16,128 @@ private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
 private object ChatDeserializer : JsonDeserializer<Chat>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Chat {
         val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz = if (node.has("users")) GroupChat::class else PrivateChat::class
+        val clazz = when (val type = node["__typename"].asText()) {
+            "PrivateChat" -> PrivateChat::class
+            "GroupChat" -> GroupChat::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object AccountDataDeserializer : JsonDeserializer<AccountData>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): AccountData {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "Account" -> Account::class
+            "NewContact" -> NewContact::class
+            "UpdatedContact" -> UpdatedContact::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object BareMessageDeserializer : JsonDeserializer<BareMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): BareMessage {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "TextMessage" -> TextMessage::class
+            "PicMessage" -> PicMessage::class
+            "PollMessage" -> PollMessage::class
+            "AudioMessage" -> AudioMessage::class
+            "StarredTextMessage" -> StarredTextMessage::class
+            "StarredPicMessage" -> StarredPicMessage::class
+            "StarredPollMessage" -> StarredPollMessage::class
+            "StarredAudioMessage" -> StarredAudioMessage::class
+            "NewTextMessage" -> NewTextMessage::class
+            "NewPicMessage" -> NewPicMessage::class
+            "NewPollMessage" -> NewPollMessage::class
+            "NewAudioMessage" -> NewAudioMessage::class
+            "UpdatedTextMessage" -> UpdatedTextMessage::class
+            "UpdatedPicMessage" -> UpdatedPicMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
+            "UpdatedAudioMessage" -> UpdatedAudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object MessageDeserializer : JsonDeserializer<Message>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Message {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "TextMessage" -> TextMessage::class
+            "PicMessage" -> PicMessage::class
+            "PollMessage" -> PollMessage::class
+            "AudioMessage" -> AudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object BareChatMessageDeserializer : JsonDeserializer<BareChatMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): BareChatMessage {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "StarredTextMessage" -> StarredTextMessage::class
+            "StarredPicMessage" -> StarredPicMessage::class
+            "StarredPollMessage" -> StarredPollMessage::class
+            "StarredAudioMessage" -> StarredAudioMessage::class
+            "NewTextMessage" -> NewTextMessage::class
+            "NewPicMessage" -> NewPicMessage::class
+            "NewPollMessage" -> NewPollMessage::class
+            "NewAudioMessage" -> NewAudioMessage::class
+            "UpdatedTextMessage" -> UpdatedTextMessage::class
+            "UpdatedPicMessage" -> UpdatedPicMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
+            "UpdatedAudioMessage" -> UpdatedAudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object StarredMessageDeserializer : JsonDeserializer<StarredMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): StarredMessage {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "StarredTextMessage" -> StarredTextMessage::class
+            "StarredPicMessage" -> StarredPicMessage::class
+            "StarredPollMessage" -> StarredPollMessage::class
+            "StarredAudioMessage" -> StarredAudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object NewMessageDeserializer : JsonDeserializer<NewMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): NewMessage {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out NewMessage> = when (val type = node["__typename"].asText()) {
+            "NewTextMessage" -> NewTextMessage::class
+            "NewPicMessage" -> NewPicMessage::class
+            "NewPollMessage" -> NewPollMessage::class
+            "NewAudioMessage" -> NewAudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object UpdatedMessageDeserializer : JsonDeserializer<UpdatedMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): UpdatedMessage {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out UpdatedMessage> = when (val type = node["__typename"].asText()) {
+            "UpdatedTextMessage" -> UpdatedTextMessage::class
+            "UpdatedPicMessage" -> UpdatedPicMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
+            "UpdatedAudioMessage" -> UpdatedAudioMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
         return parser.codec.treeToValue(node, clazz.java)
     }
 }
@@ -65,14 +188,14 @@ private object GroupChatDescriptionSerializer : JsonSerializer<GroupChatDescript
     ): Unit = generator.writeString(groupChatDescription.value)
 }
 
-private object TextMessageDeserializer : JsonDeserializer<TextMessage>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): TextMessage =
-        parser.codec.readTree<JsonNode>(parser).textValue().let(::TextMessage)
+private object MessageTextDeserializer : JsonDeserializer<MessageText>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): MessageText =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::MessageText)
 }
 
-private object TextMessageSerializer : JsonSerializer<TextMessage>() {
-    override fun serialize(textMessage: TextMessage, generator: JsonGenerator, provider: SerializerProvider): Unit =
-        generator.writeString(textMessage.value)
+private object MessageTextSerializer : JsonSerializer<MessageText>() {
+    override fun serialize(messageText: MessageText, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(messageText.value)
 }
 
 private object BioDeserializer : JsonDeserializer<Bio>() {
@@ -90,11 +213,18 @@ fun configureObjectMapper() {
     objectMapper
         .register(Placeholder::class.java, PlaceholderDeserializer)
         .register(Chat::class.java, ChatDeserializer)
+        .register(AccountData::class.java, AccountDataDeserializer)
+        .register(BareMessage::class.java, BareMessageDeserializer)
+        .register(Message::class.java, MessageDeserializer)
+        .register(BareChatMessage::class.java, BareChatMessageDeserializer)
+        .register(StarredMessage::class.java, StarredMessageDeserializer)
+        .register(NewMessage::class.java, NewMessageDeserializer)
+        .register(UpdatedMessage::class.java, UpdatedMessageDeserializer)
         .register(Username::class.java, UsernameDeserializer, UsernameSerializer)
         .register(Password::class.java, PasswordDeserializer, PasswordSerializer)
         .register(GroupChatTitle::class.java, GroupChatTitleDeserializer, GroupChatTitleSerializer)
         .register(GroupChatDescription::class.java, GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
-        .register(TextMessage::class.java, TextMessageDeserializer, TextMessageSerializer)
+        .register(MessageText::class.java, MessageTextDeserializer, MessageTextSerializer)
         .register(Bio::class.java, BioDeserializer, BioSerializer)
 }
 

@@ -1,13 +1,13 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
- * Pics cannot exceed [Pics.MAX_PIC_BYTES].
+ * Pics cannot exceed [Pic.MAX_BYTES].
  *
  * @see [GroupChatUsers]
  * @see [Messages]
@@ -15,10 +15,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object GroupChats : Table() {
     override val tableName get() = "group_chats"
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
-    const val MAX_TITLE_LENGTH = 70
-    private val title: Column<String> = varchar("title", MAX_TITLE_LENGTH)
-    const val MAX_DESCRIPTION_LENGTH = 1000
-    private val description: Column<String> = varchar("description", MAX_DESCRIPTION_LENGTH)
+    private val title: Column<String> = varchar("title", GroupChatTitle.MAX_LENGTH)
+    private val description: Column<String> = varchar("description", GroupChatDescription.MAX_LENGTH)
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
     private val isBroadcast: Column<Boolean> = bool("is_broadcast")
 

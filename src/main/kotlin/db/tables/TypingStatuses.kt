@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.TypingStatus
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.typingStatusesBroker
+import com.neelkamath.omniChat.graphql.routing.TypingStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 

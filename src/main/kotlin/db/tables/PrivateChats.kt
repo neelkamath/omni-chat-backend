@@ -1,11 +1,11 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.DeletionOfEveryMessage
-import com.neelkamath.omniChat.PrivateChat
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ChatEdges
 import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
+import com.neelkamath.omniChat.graphql.routing.PrivateChat
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

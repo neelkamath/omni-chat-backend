@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -15,6 +16,10 @@ import java.time.LocalDateTime
 private typealias Filter = Op<Boolean>?
 
 /**
+ * @see [TextMessages]
+ * @see [AudioMessages]
+ * @see [PollMessages]
+ * @see [CaptionedPic]
  * @see [Stargazers]
  * @see [MessageStatuses]
  */
@@ -22,6 +27,12 @@ object Messages : IntIdTable() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
     private val sent: Column<LocalDateTime> = datetime("sent").clientDefault { LocalDateTime.now() }
     private val senderId: Column<Int> = integer("sender_id").references(Users.id)
+    private val type: Column<MessageType> = customEnumeration(
+        name = "type",
+        sql = "message_type",
+        fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("message_type", it) }
+    )
 
     /** Whether this message was in reply to a particular message. */
     private val hasContext: Column<Boolean> = bool("has_context")
@@ -34,12 +45,9 @@ object Messages : IntIdTable() {
      */
     private val contextMessageId: Column<Int?> = integer("context_message_id").references(Messages.id).nullable()
 
-    /** Text messages cannot exceed this length. */
-    const val MAX_TEXT_LENGTH = 10_000
-
-    private val text: Column<String> = varchar("text", MAX_TEXT_LENGTH)
-
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
+
+    data class TypedMessage(val type: MessageType, val message: BareMessage)
 
     private enum class CursorType {
         /** First message's cursor. */
@@ -68,11 +76,37 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Clients who have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will be notified.
+     * Subscribers will be notified of the [NewMessage] via [messagesBroker].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
-    fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?) {
+    fun create(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId ->
+            TextMessages.create(messageId, message)
+        }
+
+    fun create(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
+            PicMessages.create(messageId, message)
+        }
+
+    fun create(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
+            AudioMessages.create(messageId, message)
+        }
+
+    fun create(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.POLL, contextMessageId) { messageId ->
+            PollMessages.create(messageId, message)
+        }
+
+    private fun create(
+        userId: Int,
+        chatId: Int,
+        type: MessageType,
+        contextMessageId: Int?,
+        creator: (messageId: Int) -> Unit
+    ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         if (isInvalidBroadcast(userId, chatId))
@@ -80,17 +114,18 @@ object Messages : IntIdTable() {
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
-                it[this.text] = text.value
                 it[senderId] = userId
+                it[this.type] = type
                 it[hasContext] = contextMessageId != null
                 it[this.contextMessageId] = contextMessageId
             }.resultedValues!![0]
         }
-        val message = NewMessage.build(row[id].value, buildMessage(row))
+        creator(row[id].value)
+        val message = NewMessage.build(row[id].value) as MessagesSubscription
         messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
     }
 
-    /** Case-insensitively [query]s the [chatId]'s messages for the [userId]. */
+    /** Case-insensitively [query]s the [chatId]'s messages as seen by the [userId]. */
     fun searchGroupChat(
         userId: Int,
         chatId: Int,
@@ -110,13 +145,25 @@ object Messages : IntIdTable() {
     ): List<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
-     * Case-insensitively [query]s [MessageEdge.node]s.
+     * Case-insensitively [query]s [MessageEdge.node]s. An [IllegalArgumentException] will be thrown if the [edges]
+     * [MessageEdge.node] isn't a concrete class.
      *
      * @see [searchGroupChat]
      * @see [searchPrivateChat]
      */
-    private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> =
-        edges.filter { it.node.text.value.contains(query, ignoreCase = true) }
+    private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> = edges.filter { edge ->
+        when (edge.node) {
+            is TextMessage -> edge.node.message.value.contains(query, ignoreCase = true)
+            is PicMessage -> edge.node.caption?.value?.contains(query, ignoreCase = true) ?: false
+            is PollMessage -> {
+                val poll = PollMessages.read(edge.node.messageId)
+                poll.title.value.contains(query, ignoreCase = true) ||
+                        poll.options.any { it.option.value.contains(query, ignoreCase = true) }
+            }
+            is AudioMessage -> false
+            else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
+        }
+    }
 
     /**
      * The [chatId]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by the [userId].
@@ -137,7 +184,7 @@ object Messages : IntIdTable() {
         readChat(userId, chatId, pagination)
 
     /**
-     * The [userId] reading the [chatId]'s [MessageEdge]s.
+     * The [userId] reading the [chatId]'s [MessageEdge]s. The returned [MessageEdge]s are concrete classes.
      *
      * @see [readPrivateChat]
      * @see [readGroupChat]
@@ -157,11 +204,7 @@ object Messages : IntIdTable() {
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
-                .map {
-                    val messageId = it[Messages.id].value
-                    val message = Message.build(userId, messageId, buildMessage(it))
-                    MessageEdge(message, cursor = messageId)
-                }
+                .map { MessageEdge(buildMessage(userId, it), cursor = it[Messages.id].value) }
         }
     }
 
@@ -170,12 +213,43 @@ object Messages : IntIdTable() {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }
 
+    /** Returns a concrete class for the [messageId] as seen by the [userId]. */
+    fun readMessage(userId: Int, messageId: Int): Message {
+        val row = transaction {
+            select { Messages.id eq messageId }.first()
+        }
+        return buildMessage(userId, row)
+    }
+
     /**
-     * Returns the [messageId] for the [userId].
+     * Returns a concrete class as seen by the [userId].
      *
-     * @see [readBareMessage]
+     * @see [readMessage]
+     * @see [readTypedMessage]
      */
-    fun readMessage(userId: Int, messageId: Int): Message = Message.build(userId, messageId, readBareMessage(messageId))
+    private fun buildMessage(userId: Int, row: ResultRow): Message {
+        val (type, message) = readTypedMessage(row[id].value)
+        return when (type) {
+            MessageType.TEXT -> TextMessage.build(userId, message)
+            MessageType.PIC -> PicMessage.build(userId, message)
+            MessageType.AUDIO -> AudioMessage.build(userId, message)
+            MessageType.POLL -> PollMessage.build(userId, message)
+        }
+    }
+
+    /** @see [readMessage] */
+    fun readTypedMessage(messageId: Int): TypedMessage {
+        val row = transaction {
+            select { Messages.id eq messageId }.first()
+        }
+        val message = object : BareMessage {
+            override val messageId: Int = messageId
+            override val sender: Account = readUserById(row[senderId])
+            override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
+            override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
+        }
+        return TypedMessage(row[type], message)
+    }
 
     /**
      * The ID of the chat which contains the [messageId].
@@ -186,13 +260,14 @@ object Messages : IntIdTable() {
         select { Messages.id eq messageId }.first()[chatId]
     }
 
-    /**
-     * Deletes the [filter]ed [Messages] in the [chatId] along with their [MessageStatuses] and [Stargazers]. [Messages]
-     * with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`.
-     */
+    /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: List<Int>) {
         MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
+        TextMessages.delete(messageIdList)
+        PicMessages.delete(messageIdList)
+        AudioMessages.delete(messageIdList)
+        PollMessages.delete(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
@@ -202,8 +277,8 @@ object Messages : IntIdTable() {
     private fun deleteChatMessages(vararg messageIdList: Int): Unit = deleteChatMessages(messageIdList.toList())
 
     /**
-     * Deletes all [Messages], [MessageStatuses], and [Stargazers] in the [chatId]. Clients will be notified of a
-     * [DeletionOfEveryMessage] via [messagesBroker].
+     * Deletes all messages in the [chatId]. Clients will be notified of a [DeletionOfEveryMessage] via
+     * [messagesBroker].
      */
     fun deleteChat(chatId: Int) {
         deleteChatMessages(readMessageIdList(chatId))
@@ -211,8 +286,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages], [MessageStatuses], and [Stargazers] in the [chatId] [until] the specified
-     * [LocalDateTime]. [Broker.subscribe]rs will be notified of the [MessageDeletionPoint] via [messagesBroker].
+     * Deletes all messages in the [chatId] [until] the specified [LocalDateTime]. Subscribers will be notified of the
+     * [MessageDeletionPoint] via [messagesBroker].
      */
     fun deleteChatUntil(chatId: Int, until: LocalDateTime) {
         deleteChatMessages(readMessageIdList(chatId, sent less until))
@@ -220,8 +295,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages], [MessageStatuses], and [Stargazers] the [userId] created in the [chatId].
-     * [Broker.subscribe]rs will be [Broker.notify]d of the [UserChatMessagesRemoval] via [messagesBroker].
+     * Deletes all messages the [userId] created in the [chatId]. Subscribers will be notified of the
+     * [UserChatMessagesRemoval] via [messagesBroker].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
@@ -230,8 +305,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all [Messages], [MessageStatuses], and [Stargazers] the [userId] has. [Broker.subscribe]rs will be
-     * [Broker.notify]d of the [UserChatMessagesRemoval] via [messagesBroker].
+     * Deletes all messages the [userId] has. Subscribers will be notified of the [UserChatMessagesRemoval] via
+     * [messagesBroker].
      */
     fun deleteUserMessages(userId: Int) {
         MessageStatuses.deleteUserStatuses(userId)
@@ -242,8 +317,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes the message [id] in the [chatId] from [Messages], [MessageStatuses], and [Stargazers].
-     * [Broker.subscribe]rs will be [Broker.notify]d of the [DeletedMessage] via [messagesBroker].
+     * Deletes the message [id] in the [chatId] from messages. Subscribers will be notified of the [DeletedMessage] via
+     * [messagesBroker].
      */
     fun delete(id: Int) {
         val chatId = readChatFromMessage(id)
@@ -269,20 +344,7 @@ object Messages : IntIdTable() {
     }
 
     fun exists(id: Int): Boolean = transaction {
-        !select { Messages.id eq id }.empty()
-    }
-
-    /** @see [readMessage] */
-    fun readBareMessage(messageId: Int): BareMessage = transaction {
-        select { Messages.id eq messageId }.first().let(::buildMessage)
-    }
-
-    /** @see [readBareMessage] */
-    private fun buildMessage(row: ResultRow): BareMessage = object : BareMessage {
-        override val sender: Account = readUserById(row[senderId])
-        override val text: TextMessage = TextMessage(row[Messages.text])
-        override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(row[id].value))
-        override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
+        select { Messages.id eq id }.empty().not()
     }
 
     fun readGroupChatConnection(userId: Int, chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =

@@ -1,71 +1,18 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.PostgresEnum
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import javax.annotation.Generated
 
-/** Throws an [IllegalArgumentException] if the [bytes] exceeds [Pics.MAX_PIC_BYTES]. */
-data class Pic(
-    /** At most [Pics.MAX_PIC_BYTES]. */
-    val bytes: ByteArray,
-    val type: Type
-) {
-    init {
-        if (bytes.size > Pics.MAX_PIC_BYTES)
-            throw IllegalArgumentException("The pic mustn't exceed ${Pics.MAX_PIC_BYTES} bytes.")
-    }
-
-    enum class Type {
-        PNG {
-            override fun toString() = "png"
-        },
-        JPEG {
-            override fun toString() = "jpg"
-        }
-    }
-
-    @Generated
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Pic
-
-        if (!bytes.contentEquals(other.bytes)) return false
-        if (type != other.type) return false
-
-        return true
-    }
-
-    @Generated
-    override fun hashCode(): Int {
-        var result = bytes.contentHashCode()
-        result = 31 * result + type.hashCode()
-        return result
-    }
-
-    companion object {
-        /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-        fun build(bytes: ByteArray, extension: String): Pic {
-            val type = when (extension) {
-                "png" -> Type.PNG
-                "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
-                else -> throw IllegalArgumentException(
-                    "The image ($extension) must be one of ${Type.values().joinToString()}."
-                )
-            }
-            return Pic(bytes, type)
-        }
-    }
-}
-
+/**
+ * Used for profile pics, and group chat pics.
+ *
+ * @see [PicMessages]
+ */
 object Pics : IntIdTable() {
-    /** The pic cannot exceed 100 KiB. */
-    const val MAX_PIC_BYTES = 100 * 1024
-
-    private val bytes: Column<ByteArray> = binary("bytes", MAX_PIC_BYTES)
+    private val bytes: Column<ByteArray> = binary("bytes", Pic.MAX_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(
         name = "type",
         sql = "pic_type",
@@ -76,8 +23,8 @@ object Pics : IntIdTable() {
     /** Returns the ID of the pic. */
     fun create(pic: Pic): Int = transaction {
         insertAndGetId {
-            it[this.bytes] = pic.bytes
-            it[this.type] = pic.type
+            it[bytes] = pic.bytes
+            it[type] = pic.type
         }.value
     }
 

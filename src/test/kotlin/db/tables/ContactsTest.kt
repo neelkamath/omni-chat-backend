@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.DeletedContact
-import com.neelkamath.omniChat.NewContact
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ContactsAsset
 import com.neelkamath.omniChat.db.contactsBroker
+import com.neelkamath.omniChat.graphql.routing.DeletedContact
+import com.neelkamath.omniChat.graphql.routing.NewContact
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber

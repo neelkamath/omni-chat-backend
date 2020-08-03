@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.graphql.engine
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.graphql.routing.*
 import graphql.language.StringValue
 import graphql.schema.*
 import graphql.schema.idl.RuntimeWiring
@@ -81,12 +81,12 @@ private object GroupChatDescriptionCoercing : Coercing<GroupChatDescription, Str
         translate { (dataFetcherResult as GroupChatDescription).value }
 }
 
-private object TextMessageCoercing : Coercing<TextMessage, String> {
-    override fun parseValue(input: Any): TextMessage = dissectValue { TextMessage(input as String) }
+private object MessageTextCoercing : Coercing<MessageText, String> {
+    override fun parseValue(input: Any): MessageText = dissectValue { MessageText(input as String) }
 
-    override fun parseLiteral(input: Any): TextMessage = dissectLiteral { TextMessage((input as StringValue).value) }
+    override fun parseLiteral(input: Any): MessageText = dissectLiteral { MessageText((input as StringValue).value) }
 
-    override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as TextMessage).value }
+    override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as MessageText).value }
 }
 
 private object BioCoercing : Coercing<Bio, String> {
@@ -131,7 +131,7 @@ fun wireGraphQlScalars(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = 
     .scalar(build("Password", PasswordCoercing))
     .scalar(build("GroupChatTitle", GroupChatTitleCoercing))
     .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
-    .scalar(build("TextMessage", TextMessageCoercing))
+    .scalar(build("MessageText", MessageTextCoercing))
     .scalar(build("Bio", BioCoercing))
 
 private fun build(name: String, coercing: Coercing<*, *>): GraphQLScalarType =

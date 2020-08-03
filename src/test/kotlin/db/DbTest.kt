@@ -1,7 +1,11 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.deleteUser
+import com.neelkamath.omniChat.graphql.routing.AccountEdge
+import com.neelkamath.omniChat.graphql.routing.AccountsConnection
+import com.neelkamath.omniChat.graphql.routing.ExitedUser
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -10,6 +14,14 @@ import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
+
+class PicTest : FunSpec({
+    context("init") {
+        test("Passing an excessively large image should cause an exception to be thrown") {
+            shouldThrowExactly<IllegalArgumentException> { Pic(ByteArray(Pic.MAX_BYTES + 1), Pic.Type.PNG) }
+        }
+    }
+})
 
 class DbTest : FunSpec({
     context("deleteUserFromDb(String)") {
@@ -114,7 +126,7 @@ class DbTest : FunSpec({
         }
 
         test("The start and end cursors should be null if there are no users") {
-            AccountsConnection.build(AccountEdges = listOf()).pageInfo.run {
+            AccountsConnection.build(accountEdges = listOf()).pageInfo.run {
                 startCursor.shouldBeNull()
                 endCursor.shouldBeNull()
             }

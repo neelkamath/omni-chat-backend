@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.graphql.routing.Username
 import io.mockk.*
 import org.keycloak.admin.client.KeycloakBuilder
 import org.keycloak.admin.client.resource.RealmResource

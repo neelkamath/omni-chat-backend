@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.longs.shouldBeZero
@@ -65,7 +66,8 @@ class GroupChatsTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
                 .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChats.updatePic(chatId, readPic("31kB.png"))
+            val pic = Pic(ByteArray(1), Pic.Type.PNG)
+            GroupChats.updatePic(chatId, pic)
             adminSubscriber.assertValue(UpdatedGroupChat(chatId))
             nonParticipantSubscriber.assertNoValues()
         }
@@ -97,10 +99,10 @@ class GroupChatsTest : FunSpec({
             val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(listOf(adminId)) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
-                val messageId = Messages.message(adminId, it, TextMessage(queryText))
+                val messageId = Messages.message(adminId, it, MessageText(queryText))
                 MessageEdge(Messages.readMessage(adminId, messageId), cursor = messageId)
             }
-            Messages.create(adminId, chat3Id, TextMessage("bye"))
+            Messages.create(adminId, chat3Id, MessageText("bye"))
             val chat1Edges = ChatEdges(chat1Id, listOf(message1))
             val chat2Edges = ChatEdges(chat2Id, listOf(message2))
             GroupChats.queryUserChatEdges(adminId, queryText) shouldBe listOf(chat1Edges, chat2Edges)

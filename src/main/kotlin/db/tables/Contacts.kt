@@ -1,9 +1,13 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.contactsBroker
+import com.neelkamath.omniChat.graphql.routing.AccountEdge
+import com.neelkamath.omniChat.graphql.routing.AccountsConnection
+import com.neelkamath.omniChat.graphql.routing.DeletedContact
+import com.neelkamath.omniChat.graphql.routing.NewContact
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction

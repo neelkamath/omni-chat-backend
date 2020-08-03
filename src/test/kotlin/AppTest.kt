@@ -3,11 +3,12 @@ package com.neelkamath.omniChat
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.TextMessages
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
-import com.neelkamath.omniChat.graphql.operations.createMessage
-import com.neelkamath.omniChat.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChat.graphql.operations.createTextMessage
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldNotHaveKey
@@ -24,9 +25,9 @@ class EncodingTest : FunSpec({
     test("A message should allow using emoji and multiple languages") {
         val adminId = createVerifiedUsers(1)[0].info.id
         val chatId = GroupChats.create(listOf(adminId))
-        val message = TextMessage("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
-        createMessage(adminId, chatId, message)
-        Messages.readGroupChat(adminId, chatId)[0].node.text shouldBe message
+        val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
+        createTextMessage(adminId, chatId, message)
+        Messages.readGroupChat(adminId, chatId)[0].node.messageId.let(TextMessages::read) shouldBe message
     }
 })
 
@@ -43,12 +44,18 @@ class EncodingTest : FunSpec({
 class SpecComplianceTest : FunSpec({
     test("""The "data" key shouldn't be returned if there was no data to be received""") {
         val login = Login(Username("username"), Password("password"))
-        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "data"
+        readGraphQlHttpResponse(
+            REQUEST_TOKEN_SET_QUERY,
+            variables = mapOf("login" to login)
+        ) shouldNotHaveKey "data"
     }
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
         val login = createVerifiedUsers(1)[0].login
-        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey
+        readGraphQlHttpResponse(
+            REQUEST_TOKEN_SET_QUERY,
+            variables = mapOf("login" to login)
+        ) shouldNotHaveKey
                 "errors"
     }
 
@@ -57,7 +64,10 @@ class SpecComplianceTest : FunSpec({
         createUser(account)
         val userId = readUserByUsername(account.username).id
         val accessToken = buildAuthToken(userId).accessToken
-        val response = readGraphQlHttpResponse(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
+        val response = readGraphQlHttpResponse(
+            READ_ACCOUNT_QUERY,
+            accessToken = accessToken
+        )["data"] as Map<*, *>
         objectMapper.convertValue<Map<String, Any>>(response["readAccount"]!!) shouldContain Pair("firstName", null)
     }
 })

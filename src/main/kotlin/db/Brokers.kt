@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.Contacts
+import com.neelkamath.omniChat.graphql.routing.*
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observer

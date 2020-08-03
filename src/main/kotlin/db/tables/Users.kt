@@ -1,7 +1,13 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createUser
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.deleteUser
+import com.neelkamath.omniChat.graphql.routing.AccountEdge
+import com.neelkamath.omniChat.graphql.routing.AccountsConnection
+import com.neelkamath.omniChat.graphql.routing.Bio
+import com.neelkamath.omniChat.graphql.routing.UpdatedOnlineStatus
+import com.neelkamath.omniChat.searchUsers
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -20,16 +26,13 @@ data class User(
     val pic: Pic?
 )
 
-/** Replacement for Keycloak's cumbersome custom user attributes. Pics cannot exceed [Pics.MAX_PIC_BYTES]. */
+/** Replacement for Keycloak's cumbersome custom user attributes. Pics cannot exceed [Pic.MAX_BYTES]. */
 object Users : IntIdTable() {
     /** The ID given to the user by Keycloak. */
     private val uuid: Column<UUID> = uuid("uuid")
 
-    /** Bios cannot exceed this many characters. */
-    const val MAX_BIO_LENGTH = 2500
-
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
-    private val bio: Column<String?> = varchar("bio", MAX_BIO_LENGTH).nullable()
+    private val bio: Column<String?> = varchar("bio", Bio.MAX_LENGTH).nullable()
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
     private val lastOnline: Column<LocalDateTime?> = datetime("last_online").nullable()
 

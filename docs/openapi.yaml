@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  version: 0.2.1
+  version: 0.3.0
   title: Omni Chat
-  description: Functionality supplementary to the GraphQL API such as image uploading.
+  description: Functionality supplementary to the GraphQL API such as manipulating images and audio files.
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat
@@ -16,10 +16,83 @@ servers:
 tags:
   - name: profilePic
   - name: groupChatPic
+  - name: picMessage
+  - name: audioMessage
   - name: status
 paths:
+  /pic-message:
+    description: Create and read pic chat messages.
+    get:
+      tags: [picMessage]
+      description: Reads the pic from a message. To get the caption, use the GraphQL API.
+      operationId: getPicMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Pic'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [picMessage]
+      description: Creates a pic message. If the chat is a broadcast group, the user must be an admin.
+      operationId: postPicMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+        - $ref: '#/components/parameters/Caption'
+      requestBody:
+        $ref: '#/components/requestBodies/Pic'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidPicMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /audio-message:
+    description: Create and read audio chat messages.
+    get:
+      tags: [audioMessage]
+      description: Reads an audio message.
+      operationId: getAudioMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Audio'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [audioMessage]
+      description: Creates an audio message. If the chat is a broadcast group, the user must be an admin.
+      operationId: postAudioMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+      requestBody:
+        $ref: '#/components/requestBodies/AudioMessage'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidAudioMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /profile-pic:
-    description: A user's profile pic which doesn't exceed 100 KiB.
+    description: A user's profile pic which doesn't exceed 25 MiB.
     get:
       tags: [profilePic]
       description: Get the user's profile pic.
@@ -40,7 +113,7 @@ paths:
       security:
         - bearerAuth: []
       requestBody:
-        $ref: '#/components/requestBodies/PicUpdate'
+        $ref: '#/components/requestBodies/Pic'
       responses:
         '204':
           description: Pic updated.
@@ -54,7 +127,7 @@ paths:
       description: Retrieves the group chat's pic.
       operationId: getGroupChatPic
       parameters:
-        - $ref: '#/components/parameters/GroupChatId'
+        - $ref: '#/components/parameters/ChatId'
       responses:
         '200':
           $ref: '#/components/responses/Pic'
@@ -64,14 +137,14 @@ paths:
           description: The chat doesn't exist.
     patch:
       tags: [groupChatPic]
-      description: Update the group chat's pic. The user must be the admin.
+      description: Update the group chat's pic. The user must be an admin of the chat.
       operationId: patchGroupChatPic
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/GroupChatId'
+        - $ref: '#/components/parameters/ChatId'
       requestBody:
-        $ref: '#/components/requestBodies/PicUpdate'
+        $ref: '#/components/requestBodies/Pic'
       responses:
         '204':
           description: Pic updated.
@@ -94,34 +167,81 @@ components:
       type: object
       properties:
         reason:
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
           type: string
-          enum: [NONEXISTENT_CHAT, PIC_TOO_BIG]
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE]
+    InvalidAudioMessage:
+      type: object
+      properties:
+        reason:
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
+          type: string
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE]
+    InvalidPicMessage:
+      type: object
+      properties:
+        reason:
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
+          type: string
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE, INVALID_CAPTION]
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   responses:
+    InvalidAudioMessage:
+      description: Couldn't create message.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidAudioMessage'
+    InvalidPicMessage:
+      description: Couldn't create message.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidPicMessage'
     InvalidGroupChatPicUpdate:
-      description: The group chat's pic couldn't be updated because the chat didn't exist, or the pic was larger than
-        100 KiB.
+      description: Couldn't update pic.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
+    Audio:
+      description: An MP3 audio not exceeding 25 MiB.
+      content:
+        audio/mp3:
+          schema:
+            type: string
+            format: binary
     Pic:
-      description: A PNG or JPEG image not exceeding 100 KiB.
+      description: A PNG or JPEG image not exceeding 25 MiB.
       content:
         image/png, image/jpeg:
           schema:
             type: string
             format: binary
     InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 100 KiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 25 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
-    PicUpdate:
+    AudioMessage:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [audio]
+            properties:
+              audio:
+                description: An MP3 audio not exceeding 25 MiB.
+                type: string
+                format: binary
+          encoding:
+            pic:
+              contentType: audio/mp3
+    Pic:
       content:
         multipart/form-data:
           schema:
@@ -129,7 +249,7 @@ components:
             required: [pic]
             properties:
               pic:
-                description: Must be a PNG or JPEG not exceeding 100 KiB.
+                description: A PNG or JPEG image not exceeding 25 MiB.
                 type: string
                 format: binary
           encoding:
@@ -143,10 +263,30 @@ components:
       required: true
       schema:
         type: integer
-    GroupChatId:
+    ChatId:
       name: chat-id
       in: query
-      description: Group chat ID.
+      description: Chat ID.
       required: true
       schema:
         type: integer
+    MessageId:
+      name: message-id
+      in: query
+      description: Message ID.
+      required: true
+      schema:
+        type: integer
+    ContextMessageId:
+      name: context-message-id
+      in: query
+      description: The user might want to give their message a context, such as when replying to a message sent several
+        messages ago. In this case, this is the ID of the message being replied to.
+      schema:
+        type: integer
+    Caption:
+      name: caption
+      in: query
+      description: The pic's caption. 1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark.
+      schema:
+        type: string

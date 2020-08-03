@@ -1,7 +1,5 @@
-package com.neelkamath.omniChat.routing
+package com.neelkamath.omniChat.graphql.routing
 
-import com.neelkamath.omniChat.CreatedSubscription
-import com.neelkamath.omniChat.GraphQlRequest
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
@@ -16,7 +14,7 @@ import io.ktor.http.cio.websocket.FrameType
 import kotlinx.coroutines.time.delay
 import java.time.Duration
 
-class GraphQlSubscriptionsTest : FunSpec({
+class SubscriptionsTest : FunSpec({
     context("routeSubscription(Routing, String, GraphQlSubscription)") {
         fun testOperationName(shouldSupplyOperationName: Boolean) {
             val query = """

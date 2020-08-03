@@ -1,9 +1,7 @@
-package com.neelkamath.omniChat.routing
+package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.GraphQlRequest
-import com.neelkamath.omniChat.GraphQlResponse
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.objectMapper
 import io.ktor.application.Application

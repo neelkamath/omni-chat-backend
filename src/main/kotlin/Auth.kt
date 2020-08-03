@@ -3,6 +3,7 @@ package com.neelkamath.omniChat
 import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.negotiateUserUpdate
 import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChat.graphql.routing.*
 import io.ktor.http.HttpStatusCode
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder

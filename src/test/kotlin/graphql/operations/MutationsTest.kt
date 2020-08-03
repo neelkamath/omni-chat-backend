@@ -2,11 +2,12 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -16,6 +17,52 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
+
+const val CREATE_POLL_MESSAGE_QUERY = """
+    mutation CreatePollMessage(${"$"}chatId: Int!, ${"$"}poll: PollInput!, ${"$"}contextMessageId: Int) {
+        createPollMessage(chatId: ${"$"}chatId, poll: ${"$"}poll, contextMessageId: ${"$"}contextMessageId)
+    }
+"""
+
+private fun operateCreatePollMessage(
+    userId: Int,
+    chatId: Int,
+    poll: PollInput,
+    contextMessageId: Int?
+): GraphQlResponse = executeGraphQlViaEngine(
+    CREATE_POLL_MESSAGE_QUERY,
+    mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to contextMessageId),
+    userId
+)
+
+fun createPollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int?): Placeholder {
+    val data = operateCreatePollMessage(userId, chatId, poll, contextMessageId).data!!["createPollMessage"] as String
+    return objectMapper.convertValue(data)
+}
+
+fun errCreatePollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int?): String =
+    operateCreatePollMessage(userId, chatId, poll, contextMessageId).errors!![0].message
+
+const val SET_POLL_VOTE_QUERY = """
+    mutation SetPollVote(${"$"}messageId: Int!, ${"$"}option: MessageText!, ${"$"}vote: Boolean!) {
+        setPollVote(messageId: ${"$"}messageId, option: ${"$"}option, vote: ${"$"}vote)
+    }
+"""
+
+private fun operateSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(
+        SET_POLL_VOTE_QUERY,
+        mapOf("messageId" to messageId, "option" to option, "vote" to vote),
+        userId
+    )
+
+fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): Placeholder {
+    val data = operateSetPollVote(userId, messageId, option, vote).data!!["setPollVote"] as String
+    return objectMapper.convertValue(data)
+}
+
+fun errSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): String =
+    operateSetPollVote(userId, messageId, option, vote).errors!![0].message
 
 const val SET_BROADCAST_STATUS_QUERY = """
     mutation SetBroadcastStatus(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
@@ -245,15 +292,15 @@ fun errCreateGroupChat(userId: Int, chat: GroupChatInput): String =
     operateCreateGroupChat(userId, chat).errors!![0].message
 
 const val CREATE_MESSAGE_QUERY = """
-    mutation CreateMessage(${"$"}chatId: Int!, ${"$"}text: TextMessage!, ${"$"}contextMessageId: Int) {
-        createMessage(chatId: ${"$"}chatId, text: ${"$"}text, contextMessageId: ${"$"}contextMessageId)
+    mutation CreateTextMessage(${"$"}chatId: Int!, ${"$"}text: MessageText!, ${"$"}contextMessageId: Int) {
+        createTextMessage(chatId: ${"$"}chatId, text: ${"$"}text, contextMessageId: ${"$"}contextMessageId)
     }
 """
 
-private fun operateCreateMessage(
+private fun operateCreateTextMessage(
     userId: Int,
     chatId: Int,
-    text: TextMessage,
+    text: MessageText,
     contextMessageId: Int? = null
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_MESSAGE_QUERY,
@@ -261,13 +308,13 @@ private fun operateCreateMessage(
     userId
 )
 
-fun createMessage(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int? = null): Placeholder {
-    val data = operateCreateMessage(userId, chatId, text, contextMessageId).data!!["createMessage"] as String
+fun createTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): Placeholder {
+    val data = operateCreateTextMessage(userId, chatId, text, contextMessageId).data!!["createTextMessage"] as String
     return objectMapper.convertValue(data)
 }
 
-fun errCreateMessage(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int? = null): String =
-    operateCreateMessage(userId, chatId, text, contextMessageId).errors!![0].message
+fun errCreateTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): String =
+    operateCreateTextMessage(userId, chatId, text, contextMessageId).errors!![0].message
 
 const val CREATE_PRIVATE_CHAT_QUERY = """
     mutation CreatePrivateChat(${"$"}userId: Int!) {
@@ -416,6 +463,72 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
     operateUpdateAccount(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("createPollMessage(DataFetchingEnvironment)") {
+        test("A poll message should be created with a context") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val contextMessageId = Messages.message(adminId, chatId)
+            val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
+            createPollMessage(adminId, chatId, poll, contextMessageId)
+            val message = Messages.readGroupChat(adminId, chatId).last().node
+            message.context.id shouldBe contextMessageId
+            val options = poll.options.map { PollOption(it, votes = listOf()) }
+            PollMessages.read(message.messageId) shouldBe Poll(poll.title, options)
+        }
+
+        test("Messaging a poll in a chat the user isn't in should fail") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
+            errCreatePollMessage(userId, chatId = 1, poll = poll, contextMessageId = null) shouldBe
+                    InvalidChatIdException.message
+        }
+
+        test("Creating a poll in response to a nonexistent message should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
+            errCreatePollMessage(adminId, chatId, poll, contextMessageId = 1) shouldBe InvalidMessageIdException.message
+        }
+
+        test("Using an invalid poll should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val poll = mapOf("title" to "Title", "options" to listOf("option"))
+            executeGraphQlViaEngine(
+                CREATE_POLL_MESSAGE_QUERY,
+                mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to null),
+                adminId
+            ).errors!![0].message shouldBe InvalidPollException.message
+        }
+    }
+
+    context("setPollVote(DataFetchingEnvironment)") {
+        test("The user's vote should be updated") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val option = MessageText("option 1")
+            val poll = PollInput(MessageText("Title"), listOf(option, MessageText("option 2")))
+            val messageId = Messages.message(adminId, chatId, poll)
+            setPollVote(adminId, messageId, option, vote = true)
+            PollMessages.read(messageId).options.first { it.option == option }.votes shouldBe listOf(adminId)
+        }
+
+        test("Voting on a nonexistent poll should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            errSetPollVote(adminId, messageId = 1, option = MessageText("option"), vote = true) shouldBe
+                    InvalidMessageIdException.message
+        }
+
+        test("Voting for a nonexistent option should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
+            val messageId = Messages.message(adminId, chatId, poll)
+            errSetPollVote(adminId, messageId, MessageText("nonexistent option"), vote = true) shouldBe
+                    NonexistentOptionException.message
+        }
+    }
+
     context("setBroadcastStatus(DataFetchingEnvironment)") {
         test("Only an admin should be allowed to set the broadcast status") {
             val (admin, user) = createVerifiedUsers(2)
@@ -574,7 +687,7 @@ class MutationsTest : FunSpec({
         test("Deleting the pic should remove it") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            GroupChats.updatePic(chatId, readPic("31kB.png"))
+            GroupChats.updatePic(chatId, Pic(ByteArray(1), Pic.Type.PNG))
             deleteGroupChatPic(adminId, chatId)
             GroupChats.readPic(chatId).shouldBeNull()
         }
@@ -582,7 +695,11 @@ class MutationsTest : FunSpec({
         test("An exception should be thrown when a non-admin updates the pic") {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(DELETE_GROUP_CHAT_PIC_QUERY, mapOf("chatId" to chatId), user.accessToken)
+            executeGraphQlViaHttp(
+                DELETE_GROUP_CHAT_PIC_QUERY,
+                mapOf("chatId" to chatId),
+                user.accessToken
+            )
                 .shouldHaveUnauthorizedStatus()
         }
 
@@ -595,7 +712,8 @@ class MutationsTest : FunSpec({
     context("deleteProfilePic(DataFetchingEnvironment)") {
         test("The user's profile pic should be deleted") {
             val userId = createVerifiedUsers(1)[0].info.id
-            Users.updatePic(userId, readPic("31kB.png"))
+            val pic = Pic(ByteArray(1), Pic.Type.PNG)
+            Users.updatePic(userId, pic)
             deleteProfilePic(userId)
             Users.read(userId).pic.shouldBeNull()
         }
@@ -693,25 +811,25 @@ class MutationsTest : FunSpec({
         }
     }
 
-    context("createMessage(DataFetchingEnvironment)") {
+    context("createTextMessage(DataFetchingEnvironment)") {
         test("The user should be able to create a message in a private chat they just deleted") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            createMessage(user1Id, chatId, TextMessage("t"))
+            createTextMessage(user1Id, chatId, MessageText("t"))
         }
 
         test("Messaging in a chat the user isn't in should throw an exception") {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id))
             GroupChats.create(listOf(admin2Id))
-            errCreateMessage(admin2Id, chatId, TextMessage("t")) shouldBe InvalidChatIdException.message
+            errCreateTextMessage(admin2Id, chatId, MessageText("t")) shouldBe InvalidChatIdException.message
         }
 
         test("The message should be created sans context") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            createMessage(adminId, chatId, TextMessage("t"))
+            createTextMessage(adminId, chatId, MessageText("t"))
             Messages.readGroupChat(adminId, chatId).map { it.node.context } shouldBe
                     listOf(MessageContext(hasContext = false, id = null))
         }
@@ -720,7 +838,7 @@ class MutationsTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            createMessage(adminId, chatId, TextMessage("t"), contextMessageId = messageId)
+            createTextMessage(adminId, chatId, MessageText("t"), contextMessageId = messageId)
             Messages.readGroupChat(adminId, chatId)[1].node.context shouldBe
                     MessageContext(hasContext = true, id = messageId)
         }
@@ -728,7 +846,7 @@ class MutationsTest : FunSpec({
         test("Using a nonexistent message context should fail") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            errCreateMessage(adminId, chatId, TextMessage("t"), contextMessageId = 1) shouldBe
+            errCreateTextMessage(adminId, chatId, MessageText("t"), contextMessageId = 1) shouldBe
                     InvalidMessageIdException.message
         }
 
