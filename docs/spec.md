@@ -36,6 +36,7 @@ Since this repo is for the backend, here are recommendations for a frontend dev:
 - Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
 - Allow users to create record audio in-app.
 - When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
+- When clicking a poll message, each option should show the users who voted for it, and the users who didn't vote for any option should be displayed.
 
 ### Free
 
@@ -62,14 +63,12 @@ Features must be free if they're a unique selling point, are useful for the aver
 - Messages support any format, and won't be degraded (e.g., pics won't have their resolution lowered like in WhatsApp). Message types:
     - [x] Text
     - [x] Audio
-    - [ ] Pictures
-    - [ ] Any file type
-    - [ ] Polls
-    - [ ] Contacts
+    - [x] Pictures
+    - [x] Polls
     - [ ] Locations
     - [ ] Live locations for a specified duration
     - [ ] Videos
-    - [ ] Memoji
+    - [ ] Any file type
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
 - [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).

@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.UpdatedMessage
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesBroker
@@ -16,7 +15,7 @@ class StargazersTest : FunSpec({
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.create(user1Id, messageId)
-            user1Subscriber.assertValue(UpdatedMessage.build(user1Id, messageId))
+            user1Subscriber.assertValue(Messages.readMessage(user1Id, messageId).toUpdatedTextMessage())
             user2Subscriber.assertNoValues()
         }
     }
@@ -30,7 +29,7 @@ class StargazersTest : FunSpec({
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.deleteUserStar(user1Id, messageId)
-            user1Subscriber.assertValue(UpdatedMessage.build(user1Id, messageId))
+            user1Subscriber.assertValue(Messages.readMessage(user1Id, messageId).toUpdatedTextMessage())
             user2Subscriber.assertNoValues()
         }
 
@@ -53,8 +52,9 @@ class StargazersTest : FunSpec({
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                 .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.deleteStar(messageId)
-            mapOf(adminId to adminSubscriber, user1Id to user1Subscriber)
-                .forEach { (userId, subscriber) -> subscriber.assertValue(UpdatedMessage.build(userId, messageId)) }
+            mapOf(adminId to adminSubscriber, user1Id to user1Subscriber).forEach { (userId, subscriber) ->
+                subscriber.assertValue(Messages.readMessage(userId, messageId).toUpdatedTextMessage())
+            }
             user2Subscriber.assertNoValues()
         }
     }

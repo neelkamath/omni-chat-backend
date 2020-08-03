@@ -1,10 +1,14 @@
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
+import com.neelkamath.omniChat.graphql.routing.GroupChatInput
+import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpMethod
@@ -36,7 +40,7 @@ class PicMessageTest : FunSpec({
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val pic = Pic(ByteArray(1), Pic.Type.PNG)
-            val messageId = Messages.message(admin.info.id, chatId, PicMessage(pic, caption = null))
+            val messageId = Messages.message(admin.info.id, chatId, CaptionedPic(pic, caption = null))
             with(getPicMessage(admin.accessToken, messageId)) {
                 status() shouldBe HttpStatusCode.OK
                 byteContent shouldBe pic.bytes
@@ -66,8 +70,19 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+            }
+        }
+
+        test("Using an invalid message context should fail") {
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(listOf(admin.info.id))
+            val dummy = DummyFile("pic.png", bytes = 1)
+            with(postPicMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
+                status() shouldBe HttpStatusCode.BadRequest
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
 
@@ -76,8 +91,8 @@ class PicMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE)
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
             }
         }
 
@@ -85,6 +100,13 @@ class PicMessageTest : FunSpec({
 
         test("Uploading an excessively large audio file should fail") {
             testBadRequest(DummyFile("pic.png", Pic.MAX_BYTES + 1))
+        }
+
+        test("Using an invalid caption should fail") {
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(listOf(admin.info.id))
+            val dummy = DummyFile("pic.png", bytes = 1)
+            postPicMessage(admin.accessToken, dummy, chatId, caption = "")
         }
 
         test("An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat") {

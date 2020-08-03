@@ -1,12 +1,12 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.UpdatedAccount
-import com.neelkamath.omniChat.UpdatedContact
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChat.graphql.routing.UpdatedAccount
+import com.neelkamath.omniChat.graphql.routing.UpdatedContact
 import io.kotest.core.spec.style.FunSpec
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 

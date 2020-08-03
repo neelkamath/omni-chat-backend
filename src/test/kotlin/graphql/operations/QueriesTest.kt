@@ -10,7 +10,7 @@ import com.neelkamath.omniChat.graphql.InvalidChatIdException
 import com.neelkamath.omniChat.graphql.NonexistentUserException
 import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -476,7 +476,7 @@ class ChatMessagesDtoTest : FunSpec({
             /** The ID of the chat's admin. */
             val adminId: Int,
             /** Every message sent has this text. */
-            val text: TextMessage,
+            val text: MessageText,
             /** The ten messages the admin sent. */
             val messageIdList: List<Int>
         )
@@ -484,7 +484,7 @@ class ChatMessagesDtoTest : FunSpec({
         fun createUtilizedChat(): AdminMessages {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val message = TextMessage("t")
+            val message = MessageText("t")
             val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }
             return AdminMessages(adminId, message, messageIdList)
         }
@@ -523,7 +523,7 @@ class QueriesTest : FunSpec({
             val chatId = PrivateChats.create(user1Id, user2Id)
             val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId) }
             listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
-            readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(it) }
+            readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(user1Id, it) }
         }
     }
 
@@ -670,9 +670,9 @@ class QueriesTest : FunSpec({
         test("Messages should be searched case-insensitively") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            Messages.create(user1Id, chatId, TextMessage("Hey!"))
-            Messages.create(user2Id, chatId, TextMessage(":) hey"))
-            Messages.create(user1Id, chatId, TextMessage("How are you?"))
+            Messages.create(user1Id, chatId, MessageText("Hey!"))
+            Messages.create(user2Id, chatId, MessageText(":) hey"))
+            Messages.create(user1Id, chatId, MessageText("How are you?"))
             searchChatMessages(user1Id, chatId, "hey") shouldBe Messages.readPrivateChat(user1Id, chatId).dropLast(1)
         }
 
@@ -740,7 +740,7 @@ class QueriesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val text = "text"
-            Messages.message(user1Id, chatId, TextMessage(text))
+            Messages.message(user1Id, chatId, MessageText(text))
             PrivateChatDeletions.create(chatId, user1Id)
             searchMessages(user1Id, text).shouldBeEmpty()
         }
@@ -846,7 +846,7 @@ fun testMessagesPagination(operation: MessagesOperationName) {
         isBroadcast = false
     )
     val chatId = GroupChats.create(chat)
-    val text = TextMessage("t")
+    val text = MessageText("t")
     val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
     val last = 4
     val cursorIndex = 3
@@ -891,7 +891,7 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     )
     val chatId = GroupChats.create(groupChat)
     val text = "text"
-    Messages.create(adminId, chatId, TextMessage(text))
+    Messages.create(adminId, chatId, MessageText(text))
     val first = 3
     val userCursors = GroupChatUsers.read()
     val index = 5

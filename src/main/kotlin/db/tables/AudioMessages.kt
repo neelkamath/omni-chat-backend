@@ -36,23 +36,25 @@ data class Mp3(
     }
 }
 
-/** IDs refer to [Messages.id]s. */
+/** @see [Messages] */
 object AudioMessages : Table() {
-    private val id: Column<Int> = integer("id").uniqueIndex().references(Messages.id)
+    override val tableName = "audio_messages"
+    private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val audio: Column<ByteArray> = binary("audio", Mp3.MAX_BYTES)
 
+    /** @see [Messages.create] */
     fun create(id: Int, audio: Mp3): Unit = transaction {
         insert {
-            it[this.id] = id
+            it[this.messageId] = id
             it[this.audio] = audio.bytes
         }
     }
 
     fun read(id: Int): Mp3 = transaction {
-        select { AudioMessages.id eq id }.first()[audio].let(::Mp3)
+        select { messageId eq id }.first()[audio].let(::Mp3)
     }
 
     fun delete(idList: List<Int>): Unit = transaction {
-        deleteWhere { AudioMessages.id inList idList }
+        deleteWhere { messageId inList idList }
     }
 }

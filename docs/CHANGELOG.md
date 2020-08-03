@@ -5,13 +5,46 @@
 ### GraphQL API
 
 - New:
-    - `MessageType` `enum`
+    - `Mutation.createTextMessage`
+    - `Mutation.createPollMessage`
+    - `Mutation.setPollVote`
+    - `Message` `interface`
+    - `MessageText` `scalar`
+    - `PollInput` `input`
+    - `PollOption` `type`
+    - `Poll` `type`
+    - `TextMessage` `type`
+    - `PicMessage` `type`
+    - `PollMessage` `type`
+    - `AudioMessage` `type`
+    - `BareChatMessage` `interface`
+    - `StarredMessage` `interface`
+    - `StarredTextMessage` `type`
+    - `StarredPicMessage` `type`
+    - `StarredPollMessage` `type`
+    - `StarredAudioMessage` `type`
+    - `NewMessage` `interface`
+    - `NewTextMessage` `type`
+    - `NewPicMessage` `type`
+    - `NewPollMessage` `type`
+    - `NewAudioMessage` `type`
+    - `UpdatedMessage` `interface`
+    - `UpdatedTextMessage` `type`
+    - `UpdatedPicMessage` `type`
+    - `UpdatedPollMessage` `type`
+    - `UpdatedAudioMessage` `type`
 - Updated:
+    - `MessagesSubscription` `union`
+    - `Query.searchChatMessages`
+    - `Query.searchMessages`
     - `BareMessage` `interface`
-    - `Message` `type`
+- Removed:
+    - `Mutation.createMessage`
     - `MessageData` `interface`
-    - `StarredMessage` `type`
     - `NewMessage` `type`
+    - `StarredMessage` `type`
+    - `TextMessage` `scalar`
+    - `Message` `type`
     - `UpdatedMessage` `type`
 
 ### REST API

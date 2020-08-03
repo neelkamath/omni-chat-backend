@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.GroupChatDescription
-import com.neelkamath.omniChat.GroupChatInput
-import com.neelkamath.omniChat.GroupChatTitle
+import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
+import com.neelkamath.omniChat.graphql.routing.GroupChatInput
+import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
 
 /**
  * Returns the created chat's ID. It doesn't matter whether [adminIdList] and [userIdList] intersect. The chat's title

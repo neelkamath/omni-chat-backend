@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.restApi
 
-import com.neelkamath.omniChat.InvalidFileUpload
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.AudioMessages
 import com.neelkamath.omniChat.db.tables.Messages
@@ -40,15 +39,28 @@ private fun getAudioMessage(route: Route): Unit = with(route) {
 private fun postAudioMessage(route: Route): Unit = with(route) {
     post {
         val chatId = call.parameters["chat-id"]!!.toInt()
+        val contextMessageId = call.parameters["context-message-id"]?.toInt()
         val audio = readMp3()
         when {
-            !isUserInChat(call.userId!!, chatId) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT))
-            audio == null ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
+            !isUserInChat(call.userId!!, chatId) -> call.respond(
+                HttpStatusCode.BadRequest,
+                InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+            )
+
+            audio == null -> call.respond(
+                HttpStatusCode.BadRequest,
+                InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
+            )
+
+            contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
+                HttpStatusCode.BadRequest,
+                InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
+            )
+
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+
             else -> {
-                Messages.create(call.userId!!, chatId, audio, call.parameters["context-message-id"]?.toInt())
+                Messages.create(call.userId!!, chatId, audio, contextMessageId)
                 call.respond(HttpStatusCode.NoContent)
             }
         }

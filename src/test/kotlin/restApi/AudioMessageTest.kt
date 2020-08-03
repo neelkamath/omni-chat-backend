@@ -1,9 +1,13 @@
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
+import com.neelkamath.omniChat.graphql.routing.GroupChatInput
+import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
+import com.neelkamath.omniChat.objectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpMethod
@@ -63,8 +67,19 @@ class AudioMessageTest : FunSpec({
             val dummy = DummyFile("audio.mp3", bytes = 1)
             with(postAudioMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+            }
+        }
+
+        test("Using an invalid message context should fail") {
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(listOf(admin.info.id))
+            val dummy = DummyFile("audio.mp3", bytes = 1)
+            with(postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
+                status() shouldBe HttpStatusCode.BadRequest
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
 
@@ -73,8 +88,8 @@ class AudioMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postAudioMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE)
+                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
             }
         }
 

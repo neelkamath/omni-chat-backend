@@ -1,7 +1,11 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.MessageDateTimeStatus
+import com.neelkamath.omniChat.graphql.routing.MessageStatus
+import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
+import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -72,7 +76,7 @@ object MessageStatuses : Table() {
         }
         val chatId = Messages.readChatFromMessage(messageId)
         messagesBroker.notify(
-            update = { UpdatedMessage.build(it.userId, messageId) },
+            update = { UpdatedMessage.build(it.userId, messageId) as MessagesSubscription },
             filter = { isUserInChat(it.userId, chatId) }
         )
     }

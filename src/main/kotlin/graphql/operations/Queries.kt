@@ -9,6 +9,7 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
+import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
 
 interface ChatDto {
@@ -188,7 +189,7 @@ fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
 
 fun readStars(env: DataFetchingEnvironment): List<StarredMessage> {
     env.verifyAuth()
-    return Stargazers.read(env.userId!!).map { StarredMessage.build(it) }
+    return Stargazers.read(env.userId!!).map { StarredMessage.build(env.userId!!, it) }
 }
 
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {

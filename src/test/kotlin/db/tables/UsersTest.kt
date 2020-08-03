@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.UpdatedOnlineStatus
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.OnlineStatusesAsset
 import com.neelkamath.omniChat.db.onlineStatusesBroker
+import com.neelkamath.omniChat.graphql.routing.UpdatedOnlineStatus
 import io.kotest.core.spec.style.FunSpec
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 

@@ -1,26 +1,28 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.TextMessage
+import com.neelkamath.omniChat.graphql.routing.MessageText
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** IDs refer to [Messages.id]s. */
+/** @see [Messages] */
 object TextMessages : Table() {
-    private val id: Column<Int> = integer("id").uniqueIndex().references(Messages.id)
-    private val text: Column<String> = varchar("text", TextMessage.MAX_LENGTH)
+    override val tableName = "text_messages"
+    private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
+    private val text: Column<String> = varchar("text", MessageText.MAX_LENGTH)
 
-    fun create(id: Int, text: TextMessage): Unit = transaction {
+    /** @see [Messages.create] */
+    fun create(id: Int, text: MessageText): Unit = transaction {
         insert {
-            it[this.id] = id
+            it[this.messageId] = id
             it[this.text] = text.value
         }
     }
 
-    fun read(id: Int): TextMessage = transaction {
-        select { TextMessages.id eq id }.first()[text].let(::TextMessage)
+    fun read(id: Int): MessageText = transaction {
+        select { messageId eq id }.first()[text].let(::MessageText)
     }
 
     fun delete(idList: List<Int>): Unit = transaction {
-        deleteWhere { TextMessages.id inList idList }
+        deleteWhere { messageId inList idList }
     }
 }

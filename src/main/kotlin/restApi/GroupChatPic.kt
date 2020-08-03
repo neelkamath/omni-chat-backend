@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.restApi
 
-import com.neelkamath.omniChat.InvalidFileUpload
 import com.neelkamath.omniChat.db.tables.Chats
 import com.neelkamath.omniChat.db.tables.GroupChatUsers
 import com.neelkamath.omniChat.db.tables.GroupChats
@@ -35,11 +34,18 @@ private fun patchGroupChatPic(route: Route): Unit = with(route) {
         val chatId = call.parameters["chat-id"]!!.toInt()
         val pic = readPic()
         when {
-            pic == null ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE))
-            chatId !in GroupChatUsers.readChatIdList(call.userId!!) ->
-                call.respond(HttpStatusCode.BadRequest, InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT))
+            pic == null -> call.respond(
+                HttpStatusCode.BadRequest,
+                InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.INVALID_FILE)
+            )
+
+            chatId !in GroupChatUsers.readChatIdList(call.userId!!) -> call.respond(
+                HttpStatusCode.BadRequest,
+                InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
+            )
+
             !GroupChatUsers.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+
             else -> {
                 GroupChats.updatePic(chatId, pic)
                 call.respond(HttpStatusCode.NoContent)

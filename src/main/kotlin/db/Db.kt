@@ -1,8 +1,9 @@
 package com.neelkamath.omniChat.db
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Pic.Companion.MAX_BYTES
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.deleteUser
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -69,6 +70,8 @@ data class Pic(
     }
 }
 
+enum class MessageType { TEXT, PIC, AUDIO, POLL }
+
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
  * assumed that all enum values are lowercase in the DB.
@@ -107,6 +110,9 @@ private fun create(): Unit = transaction {
         TextMessages,
         PicMessages,
         AudioMessages,
+        PollMessages,
+        PollOptions,
+        PollVotes,
         Pics,
         Contacts,
         Chats,
@@ -170,15 +176,13 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
  *
  * - The user's [Contacts] will be deleted.
  * - Everyone's [Contacts] of the user will be deleted.
- * - Clients who have [Broker.subscribe]d to [ContactsSubscription]s via the [contactsBroker], and have the
- *   [userId] in their [Contacts], will be notified of this [DeletedContact].
- * - The [userId] will be [Broker.unsubscribe]d from [ContactsSubscription]s if they've [Broker.subscribe]d via
- *   the [contactsBroker].
+ * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [contactsBroker].
+ * - The [userId] will be unsubscribed via [contactsBroker].
  *
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Clients who have [Broker.subscribe]d via the [messagesBroker] will be notified of a [DeletionOfEveryMessage].
+ * - Subscribers will be notified of a [DeletionOfEveryMessage] via [messagesBroker].
  *
  * ## Group Chats
  *

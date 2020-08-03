@@ -3,11 +3,12 @@ package com.neelkamath.omniChat
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
+import com.neelkamath.omniChat.db.tables.TextMessages
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
-import com.neelkamath.omniChat.graphql.operations.createMessage
-import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChat.graphql.operations.createTextMessage
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.maps.shouldContain
 import io.kotest.matchers.maps.shouldNotHaveKey
@@ -24,9 +25,9 @@ class EncodingTest : FunSpec({
     test("A message should allow using emoji and multiple languages") {
         val adminId = createVerifiedUsers(1)[0].info.id
         val chatId = GroupChats.create(listOf(adminId))
-        val message = TextMessage("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
-        createMessage(adminId, chatId, message)
-        Messages.readGroupChat(adminId, chatId)[0].node.text shouldBe message
+        val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
+        createTextMessage(adminId, chatId, message)
+        Messages.readGroupChat(adminId, chatId)[0].node.messageId.let(TextMessages::read) shouldBe message
     }
 })
 

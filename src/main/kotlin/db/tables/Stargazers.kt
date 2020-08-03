@@ -1,8 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.UpdatedMessage
 import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
+import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -20,7 +21,8 @@ object Stargazers : Table() {
                 it[this.messageId] = messageId
             }
         }
-        messagesBroker.notify(UpdatedMessage.build(userId, messageId)) { it.userId == userId }
+        val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
+        messagesBroker.notify(message) { it.userId == userId }
     }
 
     /** Returns the ID of every message the [userId] has starred. */
@@ -50,7 +52,7 @@ object Stargazers : Table() {
         }
         for (stargazer in stargazers)
             messagesBroker.notify(
-                update = { UpdatedMessage.build(it.userId, messageId) },
+                update = { UpdatedMessage.build(it.userId, messageId) as MessagesSubscription },
                 filter = { it.userId == stargazer }
             )
     }
@@ -66,7 +68,8 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }
         }
-        messagesBroker.notify(UpdatedMessage.build(userId, messageId)) { it.userId == userId }
+        val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
+        messagesBroker.notify(message) { it.userId == userId }
     }
 
     /**

@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -17,7 +18,8 @@ private typealias Filter = Op<Boolean>?
 /**
  * @see [TextMessages]
  * @see [AudioMessages]
- * @see [PicMessage]
+ * @see [PollMessages]
+ * @see [CaptionedPic]
  * @see [Stargazers]
  * @see [MessageStatuses]
  */
@@ -44,6 +46,8 @@ object Messages : IntIdTable() {
     private val contextMessageId: Column<Int?> = integer("context_message_id").references(Messages.id).nullable()
 
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
+
+    data class TypedMessage(val type: MessageType, val message: BareMessage)
 
     private enum class CursorType {
         /** First message's cursor. */
@@ -76,20 +80,27 @@ object Messages : IntIdTable() {
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
-    fun create(userId: Int, chatId: Int, text: TextMessage, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId -> TextMessages.create(messageId, text) }
+    fun create(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId ->
+            TextMessages.create(messageId, message)
+        }
 
-    fun create(userId: Int, chatId: Int, message: PicMessage, contextMessageId: Int?): Unit =
+    fun create(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
             PicMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, audio: Mp3, contextMessageId: Int?): Unit =
+    fun create(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
-            AudioMessages.create(messageId, audio)
+            AudioMessages.create(messageId, message)
         }
 
-    private inline fun create(
+    fun create(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.POLL, contextMessageId) { messageId ->
+            PollMessages.create(messageId, message)
+        }
+
+    private fun create(
         userId: Int,
         chatId: Int,
         type: MessageType,
@@ -110,7 +121,7 @@ object Messages : IntIdTable() {
             }.resultedValues!![0]
         }
         creator(row[id].value)
-        val message = NewMessage.build(row[id].value, buildMessage(row))
+        val message = NewMessage.build(row[id].value) as MessagesSubscription
         messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
     }
 
@@ -134,16 +145,23 @@ object Messages : IntIdTable() {
     ): List<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
-     * Case-insensitively [query]s [MessageEdge.node]s.
+     * Case-insensitively [query]s [MessageEdge.node]s. An [IllegalArgumentException] will be thrown if the [edges]
+     * [MessageEdge.node] isn't a concrete class.
      *
      * @see [searchGroupChat]
      * @see [searchPrivateChat]
      */
-    private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> = edges.filter {
-        when (it.node.messageType) {
-            MessageType.TEXT -> it.node.text!!.value.contains(query, ignoreCase = true)
-            MessageType.PIC -> it.node.caption?.value?.contains(query, ignoreCase = true) ?: false
-            else -> false
+    private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> = edges.filter { edge ->
+        when (edge.node) {
+            is TextMessage -> edge.node.message.value.contains(query, ignoreCase = true)
+            is PicMessage -> edge.node.caption?.value?.contains(query, ignoreCase = true) ?: false
+            is PollMessage -> {
+                val poll = PollMessages.read(edge.node.messageId)
+                poll.title.value.contains(query, ignoreCase = true) ||
+                        poll.options.any { it.option.value.contains(query, ignoreCase = true) }
+            }
+            is AudioMessage -> false
+            else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
         }
     }
 
@@ -166,7 +184,7 @@ object Messages : IntIdTable() {
         readChat(userId, chatId, pagination)
 
     /**
-     * The [userId] reading the [chatId]'s [MessageEdge]s.
+     * The [userId] reading the [chatId]'s [MessageEdge]s. The returned [MessageEdge]s are concrete classes.
      *
      * @see [readPrivateChat]
      * @see [readGroupChat]
@@ -186,11 +204,7 @@ object Messages : IntIdTable() {
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
-                .map {
-                    val messageId = it[Messages.id].value
-                    val message = Message.build(userId, messageId, buildMessage(it))
-                    MessageEdge(message, cursor = messageId)
-                }
+                .map { MessageEdge(buildMessage(userId, it), cursor = it[Messages.id].value) }
         }
     }
 
@@ -199,12 +213,43 @@ object Messages : IntIdTable() {
         select { Messages.chatId eq chatId }.map { it[Messages.id].value }
     }
 
+    /** Returns a concrete class for the [messageId] as seen by the [userId]. */
+    fun readMessage(userId: Int, messageId: Int): Message {
+        val row = transaction {
+            select { Messages.id eq messageId }.first()
+        }
+        return buildMessage(userId, row)
+    }
+
     /**
-     * Returns the [messageId] for the [userId].
+     * Returns a concrete class as seen by the [userId].
      *
-     * @see [readBareMessage]
+     * @see [readMessage]
+     * @see [readTypedMessage]
      */
-    fun readMessage(userId: Int, messageId: Int): Message = Message.build(userId, messageId, readBareMessage(messageId))
+    private fun buildMessage(userId: Int, row: ResultRow): Message {
+        val (type, message) = readTypedMessage(row[id].value)
+        return when (type) {
+            MessageType.TEXT -> TextMessage.build(userId, message)
+            MessageType.PIC -> PicMessage.build(userId, message)
+            MessageType.AUDIO -> AudioMessage.build(userId, message)
+            MessageType.POLL -> PollMessage.build(userId, message)
+        }
+    }
+
+    /** @see [readMessage] */
+    fun readTypedMessage(messageId: Int): TypedMessage {
+        val row = transaction {
+            select { Messages.id eq messageId }.first()
+        }
+        val message = object : BareMessage {
+            override val messageId: Int = messageId
+            override val sender: Account = readUserById(row[senderId])
+            override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
+            override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
+        }
+        return TypedMessage(row[type], message)
+    }
 
     /**
      * The ID of the chat which contains the [messageId].
@@ -215,16 +260,14 @@ object Messages : IntIdTable() {
         select { Messages.id eq messageId }.first()[chatId]
     }
 
-    /**
-     * Deletes the [filter]ed messages in the [chatId]. [Messages] with [contextMessageId]s of deleted messages will
-     * have their [contextMessageId] set to `null`.
-     */
+    /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: List<Int>) {
         MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
         TextMessages.delete(messageIdList)
         PicMessages.delete(messageIdList)
         AudioMessages.delete(messageIdList)
+        PollMessages.delete(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
@@ -302,23 +345,6 @@ object Messages : IntIdTable() {
 
     fun exists(id: Int): Boolean = transaction {
         select { Messages.id eq id }.empty().not()
-    }
-
-    /** @see [readMessage] */
-    fun readBareMessage(messageId: Int): BareMessage = transaction {
-        select { Messages.id eq messageId }.first().let(::buildMessage)
-    }
-
-    /** @see [readBareMessage] */
-    private fun buildMessage(row: ResultRow): BareMessage = object : BareMessage {
-        override val sender: Account = readUserById(row[senderId])
-        override val messageId: Int = row[id].value
-        override val messageType: MessageType = row[type]
-        override val text: TextMessage? = if (messageType == MessageType.TEXT) TextMessages.read(messageId) else null
-        override val caption: TextMessage? =
-            if (messageType == MessageType.PIC) PicMessages.read(messageId).caption else null
-        override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
-        override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
     }
 
     fun readGroupChatConnection(userId: Int, chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =

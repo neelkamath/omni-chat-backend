@@ -1,15 +1,17 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -94,19 +96,46 @@ class MessagesTest : FunSpec({
     }
 
     context("search(List<MessageEdge>, String)") {
-        test("Only text messages and pic message captions should be searched") {
+        test("Text messages should be searched case insensitively") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val message1Id = Messages.message(adminId, chatId, TextMessage("Hi"))
-            Messages.message(adminId, chatId, TextMessage("Bye"))
+            val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
+            Messages.message(adminId, chatId, MessageText("Bye"))
+            Messages.searchGroupChat(adminId, chatId, "hi").map { it.node.messageId } shouldBe listOf(messageId)
+        }
+
+        test("Pic message captions should be searched case insensitively") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
             val pic = Pic(ByteArray(1), Pic.Type.PNG)
-            val hiCaption = TextMessage("Hi")
-            val message2Id = Messages.message(adminId, chatId, PicMessage(pic, hiCaption))
-            Messages.message(adminId, chatId, PicMessage(pic, caption = null))
-            val byeCaption = TextMessage("Bye")
-            Messages.message(adminId, chatId, PicMessage(pic, byeCaption))
-            Messages.searchGroupChat(adminId, chatId, "Hi").map { it.node.messageId } shouldBe
+            val message1 = CaptionedPic(pic, caption = MessageText("Hi"))
+            val messageId = Messages.message(adminId, chatId, message1)
+            val message2 = CaptionedPic(pic, caption = MessageText("Bye"))
+            Messages.message(adminId, chatId, message2)
+            Messages.searchGroupChat(adminId, chatId, "hi").map { it.node.messageId } shouldBe listOf(messageId)
+        }
+
+        test("Poll message title and options should be searched case insensitively") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val message1Options = listOf(MessageText("Burger King"), MessageText("Pizza Hut"))
+            val message1 = PollInput(title = MessageText("Restaurant"), options = message1Options)
+            val message1Id = Messages.message(adminId, chatId, message1)
+            val message2Options = listOf(MessageText("Japanese Restaurant"), MessageText("Thai Restaraunt"))
+            val message2 = PollInput(MessageText("Title"), message2Options)
+            val message2Id = Messages.message(adminId, chatId, message2)
+            val message3Options = listOf(MessageText("option 1"), MessageText("option 2"))
+            val message3 = PollInput(MessageText("Title"), message3Options)
+            Messages.message(adminId, chatId, message3)
+            Messages.searchGroupChat(adminId, chatId, "restaurant").map { it.node.messageId } shouldBe
                     listOf(message1Id, message2Id)
+        }
+
+        test("Audio messages shouldn't be returned") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            Messages.message(adminId, chatId, Mp3(ByteArray(1)))
+            Messages.searchGroupChat(adminId, chatId, "query").shouldBeEmpty()
         }
     }
 
@@ -119,7 +148,7 @@ class MessagesTest : FunSpec({
             repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
                 .forEach { (userId, subscriber) ->
-                    val updates = Messages.readGroupChat(userId, chatId).map { it.node.toNewMessage() }
+                    val updates = Messages.readGroupChat(userId, chatId).map { it.node.toNewTextMessage() }
                     subscriber.assertValueSequence(updates)
                 }
         }
@@ -130,13 +159,14 @@ class MessagesTest : FunSpec({
             PrivateChatDeletions.create(chatId, user1Id)
             val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             val messageId = Messages.message(user2Id, chatId)
-            subscriber.assertValue(Messages.readMessage(user1Id, messageId).toNewMessage())
+            val message = Messages.readMessage(user1Id, messageId)
+            subscriber.assertValue(message.toNewTextMessage())
         }
 
         test("An exception should be thrown if the user isn't in the chat") {
             val userId = createVerifiedUsers(1)[0].info.id
             shouldThrowExactly<IllegalArgumentException> {
-                Messages.create(userId, chatId = 1, text = TextMessage("t"))
+                Messages.create(userId, chatId = 1, text = MessageText("t"))
             }
         }
     }
@@ -151,10 +181,10 @@ class MessagesTest : FunSpec({
                 CreatedMessage(user1Id, "I have a question"),
                 CreatedMessage(user1Id, "Is tomorrow a holiday?")
             )
-            createdMessages.forEach { Messages.create(it.creatorId, chatId, TextMessage(it.message)) }
+            createdMessages.forEach { Messages.create(it.creatorId, chatId, MessageText(it.message)) }
             Messages.readPrivateChat(user1Id, chatId).forEachIndexed { index, message ->
                 message.node.sender.id shouldBe createdMessages[index].creatorId
-                message.node.text!!.value shouldBe createdMessages[index].message
+                message.node.messageId.let(TextMessages::read).value shouldBe createdMessages[index].message
             }
         }
 
@@ -181,7 +211,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextId = Messages.message(adminId, chatId)
-            Messages.create(adminId, chatId, TextMessage("t"), contextId)
+            Messages.create(adminId, chatId, MessageText("t"), contextId)
             shouldNotThrowAny { Messages.deleteChat(chatId) }
         }
 
@@ -197,7 +227,7 @@ class MessagesTest : FunSpec({
             val contextId = Messages.message(userId, chatId)
             val messageId = Messages.message(adminId, chatId, contextMessageId = contextId)
             Messages.deleteUserChatMessages(chatId, userId)
-            Messages.readBareMessage(messageId).context.id.shouldBeNull()
+            Messages.readMessage(adminId, messageId).context.id.shouldBeNull()
         }
     }
 

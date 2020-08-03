@@ -39,7 +39,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags: [picMessage]
-      description: Creates a pic message. If the chat is a broadcast group, then the user must be an admin.
+      description: Creates a pic message. If the chat is a broadcast group, the user must be an admin.
       operationId: postPicMessage
       security:
         - bearerAuth: []
@@ -53,7 +53,7 @@ paths:
         '204':
           description: Message created.
         '400':
-          $ref: '#/components/responses/InvalidFileUpload'
+          $ref: '#/components/responses/InvalidPicMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /audio-message:
@@ -75,7 +75,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
     post:
       tags: [audioMessage]
-      description: Creates an audio message. If the chat is a broadcast group, then the user must be an admin.
+      description: Creates an audio message. If the chat is a broadcast group, the user must be an admin.
       operationId: postAudioMessage
       security:
         - bearerAuth: []
@@ -88,7 +88,7 @@ paths:
         '204':
           description: Message created.
         '400':
-          $ref: '#/components/responses/InvalidFileUpload'
+          $ref: '#/components/responses/InvalidAudioMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
@@ -163,31 +163,51 @@ paths:
           description: Healthy.
 components:
   schemas:
-    InvalidFileUpload:
+    InvalidGroupChatPicUpdate:
       type: object
       properties:
         reason:
-          description: An `"INVALID_FILE"` means the file's type or size was unacceptable.
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
           type: string
           enum: [USER_NOT_IN_CHAT, INVALID_FILE]
+    InvalidAudioMessage:
+      type: object
+      properties:
+        reason:
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
+          type: string
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE]
+    InvalidPicMessage:
+      type: object
+      properties:
+        reason:
+          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
+          type: string
+          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE, INVALID_CAPTION]
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   responses:
-    InvalidFileUpload:
+    InvalidAudioMessage:
       description: Couldn't create message.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidFileUpload'
+            $ref: '#/components/schemas/InvalidAudioMessage'
+    InvalidPicMessage:
+      description: Couldn't create message.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InvalidPicMessage'
     InvalidGroupChatPicUpdate:
       description: Couldn't update pic.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidFileUpload'
+            $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
     Audio:
       description: An MP3 audio not exceeding 25 MiB.
       content:
@@ -260,12 +280,13 @@ components:
     ContextMessageId:
       name: context-message-id
       in: query
-      description: The ID of the message this message is in reply to.
+      description: The user might want to give their message a context, such as when replying to a message sent several
+        messages ago. In this case, this is the ID of the message being replied to.
       schema:
         type: integer
     Caption:
       name: caption
       in: query
-      description: The pic's caption.
+      description: The pic's caption. 1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark.
       schema:
         type: string

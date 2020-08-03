@@ -1,16 +1,13 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.Stargazers
+import com.neelkamath.omniChat.db.MessageType
+import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.readUserById
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 
 typealias Cursor = Int
-
-data class InvalidFileUpload(val reason: Reason) {
-    enum class Reason { USER_NOT_IN_CHAT, INVALID_FILE }
-}
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't lowercase, isn't shorter than 256 characters, or
@@ -98,16 +95,41 @@ data class Account(
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
 
-enum class MessageType { TEXT, PIC, AUDIO }
-
 interface BareMessage {
     val messageId: Int
-    val messageType: MessageType
-    val text: TextMessage?
-    val caption: TextMessage?
     val sender: Account
     val dateTimes: MessageDateTimes
     val context: MessageContext
+
+    fun toNewTextMessage(): NewTextMessage = NewTextMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        TextMessages.read(messageId)
+    )
+
+    fun toNewAudioMessage(): NewAudioMessage =
+        NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+
+    fun toNewPicTextMessage(): NewPicMessage = NewPicMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        PicMessages.read(messageId).caption
+    )
+
+    fun toNewPollMessage(): NewPollMessage = NewPollMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        PollMessages.read(messageId)
+    )
 }
 
 interface ContactsSubscription
@@ -180,10 +202,10 @@ data class GroupChatInput(
 interface UpdatedChatsSubscription
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[TextMessage.MAX_LENGTH] characters with at least
+ * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[MessageText.MAX_LENGTH] characters with at least
  * one non-whitespace.
  */
-data class TextMessage(val value: String) {
+data class MessageText(val value: String) {
     init {
         if (value.trim().isEmpty() || value.length > MAX_LENGTH)
             throw IllegalArgumentException(
@@ -297,137 +319,345 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
-interface MessageData : BareMessage {
-    override val messageId: Int
-    override val messageType: MessageType
-    override val text: TextMessage?
-    override val caption: TextMessage?
+interface BareChatMessage : BareMessage {
     val chatId: Int
+    override val messageId: Int
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
 }
 
-data class Message(
-    override val messageId: Int,
-    override val messageType: MessageType,
-    override val text: TextMessage?,
-    override val caption: TextMessage?,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean,
+interface Message : BareMessage {
+    override val messageId: Int
+    override val sender: Account
+    override val dateTimes: MessageDateTimes
     override val context: MessageContext
-) : BareMessage {
-    fun toNewMessage(): NewMessage = NewMessage(
-        messageId,
-        Messages.readChatFromMessage(messageId),
-        messageType,
-        text,
-        caption,
-        sender,
-        dateTimes,
-        context
-    )
+    val hasStar: Boolean
 
-    fun toUpdatedMessage(): UpdatedMessage = UpdatedMessage(
-        messageId,
+    fun toUpdatedTextMessage(): UpdatedTextMessage = UpdatedTextMessage(
         Messages.readChatFromMessage(messageId),
-        messageType,
-        text,
-        caption,
+        messageId,
         sender,
         dateTimes,
+        context,
         hasStar,
+        TextMessages.read(messageId)
+    )
+
+    fun toUpdatedPicMessage(): UpdatedPicMessage = UpdatedPicMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        hasStar,
+        PicMessages.read(messageId).caption
+    )
+
+    fun toUpdatedAudioMessage(): UpdatedAudioMessage =
+        UpdatedAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
+
+    fun toUpdatedPollMessage(): UpdatedPollMessage = UpdatedPollMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        hasStar,
+        PollMessages.read(messageId)
+    )
+
+    fun toStarredTextMessage(): StarredTextMessage = StarredTextMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        TextMessages.read(messageId)
+    )
+
+    fun toStarredPicMessage(): StarredPicMessage = StarredPicMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        PicMessages.read(messageId).caption
+    )
+
+    fun toStarredAudioMessage(): StarredAudioMessage = StarredAudioMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
         context
     )
 
+    fun toStarredPollMessage(): StarredPollMessage = StarredPollMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        PollMessages.read(messageId)
+    )
+}
+
+data class TextMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val message: MessageText
+) : BareMessage, Message {
     companion object {
-        /** The [userId] the [Message] is for. */
-        fun build(userId: Int, messageId: Int, message: BareMessage): Message = with(message) {
-            Message(
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): TextMessage = with(message) {
+            TextMessage(
                 messageId,
-                messageType,
-                text,
-                caption,
                 sender,
                 dateTimes,
+                context,
                 Stargazers.hasStar(userId, messageId),
-                context
+                TextMessages.read(messageId)
             )
         }
     }
 }
 
-data class StarredMessage(
+data class PicMessage(
     override val messageId: Int,
-    override val chatId: Int,
-    override val messageType: MessageType,
-    override val text: TextMessage?,
-    override val caption: TextMessage?,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
-) : MessageData {
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val caption: MessageText?
+) : BareMessage, Message {
     companion object {
-        fun build(messageId: Int): StarredMessage = with(Messages.readBareMessage(messageId)) {
-            StarredMessage(
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): PicMessage = with(message) {
+            PicMessage(
                 messageId,
-                Messages.readChatFromMessage(messageId),
-                messageType,
-                text,
-                caption,
                 sender,
                 dateTimes,
-                context
+                context,
+                Stargazers.hasStar(userId, messageId),
+                PicMessages.read(messageId).caption
             )
         }
     }
 }
+
+data class AudioMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean
+) : BareMessage, Message {
+    companion object {
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): AudioMessage =
+            with(message) { AudioMessage(messageId, sender, dateTimes, context, Stargazers.hasStar(userId, messageId)) }
+    }
+}
+
+data class PollMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val poll: Poll
+) : BareMessage, Message {
+    companion object {
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): PollMessage = with(message) {
+            PollMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                Stargazers.hasStar(userId, messageId),
+                PollMessages.read(messageId)
+            )
+        }
+    }
+}
+
+interface StarredMessage : BareChatMessage, BareMessage {
+    override val chatId: Int
+    override val messageId: Int
+    override val sender: Account
+    override val dateTimes: MessageDateTimes
+    override val context: MessageContext
+
+    companion object {
+        /** Returns a concrete class for the [messageId] as seen by the [userId]. */
+        fun build(userId: Int, messageId: Int): StarredMessage =
+            when (val message = Messages.readMessage(userId, messageId)) {
+                is TextMessage -> message.toStarredTextMessage()
+                is PicMessage -> message.toStarredPicMessage()
+                is AudioMessage -> message.toStarredAudioMessage()
+                is PollMessage -> message.toStarredPollMessage()
+                else -> throw IllegalArgumentException("$message didn't match a concrete type.")
+            }
+    }
+}
+
+data class StarredTextMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val message: MessageText
+) : StarredMessage, BareChatMessage, BareMessage
+
+data class StarredPicMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val caption: MessageText?
+) : StarredMessage, BareChatMessage, BareMessage
+
+data class StarredPollMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val poll: Poll
+) : StarredMessage, BareChatMessage, BareMessage
+
+data class StarredAudioMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : StarredMessage, BareChatMessage, BareMessage
 
 interface MessagesSubscription
 
-data class NewMessage(
-    override val messageId: Int,
-    override val chatId: Int,
-    override val messageType: MessageType,
-    override val text: TextMessage?,
-    override val caption: TextMessage?,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
+interface NewMessage : BareChatMessage, BareMessage {
+    override val chatId: Int
+    override val messageId: Int
+    override val sender: Account
+    override val dateTimes: MessageDateTimes
     override val context: MessageContext
-) : MessageData, MessagesSubscription {
+
     companion object {
-        fun build(id: Int, message: BareMessage): NewMessage = with(message) {
-            NewMessage(
-                id,
-                Messages.readChatFromMessage(id),
-                messageType,
-                text,
-                caption,
-                sender,
-                dateTimes,
-                context
-            )
+        /** Returns a concrete class for the [messageId]. */
+        fun build(messageId: Int): NewMessage {
+            val (type, message) = Messages.readTypedMessage(messageId)
+            return when (type) {
+                MessageType.TEXT -> message.toNewTextMessage()
+                MessageType.PIC -> message.toNewPicTextMessage()
+                MessageType.AUDIO -> message.toNewAudioMessage()
+                MessageType.POLL -> message.toNewPollMessage()
+            }
         }
     }
 }
 
-data class UpdatedMessage(
-    override val messageId: Int,
+data class NewTextMessage(
     override val chatId: Int,
-    override val messageType: MessageType,
-    override val text: TextMessage?,
-    override val caption: TextMessage?,
+    override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    val hasStar: Boolean,
+    override val context: MessageContext,
+    val message: MessageText
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class NewPicMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val caption: MessageText?
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class NewPollMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val poll: Poll
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class NewAudioMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
     override val context: MessageContext
-) : MessageData, MessagesSubscription {
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+interface UpdatedMessage : BareChatMessage, BareMessage {
+    override val chatId: Int
+    override val messageId: Int
+    override val sender: Account
+    override val dateTimes: MessageDateTimes
+    override val context: MessageContext
+    val hasStar: Boolean
+
     companion object {
+        /** Returns a concrete class for the [messageId] as seen by the [userId]. */
         fun build(userId: Int, messageId: Int): UpdatedMessage =
-            Messages.readMessage(userId, messageId).toUpdatedMessage()
+            when (val message = Messages.readMessage(userId, messageId)) {
+                is TextMessage -> message.toUpdatedTextMessage()
+                is PicMessage -> message.toUpdatedPicMessage()
+                is AudioMessage -> message.toUpdatedAudioMessage()
+                is PollMessage -> message.toUpdatedPollMessage()
+                else -> throw IllegalArgumentException("$message didn't match a concrete class.")
+            }
     }
 }
+
+data class UpdatedTextMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val message: MessageText
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedPicMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val caption: MessageText?
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedPollMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val poll: Poll
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedAudioMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus>)
 
@@ -465,10 +695,10 @@ data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
 data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {
     companion object {
-        /** @param[AccountEdges] needn't be listed in ascending order of their [AccountEdge.cursor]. */
-        fun build(AccountEdges: List<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
+        /** The [accountEdges] will be sorted in ascending order of their [AccountEdge.cursor] for you. */
+        fun build(accountEdges: List<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
             val (first, after) = pagination ?: ForwardPagination()
-            val accounts = AccountEdges.sortedBy { it.cursor }
+            val accounts = accountEdges.sortedBy { it.cursor }
             val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
             val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
             val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
@@ -491,3 +721,25 @@ data class PageInfo(
     val startCursor: Cursor? = null,
     val endCursor: Cursor? = null
 )
+
+/** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
+private fun <T> assertOptions(options: List<T>) {
+    if (options.size < 2) throw IllegalArgumentException("There must be at least two options: $options.")
+    if (options.toSet().size != options.size) throw IllegalArgumentException("Options must be unique: $options.")
+}
+
+/** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
+data class PollInput(val title: MessageText, val options: List<MessageText>) {
+    init {
+        assertOptions(options)
+    }
+}
+
+data class PollOption(val option: MessageText, val votes: List<Int>)
+
+/** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
+data class Poll(val title: MessageText, val options: List<PollOption>) {
+    init {
+        assertOptions(options)
+    }
+}

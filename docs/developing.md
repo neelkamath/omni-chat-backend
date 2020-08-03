@@ -102,7 +102,7 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 
-Here's how to create Kotlin [models](../src/main/kotlin/ApiModels.kt) for GraphQL types:
+Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.kt) for GraphQL types:
 
 |GraphQL|Kotlin|
 |---|---|

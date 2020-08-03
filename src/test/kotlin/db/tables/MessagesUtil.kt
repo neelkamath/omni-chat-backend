@@ -1,35 +1,46 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.TextMessage
+import com.neelkamath.omniChat.graphql.routing.MessageText
+import com.neelkamath.omniChat.graphql.routing.PollInput
 
-fun Messages.create(userId: Int, chatId: Int, text: TextMessage = TextMessage("t")): Unit =
+fun Messages.create(userId: Int, chatId: Int, text: MessageText = MessageText("t")): Unit =
     create(userId, chatId, text, contextMessageId = null)
 
-/** Sends the [text] in the [chatId] from the [userId], and returns the message's ID. */
+/** Sends the [message] in the [chatId] from the [userId], and returns the message's ID. */
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    text: TextMessage = TextMessage("t"),
+    message: MessageText = MessageText("t"),
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, text, contextMessageId)
+    create(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }
 
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    audio: Mp3,
+    message: Mp3,
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, audio, contextMessageId)
+    create(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }
 
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: PicMessage,
+    message: CaptionedPic,
+    contextMessageId: Int? = null
+): Int {
+    create(userId, chatId, message, contextMessageId)
+    return readIdList(chatId).last()
+}
+
+fun Messages.message(
+    userId: Int,
+    chatId: Int,
+    message: PollInput,
     contextMessageId: Int? = null
 ): Int {
     create(userId, chatId, message, contextMessageId)

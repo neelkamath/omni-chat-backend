@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.ExitedUser
-import com.neelkamath.omniChat.GroupChatId
-import com.neelkamath.omniChat.UpdatedGroupChat
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.graphql.routing.ExitedUser
+import com.neelkamath.omniChat.graphql.routing.GroupChatId
+import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse

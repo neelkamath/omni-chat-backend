@@ -1,5 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChat.graphql.routing
 
+import com.neelkamath.omniChat.createVerifiedUsers
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
 
@@ -41,19 +42,19 @@ class BioTest : FunSpec({
     }
 })
 
-class TextMessageTest : FunSpec({
+class MessageTextTest : FunSpec({
     context("init") {
         test("An exception should be thrown if the value is too short") {
-            shouldThrowExactly<IllegalArgumentException> { TextMessage("") }
+            shouldThrowExactly<IllegalArgumentException> { MessageText("") }
         }
 
         test("An exception should be thrown if the value is only whitespace") {
-            shouldThrowExactly<IllegalArgumentException> { TextMessage("  ") }
+            shouldThrowExactly<IllegalArgumentException> { MessageText("  ") }
         }
 
         test("An exception should be thrown if the value is too long") {
-            val text = CharArray(TextMessage.MAX_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { TextMessage(text) }
+            val text = CharArray(MessageText.MAX_LENGTH + 1) { 'a' }.joinToString("")
+            shouldThrowExactly<IllegalArgumentException> { MessageText(text) }
         }
     }
 })
@@ -116,6 +117,20 @@ class UpdatedGroupChatTest : FunSpec({
             shouldThrowExactly<IllegalArgumentException> {
                 UpdatedGroupChat(chatId = 1, newUsers = listOf(user1), removedUsers = listOf(user1, user2))
             }
+        }
+    }
+})
+
+class ModelsTest : FunSpec({
+    context("assertOptions(List<T>)") {
+        test("An exception should be thrown if there are fewer than two options") {
+            val options = listOf(MessageText("option 1"))
+            shouldThrowExactly<IllegalArgumentException> { PollInput(MessageText("Title"), options) }
+        }
+
+        test("An exception should be thrown if the options aren't unique") {
+            val option = MessageText("option")
+            shouldThrowExactly<IllegalArgumentException> { PollInput(MessageText("Title"), listOf(option, option)) }
         }
     }
 })

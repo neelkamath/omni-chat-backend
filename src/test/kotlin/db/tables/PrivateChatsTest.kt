@@ -1,8 +1,11 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createUser
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ChatEdges
 import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readUserByUsername
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -82,10 +85,10 @@ class PrivateChatsTest : FunSpec({
             val (chat1Id, chat2Id, chat3Id) = listOf(user2Id, user3Id, user4Id).map { PrivateChats.create(user1Id, it) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
-                val messageId = Messages.message(user1Id, it, TextMessage(queryText))
+                val messageId = Messages.message(user1Id, it, MessageText(queryText))
                 MessageEdge(Messages.readMessage(user1Id, messageId), cursor = messageId)
             }
-            Messages.create(user1Id, chat3Id, TextMessage("bye"))
+            Messages.create(user1Id, chat3Id, MessageText("bye"))
             val chat1Edges = ChatEdges(chat1Id, listOf(message1))
             val chat2Edges = ChatEdges(chat2Id, listOf(message2))
             PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe listOf(chat1Edges, chat2Edges)

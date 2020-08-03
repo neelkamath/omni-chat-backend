@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.InvalidFileUpload
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.GroupChats
@@ -45,8 +44,8 @@ class GroupChatPicTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(patchGroupChatPic(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
+                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
             }
         }
 
@@ -56,8 +55,8 @@ class GroupChatPicTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(patchGroupChatPic(user1.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.USER_NOT_IN_CHAT)
+                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
             }
         }
 
@@ -66,8 +65,8 @@ class GroupChatPicTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(patchGroupChatPic(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidFileUpload>(content!!) shouldBe
-                        InvalidFileUpload(InvalidFileUpload.Reason.INVALID_FILE)
+                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.INVALID_FILE)
             }
         }
 

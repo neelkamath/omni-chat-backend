@@ -1,7 +1,13 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createUser
 import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.deleteUser
+import com.neelkamath.omniChat.graphql.routing.AccountEdge
+import com.neelkamath.omniChat.graphql.routing.AccountsConnection
+import com.neelkamath.omniChat.graphql.routing.Bio
+import com.neelkamath.omniChat.graphql.routing.UpdatedOnlineStatus
+import com.neelkamath.omniChat.searchUsers
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
