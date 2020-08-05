@@ -25,17 +25,20 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 - [Docs](docs/api.md)
 - [Changelog](docs/CHANGELOG.md)
 - [Branding assets](branding)
+- The auth system's admin panel runs on http://localhost:80/auth/admin. The username is `admin`, and the password is the value of `KEYCLOAK_PASSWORD` in the `.env` file. You can perform any operation in the admin panel except creating and deleting users because that would cause the chat's DB to fall out of sync.
+- The `chat` service is dependent on other services, such as `auth`. Please see the docs of the other services to operate them in production. For example, the `auth` service uses the [Keycloak](https://hub.docker.com/r/jboss/keycloak) image, which documents how to back up, scale, etc. it.
 
 ### Running the Application
 
 1. Start the server on http://localhost:80: `docker-compose up -d`
+1. Wait for the server to start:
+    1. Run `docker logs -f <DIR>_chat_1`, where `<DIR>` is the name of the directory you're currently in.
+    1. Wait for something similar to `2020-08-05 01:29:38.946 [main] INFO  Application - Responding at http://0.0.0.0:80` to be printed.
+    1. Stop streaming logs:
+        - macOS: `control+C`
+        - Other: `Ctrl+C`
 1. [Set up the auth system](docs/auth_setup.md) if you haven't already.
 1. To shut down: `docker-compose down`
-
-- The auth system's admin panel runs on http://localhost:80/auth/admin. The username is `admin`, and the password is the value of `KEYCLOAK_PASSWORD` in the `.env` file. You can perform any operation in the admin panel except creating and deleting users because that would cause the chat DB to fall out of sync.
-- The `chat` service can be scaled freely.
-- The `chat` service is dependent on other services, such as `auth`. Please see the docs of the other services to operate them in production. For example, the `auth` service uses the [Keycloak](https://hub.docker.com/r/jboss/keycloak) image, which documents how to back up, restore, etc. it.
-- When restoring backups for the `chat-db` and `auth` services, make sure the backups had been taken at the same time because they're dependent on each other's state.
 
 ### Migrating to a Newer Version
 
