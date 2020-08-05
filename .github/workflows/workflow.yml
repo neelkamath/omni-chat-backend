@@ -46,7 +46,7 @@ jobs:
           path: build/reports/tests/test/
   create-github-release:
     if: github.ref == 'refs/heads/master'
-    needs: [test-server, lint-openapi-spec]
+    needs: [validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
         run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
   docker-registry-upload:
     if: github.ref == 'refs/heads/master'
-    needs: [test-server, lint-openapi-spec]
+    needs: [validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
