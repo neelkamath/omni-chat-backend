@@ -21,7 +21,7 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readPic(): Pic? {
             is PartData.FileItem -> {
                 val bytes = part.streamProvider().use { it.readBytes() }
                 pic = try {
-                    val type = Pic.buildType(File(part.originalFileName!!).extension)
+                    val type = Pic.Type.build(File(part.originalFileName!!).extension)
                     Pic(bytes, type)
                 } catch (_: IllegalArgumentException) {
                     null

@@ -27,13 +27,22 @@ data class Pic(
             throw IllegalArgumentException("The pic mustn't exceed $MAX_BYTES bytes.")
     }
 
-    /** @see [buildType] */
     enum class Type {
         PNG {
             override fun toString() = "png"
         },
         JPEG {
             override fun toString() = "jpg"
+        };
+
+        companion object {
+            /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
+            fun build(extension: String): Type = when (extension) {
+                "png" -> PNG
+                "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> JPEG
+                else ->
+                    throw IllegalArgumentException("The pic ($extension) must be one of ${values().joinToString()}.")
+            }
         }
     }
 
@@ -59,14 +68,6 @@ data class Pic(
 
     companion object {
         const val MAX_BYTES = 25 * 1024 * 1024
-
-        /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-        fun buildType(extension: String): Type = when (extension) {
-            "png" -> Type.PNG
-            "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
-            else ->
-                throw IllegalArgumentException("The pic ($extension) must be one of ${Type.values().joinToString()}.")
-        }
     }
 }
 

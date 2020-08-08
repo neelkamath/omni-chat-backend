@@ -10,7 +10,7 @@ import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
 import io.ktor.utils.io.streams.asInput
 
-/** Creates a [file] which doesn't get saved to the filesystem. An example of a [name] is `"pic.png"`. */
+/** Creates a [file] which doesn't get saved to the filesystem. An example [name] is `"pic.png"`. */
 data class DummyFile(val name: String, val bytes: Int) {
     val file = ByteArray(bytes)
 }

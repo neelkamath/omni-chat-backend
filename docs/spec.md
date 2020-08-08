@@ -34,6 +34,8 @@ Since this repo is for the backend, here are recommendations for a frontend dev:
 - Messages consisting solely of a single emoji will have the emoji enlarged.
 - You can require a password or biometric to unlock the app.
 - Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
+- Allow the user to share their location in-app. For example, an option to send their location via a Google Maps URL could be included.
+- Show link previews so that URLs show relevant info about websites shared in messages, such as a Google Maps URL. For example, you could use [SwiftLinkPreview](https://github.com/LeonardoCardoso/SwiftLinkPreview) for iOS.
 - Allow users to create record audio in-app.
 - When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
 - When clicking a poll message, each option should show the users who voted for it, and the users who didn't vote for any option should be displayed.
@@ -65,35 +67,32 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Audio
     - [x] Pictures
     - [x] Polls
-    - [ ] Locations
-    - [ ] Live locations for a specified duration
     - [ ] Videos
     - [ ] Any file type
+- [ ] Tag users in text messages for notifications and context (e.g., "@Bob Did you finish the presentation?").
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
 - [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] Every chat and message has a URL.
 - [ ] Allow search engines to index the chat.
-- [ ] Background noise cancellation for audio and video calls.
+- [ ] Background noise cancellation for both audio and video calls.
 - [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
-- [ ] Use @username or @all for notifications.
 - [ ] Group audio calls.
 - [ ] Spatial audio calls (important for gamers).
-- [ ] Video-mail (voicemail for video).
 - [ ] Video calls with multiple people.
 - [ ] Filters on video calls. The others will be able to see which filter you're using.
 - [ ] Screen sharing.
 - [ ] Have add-ons for video calls like games, and bunny ear effects. Developers can create their own add-ons.
+- [ ] API for integrations (e.g., bots).
 - [ ] Allow instances to pick one of the following access types.
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
     - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
-- [ ] API for integrations (e.g., bots).
 - [ ] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
 - [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
 - [ ] Run a production instance taking care of the following:
-    - [ ] Automate backups.
     - [ ] Don't run images as the `root` user.
+    - [ ] Automate backups.
     - [ ] Use Docker secrets instead of an `.env` file. At the very least, doc that you should use secrets instead of an `.env` file (if it's bad to use an `.env` file).
     - [ ] Use Docker configs instead of bind mounts.
     - [ ] Metrics via Prometheus and/or [Elastic Metrics](https://www.elastic.co/infrastructure-monitoring).
