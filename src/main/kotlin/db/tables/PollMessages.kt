@@ -1,7 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.MessagesAsset
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -42,9 +43,9 @@ object PollMessages : IntIdTable() {
     fun setVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean) {
         val optionId = PollOptions.readId(readId(messageId), option)
         if (vote) PollVotes.create(userId, optionId) else PollVotes.deleteVote(userId, optionId)
-        messagesBroker.notify({ UpdatedMessage.build(it.userId, messageId) as MessagesSubscription }) {
-            isUserInChat(it.userId, Messages.readChatFromMessage(messageId))
-        }
+        val updates = readUserIdList(Messages.readChatFromMessage(messageId))
+            .associate { MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription }
+        messagesNotifier.publish(updates)
     }
 
     /** Whether the [messageId] has the [option]. */

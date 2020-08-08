@@ -1,7 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.MessagesAsset
+import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
@@ -12,7 +12,10 @@ object Stargazers : Table() {
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
 
-    /** If [hasStar], nothing happens. [Broker.notify]s the [userId] of the starred [messageId] via [messagesBroker]. */
+    /**
+     * If [hasStar], nothing happens. Otherwise, the [userId] is notified of the starred [messageId] via
+     * [messagesNotifier].
+     */
     fun create(userId: Int, messageId: Int) {
         if (hasStar(userId, messageId)) return
         transaction {
@@ -22,7 +25,7 @@ object Stargazers : Table() {
             }
         }
         val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
-        messagesBroker.notify(message) { it.userId == userId }
+        messagesNotifier.publish(message, MessagesAsset(userId))
     }
 
     /** Returns the ID of every message the [userId] has starred. */
@@ -40,7 +43,8 @@ object Stargazers : Table() {
     }
 
     /**
-     * Deletes every user's star from the [messageId]. [Broker.notify]s stargazers via [messagesBroker].
+     * Deletes every user's star from the [messageId]. Notifies stargazers of the [UpdatedMessage] via
+     * [messagesNotifier].
      *
      * @see [deleteUserStar]
      * @see [deleteStars]
@@ -50,16 +54,15 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { Stargazers.messageId eq messageId }
         }
-        for (stargazer in stargazers)
-            messagesBroker.notify(
-                update = { UpdatedMessage.build(it.userId, messageId) as MessagesSubscription },
-                filter = { it.userId == stargazer }
-            )
+        stargazers.forEach {
+            val update = MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription
+            messagesNotifier.publish(update)
+        }
     }
 
     /**
-     * [Broker.notify]s the [userId] that the [messageId] is no longer starred via [messagesBroker] unless not
-     * [hasStar], in which case nothing will happen.
+     * If not [hasStar], nothing will happen. Otherwise, the [userId] will be notified of the [UpdatedMessage] via
+     * [messagesNotifier].
      *
      * @see [deleteStar]
      */
@@ -68,8 +71,7 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }
         }
-        val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
-        messagesBroker.notify(message) { it.userId == userId }
+        messagesNotifier.publish(UpdatedMessage.build(userId, messageId) as MessagesSubscription, MessagesAsset(userId))
     }
 
     /**

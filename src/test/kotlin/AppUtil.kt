@@ -4,8 +4,35 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.neelkamath.omniChat.db.unsubscribeFromMessageBroker
 import com.neelkamath.omniChat.graphql.routing.*
+import io.ktor.application.Application
 import kotlin.reflect.KClass
+
+/** The [objectMapper] for the test source set. */
+val testingObjectMapper: ObjectMapper = objectMapper
+    .copy()
+    .register(PlaceholderDeserializer)
+    .register(ChatDeserializer)
+    .register(AccountDataDeserializer)
+    .register(BareMessageDeserializer)
+    .register(MessageDeserializer)
+    .register(BareChatMessageDeserializer)
+    .register(StarredMessageDeserializer)
+    .register(NewMessageDeserializer)
+    .register(UpdatedMessageDeserializer)
+    .register(UsernameDeserializer, UsernameSerializer)
+    .register(PasswordDeserializer, PasswordSerializer)
+    .register(GroupChatTitleDeserializer, GroupChatTitleSerializer)
+    .register(GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
+    .register(MessageTextDeserializer, MessageTextSerializer)
+    .register(BioDeserializer, BioSerializer)
+
+/** Use in place of [Application.main]. */
+fun Application.test() {
+    unsubscribeFromMessageBroker()
+    main()
+}
 
 private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Placeholder =
@@ -208,34 +235,13 @@ private object BioSerializer : JsonSerializer<Bio>() {
         generator.writeString(textMessage.value)
 }
 
-/** Updates the [objectMapper] to provide the extra functionality the test source set requires. */
-fun configureObjectMapper() {
-    objectMapper
-        .register(Placeholder::class.java, PlaceholderDeserializer)
-        .register(Chat::class.java, ChatDeserializer)
-        .register(AccountData::class.java, AccountDataDeserializer)
-        .register(BareMessage::class.java, BareMessageDeserializer)
-        .register(Message::class.java, MessageDeserializer)
-        .register(BareChatMessage::class.java, BareChatMessageDeserializer)
-        .register(StarredMessage::class.java, StarredMessageDeserializer)
-        .register(NewMessage::class.java, NewMessageDeserializer)
-        .register(UpdatedMessage::class.java, UpdatedMessageDeserializer)
-        .register(Username::class.java, UsernameDeserializer, UsernameSerializer)
-        .register(Password::class.java, PasswordDeserializer, PasswordSerializer)
-        .register(GroupChatTitle::class.java, GroupChatTitleDeserializer, GroupChatTitleSerializer)
-        .register(GroupChatDescription::class.java, GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
-        .register(MessageText::class.java, MessageTextDeserializer, MessageTextSerializer)
-        .register(Bio::class.java, BioDeserializer, BioSerializer)
-}
-
-/** Convenience function for [ObjectMapper.registerModule]. Registers the [clazz]'s [serializer] and [deserializer]. */
-private fun <T> ObjectMapper.register(
-    clazz: Class<T>,
+/** Convenience function for [ObjectMapper.registerModule]. Registers the [T]'s [serializer] and [deserializer]. */
+private inline fun <reified T : Any> ObjectMapper.register(
     deserializer: JsonDeserializer<T>,
     serializer: JsonSerializer<T>? = null
 ): ObjectMapper {
     val module = SimpleModule()
-    module.addDeserializer(clazz, deserializer)
-    serializer?.let { module.addSerializer(clazz, it) }
+    module.addDeserializer(T::class.java, deserializer)
+    serializer?.let { module.addSerializer(T::class.java, it) }
     return registerModule(module)
 }

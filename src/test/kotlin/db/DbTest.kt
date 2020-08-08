@@ -33,7 +33,8 @@ class DbTest : FunSpec({
 
         test("The deleted user should be unsubscribed via the new group chats broker") {
             val userId = createVerifiedUsers(1)[0].info.id
-            val subscriber = newGroupChatsBroker.subscribe(NewGroupChatsAsset(userId)).subscribeWith(TestSubscriber())
+            val subscriber =
+                newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(userId)).subscribeWith(TestSubscriber())
             deleteUserFromDb(userId)
             subscriber.assertComplete()
         }
@@ -55,7 +56,7 @@ class DbTest : FunSpec({
         test("The deleted user should be unsubscribed from contact updates") {
             val userId = createVerifiedUsers(1)[0].info.id
             val subscriber =
-                contactsBroker.subscribe(ContactsAsset(userId)).subscribeWith(TestSubscriber())
+                contactsNotifier.safelySubscribe(ContactsAsset(userId)).subscribeWith(TestSubscriber())
             deleteUserFromDb(userId)
             subscriber.assertComplete()
         }
@@ -64,15 +65,16 @@ class DbTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             deleteUserFromDb(userId)
+            awaitBrokering()
             adminSubscriber.assertValue(ExitedUser(userId, chatId))
             userSubscriber.assertComplete()
         }
 
         test("The user should be unsubscribed from message updates") {
             val userId = createVerifiedUsers(1)[0].info.id
-            val subscriber = messagesBroker.subscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber())
             deleteUserFromDb(userId)
             subscriber.assertComplete()
         }

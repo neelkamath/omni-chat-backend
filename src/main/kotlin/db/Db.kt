@@ -163,44 +163,51 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
 fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
+fun readUserIdList(chatId: Int): List<Int> =
+    if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
+
+/** Returns the ID of every user who shares a chat with the [userId], including deleted private chats. */
+fun readChatSharers(userId: Int): List<Int> =
+    PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
+
 /**
- * Deletes the [userId]'s data from the DB. An [IllegalArgumentException] will be thrown if the not
- * [GroupChatUsers.canUserLeave].
+ * Deletes the [userId]'s data from the DB, and [Notifier.unsubscribe]s them from all notifiers. An
+ * [IllegalArgumentException] will be thrown if the not [GroupChatUsers.canUserLeave].
  *
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
- * - Clients who have [Broker.subscribe]d via [updatedChatsBroker] will be [Broker.unsubscribe]d.
+ * - Clients who have [Notifier.subscribe]d via [updatedChatsNotifier] will be [Notifier.unsubscribe]d.
  *
  * ## Contacts
  *
  * - The user's [Contacts] will be deleted.
  * - Everyone's [Contacts] of the user will be deleted.
- * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [contactsBroker].
- * - The [userId] will be unsubscribed via [contactsBroker].
+ * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [contactsNotifier].
+ * - The [userId] will be unsubscribed via [contactsNotifier].
  *
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Subscribers will be notified of a [DeletionOfEveryMessage] via [messagesBroker].
+ * - Subscribers will be notified of a [DeletionOfEveryMessage] via [messagesNotifier].
  *
  * ## Group Chats
  *
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Broker.unsubscribe]d via [updatedChatsBroker].
+ * - Clients will be [Notifier.unsubscribe]d via [updatedChatsNotifier].
  *
  * ## Messages
  *
- * - Clients who have [Broker.subscribe]d to [MessagesAsset]s will be notified of the [UserChatMessagesRemoval].
+ * - Clients who have [Notifier.subscribe]d to [MessagesAsset]s will be notified of the [UserChatMessagesRemoval].
  * - Deletes all [Messages] and [MessageStatuses] the [userId] has sent.
- * - Clients will be [Broker.unsubscribe]d via [messagesBroker].
+ * - Clients will be [Notifier.unsubscribe]d via [messagesNotifier].
  *
  * ## Typing Statuses
  *
  * - Deletes [TypingStatuses] the [userId] created.
- * - The [userId] will be [Broker.unsubscribe]d via [typingStatusesBroker].
+ * - The [userId] will be [Notifier.unsubscribe]d via [typingStatusesNotifier].
  *
  * @see [deleteUser]
  */
@@ -218,8 +225,10 @@ fun deleteUserFromDb(userId: Int) {
     TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
     Users.delete(userId)
-    listOf(updatedChatsBroker, newGroupChatsBroker, contactsBroker, typingStatusesBroker, messagesBroker)
-        .forEach { broker ->
-            broker.unsubscribe { it.userId == userId }
-        }
+    updatedChatsNotifier.unsubscribe { it.userId == userId }
+    newGroupChatsNotifier.unsubscribe { it.userId == userId }
+    contactsNotifier.unsubscribe { it.userId == userId }
+    typingStatusesNotifier.unsubscribe { it.userId == userId }
+    messagesNotifier.unsubscribe { it.userId == userId }
+    onlineStatusesNotifier.unsubscribe { it.userId == userId }
 }

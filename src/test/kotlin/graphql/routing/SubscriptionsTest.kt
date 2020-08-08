@@ -1,18 +1,15 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
+import com.neelkamath.omniChat.graphql.operations.CONTACTS_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.DELETED_CONTACT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.NEW_CONTACT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.UPDATED_CONTACT_FRAGMENT
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
-import kotlinx.coroutines.time.delay
-import java.time.Duration
 
 class SubscriptionsTest : FunSpec({
     context("routeSubscription(Routing, String, GraphQlSubscription)") {
@@ -63,10 +60,7 @@ class SubscriptionsTest : FunSpec({
         val subscribeToContactsQuery = """
             subscription SubscribeToContacts {
                 subscribeToContacts {
-                    $CREATED_SUBSCRIPTION_FRAGMENT
-                    $NEW_CONTACT_FRAGMENT
-                    $UPDATED_CONTACT_FRAGMENT
-                    $DELETED_CONTACT_FRAGMENT
+                    $CONTACTS_SUBSCRIPTION_FRAGMENT
                 }
             }
         """
@@ -91,7 +85,7 @@ class SubscriptionsTest : FunSpec({
             subscribeToContacts(owner.accessToken) { incoming ->
                 parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(owner.info.id, setOf(user.info.id))
-                delay(Duration.ofNanos(1)) // Await event emission.
+                awaitBrokering()
                 incoming.poll().shouldNotBeNull()
                 incoming.poll().shouldBeNull()
             }

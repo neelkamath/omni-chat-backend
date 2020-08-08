@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.Broker
 import com.neelkamath.omniChat.db.ChatEdges
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.Notifier
+import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
 import com.neelkamath.omniChat.graphql.routing.PrivateChat
 import com.neelkamath.omniChat.readUserById
@@ -30,6 +30,10 @@ object PrivateChats : Table() {
         if (exists(user1Id, user2Id))
             throw IllegalArgumentException("The chat between user 1 (ID: $user1Id) and user 2 (ID: $user2Id) exists.")
         return insert(user1Id, user2Id)
+    }
+
+    fun exists(chatId: Int): Boolean = transaction {
+        select { PrivateChats.id eq chatId }.empty().not()
     }
 
     /** Records in the DB that [user1Id] and [user2Id] are in a chat with each other, and returns the chat's ID. */
@@ -149,7 +153,7 @@ object PrivateChats : Table() {
      * Deletes the [chatId] from [Chats], [PrivateChats], [PrivateChatDeletions], [TypingStatuses], [Messages],
      * [MessageStatuses].
      *
-     * Clients will be notified of a [DeletionOfEveryMessage], and then [Broker.unsubscribe]d via [messagesBroker].
+     * Clients will be notified of a [DeletionOfEveryMessage], and then [Notifier.unsubscribe]d via [messagesNotifier].
      *
      * @see [deleteUserChats]
      */

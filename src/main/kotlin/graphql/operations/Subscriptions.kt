@@ -9,30 +9,30 @@ import org.reactivestreams.Publisher
 
 fun subscribeToMessages(env: DataFetchingEnvironment): Publisher<MessagesSubscription> {
     env.verifyAuth()
-    return messagesBroker.subscribe(MessagesAsset(env.userId!!))
+    return messagesNotifier.subscribe(MessagesAsset(env.userId!!))
 }
 
 fun subscribeToContacts(env: DataFetchingEnvironment): Publisher<ContactsSubscription> {
     env.verifyAuth()
-    return contactsBroker.subscribe(ContactsAsset(env.userId!!))
+    return contactsNotifier.subscribe(ContactsAsset(env.userId!!))
 }
 
 fun subscribeToUpdatedChats(env: DataFetchingEnvironment): Publisher<UpdatedChatsSubscription> {
     env.verifyAuth()
-    return updatedChatsBroker.subscribe(UpdatedChatsAsset(env.userId!!))
+    return updatedChatsNotifier.subscribe(UpdatedChatsAsset(env.userId!!))
 }
 
 fun subscribeToNewGroupChats(env: DataFetchingEnvironment): Publisher<NewGroupChatsSubscription> {
     env.verifyAuth()
-    return newGroupChatsBroker.subscribe(NewGroupChatsAsset(env.userId!!))
+    return newGroupChatsNotifier.subscribe(NewGroupChatsAsset(env.userId!!))
 }
 
 fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingStatusesSubscription> {
     env.verifyAuth()
-    return typingStatusesBroker.subscribe(TypingStatusesAsset(env.userId!!))
+    return typingStatusesNotifier.subscribe(TypingStatusesAsset(env.userId!!))
 }
 
 fun subscribeToOnlineStatuses(env: DataFetchingEnvironment): Publisher<OnlineStatusesSubscription> {
     env.verifyAuth()
-    return onlineStatusesBroker.subscribe(OnlineStatusesAsset(env.userId!!))
+    return onlineStatusesNotifier.subscribe(OnlineStatusesAsset(env.userId!!))
 }

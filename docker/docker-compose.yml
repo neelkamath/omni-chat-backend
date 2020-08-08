@@ -33,8 +33,9 @@ services:
         source: auth-db
         target: /var/lib/postgresql/data
   chat:
-    entrypoint: docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -timeout 3m
-    networks: [proxy, chat-db]
+    entrypoint:
+      docker/dockerize -wait http://auth:8080 -wait tcp://chat-db:5432 -wait tcp://message-broker:6379 -timeout 3m
+    networks: [broker, chat-db, proxy]
     expose: [80]
     restart: always
     environment:
@@ -51,6 +52,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
       POSTGRES_URL: chat-db:5432
+      REDIS_URL: redis://message-broker:6379
   chat-db:
     image: postgres:12.3
     restart: always
@@ -62,6 +64,13 @@ services:
       - type: volume
         source: chat-db
         target: /var/lib/postgresql/data
+  message-broker:
+    image: redis:6.0.6
+    restart: always
+    expose: [6379]
+    networks: [broker]
+    sysctls:
+      net.core.somaxconn: 511
   proxy:
     image: caddy:2.1.1
     networks: [proxy]
@@ -86,5 +95,6 @@ volumes:
   chat-db:
 networks:
   auth-db:
+  broker:
   chat-db:
   proxy:

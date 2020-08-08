@@ -2,7 +2,9 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.awaitBrokering
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.db.safelySubscribe
 import io.kotest.core.spec.style.FunSpec
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 
@@ -13,8 +15,9 @@ class StargazersTest : FunSpec({
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.create(user1Id, messageId)
+            awaitBrokering()
             user1Subscriber.assertValue(Messages.readMessage(user1Id, messageId).toUpdatedTextMessage())
             user2Subscriber.assertNoValues()
         }
@@ -27,8 +30,9 @@ class StargazersTest : FunSpec({
             val messageId = Messages.message(user1Id, chatId)
             Stargazers.create(user1Id, messageId)
             val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.deleteUserStar(user1Id, messageId)
+            awaitBrokering()
             user1Subscriber.assertValue(Messages.readMessage(user1Id, messageId).toUpdatedTextMessage())
             user2Subscriber.assertNoValues()
         }
@@ -37,8 +41,9 @@ class StargazersTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Stargazers.deleteUserStar(adminId, messageId)
+            awaitBrokering()
             subscriber.assertNoValues()
         }
     }
@@ -50,8 +55,9 @@ class StargazersTest : FunSpec({
             val messageId = Messages.message(adminId, chatId)
             listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             Stargazers.deleteStar(messageId)
+            awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber).forEach { (userId, subscriber) ->
                 subscriber.assertValue(Messages.readMessage(userId, messageId).toUpdatedTextMessage())
             }

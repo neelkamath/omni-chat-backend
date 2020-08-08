@@ -44,19 +44,12 @@ class EncodingTest : FunSpec({
 class SpecComplianceTest : FunSpec({
     test("""The "data" key shouldn't be returned if there was no data to be received""") {
         val login = Login(Username("username"), Password("password"))
-        readGraphQlHttpResponse(
-            REQUEST_TOKEN_SET_QUERY,
-            variables = mapOf("login" to login)
-        ) shouldNotHaveKey "data"
+        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "data"
     }
 
     test("""The "errors" key shouldn't be returned if there were no errors""") {
         val login = createVerifiedUsers(1)[0].login
-        readGraphQlHttpResponse(
-            REQUEST_TOKEN_SET_QUERY,
-            variables = mapOf("login" to login)
-        ) shouldNotHaveKey
-                "errors"
+        readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)) shouldNotHaveKey "errors"
     }
 
     test("""null fields in the "data" key should be returned""") {
@@ -64,10 +57,7 @@ class SpecComplianceTest : FunSpec({
         createUser(account)
         val userId = readUserByUsername(account.username).id
         val accessToken = buildAuthToken(userId).accessToken
-        val response = readGraphQlHttpResponse(
-            READ_ACCOUNT_QUERY,
-            accessToken = accessToken
-        )["data"] as Map<*, *>
+        val response = readGraphQlHttpResponse(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
         objectMapper.convertValue<Map<String, Any>>(response["readAccount"]!!) shouldContain Pair("firstName", null)
     }
 })

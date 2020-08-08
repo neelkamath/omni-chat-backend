@@ -63,8 +63,7 @@ fun UserRepresentation.toAccount(): Account {
 /**
  * Sets up account management.
  *
- * This must be run before any account-related activities are performed. This takes a small, but noticeable amount of
- * time.
+ * This takes a few seconds to run, and must be run before any account-related activities are performed.
  */
 fun setUpAuth() {
     val shouldBuild = REALM_NAME !in keycloak.realms().findAll().map { it.realm }

@@ -31,7 +31,7 @@ private fun operateReadStars(userId: Int): GraphQlResponse = executeGraphQlViaEn
 
 fun readStars(userId: Int): List<StarredMessage> {
     val data = operateReadStars(userId).data!!["readStars"] as List<*>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val READ_ONLINE_STATUSES_QUERY = """
@@ -47,7 +47,7 @@ private fun operateReadOnlineStatuses(userId: Int): GraphQlResponse =
 
 fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
     val data = operateReadOnlineStatuses(userId).data!!["readOnlineStatuses"] as List<*>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val CAN_DELETE_ACCOUNT_QUERY = """
@@ -97,7 +97,7 @@ private fun operateReadAccount(userId: Int): GraphQlResponse =
 
 fun readAccount(userId: Int): Account {
     val data = operateReadAccount(userId).data!!["readAccount"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val READ_CHATS_QUERY = """
@@ -146,7 +146,7 @@ fun readChats(
         usersPagination,
         groupChatMessagesPagination
     ).data!!["readChats"] as List<*>
-    return objectMapper.convertValue(chats)
+    return testingObjectMapper.convertValue(chats)
 }
 
 const val READ_CHAT_QUERY = """
@@ -200,7 +200,7 @@ fun readChat(
         usersPagination,
         groupChatMessagesPagination
     ).data!!["readChat"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errReadChat(
@@ -234,7 +234,7 @@ private fun operateReadContacts(userId: Int, pagination: ForwardPagination? = nu
 
 fun readContacts(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
     val data = operateReadContacts(userId, pagination).data!!["readContacts"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val REFRESH_TOKEN_SET_QUERY = """
@@ -250,7 +250,7 @@ private fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
 
 fun refreshTokenSet(refreshToken: String): TokenSet {
     val data = operateRefreshTokenSet(refreshToken).data!!["refreshTokenSet"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val REQUEST_TOKEN_SET_QUERY = """
@@ -266,7 +266,7 @@ private fun operateRequestTokenSet(login: Login): GraphQlResponse =
 
 fun requestTokenSet(login: Login): TokenSet {
     val data = operateRequestTokenSet(login).data!!["requestTokenSet"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
@@ -303,7 +303,7 @@ fun searchChatMessages(
 ): List<MessageEdge> {
     val data =
         operateSearchChatMessages(userId, chatId, query, pagination).data!!["searchChatMessages"] as List<*>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errSearchChatMessages(
@@ -364,7 +364,7 @@ fun searchChats(
         usersPagination,
         groupChatMessagesPagination
     ).data!!["searchChats"] as List<*>
-    return objectMapper.convertValue(chats)
+    return testingObjectMapper.convertValue(chats)
 }
 
 const val SEARCH_CONTACTS_QUERY = """
@@ -387,7 +387,7 @@ private fun operateSearchContacts(
 
 fun searchContacts(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
     val data = operateSearchContacts(userId, query, pagination).data!!["searchContacts"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val SEARCH_MESSAGES_QUERY = """
@@ -447,7 +447,7 @@ fun searchMessages(
         usersPagination,
         groupChatMessagesPagination
     ).data!!["searchMessages"] as List<*>
-    return objectMapper.convertValue(messages)
+    return testingObjectMapper.convertValue(messages)
 }
 
 const val SEARCH_USERS_QUERY = """
@@ -466,7 +466,7 @@ private fun operateSearchUsers(query: String, pagination: ForwardPagination? = n
 
 fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsConnection {
     val data = operateSearchUsers(query, pagination).data!!["searchUsers"] as Map<*, *>
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 class ChatMessagesDtoTest : FunSpec({

@@ -35,8 +35,9 @@ class GroupChatUsersTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.addUsers(chatId, userId)
+            awaitBrokering()
             adminSubscriber.assertNoValues()
             userSubscriber.assertValue(GroupChatId(chatId))
         }
@@ -45,9 +46,10 @@ class GroupChatUsersTest : FunSpec({
             val (admin, user) = createVerifiedUsers(2).map { it.info }
             val chatId = GroupChats.create(listOf(admin.id))
             val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.addUsers(chatId, user.id)
             val update = UpdatedGroupChat(chatId, newUsers = listOf(user))
+            awaitBrokering()
             adminSubscriber.assertValue(update)
             userSubscriber.assertNoValues()
         }
@@ -120,8 +122,9 @@ class GroupChatUsersTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId), userIdList = listOf(toBeAdminId))
             val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
                 listOf(adminId, toBeAdminId, nonParticipantId)
-                    .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.makeAdmins(chatId, toBeAdminId)
+            awaitBrokering()
             listOf(adminSubscriber, toBeAdminSubscriber)
                 .forEach { it.assertValue(UpdatedGroupChat(chatId, adminIdList = listOf(adminId, toBeAdminId))) }
             nonParticipantSubscriber.assertNoValues()
@@ -146,8 +149,9 @@ class GroupChatUsersTest : FunSpec({
             val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val (adminSubscriber, userSubscriber, nonParticipantSubscriber) = listOf(adminId, userId, nonParticipantId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId, userId)
+            awaitBrokering()
             adminSubscriber.assertValue(ExitedUser(userId, chatId))
             listOf(userSubscriber, nonParticipantSubscriber).forEach { it.assertNoValues() }
         }

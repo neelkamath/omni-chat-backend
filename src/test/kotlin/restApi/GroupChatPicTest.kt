@@ -6,8 +6,8 @@ import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.db.tables.create
-import com.neelkamath.omniChat.main
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -24,7 +24,7 @@ private fun patchGroupChatPic(accessToken: String, dummy: DummyFile, chatId: Int
     return uploadFile(accessToken, dummy, HttpMethod.Patch, "group-chat-pic", parameters)
 }
 
-private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestApplication(Application::main) {
+private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestApplication(Application::test) {
     val parameters = listOf("chat-id" to chatId.toString()).formUrlEncode()
     handleRequest(HttpMethod.Get, "group-chat-pic?$parameters").response
 }
@@ -44,7 +44,7 @@ class GroupChatPicTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(patchGroupChatPic(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
                         InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
             }
         }
@@ -55,7 +55,7 @@ class GroupChatPicTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(patchGroupChatPic(user1.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
                         InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
             }
         }
@@ -65,7 +65,7 @@ class GroupChatPicTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(patchGroupChatPic(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
                         InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.INVALID_FILE)
             }
         }

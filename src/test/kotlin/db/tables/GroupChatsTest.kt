@@ -15,9 +15,10 @@ class GroupChatsTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             val isBroadcast = true
             GroupChats.setBroadcastStatus(chatId, isBroadcast)
+            awaitBrokering()
             adminSubscriber.assertValue(UpdatedGroupChat(chatId, isBroadcast = isBroadcast))
             userSubscriber.assertNoValues()
         }
@@ -27,8 +28,9 @@ class GroupChatsTest : FunSpec({
         test("Creating a chat should only notify participants") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { newGroupChatsBroker.subscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id))
+            awaitBrokering()
             listOf(adminSubscriber, user1Subscriber).forEach { it.assertValue(GroupChatId(chatId)) }
             user2Subscriber.assertNoValues()
         }
@@ -39,9 +41,10 @@ class GroupChatsTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             val title = GroupChatTitle("New Title")
             GroupChats.updateTitle(chatId, title)
+            awaitBrokering()
             adminSubscriber.assertValue(UpdatedGroupChat(chatId, title))
             userSubscriber.assertNoValues()
         }
@@ -52,9 +55,10 @@ class GroupChatsTest : FunSpec({
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             val description = GroupChatDescription("New description.")
             GroupChats.updateDescription(chatId, description)
+            awaitBrokering()
             adminSubscriber.assertValue(UpdatedGroupChat(chatId, description = description))
             userSubscriber.assertNoValues()
         }
@@ -65,9 +69,10 @@ class GroupChatsTest : FunSpec({
             val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                .map { updatedChatsBroker.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             val pic = Pic(ByteArray(1), Pic.Type.PNG)
             GroupChats.updatePic(chatId, pic)
+            awaitBrokering()
             adminSubscriber.assertValue(UpdatedGroupChat(chatId))
             nonParticipantSubscriber.assertNoValues()
         }

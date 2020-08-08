@@ -3,7 +3,7 @@ package com.neelkamath.omniChat.restApi
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.main
+import com.neelkamath.omniChat.test
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -14,7 +14,7 @@ import io.ktor.server.testing.TestApplicationResponse
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 
-private fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplication(Application::main) {
+private fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplication(Application::test) {
     val parameters = listOf("user-id" to userId.toString()).formUrlEncode()
     handleRequest(HttpMethod.Get, "profile-pic?$parameters").response
 }

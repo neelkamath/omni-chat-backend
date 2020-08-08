@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.1
+
+### GraphQL API
+
+- Bug fixes:
+    - `Subscription`
+
 ## v0.3.0
 
 ### GraphQL API
@@ -121,7 +128,7 @@
     - `Message` `type`
     - `UpdatedMessage` `type`
 - Bug fixes:
-    - `Subscription.subscribeToMessages` never sent back `MessageDeletionPoint`s.
-    - `Subscription.subscribeToMessages` didn't send `UpdatedMessage`s to all subscribers.
+    - `Subscription.subscribeToMessages`
+    - `Subscription.subscribeToMessages`
 
 ## v0.1.0 (First Release)

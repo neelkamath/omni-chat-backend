@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.3.0"
+version = "0.3.1"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -15,17 +15,12 @@ repositories { jcenter() }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("com.graphql-java:graphql-java:15.0")
+    implementation("org.redisson:redisson:3.13.3")
     implementation("org.postgresql:postgresql:42.2.2")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.0")
     testImplementation("io.mockk:mockk:1.10.0")
-
-    /*
-    ktor provides content negotiation via Jackson. Jackson is provided as a transitive dependency. Therefore, the
-    version of Jackson modules we use must match the version of Jackson ktor uses. The version to be used can be found
-    in https://github.com/ktorio/ktor/blob/3c54c686f46b591825bbdb6fe4ceea1659175290/gradle.properties.
-     */
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.10.2")
 
     val ktorVersion = "1.3.2"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -35,13 +30,16 @@ dependencies {
     implementation("io.ktor:ktor-auth-jwt:$ktorVersion")
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+
     val exposedVersion = "0.26.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
+
     val keycloakVersion = "10.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
+
     val kotestVersion = "4.1.2"
     testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")

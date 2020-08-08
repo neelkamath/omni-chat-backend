@@ -29,8 +29,8 @@ object MessageStatuses : Table() {
     private val dateTime: Column<LocalDateTime> = datetime("date_time").clientDefault { LocalDateTime.now() }
 
     /**
-     * Records that the [userId]'s [status] on the [messageId]. Clients who have [Broker.subscribe]d to
-     * [MessagesSubscription]s via [messagesBroker] will be notified of the [messageId]'s [MessageStatus] update.
+     * Records that the [userId]'s [status] on the [messageId]. Clients who have [Notifier.subscribe]d to
+     * [MessagesSubscription]s via [messagesNotifier] will be notified of the [messageId]'s [MessageStatus] update.
      *
      * If you record that the [userId] has [MessageStatus.READ] the [messageId], but haven't recorded that the [userId]
      * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
@@ -63,8 +63,7 @@ object MessageStatuses : Table() {
     }
 
     /**
-     * Inserts the status into the table. [Broker.notify]s [Broker.subscribe]rs of the [UpdatedMessage]s via
-     * [messagesBroker].
+     * Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier].
      */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transaction {
@@ -74,11 +73,9 @@ object MessageStatuses : Table() {
                 it[this.status] = status
             }
         }
-        val chatId = Messages.readChatFromMessage(messageId)
-        messagesBroker.notify(
-            update = { UpdatedMessage.build(it.userId, messageId) as MessagesSubscription },
-            filter = { isUserInChat(it.userId, chatId) }
-        )
+        val updates = readUserIdList(Messages.readChatFromMessage(messageId))
+            .associate { MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription }
+        messagesNotifier.publish(updates)
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */

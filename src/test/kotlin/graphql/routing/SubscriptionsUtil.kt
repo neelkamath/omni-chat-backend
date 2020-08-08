@@ -2,8 +2,8 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.main
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.application.Application
 import io.ktor.http.HttpHeaders
 import io.ktor.http.cio.websocket.Frame
@@ -25,13 +25,13 @@ fun executeGraphQlSubscriptionViaWebSocket(
     request: GraphQlRequest,
     accessToken: String? = null,
     callback: SubscriptionCallback
-): Unit = withTestApplication(Application::main) {
+): Unit = withTestApplication(Application::test) {
     handleWebSocketConversation(
         uri,
         { if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken") }
     ) { incoming, outgoing ->
         launch(Dispatchers.IO) {
-            val json = objectMapper.writeValueAsString(request)
+            val json = testingObjectMapper.writeValueAsString(request)
             outgoing.send(Frame.Text(json))
         }.join()
         callback(incoming)
@@ -47,8 +47,8 @@ fun executeGraphQlSubscriptionViaWebSocket(
 suspend inline fun <reified T> parseFrameData(channel: ReceiveChannel<Frame>): T {
     for (frame in channel)
         if (frame is Frame.Text) {
-            val response = objectMapper.readValue<GraphQlResponse>(frame.readText()).data as Map<*, *>
-            return objectMapper.convertValue(response.values.first()!!)
+            val response = testingObjectMapper.readValue<GraphQlResponse>(frame.readText()).data as Map<*, *>
+            return testingObjectMapper.convertValue(response.values.first()!!)
         }
     throw Exception("There was no text frame to be read.")
 }

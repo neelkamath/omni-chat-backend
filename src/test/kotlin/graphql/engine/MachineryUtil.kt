@@ -3,7 +3,7 @@ package com.neelkamath.omniChat.graphql.engine
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.graphql.routing.GraphQlResponse
 import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChat.testingObjectMapper
 import graphql.ExecutionInput
 
 /**
@@ -20,7 +20,7 @@ fun executeGraphQlViaEngine(
     userId: Int? = null
 ): GraphQlResponse {
     val builder = ExecutionInput.Builder().query(query).context(userId)
-    variables?.let { objectMapper.convertValue<Map<String, Any>>(it).let(builder::variables) }
+    variables?.let { testingObjectMapper.convertValue<Map<String, Any>>(it).let(builder::variables) }
     val spec = buildSpecification(graphQl.execute(builder))
-    return objectMapper.convertValue(spec)
+    return testingObjectMapper.convertValue(spec)
 }
