@@ -23,7 +23,7 @@ object GroupChats : Table() {
     /**
      * Returns the [chat]'s ID after creating it.
      *
-     * [Broker.notify]s the [GroupChatInput.userIdList] of the [GroupChatId] via [newGroupChatsBroker].
+     * Notifies the [GroupChatInput.userIdList] of the [GroupChatId] via [newGroupChatsNotifier].
      */
     fun create(chat: GroupChatInput): Int {
         val chatId = transaction {
@@ -35,7 +35,7 @@ object GroupChats : Table() {
             }[GroupChats.id]
         }
         GroupChatUsers.addUsers(chatId, chat.userIdList)
-        GroupChatUsers.makeAdmins(chatId, chat.adminIdList)
+        GroupChatUsers.makeAdmins(chatId, chat.adminIdList, shouldNotify = false)
         return chatId
     }
 
@@ -70,26 +70,26 @@ object GroupChats : Table() {
         GroupChatUsers.readChatIdList(userId).map { readChat(userId, it, usersPagination, messagesPagination) }
     }
 
-    /** [Broker.notify]s [Broker.subscribe]rs of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier]. */
     fun updateTitle(chatId: Int, title: GroupChatTitle) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.title] = title.value }
         }
-        updatedChatsBroker.notify(UpdatedGroupChat(chatId, title)) { isUserInChat(it.userId, chatId) }
+        val subscribers = GroupChatUsers.readUserIdList(chatId).map(::UpdatedChatsAsset)
+        updatedChatsNotifier.publish(UpdatedGroupChat(chatId, title), subscribers)
     }
 
-    /** [Broker.notify]s [Broker.subscribe]rs of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier]. */
     fun updateDescription(chatId: Int, description: GroupChatDescription) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.description] = description.value }
         }
-        updatedChatsBroker
-            .notify(UpdatedGroupChat(chatId, description = description)) { isUserInChat(it.userId, chatId) }
+        val subscribers = GroupChatUsers.readUserIdList(chatId).map(::UpdatedChatsAsset)
+        updatedChatsNotifier.publish(UpdatedGroupChat(chatId, description = description), subscribers)
     }
 
     /**
-     * Deletes the [pic] if it's `null`. [updatedChatsBroker] [Broker.subscribe]rs will be [Broker.notify]d of the
-     * [UpdatedGroupChat].
+     * Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier].
      *
      * @see [update]
      */
@@ -100,7 +100,8 @@ object GroupChats : Table() {
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        updatedChatsBroker.notify(UpdatedGroupChat(chatId)) { isUserInChat(it.userId, chatId) }
+        val subscribers = GroupChatUsers.readUserIdList(chatId).map(::UpdatedChatsAsset)
+        updatedChatsNotifier.publish(UpdatedGroupChat(chatId), subscribers)
     }
 
     fun readPic(chatId: Int): Pic? = transaction {
@@ -109,7 +110,7 @@ object GroupChats : Table() {
 
     /**
      * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who
-     * have [Broker.subscribe]d to [MessagesSubscription]s via [messagesBroker] will receive a [DeletionOfEveryMessage].
+     * have [Notifier.subscribe]d to [MessagesSubscription]s via [messagesNotifier] will receive a [DeletionOfEveryMessage].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
@@ -140,13 +141,13 @@ object GroupChats : Table() {
             .map { buildGroupChat(it, userId, it[GroupChats.id], usersPagination, messagesPagination) }
     }
 
-    /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsBroker]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier]. */
     fun setBroadcastStatus(chatId: Int, isBroadcast: Boolean) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.isBroadcast] = isBroadcast }
         }
-        updatedChatsBroker
-            .notify(UpdatedGroupChat(chatId, isBroadcast = isBroadcast)) { isUserInChat(it.userId, chatId) }
+        val subscribers = GroupChatUsers.readUserIdList(chatId).map(::UpdatedChatsAsset)
+        updatedChatsNotifier.publish(UpdatedGroupChat(chatId, isBroadcast = isBroadcast), subscribers)
     }
 
     /**

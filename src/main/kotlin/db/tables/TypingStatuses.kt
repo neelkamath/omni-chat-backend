@@ -1,8 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.typingStatusesBroker
+import com.neelkamath.omniChat.db.TypingStatusesAsset
+import com.neelkamath.omniChat.db.readUserIdList
+import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -14,11 +14,11 @@ object TypingStatuses : Table() {
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val isTyping: Column<Boolean> = bool("is_typing")
 
-    /** [Broker.notify]s [Broker.subscribe]rs of the [TypingStatus]. */
+    /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier]. */
     fun set(chatId: Int, userId: Int, isTyping: Boolean) {
         if (exists(chatId, userId)) update(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
-        typingStatusesBroker
-            .notify(TypingStatus(chatId, userId, isTyping)) { it.userId != userId && isUserInChat(it.userId, chatId) }
+        val subscribers = readUserIdList(chatId).minus(userId).map(::TypingStatusesAsset)
+        typingStatusesNotifier.publish(TypingStatus(chatId, userId, isTyping), subscribers)
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */

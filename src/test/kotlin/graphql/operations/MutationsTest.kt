@@ -37,7 +37,7 @@ private fun operateCreatePollMessage(
 
 fun createPollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int?): Placeholder {
     val data = operateCreatePollMessage(userId, chatId, poll, contextMessageId).data!!["createPollMessage"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errCreatePollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int?): String =
@@ -58,7 +58,7 @@ private fun operateSetPollVote(userId: Int, messageId: Int, option: MessageText,
 
 fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): Placeholder {
     val data = operateSetPollVote(userId, messageId, option, vote).data!!["setPollVote"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): String =
@@ -75,7 +75,7 @@ private fun operateSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boo
 
 fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
     val data = operateSetBroadcastStatus(userId, chatId, isBroadcast).data!!["setBroadcastStatus"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): String =
@@ -92,7 +92,7 @@ private fun operateMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: Lis
 
 fun makeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
     val data = operateMakeGroupChatAdmins(userId, chatId, userIdList).data!!["makeGroupChatAdmins"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): String =
@@ -109,7 +109,7 @@ private fun operateAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<
 
 fun addGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
     val data = operateAddGroupChatUsers(userId, chatId, userIdList).data!!["addGroupChatUsers"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
@@ -134,7 +134,7 @@ private fun operateUpdateGroupChatDescription(
 fun updateGroupChatDescription(userId: Int, chatId: Int, description: GroupChatDescription): Placeholder {
     val data =
         operateUpdateGroupChatDescription(userId, chatId, description).data!!["updateGroupChatDescription"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errUpdateGroupChatDescription(userId: Int, chatId: Int, description: GroupChatDescription): String =
@@ -151,7 +151,7 @@ private fun operateUpdateGroupChatTitle(userId: Int, chatId: Int, title: GroupCh
 
 fun updateGroupChatTitle(userId: Int, chatId: Int, title: GroupChatTitle): Placeholder {
     val data = operateUpdateGroupChatTitle(userId, chatId, title).data!!["updateGroupChatTitle"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val DELETE_STAR_QUERY = """
@@ -165,7 +165,7 @@ private fun operateDeleteStar(userId: Int, messageId: Int): GraphQlResponse =
 
 fun deleteStar(userId: Int, messageId: Int): Placeholder {
     val data = operateDeleteStar(userId, messageId).data!!["deleteStar"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val STAR_QUERY = """
@@ -179,7 +179,7 @@ private fun operateStar(userId: Int, messageId: Int): GraphQlResponse =
 
 fun star(userId: Int, messageId: Int): Placeholder {
     val data = operateStar(userId, messageId).data!!["star"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errStar(userId: Int, messageId: Int): String = operateStar(userId, messageId).errors!![0].message
@@ -195,7 +195,7 @@ private fun operateSetOnlineStatus(userId: Int, isOnline: Boolean): GraphQlRespo
 
 fun setOnlineStatus(userId: Int, isOnline: Boolean): Placeholder {
     val data = operateSetOnlineStatus(userId, isOnline).data!!["setOnlineStatus"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val SET_TYPING_QUERY = """
@@ -209,7 +209,7 @@ private fun operateSetTyping(userId: Int, chatId: Int, isTyping: Boolean): Graph
 
 fun setTyping(userId: Int, chatId: Int, isTyping: Boolean): Placeholder {
     val data = operateSetTyping(userId, chatId, isTyping).data!!["setTyping"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errSetTyping(userId: Int, chatId: Int, isTyping: Boolean): String =
@@ -226,7 +226,7 @@ private fun operateDeleteGroupChatPic(userId: Int, chatId: Int): GraphQlResponse
 
 fun deleteGroupChatPic(userId: Int, chatId: Int): Placeholder {
     val data = operateDeleteGroupChatPic(userId, chatId).data!!["deleteGroupChatPic"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errDeleteGroupChatPic(userId: Int, chatId: Int): String =
@@ -243,7 +243,7 @@ private fun operateDeleteProfilePic(userId: Int): GraphQlResponse =
 
 fun deleteProfilePic(userId: Int): Placeholder {
     val data = operateDeleteProfilePic(userId).data!!["deleteProfilePic"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val CREATE_ACCOUNTS_QUERY = """
@@ -257,7 +257,7 @@ private fun operateCreateAccount(account: AccountInput): GraphQlResponse =
 
 fun createAccount(account: AccountInput): Placeholder {
     val data = operateCreateAccount(account).data!!["createAccount"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errCreateAccount(account: AccountInput): String = operateCreateAccount(account).errors!![0].message
@@ -273,7 +273,7 @@ private fun operateCreateContacts(userId: Int, userIdList: List<Int>): GraphQlRe
 
 fun createContacts(userId: Int, userIdList: List<Int>): Placeholder {
     val data = operateCreateContacts(userId, userIdList).data!!["createContacts"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errCreateContacts(userId: Int, userIdList: List<Int>): String =
@@ -310,7 +310,7 @@ private fun operateCreateTextMessage(
 
 fun createTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): Placeholder {
     val data = operateCreateTextMessage(userId, chatId, text, contextMessageId).data!!["createTextMessage"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errCreateTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): String =
@@ -342,7 +342,7 @@ private fun operateCreateStatus(userId: Int, messageId: Int, status: MessageStat
 
 fun createStatus(userId: Int, messageId: Int, status: MessageStatus): Placeholder {
     val data = operateCreateStatus(userId, messageId, status).data!!["createStatus"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errCreateStatus(userId: Int, messageId: Int, status: MessageStatus): String =
@@ -359,7 +359,7 @@ private fun operateDeleteAccount(userId: Int): GraphQlResponse =
 
 fun deleteAccount(userId: Int): Placeholder {
     val data = operateDeleteAccount(userId).data!!["deleteAccount"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errDeleteAccount(userId: Int): String = operateDeleteAccount(userId).errors!![0].message
@@ -375,7 +375,7 @@ private fun operateDeleteContacts(userId: Int, userIdList: List<Int>): GraphQlRe
 
 fun deleteContacts(userId: Int, userIdList: List<Int>): Placeholder {
     val data = operateDeleteContacts(userId, userIdList).data!!["deleteContacts"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 const val DELETE_MESSAGE_QUERY = """
@@ -389,7 +389,7 @@ private fun operateDeleteMessage(userId: Int, messageId: Int): GraphQlResponse =
 
 fun deleteMessage(userId: Int, messageId: Int): Placeholder {
     val data = operateDeleteMessage(userId, messageId).data!!["deleteMessage"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errDeleteMessage(userId: Int, messageId: Int): String =
@@ -406,7 +406,7 @@ private fun operateDeletePrivateChat(userId: Int, chatId: Int): GraphQlResponse 
 
 fun deletePrivateChat(userId: Int, chatId: Int): Placeholder {
     val data = operateDeletePrivateChat(userId, chatId).data!!["deletePrivateChat"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errDeletePrivateChat(userId: Int, chatId: Int): String =
@@ -423,7 +423,7 @@ private fun operateResetPassword(emailAddress: String): GraphQlResponse =
 
 fun resetPassword(emailAddress: String): Placeholder {
     val data = operateResetPassword(emailAddress).data!!["resetPassword"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errResetPassword(emailAddress: String): String = operateResetPassword(emailAddress).errors!![0].message
@@ -439,7 +439,7 @@ private fun operateSendEmailAddressVerification(emailAddress: String): GraphQlRe
 
 fun sendEmailAddressVerification(emailAddress: String): Placeholder {
     val data = operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errSendEmailVerification(emailAddress: String): String =
@@ -456,7 +456,7 @@ private fun operateUpdateAccount(userId: Int, update: AccountUpdate): GraphQlRes
 
 fun updateAccount(userId: Int, update: AccountUpdate): Placeholder {
     val data = operateUpdateAccount(userId, update).data!!["updateAccount"] as String
-    return objectMapper.convertValue(data)
+    return testingObjectMapper.convertValue(data)
 }
 
 fun errUpdateAccount(userId: Int, update: AccountUpdate): String =

@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.TypingStatusesAsset
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.typingStatusesBroker
+import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -16,9 +14,10 @@ class TypingStatusesTest : FunSpec({
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                .map { typingStatusesBroker.subscribe(TypingStatusesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { typingStatusesNotifier.safelySubscribe(TypingStatusesAsset(it)).subscribeWith(TestSubscriber()) }
             val isTyping = true
             TypingStatuses.set(chatId, user1Id, isTyping)
+            awaitBrokering()
             listOf(user1Subscriber, user3Subscriber).forEach { it.assertNoValues() }
             user2Subscriber.assertValue(TypingStatus(chatId, user1Id, isTyping))
         }

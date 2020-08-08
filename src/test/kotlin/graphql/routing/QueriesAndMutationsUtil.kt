@@ -2,8 +2,8 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.main
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.application.Application
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -18,7 +18,7 @@ fun readGraphQlHttpResponse(
     query: String,
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
-): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(objectMapper::readValue)
+): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(testingObjectMapper::readValue)
 
 /**
  * Executes GraphQL queries and mutations via the HTTP interface. The [variables] are for the query, which is the
@@ -31,11 +31,11 @@ fun executeGraphQlViaHttp(
     query: String,
     variables: Map<String, Any?>? = null,
     accessToken: String? = null
-): TestApplicationResponse = withTestApplication(Application::main) {
+): TestApplicationResponse = withTestApplication(Application::test) {
     handleRequest(HttpMethod.Post, "query-or-mutation") {
         accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         val body = GraphQlRequest(query, variables)
-        setBody(objectMapper.writeValueAsString(body))
+        setBody(testingObjectMapper.writeValueAsString(body))
     }.response
 }

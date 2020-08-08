@@ -2,7 +2,9 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.awaitBrokering
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollInput
 import io.kotest.core.spec.style.FunSpec
@@ -18,8 +20,9 @@ class PollMessagesTest : FunSpec({
             val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             PollMessages.setVote(adminId, messageId, option1, vote = true)
+            awaitBrokering()
             adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedPollMessage())
             nonParticipantSubscriber.assertNoValues()
         }

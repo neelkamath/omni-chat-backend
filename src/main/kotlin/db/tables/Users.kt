@@ -69,24 +69,25 @@ object Users : IntIdTable() {
         row[picId]?.let(Pics::read)
     )
 
-    /** [Broker.notify]s [Broker.subscribe]rs if [isOnline] differs from the user's current status. */
-    fun setOnlineStatus(id: Int, isOnline: Boolean): Unit = transaction {
-        if (select { Users.id eq id }.first()[Users.isOnline] == isOnline) return@transaction
-        update({ Users.id eq id }) {
+    /**
+     * Notifies subscribers of the [UpdatedOnlineStatus] only if [isOnline] differs from the [userId]'s current status.
+     */
+    fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
+        if (select { Users.id eq userId }.first()[Users.isOnline] == isOnline) return@transaction
+        update({ Users.id eq userId }) {
             it[Users.isOnline] = isOnline
             it[lastOnline] = LocalDateTime.now()
         }
-        onlineStatusesBroker.notify(UpdatedOnlineStatus(id, isOnline)) {
-            id != it.userId && (id in Contacts.readIdList(it.userId) || shareChat(id, it.userId))
-        }
+        val subscribers = Contacts.readOwners(userId).plus(readChatSharers(userId)).map(::OnlineStatusesAsset)
+        onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline), subscribers)
     }
 
     /** Calls [negotiateUserUpdate]. */
-    fun updateBio(id: Int, bio: Bio?) {
+    fun updateBio(userId: Int, bio: Bio?) {
         transaction {
-            update({ Users.id eq id }) { it[Users.bio] = bio?.value }
+            update({ Users.id eq userId }) { it[Users.bio] = bio?.value }
         }
-        negotiateUserUpdate(id)
+        negotiateUserUpdate(userId)
     }
 
     /** Deletes the [pic] if it's `null`. Calls [negotiateUserUpdate]. */

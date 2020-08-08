@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.restApi
 
-import com.neelkamath.omniChat.main
+import com.neelkamath.omniChat.test
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -11,7 +11,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 
 private fun getHealthCheck(): TestApplicationResponse =
-    withTestApplication(Application::main) { handleRequest(HttpMethod.Get, "health-check") }.response
+    withTestApplication(Application::test) { handleRequest(HttpMethod.Get, "health-check") }.response
 
 class HealthCheckTest : FunSpec({
     context("getHealthCheck(Routing)") {

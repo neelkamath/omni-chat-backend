@@ -76,7 +76,7 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewMessage] via [messagesBroker].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
@@ -121,8 +121,8 @@ object Messages : IntIdTable() {
             }.resultedValues!![0]
         }
         creator(row[id].value)
-        val message = NewMessage.build(row[id].value) as MessagesSubscription
-        messagesBroker.notify(message) { isUserInChat(it.userId, chatId) }
+        val subscribers = readUserIdList(chatId).map(::MessagesAsset)
+        messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, subscribers)
     }
 
     /** Case-insensitively [query]s the [chatId]'s messages as seen by the [userId]. */
@@ -278,52 +278,54 @@ object Messages : IntIdTable() {
 
     /**
      * Deletes all messages in the [chatId]. Clients will be notified of a [DeletionOfEveryMessage] via
-     * [messagesBroker].
+     * [messagesNotifier].
      */
     fun deleteChat(chatId: Int) {
         deleteChatMessages(readMessageIdList(chatId))
-        messagesBroker.notify(DeletionOfEveryMessage(chatId)) { isUserInChat(it.userId, chatId) }
+        messagesNotifier.publish(DeletionOfEveryMessage(chatId), readUserIdList(chatId).map(::MessagesAsset))
     }
 
     /**
      * Deletes all messages in the [chatId] [until] the specified [LocalDateTime]. Subscribers will be notified of the
-     * [MessageDeletionPoint] via [messagesBroker].
+     * [MessageDeletionPoint] via [messagesNotifier].
      */
     fun deleteChatUntil(chatId: Int, until: LocalDateTime) {
         deleteChatMessages(readMessageIdList(chatId, sent less until))
-        messagesBroker.notify(MessageDeletionPoint(chatId, until)) { isUserInChat(it.userId, chatId) }
+        messagesNotifier.publish(MessageDeletionPoint(chatId, until), readUserIdList(chatId).map(::MessagesAsset))
     }
 
     /**
      * Deletes all messages the [userId] created in the [chatId]. Subscribers will be notified of the
-     * [UserChatMessagesRemoval] via [messagesBroker].
+     * [UserChatMessagesRemoval] via [messagesNotifier].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
         deleteChatMessages(readMessageIdList(chatId, senderId eq userId))
-        messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
+        messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), readUserIdList(chatId).map(::MessagesAsset))
     }
 
     /**
      * Deletes all messages the [userId] has. Subscribers will be notified of the [UserChatMessagesRemoval] via
-     * [messagesBroker].
+     * [messagesNotifier].
      */
     fun deleteUserMessages(userId: Int) {
         MessageStatuses.deleteUserStatuses(userId)
         val chatMessages = readChatMessages(userId)
         deleteChatMessages(chatMessages.map { it.messageId })
-        for ((chatId) in chatMessages)
-            messagesBroker.notify(UserChatMessagesRemoval(chatId, userId)) { isUserInChat(it.userId, chatId) }
+        chatMessages.forEach { (chatId) ->
+            val subscribers = readUserIdList(chatId).map(::MessagesAsset)
+            messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), subscribers)
+        }
     }
 
     /**
      * Deletes the message [id] in the [chatId] from messages. Subscribers will be notified of the [DeletedMessage] via
-     * [messagesBroker].
+     * [messagesNotifier].
      */
     fun delete(id: Int) {
         val chatId = readChatFromMessage(id)
         deleteChatMessages(id)
-        messagesBroker.notify(DeletedMessage(chatId, id)) { isUserInChat(it.userId, chatId) }
+        messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId).map(::MessagesAsset))
     }
 
     /** Every [ChatAndMessageId] the [userId] created which are visible to at least one user. */

@@ -8,7 +8,7 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
 import com.neelkamath.omniChat.graphql.routing.GroupChatInput
 import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpMethod
@@ -70,7 +70,7 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
                         InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
             }
         }
@@ -81,7 +81,7 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
                         InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
@@ -91,7 +91,7 @@ class PicMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                objectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
+                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
                         InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
             }
         }

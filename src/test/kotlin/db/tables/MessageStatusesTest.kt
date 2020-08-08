@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
@@ -67,8 +65,9 @@ class MessageStatusesTest : FunSpec({
             PrivateChats.create(user2Id, user3Id)
             val messageId = Messages.message(user1Id, chatId)
             val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
+            awaitBrokering()
             mapOf(user1Subscriber to user1Id, user2Subscriber to user2Id).forEach { (subscriber, userId) ->
                 Messages.readMessage(userId, messageId).toUpdatedTextMessage().let(subscriber::assertValue)
             }

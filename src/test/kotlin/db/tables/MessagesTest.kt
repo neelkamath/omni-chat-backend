@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.MessagesAsset
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.messagesBroker
+import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -144,8 +141,9 @@ class MessagesTest : FunSpec({
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { messagesBroker.subscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
+            awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
                 .forEach { (userId, subscriber) ->
                     val updates = Messages.readGroupChat(userId, chatId).map { it.node.toNewTextMessage() }
@@ -157,10 +155,10 @@ class MessagesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             val messageId = Messages.message(user2Id, chatId)
-            val message = Messages.readMessage(user1Id, messageId)
-            subscriber.assertValue(message.toNewTextMessage())
+            awaitBrokering()
+            Messages.readMessage(user1Id, messageId).toNewTextMessage().let(subscriber::assertValue)
         }
 
         test("An exception should be thrown if the user isn't in the chat") {
@@ -235,8 +233,9 @@ class MessagesTest : FunSpec({
         test("The subscriber should be notified of every message being deleted") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             Messages.deleteChat(chatId)
+            awaitBrokering()
             subscriber.assertValue(DeletionOfEveryMessage(chatId))
         }
     }
@@ -255,9 +254,10 @@ class MessagesTest : FunSpec({
         test("Subscribers should be notified of the message deletion point") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             val until = LocalDateTime.now()
             Messages.deleteChatUntil(chatId, until)
+            awaitBrokering()
             subscriber.assertValue(MessageDeletionPoint(chatId, until))
         }
     }
@@ -266,8 +266,9 @@ class MessagesTest : FunSpec({
         test("A subscriber should be notified when a user's messages have been deleted from the chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            val subscriber = messagesBroker.subscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
             Messages.deleteUserChatMessages(chatId, userId)
+            awaitBrokering()
             subscriber.assertValue(UserChatMessagesRemoval(chatId, userId))
         }
     }
@@ -281,8 +282,9 @@ class MessagesTest : FunSpec({
                 chatId
             }
             val (chat1Subscriber, chat2Subscriber) = (1..2)
-                .map { messagesBroker.subscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
+            awaitBrokering()
             listOf(chat1Subscriber, chat2Subscriber).forEach {
                 it.assertValues(UserChatMessagesRemoval(chat1Id, userId), UserChatMessagesRemoval(chat2Id, userId))
             }
@@ -294,8 +296,9 @@ class MessagesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
-            val subscriber = messagesBroker.subscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
             Messages.delete(messageId)
+            awaitBrokering()
             subscriber.assertValue(DeletedMessage(chatId, messageId))
         }
     }

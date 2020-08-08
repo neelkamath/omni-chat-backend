@@ -1,9 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.Broker
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.newGroupChatsBroker
-import com.neelkamath.omniChat.db.updatedChatsBroker
+import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -25,16 +22,18 @@ object GroupChatUsers : IntIdTable() {
      * Makes the [userIdList] admins of the [chatId]. An [IllegalArgumentException] will be thrown if the a user isn't
      * in the chat.
      *
-     * [Broker.notify]s [Broker.subscribe]rs of the [UpdatedGroupChat] via [updatedChatsBroker].
+     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [updatedChatsNotifier].
      */
-    fun makeAdmins(chatId: Int, userIdList: List<Int>) {
+    fun makeAdmins(chatId: Int, userIdList: List<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
         if (invalidUsers.isNotEmpty()) throw IllegalArgumentException("$invalidUsers aren't in the chat (ID: $chatId).")
         transaction {
             update({ (GroupChatUsers.chatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
-        val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
-        updatedChatsBroker.notify(update) { isUserInChat(it.userId, chatId) }
+        if (shouldNotify) {
+            val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
+            updatedChatsNotifier.publish(update, readUserIdList(chatId).map(::UpdatedChatsAsset))
+        }
     }
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
@@ -70,8 +69,8 @@ object GroupChatUsers : IntIdTable() {
         AccountsConnection.build(readUserCursors(chatId), pagination)
 
     /**
-     * Adds the [users] who aren't already in the [chatId]. [Broker.notify]s [Broker.subscribe]rs of the
-     * [UpdatedGroupChat] via [updatedChatsBroker], and the [GroupChatId] via [newGroupChatsBroker].
+     * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
+     * [updatedChatsNotifier], and new users of the [GroupChatId] via [newGroupChatsNotifier].
      */
     fun addUsers(chatId: Int, users: List<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
@@ -82,9 +81,9 @@ object GroupChatUsers : IntIdTable() {
                 this[isAdmin] = false
             }
         }
-        newGroupChatsBroker.notify(GroupChatId(chatId)) { it.userId in newUserIdList }
+        newGroupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::NewGroupChatsAsset))
         val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map(::readUserById))
-        updatedChatsBroker.notify(update) { it.userId !in newUserIdList && isUserInChat(it.userId, chatId) }
+        updatedChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UpdatedChatsAsset))
     }
 
     /**
@@ -106,8 +105,7 @@ object GroupChatUsers : IntIdTable() {
      * [canUsersLeave]. If every user is removed, the [chatId] will be [GroupChats.delete]d. Returns whether the chat
      * was deleted.
      *
-     * [Broker.subscribe]rs, excluding the [userIdList], will be [Broker.notify]d of the [ExitedUser]s via the
-     * [updatedChatsBroker].
+     * Subscribers, excluding the [userIdList], will be notified of the [ExitedUser]s via [updatedChatsNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: List<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
@@ -116,7 +114,7 @@ object GroupChatUsers : IntIdTable() {
             deleteWhere { (GroupChatUsers.chatId eq chatId) and (userId inList userIdList) }
         }
         for (userId in userIdList.toSet())
-            updatedChatsBroker.notify(ExitedUser(userId, chatId)) { isUserInChat(it.userId, chatId) }
+            updatedChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId).map(::UpdatedChatsAsset))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

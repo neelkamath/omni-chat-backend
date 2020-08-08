@@ -2,11 +2,14 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
+import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
+import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
@@ -22,12 +25,12 @@ class QueriesAndMutationsTest : FunSpec({
         test("The GraphQL engine should be queried via the HTTP interface") {
             val user = createVerifiedUsers(1)[0]
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
-            val data = objectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
-            objectMapper.convertValue<Account>(data) shouldBe user.info
+            val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
+            testingObjectMapper.convertValue<Account>(data) shouldBe user.info
         }
 
         fun testOperationName(shouldSupplyOperationName: Boolean) {
-            withTestApplication(Application::main) {
+            withTestApplication(Application::test) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
                         query IsUsernameTaken {
@@ -41,7 +44,7 @@ class QueriesAndMutationsTest : FunSpec({
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     val operationName = if (shouldSupplyOperationName) "IsEmailAddressTaken" else null
                     val body = GraphQlRequest(query, operationName = operationName)
-                    setBody(objectMapper.writeValueAsString(body))
+                    setBody(testingObjectMapper.writeValueAsString(body))
                 }.response.status()!!.value shouldBe if (shouldSupplyOperationName) 200 else 400
             }
         }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
+import com.neelkamath.omniChat.db.subscribeToMessageBroker
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
@@ -42,6 +43,7 @@ val DataFetchingEnvironment.userId: Int? get() = getContext()
 fun Application.main() {
     setUpAuth()
     setUpDb()
+    subscribeToMessageBroker()
     install(CORS) {
         anyHost()
         header(HttpHeaders.Authorization)
