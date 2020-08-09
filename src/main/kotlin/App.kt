@@ -62,6 +62,7 @@ fun Application.main() {
         routeHealthCheck(this)
         routePicMessage(this)
         routeAudioMessage(this)
+        routeVideoMessage(this)
         routeProfilePic(this)
         routeGroupChatPic(this)
         routeGraphQlQueriesAndMutations(this)

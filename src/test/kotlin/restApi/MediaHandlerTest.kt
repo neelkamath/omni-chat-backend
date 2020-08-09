@@ -31,9 +31,9 @@ private fun postAudioMessage(
 private fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
     getFileMessage(accessToken, messageId, path = "audio-message")
 
-class AudioMessageTest : FunSpec({
-    context("getAudioMessage(Route)") {
-        test("An audio message should be read with an HTTP status code of 200") {
+class MediaHandlerTest : FunSpec({
+    context("getMediaMessage(Route, (Int) -> ByteArray)") {
+        test("A message should be read with an HTTP status code of 200") {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val audio = Mp3(ByteArray(1))
@@ -50,7 +50,9 @@ class AudioMessageTest : FunSpec({
         }
     }
 
-    context("postAudioMessage(Route)") {
+    context(
+        "postMediaMessage(Route, suspend PipelineContext<Unit, ApplicationCall>.() -> T?, (Int, Int, T, Int?) -> Unit)"
+    ) {
         test("An HTTP status code of 204 should be returned when a message has been created with a context") {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
@@ -67,8 +69,8 @@ class AudioMessageTest : FunSpec({
             val dummy = DummyFile("audio.mp3", bytes = 1)
             with(postAudioMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
             }
         }
 
@@ -78,8 +80,8 @@ class AudioMessageTest : FunSpec({
             val dummy = DummyFile("audio.mp3", bytes = 1)
             with(postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
 
@@ -88,8 +90,8 @@ class AudioMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postAudioMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE)
             }
         }
 

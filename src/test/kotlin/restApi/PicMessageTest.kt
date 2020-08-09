@@ -70,8 +70,8 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
             }
         }
 
@@ -81,8 +81,8 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
 
@@ -91,8 +91,8 @@ class PicMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE)
             }
         }
 

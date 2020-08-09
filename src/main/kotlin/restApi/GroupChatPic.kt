@@ -32,7 +32,7 @@ private fun getGroupChatPic(route: Route): Unit = with(route) {
 private fun patchGroupChatPic(route: Route): Unit = with(route) {
     patch {
         val chatId = call.parameters["chat-id"]!!.toInt()
-        val pic = readPic()
+        val pic = readMultipartPic()
         when {
             pic == null -> call.respond(
                 HttpStatusCode.BadRequest,

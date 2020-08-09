@@ -2,10 +2,24 @@
 
 ## v0.4.0
 
+### GraphQL API
+
+- New:
+    - `VideoMessage` `type`
+    - `StarredVideoMessage` `type`
+    - `NewVideoMessage` `type`
+    - `UpdatedVideoMessage` `type`
+- Updated:
+    - `MessagesSubscription` `union`
+
+### REST API
+
+- New:
+    - `/video-message`
+
 ## v0.3.1
 
 ### GraphQL API
-
 - Bug fixes:
     - `Subscription`
 

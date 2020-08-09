@@ -30,15 +30,18 @@ The core software will be open source so that user requiring FOSS (e.g., open so
 
 Checkboxes indicate which features have been implemented.
 
-Since this repo is for the backend, here are recommendations for a frontend dev:
-- Messages consisting solely of a single emoji will have the emoji enlarged.
+Since this repo is for the backend API, here are recommendations for a developer creating a frontend UI:
+- Messages consisting solely of a single emoji should have the emoji enlarged.
 - You can require a password or biometric to unlock the app.
-- Allow the user to draw messages. The GUI could have a drawing option, which would be converted to an image file before sending.
-- Allow the user to share their location in-app. For example, an option to send their location via a Google Maps URL could be included.
+- Allow the user to draw messages in-app. You could convert it to an image before sending.
+- Allow users to use their camera in-app to send photos and videos.
+- Allow users to record audio in-app to send as an audio message.
+- Allow users to send photos, videos, and any other file in-app.
+- Allow the user to send their location in-app. For example, an option to send their location via a Google Maps URL could be included.
 - Show link previews so that URLs show relevant info about websites shared in messages, such as a Google Maps URL. For example, you could use [SwiftLinkPreview](https://github.com/LeonardoCardoso/SwiftLinkPreview) for iOS.
-- Allow users to create record audio in-app.
+- Allow users to view certain file messages, such as PDFs, in-app if feasible.
 - When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
-- When clicking a poll message, each option should show the users who voted for it, and the users who didn't vote for any option should be displayed.
+- When clicking a poll message, each option should show the users who voted for it, and the users who didn't vote for any option.
 
 ### Free
 
@@ -67,8 +70,9 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Audio
     - [x] Pictures
     - [x] Polls
-    - [ ] Videos
+    - [x] Videos
     - [ ] Any file type
+- [ ] Forward messages.
 - [ ] Tag users in text messages for notifications and context (e.g., `@Bob Did you finish the presentation?`).
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.

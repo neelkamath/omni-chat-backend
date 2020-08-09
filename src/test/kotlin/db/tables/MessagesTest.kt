@@ -136,7 +136,7 @@ class MessagesTest : FunSpec({
         }
     }
 
-    context("create(Int, Int, Int? = null, (Int) -> Unit)") {
+    context("create(Int, Int, MessageType, Int?, (Int) -> Unit)") {
         test("Subscribers should receive notifications of created messages") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))

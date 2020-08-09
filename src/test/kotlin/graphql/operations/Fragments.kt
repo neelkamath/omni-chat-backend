@@ -135,6 +135,23 @@ const val AUDIO_MESSAGE_FRAGMENT = """
     }
 """
 
+const val VIDEO_MESSAGE_FRAGMENT = """
+    ... on VideoMessage {
+        __typename
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        hasStar
+    }
+"""
+
 const val PIC_MESSAGE_FRAGMENT = """
     ... on PicMessage {
         __typename
@@ -176,6 +193,7 @@ const val POLL_MESSAGE_FRAGMENT = """
 const val MESSAGE_FRAGMENT = """
     $TEXT_MESSAGE_FRAGMENT
     $AUDIO_MESSAGE_FRAGMENT
+    $VIDEO_MESSAGE_FRAGMENT
     $PIC_MESSAGE_FRAGMENT
     $POLL_MESSAGE_FRAGMENT
 """
@@ -420,6 +438,23 @@ const val STARRED_AUDIO_MESSAGE_FRAGMENT = """
     }
 """
 
+const val STARRED_VIDEO_MESSAGE_FRAGMENT = """
+    ... on StarredVideoMessage {
+        __typename
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+    }
+"""
+
 const val STARRED_POLL_MESSAGE_FRAGMENT = """
     ... on StarredPollMessage {
         __typename
@@ -444,6 +479,7 @@ const val STARRED_MESSAGE_FRAGMENT = """
     $STARRED_TEXT_MESSAGE_FRAGMENT
     $STARRED_PIC_MESSAGE_FRAGMENT
     $STARRED_AUDIO_MESSAGE_FRAGMENT
+    $STARRED_VIDEO_MESSAGE_FRAGMENT
     $STARRED_POLL_MESSAGE_FRAGMENT
 """
 

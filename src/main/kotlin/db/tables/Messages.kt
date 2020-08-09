@@ -18,6 +18,7 @@ private typealias Filter = Op<Boolean>?
 /**
  * @see [TextMessages]
  * @see [AudioMessages]
+ * @see [VideoMessages]
  * @see [PollMessages]
  * @see [CaptionedPic]
  * @see [Stargazers]
@@ -93,6 +94,11 @@ object Messages : IntIdTable() {
     fun create(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
             AudioMessages.create(messageId, message)
+        }
+
+    fun create(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.VIDEO, contextMessageId) { messageId ->
+            VideoMessages.create(messageId, message)
         }
 
     fun create(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
@@ -233,6 +239,7 @@ object Messages : IntIdTable() {
             MessageType.TEXT -> TextMessage.build(userId, message)
             MessageType.PIC -> PicMessage.build(userId, message)
             MessageType.AUDIO -> AudioMessage.build(userId, message)
+            MessageType.VIDEO -> VideoMessage.build(userId, message)
             MessageType.POLL -> PollMessage.build(userId, message)
         }
     }

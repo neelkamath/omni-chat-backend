@@ -62,9 +62,9 @@ fun deleteStar(env: DataFetchingEnvironment): Placeholder {
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val args = env.getArgument<Map<*, *>>("chat")
-    val userIdList = (args["userIdList"] as List<*>).map { it as Int }
+    @Suppress("UNCHECKED_CAST") val userIdList = (args["userIdList"] as List<Int>)
     if (!userIdList.all(Users::exists)) throw InvalidUserIdException
-    val adminIdList = (args["adminIdList"] as List<*>).map { it as Int }
+    @Suppress("UNCHECKED_CAST") val adminIdList = (args["adminIdList"] as List<Int>)
     if (!userIdList.containsAll(adminIdList)) throw InvalidAdminIdException
     val chat = GroupChatInput(
         args["title"] as GroupChatTitle,

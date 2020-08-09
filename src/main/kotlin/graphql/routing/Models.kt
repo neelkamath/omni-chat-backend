@@ -113,6 +113,9 @@ interface BareMessage {
     fun toNewAudioMessage(): NewAudioMessage =
         NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
 
+    fun toNewVideoMessage(): NewVideoMessage =
+        NewVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+
     fun toNewPicTextMessage(): NewPicMessage = NewPicMessage(
         Messages.readChatFromMessage(messageId),
         messageId,
@@ -357,6 +360,9 @@ interface Message : BareMessage {
     fun toUpdatedAudioMessage(): UpdatedAudioMessage =
         UpdatedAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
 
+    fun toUpdatedVideoMessage(): UpdatedVideoMessage =
+        UpdatedVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
+
     fun toUpdatedPollMessage(): UpdatedPollMessage = UpdatedPollMessage(
         Messages.readChatFromMessage(messageId),
         messageId,
@@ -386,6 +392,14 @@ interface Message : BareMessage {
     )
 
     fun toStarredAudioMessage(): StarredAudioMessage = StarredAudioMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context
+    )
+
+    fun toStarredVideoMessage(): StarredVideoMessage = StarredVideoMessage(
         Messages.readChatFromMessage(messageId),
         messageId,
         sender,
@@ -463,6 +477,20 @@ data class AudioMessage(
     }
 }
 
+data class VideoMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean
+) : BareMessage, Message {
+    companion object {
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): VideoMessage =
+            with(message) { VideoMessage(messageId, sender, dateTimes, context, Stargazers.hasStar(userId, messageId)) }
+    }
+}
+
 data class PollMessage(
     override val messageId: Int,
     override val sender: Account,
@@ -500,6 +528,7 @@ interface StarredMessage : BareChatMessage, BareMessage {
                 is TextMessage -> message.toStarredTextMessage()
                 is PicMessage -> message.toStarredPicMessage()
                 is AudioMessage -> message.toStarredAudioMessage()
+                is VideoMessage -> message.toStarredVideoMessage()
                 is PollMessage -> message.toStarredPollMessage()
                 else -> throw IllegalArgumentException("$message didn't match a concrete type.")
             }
@@ -541,6 +570,14 @@ data class StarredAudioMessage(
     override val context: MessageContext
 ) : StarredMessage, BareChatMessage, BareMessage
 
+data class StarredVideoMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : StarredMessage, BareChatMessage, BareMessage
+
 interface MessagesSubscription
 
 interface NewMessage : BareChatMessage, BareMessage {
@@ -558,6 +595,7 @@ interface NewMessage : BareChatMessage, BareMessage {
                 MessageType.TEXT -> message.toNewTextMessage()
                 MessageType.PIC -> message.toNewPicTextMessage()
                 MessageType.AUDIO -> message.toNewAudioMessage()
+                MessageType.VIDEO -> message.toNewVideoMessage()
                 MessageType.POLL -> message.toNewPollMessage()
             }
         }
@@ -599,6 +637,14 @@ data class NewAudioMessage(
     override val context: MessageContext
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
+data class NewVideoMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
 interface UpdatedMessage : BareChatMessage, BareMessage {
     override val chatId: Int
     override val messageId: Int
@@ -614,6 +660,7 @@ interface UpdatedMessage : BareChatMessage, BareMessage {
                 is TextMessage -> message.toUpdatedTextMessage()
                 is PicMessage -> message.toUpdatedPicMessage()
                 is AudioMessage -> message.toUpdatedAudioMessage()
+                is VideoMessage -> message.toUpdatedVideoMessage()
                 is PollMessage -> message.toUpdatedPollMessage()
                 else -> throw IllegalArgumentException("$message didn't match a concrete class.")
             }
@@ -651,6 +698,15 @@ data class UpdatedPollMessage(
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class UpdatedAudioMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedVideoMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,

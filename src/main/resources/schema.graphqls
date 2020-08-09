@@ -479,10 +479,12 @@ union MessagesSubscription = CreatedSubscription
     | NewTextMessage
     | NewPicMessage
     | NewAudioMessage
+    | NewVideoMessage
     | NewPollMessage
     | UpdatedTextMessage
     | UpdatedPicMessage
     | UpdatedAudioMessage
+    | UpdatedVideoMessage
     | UpdatedPollMessage
     | DeletedMessage
     | MessageDeletionPoint
@@ -790,6 +792,14 @@ type AudioMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
+type VideoMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+}
+
 interface BareChatMessage implements BareMessage {
     chatId: Int!
     messageId: Int!
@@ -841,6 +851,14 @@ type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage
     context: MessageContext!
 }
 
+type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
 interface NewMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -877,6 +895,14 @@ type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
 }
 
 type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -925,6 +951,15 @@ type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage 
 }
 
 type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+}
+
+type UpdatedVideoMessage implements UpdatedMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!

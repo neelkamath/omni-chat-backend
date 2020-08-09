@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   version: 0.4.0
   title: Omni Chat
-  description: Functionality supplementary to the GraphQL API such as manipulating images and audio files.
+  description: Functionality supplementary to the GraphQL API such as uploading and downloading image and audio files.
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat
@@ -18,6 +18,7 @@ tags:
   - name: groupChatPic
   - name: picMessage
   - name: audioMessage
+  - name: videoMessage
   - name: status
 paths:
   /pic-message:
@@ -88,7 +89,42 @@ paths:
         '204':
           description: Message created.
         '400':
-          $ref: '#/components/responses/InvalidAudioMessage'
+          $ref: '#/components/responses/InvalidMediaMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /video-message:
+    description: Create and read video chat messages.
+    get:
+      tags: [videoMessage]
+      description: Reads a video message.
+      operationId: getVideoMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Video'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [videoMessage]
+      description: Creates a video message. If the chat is a broadcast group, the user must be an admin.
+      operationId: postVideoMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+      requestBody:
+        $ref: '#/components/requestBodies/VideoMessage'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidMediaMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
@@ -170,7 +206,7 @@ components:
           description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
           type: string
           enum: [USER_NOT_IN_CHAT, INVALID_FILE]
-    InvalidAudioMessage:
+    InvalidMediaMessage:
       type: object
       properties:
         reason:
@@ -190,12 +226,12 @@ components:
       scheme: bearer
       bearerFormat: JWT
   responses:
-    InvalidAudioMessage:
+    InvalidMediaMessage:
       description: Couldn't create message.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidAudioMessage'
+            $ref: '#/components/schemas/InvalidMediaMessage'
     InvalidPicMessage:
       description: Couldn't create message.
       content:
@@ -212,6 +248,13 @@ components:
       description: An MP3 audio not exceeding 25 MiB.
       content:
         audio/mp3:
+          schema:
+            type: string
+            format: binary
+    Video:
+      description: An MP4 audio not exceeding 25 MiB.
+      content:
+        video/mp4:
           schema:
             type: string
             format: binary
@@ -241,6 +284,20 @@ components:
           encoding:
             pic:
               contentType: audio/mp3
+    VideoMessage:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [video]
+            properties:
+              video:
+                description: An MP4 video not exceeding 25 MiB.
+                type: string
+                format: binary
+          encoding:
+            pic:
+              contentType: video/mp4
     Pic:
       content:
         multipart/form-data:
