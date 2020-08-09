@@ -17,6 +17,7 @@ private val tables: List<Table> = listOf(
     PicMessages,
     AudioMessages,
     VideoMessages,
+    DocMessages,
     PollVotes,
     PollOptions,
     PollMessages,

@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollInput
 
 fun Messages.create(userId: Int, chatId: Int, text: MessageText = MessageText("t")): Unit =
-    create(userId, chatId, text, contextMessageId = null)
+    createTextMessage(userId, chatId, text, contextMessageId = null)
 
 /** Sends the [message] in the [chatId] from the [userId], and returns the message's ID. */
 fun Messages.message(
@@ -13,7 +13,7 @@ fun Messages.message(
     message: MessageText = MessageText("t"),
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, message, contextMessageId)
+    createTextMessage(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }
 
@@ -23,7 +23,7 @@ fun Messages.message(
     message: Mp3,
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, message, contextMessageId)
+    createAudioMessage(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }
 
@@ -33,7 +33,7 @@ fun Messages.message(
     message: CaptionedPic,
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, message, contextMessageId)
+    createPicMessage(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }
 
@@ -43,6 +43,6 @@ fun Messages.message(
     message: PollInput,
     contextMessageId: Int? = null
 ): Int {
-    create(userId, chatId, message, contextMessageId)
+    createPollMessage(userId, chatId, message, contextMessageId)
     return readIdList(chatId).last()
 }

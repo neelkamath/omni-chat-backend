@@ -4,13 +4,15 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.annotation.processing.Generated
 
-/** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
-data class Mp4(
-    /** At most [Mp4.MAX_BYTES]. */
-    val bytes: ByteArray
-) {
+/** An [IllegalArgumentException] will be thrown if the [bytes] exceeds [Doc.MAX_BYTES]. */
+data class Doc(val bytes: ByteArray) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
+        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The doc cannot exceed $MAX_BYTES bytes.")
+    }
+
+    companion object {
+        /** Docs cannot exceed 25 MiB. */
+        const val MAX_BYTES = 25 * 1024 * 1024
     }
 
     @Generated
@@ -18,7 +20,7 @@ data class Mp4(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Mp4
+        other as Doc
 
         if (!bytes.contentEquals(other.bytes)) return false
 
@@ -29,28 +31,24 @@ data class Mp4(
     override fun hashCode(): Int {
         return bytes.contentHashCode()
     }
-
-    companion object {
-        const val MAX_BYTES = 25 * 1024 * 1024
-    }
 }
 
 /** @see [Messages] */
-object VideoMessages : Table() {
-    override val tableName = "video_messages"
+object DocMessages : Table() {
+    override val tableName = "doc_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val video: Column<ByteArray> = binary("audio", Mp4.MAX_BYTES)
+    private val doc: Column<ByteArray> = binary("doc", Doc.MAX_BYTES)
 
-    /** @see [Messages.createVideoMessage] */
-    fun create(id: Int, video: Mp4): Unit = transaction {
+    /** @see [Messages.createDocMessage] */
+    fun create(id: Int, doc: Doc): Unit = transaction {
         insert {
             it[this.messageId] = id
-            it[this.video] = video.bytes
+            it[this.doc] = doc.bytes
         }
     }
 
-    fun read(id: Int): Mp4 = transaction {
-        select { messageId eq id }.first()[video].let(::Mp4)
+    fun read(id: Int): Doc = transaction {
+        select { messageId eq id }.first()[doc].let(::Doc)
     }
 
     fun delete(idList: List<Int>): Unit = transaction {

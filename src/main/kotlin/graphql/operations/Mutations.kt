@@ -91,7 +91,7 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
+    Messages.createTextMessage(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
     return Placeholder
 }
 
@@ -259,7 +259,7 @@ fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
     }
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, poll, contextMessageId)
+    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId)
     return Placeholder
 }
 

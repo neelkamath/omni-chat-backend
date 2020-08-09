@@ -479,11 +479,13 @@ union MessagesSubscription = CreatedSubscription
     | NewTextMessage
     | NewPicMessage
     | NewAudioMessage
+    | NewDocMessage
     | NewVideoMessage
     | NewPollMessage
     | UpdatedTextMessage
     | UpdatedPicMessage
     | UpdatedAudioMessage
+    | UpdatedDocMessage
     | UpdatedVideoMessage
     | UpdatedPollMessage
     | DeletedMessage
@@ -792,6 +794,14 @@ type AudioMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
+type DocMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+}
+
 type VideoMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
@@ -851,6 +861,14 @@ type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage
     context: MessageContext!
 }
 
+type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
 type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -895,6 +913,14 @@ type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
 }
 
 type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+}
+
+type NewDocMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -951,6 +977,15 @@ type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage 
 }
 
 type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+}
+
+type UpdatedDocMessage implements UpdatedMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!

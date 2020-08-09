@@ -19,6 +19,7 @@ tags:
   - name: picMessage
   - name: audioMessage
   - name: videoMessage
+  - name: docMessage
   - name: status
 paths:
   /pic-message:
@@ -120,6 +121,42 @@ paths:
         - $ref: '#/components/parameters/ContextMessageId'
       requestBody:
         $ref: '#/components/requestBodies/VideoMessage'
+      responses:
+        '204':
+          description: Message created.
+        '400':
+          $ref: '#/components/responses/InvalidMediaMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /doc-message:
+    description: Create and read document chat messages. Doc messages are file messages of any type. Prefer pic, audio,
+      and video messages when possible.
+    get:
+      tags: [docMessage]
+      description: Reads a doc message.
+      operationId: getDocMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Doc'
+        '400':
+          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [docMessage]
+      description: Creates a doc message. If the chat is a broadcast group, the user must be an admin.
+      operationId: postDocMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/ContextMessageId'
+      requestBody:
+        $ref: '#/components/requestBodies/DocMessage'
       responses:
         '204':
           description: Message created.
@@ -258,6 +295,13 @@ components:
           schema:
             type: string
             format: binary
+    Doc:
+      description: A document not exceeding 25 MiB.
+      content:
+        '*/*':
+          schema:
+            type: string
+            format: binary
     Pic:
       description: A PNG or JPEG image not exceeding 25 MiB.
       content:
@@ -298,6 +342,17 @@ components:
           encoding:
             pic:
               contentType: video/mp4
+    DocMessage:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [doc]
+            properties:
+              doc:
+                description: A document not exceeding 25 MiB.
+                type: string
+                format: binary
     Pic:
       content:
         multipart/form-data:

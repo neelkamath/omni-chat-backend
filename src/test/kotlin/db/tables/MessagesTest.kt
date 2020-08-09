@@ -209,7 +209,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextId = Messages.message(adminId, chatId)
-            Messages.create(adminId, chatId, MessageText("t"), contextId)
+            Messages.createTextMessage(adminId, chatId, MessageText("t"), contextId)
             shouldNotThrowAny { Messages.deleteChat(chatId) }
         }
 

@@ -17,7 +17,7 @@ object PollMessages : IntIdTable() {
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val title: Column<String> = varchar("title", MessageText.MAX_LENGTH)
 
-    /** @see [Messages.create] */
+    /** @see [Messages.createPollMessage] */
     fun create(messageId: Int, poll: PollInput) {
         val pollId = transaction {
             insertAndGetId {

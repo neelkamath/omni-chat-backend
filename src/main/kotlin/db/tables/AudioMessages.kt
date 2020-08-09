@@ -41,7 +41,7 @@ object AudioMessages : Table() {
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val audio: Column<ByteArray> = binary("audio", Mp3.MAX_BYTES)
 
-    /** @see [Messages.create] */
+    /** @see [Messages.createAudioMessage] */
     fun create(id: Int, audio: Mp3): Unit = transaction {
         insert {
             it[this.messageId] = id

@@ -71,7 +71,7 @@ data class Pic(
     }
 }
 
-enum class MessageType { TEXT, PIC, AUDIO, VIDEO, POLL }
+enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL }
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -112,6 +112,7 @@ private fun create(): Unit = transaction {
         PicMessages,
         AudioMessages,
         VideoMessages,
+        DocMessages,
         PollMessages,
         PollOptions,
         PollVotes,

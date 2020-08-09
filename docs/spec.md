@@ -58,6 +58,13 @@ Features must be free if they're a unique selling point, are useful for the aver
 - [x] Star messages.
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
+- Message types:
+    - [x] Text
+    - [x] Audio
+    - [x] Pictures
+    - [x] Polls
+    - [x] Videos
+    - [x] Any file type
 - Group chats, like your school class's chat.
     - [x] Multiple admins.
     - [x] If you are added to a chat, or are added back to a chat after leaving it, you'll be able to see the entire chat's history so that new participants don't miss older messages.
@@ -65,35 +72,23 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Descriptions and icons.
     - [x] Unlimited participants.
     - [x] Broadcast chats (i.e., only admins can message). This option can be toggled for a chat any time. This is for chats for updates, like a conference's chat where you don't want hundreds of people asking the same questions over and over again.
-- Messages support any format, and won't be degraded (e.g., pics won't have their resolution lowered like in WhatsApp). Message types:
-    - [x] Text
-    - [x] Audio
-    - [x] Pictures
-    - [x] Polls
-    - [x] Videos
-    - [ ] Any file type
+    - [ ] Share chats via a link or QR code so that many people can easily join them.
+    - [ ] Public chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat). These chats get indexed by search engines. People can view them without an account. Anyone with an account can search for, and join them.
 - [ ] Forward messages.
-- [ ] Tag users in text messages for notifications and context (e.g., `@Bob Did you finish the presentation?`).
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
-- [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
 - [ ] Every chat and message has a URL.
-- [ ] Allow search engines to index the chat.
 - [ ] Background noise cancellation for both audio and video calls.
-- [ ] Marketplace for free and paid bots, themes, digital stickers, etc.
 - [ ] Group audio calls.
 - [ ] Spatial audio calls (important for gamers).
 - [ ] Video calls with multiple people.
-- [ ] Filters on video calls. The others will be able to see which filter you're using.
 - [ ] Screen sharing.
-- [ ] Have add-ons for video calls like games, and bunny ear effects. Developers can create their own add-ons.
 - [ ] API for integrations (e.g., bots).
-- [ ] Allow instances to pick one of the following access types.
+- [ ] Allow instances to pick one of the following access types:
     - [ ] Only clients an admin creates are allowed to access the API.
     - [ ] Anyone can access the API without registering.
-    - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, or payments.
+    - [ ] Anyone can access the API, but must register for an account. The accounts will be automatically created, but this allows for features such as rate limiting, and payments.
 - [ ] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
-- [ ] View chat even if you're not logged in. Of course, this will only be allowed if it's a public chat anyone can join.
 - [ ] Run a production instance taking care of the following:
     - [ ] Don't run images as the `root` user.
     - [ ] Automate backups.

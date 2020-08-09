@@ -10,7 +10,7 @@ object TextMessages : Table() {
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val text: Column<String> = varchar("text", MessageText.MAX_LENGTH)
 
-    /** @see [Messages.create] */
+    /** @see [Messages.createTextMessage] */
     fun create(id: Int, text: MessageText): Unit = transaction {
         insert {
             it[this.messageId] = id

@@ -19,6 +19,7 @@ private typealias Filter = Op<Boolean>?
  * @see [TextMessages]
  * @see [AudioMessages]
  * @see [VideoMessages]
+ * @see [DocMessages]
  * @see [PollMessages]
  * @see [CaptionedPic]
  * @see [Stargazers]
@@ -81,27 +82,32 @@ object Messages : IntIdTable() {
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
      */
-    fun create(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
+    fun createTextMessage(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId ->
             TextMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
+    fun createPicMessage(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
             PicMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
+    fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
             AudioMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?): Unit =
+    fun createVideoMessage(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.VIDEO, contextMessageId) { messageId ->
             VideoMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
+    fun createDocMessage(userId: Int, chatId: Int, message: Doc, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.DOC, contextMessageId) { messageId ->
+            DocMessages.create(messageId, message)
+        }
+
+    fun createPollMessage(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.POLL, contextMessageId) { messageId ->
             PollMessages.create(messageId, message)
         }
@@ -240,6 +246,7 @@ object Messages : IntIdTable() {
             MessageType.PIC -> PicMessage.build(userId, message)
             MessageType.AUDIO -> AudioMessage.build(userId, message)
             MessageType.VIDEO -> VideoMessage.build(userId, message)
+            MessageType.DOC -> DocMessage.build(userId, message)
             MessageType.POLL -> PollMessage.build(userId, message)
         }
     }

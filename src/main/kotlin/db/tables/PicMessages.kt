@@ -21,7 +21,7 @@ object PicMessages : Table() {
     )
     private val caption: Column<String?> = varchar("caption", MessageText.MAX_LENGTH).nullable()
 
-    /** @see [Messages.create] */
+    /** @see [Messages.createPicMessage] */
     fun create(id: Int, message: CaptionedPic): Unit = transaction {
         insert {
             it[this.messageId] = id

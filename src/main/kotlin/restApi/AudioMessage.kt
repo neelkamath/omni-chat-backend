@@ -11,7 +11,7 @@ fun routeAudioMessage(routing: Routing): Unit = with(routing) {
         route("audio-message") {
             getMediaMessage(this) { messageId -> AudioMessages.read(messageId).bytes }
             postMediaMessage(this, { readMultipartMp3() }) { userId, chatId, message, contextMessageId ->
-                Messages.create(userId, chatId, message, contextMessageId)
+                Messages.createAudioMessage(userId, chatId, message, contextMessageId)
             }
         }
     }

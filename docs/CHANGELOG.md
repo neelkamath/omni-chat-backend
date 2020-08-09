@@ -9,6 +9,10 @@
     - `StarredVideoMessage` `type`
     - `NewVideoMessage` `type`
     - `UpdatedVideoMessage` `type`
+    - `DocMessage` `type`
+    - `StarredDocMessage` `type`
+    - `NewDocMessage` `type`
+    - `UpdatedDocMessage` `type`
 - Updated:
     - `MessagesSubscription` `union`
 
@@ -16,6 +20,7 @@
 
 - New:
     - `/video-message`
+    - `/doc-message`
 
 ## v0.3.1
 
