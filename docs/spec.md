@@ -69,7 +69,7 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Polls
     - [ ] Videos
     - [ ] Any file type
-- [ ] Tag users in text messages for notifications and context (e.g., "@Bob Did you finish the presentation?").
+- [ ] Tag users in text messages for notifications and context (e.g., `@Bob Did you finish the presentation?`).
 - [ ] Forum chats. These are for threaded chats, like a team's communication channel. Every message which isn't a reply to another message becomes a thread, and people can reply to this thread so that relevant info can be easily searched in the future. There will only be one thread per top-level message (i.e., a reply to a reply will still be a reply to the top-level message as well) to prevent irrelevant replies.
 - [ ] E2E Encryption.
 - [ ] Search for chats you're not in (e.g., official Android chat, random groups individuals have created, Mario Kart chat).
