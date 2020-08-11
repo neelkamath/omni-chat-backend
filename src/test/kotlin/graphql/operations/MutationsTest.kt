@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
@@ -17,6 +16,54 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
+import java.util.*
+
+const val CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY = """
+    mutation CreateGroupChatInviteMessage(${"$"}chatId: Int!, ${"$"}invitedChatId: Int!, ${"$"}contextMessageId: Int) {
+        createGroupChatInviteMessage(
+            chatId: ${"$"}chatId
+            invitedChatId: ${"$"}invitedChatId
+            contextMessageId: ${"$"}contextMessageId
+        )
+    }
+"""
+
+private fun operateCreateGroupChatInviteMessage(
+    userId: Int,
+    chatId: Int,
+    invitedChatId: Int,
+    contextMessageId: Int?
+): GraphQlResponse = executeGraphQlViaEngine(
+    CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY,
+    mapOf("chatId" to chatId, "invitedChatId" to invitedChatId, "contextMessageId" to contextMessageId),
+    userId
+)
+
+fun createGroupChatInviteMessage(userId: Int, chatId: Int, invitedChatId: Int, contextMessageId: Int?): Placeholder {
+    val data = operateCreateGroupChatInviteMessage(userId, chatId, invitedChatId, contextMessageId)
+        .data!!["createGroupChatInviteMessage"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errCreateGroupChatInviteMessage(userId: Int, chatId: Int, invitedChatId: Int, contextMessageId: Int?): String =
+    operateCreateGroupChatInviteMessage(userId, chatId, invitedChatId, contextMessageId).errors!![0].message
+
+const val JOIN_GROUP_CHAT_QUERY = """
+    mutation JoinGroupChat(${"$"}inviteCode: Uuid!) {
+        joinGroupChat(inviteCode: ${"$"}inviteCode)
+    }
+"""
+
+private fun operateJoinGroupChat(userId: Int, inviteCode: UUID): GraphQlResponse =
+    executeGraphQlViaEngine(JOIN_GROUP_CHAT_QUERY, mapOf("inviteCode" to inviteCode), userId)
+
+fun joinGroupChat(userId: Int, inviteCode: UUID): Placeholder {
+    val data = operateJoinGroupChat(userId, inviteCode).data!!["joinGroupChat"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errJoinGroupChat(userId: Int, inviteCode: UUID): String =
+    operateJoinGroupChat(userId, inviteCode).errors!![0].message
 
 const val CREATE_POLL_MESSAGE_QUERY = """
     mutation CreatePollMessage(${"$"}chatId: Int!, ${"$"}poll: PollInput!, ${"$"}contextMessageId: Int) {
@@ -463,6 +510,58 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
     operateUpdateAccount(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("createGroupChatInviteMessage(DataFetchingEnvironment)") {
+        test("A message should be created") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
+            createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = null)
+            GroupChatInviteMessages.count() shouldBe 1
+        }
+
+        test("Creating a message in a chat the user isn't in should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val invitedChatId = GroupChats.create(listOf(adminId))
+            errCreateGroupChatInviteMessage(
+                adminId,
+                chatId = 1,
+                invitedChatId = invitedChatId,
+                contextMessageId = null
+            ) shouldBe InvalidChatIdException.message
+        }
+
+        test("Inviting users to a nonexistent chat should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            errCreateGroupChatInviteMessage(
+                adminId,
+                chatId,
+                invitedChatId = 1,
+                contextMessageId = null
+            ) shouldBe InvalidInvitedChatException.message
+        }
+
+        test("Using an invalid content message should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
+            errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = 1) shouldBe
+                    InvalidMessageIdException.message
+        }
+    }
+
+    context("joinGroupChat(DataFetchingEnvironment)") {
+        test("An invite code should be used to join the chat, even if the chat has already been joined") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            repeat(2) { joinGroupChat(userId, GroupChats.readInviteCode(chatId)) }
+            GroupChatUsers.readUserIdList(chatId) shouldContainExactlyInAnyOrder listOf(adminId, userId)
+        }
+
+        test("Using an invalid invite code should fail") {
+            val userId = createVerifiedUsers(1)[0].info.id
+            errJoinGroupChat(userId, inviteCode = UUID.randomUUID()) shouldBe InvalidInviteCodeException.message
+        }
+    }
+
     context("createPollMessage(DataFetchingEnvironment)") {
         test("A poll message should be created with a context") {
             val adminId = createVerifiedUsers(1)[0].info.id

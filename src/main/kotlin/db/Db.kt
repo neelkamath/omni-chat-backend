@@ -71,7 +71,7 @@ data class Pic(
     }
 }
 
-enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL }
+enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -80,7 +80,7 @@ enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL }
 class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject() {
     init {
         type = postgresName
-        this.value = kotlinName?.name?.toLowerCase()
+        value = kotlinName?.name?.toLowerCase()
     }
 }
 
@@ -90,7 +90,33 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
  */
 fun setUpDb() {
     connect()
-    create()
+    createTypes()
+    transaction {
+        exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
+        SchemaUtils.create(
+            TextMessages,
+            PicMessages,
+            AudioMessages,
+            VideoMessages,
+            DocMessages,
+            GroupChatInviteMessages,
+            PollMessages,
+            PollOptions,
+            PollVotes,
+            Pics,
+            Contacts,
+            Chats,
+            GroupChats,
+            GroupChatUsers,
+            PrivateChats,
+            PrivateChatDeletions,
+            Stargazers,
+            Messages,
+            MessageStatuses,
+            Users,
+            TypingStatuses
+        )
+    }
 }
 
 private fun connect() {
@@ -104,38 +130,7 @@ private fun connect() {
     )
 }
 
-/** Creates the required types and tables. */
-private fun create(): Unit = transaction {
-    createTypes()
-    SchemaUtils.create(
-        TextMessages,
-        PicMessages,
-        AudioMessages,
-        VideoMessages,
-        DocMessages,
-        PollMessages,
-        PollOptions,
-        PollVotes,
-        Pics,
-        Contacts,
-        Chats,
-        GroupChats,
-        GroupChatUsers,
-        PrivateChats,
-        PrivateChatDeletions,
-        Stargazers,
-        Messages,
-        MessageStatuses,
-        Users,
-        TypingStatuses
-    )
-}
-
-/** Whether [user1Id] and [user2Id] are in a chat with each other, including private chats deleted by only one user. */
-fun shareChat(user1Id: Int, user2Id: Int): Boolean =
-    PrivateChats.exists(user1Id, user2Id) || user1Id in GroupChatUsers.readFellowParticipants(user2Id)
-
-/** Creates custom types if required. */
+/** Creates custom types. */
 private fun createTypes(): Unit = transaction {
     mapOf(
         "message_status" to MessageStatus.values(),
@@ -175,7 +170,8 @@ fun readChatSharers(userId: Int): List<Int> =
 
 /**
  * Deletes the [userId]'s data from the DB, and [Notifier.unsubscribe]s them from all notifiers. An
- * [IllegalArgumentException] will be thrown if the not [GroupChatUsers.canUserLeave].
+ * [IllegalArgumentException] will be thrown if the not [GroupChatUsers.canUserLeave]. Nothing will happen if the
+ * [userId] doesn't exist.
  *
  * ## Users
  *

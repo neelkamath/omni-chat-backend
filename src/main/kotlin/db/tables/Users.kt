@@ -116,7 +116,7 @@ object Users : IntIdTable() {
     }
 
     /**
-     * Deletes the specified user from this table.
+     * Deletes the specified user from this table, if they exist.
      *
      * @see [deleteUser]
      */

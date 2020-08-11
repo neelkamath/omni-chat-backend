@@ -3,11 +3,11 @@ package com.neelkamath.omniChat.graphql.operations
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
+import java.util.*
 
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
@@ -90,7 +90,7 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
-    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
     Messages.createTextMessage(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
     return Placeholder
 }
@@ -258,7 +258,7 @@ fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
         throw InvalidPollException
     }
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
-    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
     Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId)
     return Placeholder
 }
@@ -271,5 +271,25 @@ fun setPollVote(env: DataFetchingEnvironment): Placeholder {
     if (!PollMessages.hasOption(messageId, option)) throw NonexistentOptionException
     val vote = env.getArgument<Boolean>("vote")
     PollMessages.setVote(env.userId!!, messageId, option, vote)
+    return Placeholder
+}
+
+fun joinGroupChat(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val inviteCode = env.getArgument<UUID>("inviteCode")
+    if (!GroupChats.isExistentInviteCode(inviteCode)) throw InvalidInviteCodeException
+    GroupChatUsers.addUserViaInvite(env.userId!!, inviteCode)
+    return Placeholder
+}
+
+fun createGroupChatInviteMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    val invitedChatId = env.getArgument<Int>("invitedChatId")
+    if (!Chats.exists(invitedChatId)) throw InvalidInvitedChatException
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId)
     return Placeholder
 }

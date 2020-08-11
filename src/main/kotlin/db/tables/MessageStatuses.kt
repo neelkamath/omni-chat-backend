@@ -100,7 +100,7 @@ object MessageStatuses : Table() {
         deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
     }
 
-    /** Deletes every status the [userId] created. */
+    /** Deletes every status the [userId] created. Nothing happens if the [userId] doesn't exist. */
     fun deleteUserStatuses(userId: Int): Unit = transaction {
         deleteWhere { MessageStatuses.userId eq userId }
     }

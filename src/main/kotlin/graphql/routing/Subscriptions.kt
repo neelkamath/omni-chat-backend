@@ -2,11 +2,10 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.graphql.UnauthorizedException
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl
+import com.neelkamath.omniChat.objectMapper
 import graphql.ExecutionResult
 import graphql.execution.UnknownOperationException
 import io.ktor.application.log
@@ -131,6 +130,7 @@ private suspend fun closeWithError(session: DefaultWebSocketServerSession, resul
  * Once subscribed, the client will receive a [CreatedSubscription]. If the subscription completes due to a server-side
  * error, the connection will be closed with the [CloseReason.Codes.INTERNAL_ERROR].
  */
+@Suppress("ReactiveStreamsSubscriberImplementation")
 private class Subscriber(
     private val session: DefaultWebSocketServerSession,
     private val graphQlSubscription: GraphQlSubscription

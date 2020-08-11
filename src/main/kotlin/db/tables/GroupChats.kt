@@ -5,9 +5,10 @@ import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 /**
- * Pics cannot exceed [Pic.MAX_BYTES].
+ * The chat's pic cannot exceed [Pic.MAX_BYTES].
  *
  * @see [GroupChatUsers]
  * @see [Messages]
@@ -19,6 +20,8 @@ object GroupChats : Table() {
     private val description: Column<String> = varchar("description", GroupChatDescription.MAX_LENGTH)
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
     private val isBroadcast: Column<Boolean> = bool("is_broadcast")
+    private val inviteCode: Column<UUID> =
+        uuid("invite_code").uniqueIndex().defaultExpression(CustomFunction("gen_random_uuid", UUIDColumnType()))
 
     /**
      * Returns the [chat]'s ID after creating it.
@@ -42,7 +45,7 @@ object GroupChats : Table() {
     /**
      * Returns the [chatId] for the [userId].
      *
-     * @param[messagesPagination] pagination for [GroupChat.messages].
+     * @see [readChatInfo]
      */
     fun readChat(
         userId: Int,
@@ -56,10 +59,23 @@ object GroupChats : Table() {
         return buildGroupChat(row, userId, chatId, usersPagination, messagesPagination)
     }
 
+    /** @see [readChat] */
+    fun readChatInfo(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
+        val row = transaction {
+            select { GroupChats.inviteCode eq inviteCode }.first()
+        }
+        return GroupChatInfo(
+            GroupChatUsers.readAdminIdList(row[id]),
+            GroupChatUsers.readUsers(row[id], usersPagination),
+            row[title].let(::GroupChatTitle),
+            row[description].let(::GroupChatDescription),
+            row[isBroadcast]
+        )
+    }
+
     /**
-     * @param[usersPagination] pagination for [GroupChat.users].
-     * @param[messagesPagination] pagination for [GroupChat.messages].
-     * @return the [userId]'s chats.
+     * Returns the [userId]'s chats.
+     *
      * @see [GroupChatUsers.readChatIdList]
      */
     fun readUserChats(
@@ -126,11 +142,7 @@ object GroupChats : Table() {
         Chats.delete(chatId)
     }
 
-    /**
-     * @param[usersPagination] pagination for [GroupChat.messages].
-     * @param[messagesPagination] pagination for [GroupChat.messages].
-     * @return chats after case-insensitively [query]ing the title of every chat the [userId] is in.
-     */
+    /** Case-insensitively [query]s the title of every chat the [userId] is in. */
     fun search(
         userId: Int,
         query: String,
@@ -150,12 +162,7 @@ object GroupChats : Table() {
         updatedChatsNotifier.publish(UpdatedGroupChat(chatId, isBroadcast = isBroadcast), subscribers)
     }
 
-    /**
-     * Builds the [chatId] from the [row] for the [userId].
-     *
-     * @param[messagesPagination] pagination for [GroupChat.messages].
-     * @param[usersPagination] pagination for [GroupChat.users].
-     */
+    /** Builds the [chatId] from the [row] for the [userId]. */
     private fun buildGroupChat(
         row: ResultRow,
         userId: Int,
@@ -169,8 +176,23 @@ object GroupChats : Table() {
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
         Messages.readGroupChatConnection(userId, chatId, messagesPagination),
-        row[isBroadcast]
+        row[isBroadcast],
+        row[inviteCode].takeIf { GroupChatUsers.isAdmin(userId, chatId) }
     )
+
+    fun isExistentInviteCode(inviteCode: UUID): Boolean = transaction {
+        select { GroupChats.inviteCode eq inviteCode }.empty().not()
+    }
+
+    /** @see [isExistentInviteCode] */
+    fun readInviteCode(chatId: Int): UUID = transaction {
+        select { GroupChats.id eq chatId }.first()[inviteCode]
+    }
+
+    /** Returns the ID of the chat having the [inviteCode]. */
+    fun readChatFromInvite(inviteCode: UUID): Int = transaction {
+        select { GroupChats.inviteCode eq inviteCode }.first()[GroupChats.id]
+    }
 
     /**
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the

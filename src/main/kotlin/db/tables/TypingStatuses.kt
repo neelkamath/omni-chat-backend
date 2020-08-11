@@ -54,7 +54,7 @@ object TypingStatuses : Table() {
         deleteWhere { TypingStatuses.chatId eq chatId }
     }
 
-    /** Deletes every status created by the [userId]. */
+    /** Deletes every status created by the [userId], if the [userId] exists. */
     fun deleteUser(userId: Int): Unit = transaction {
         deleteWhere { TypingStatuses.userId eq userId }
     }

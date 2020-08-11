@@ -25,6 +25,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("refreshTokenSet", ::refreshTokenSet)
     .dataFetcher("searchChatMessages", ::searchChatMessages)
     .dataFetcher("searchUsers", ::searchUsers)
+    .dataFetcher("readGroupChat", ::readGroupChat)
 
 private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("deleteAccount", ::deleteAccount)
@@ -41,6 +42,8 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("makeGroupChatAdmins", ::makeGroupChatAdmins)
     .dataFetcher("createPollMessage", ::createPollMessage)
     .dataFetcher("setPollVote", ::setPollVote)
+    .dataFetcher("joinGroupChat", ::joinGroupChat)
+    .dataFetcher("createGroupChatInviteMessage", ::createGroupChatInviteMessage)
     .dataFetcher("resetPassword", ::resetPassword)
     .dataFetcher("createStatus", ::createStatus)
     .dataFetcher("deleteStar", ::deleteStar)

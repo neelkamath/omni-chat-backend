@@ -31,7 +31,7 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    val exposedVersion = "0.26.1"
+    val exposedVersion = "0.26.2"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")

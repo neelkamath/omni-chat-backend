@@ -16,6 +16,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("Chat") { wireType(it, ::readChat) }
     .type("AccountData") { wireType(it, ::readAccountData) }
     .type("BareMessage") { wireType(it, ::readBareMessage) }
+    .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
     .type("Message") { wireType(it, ::readMessage) }
     .type("BareChatMessage") { wireType(it, ::readBareChatMessage) }
     .type("StarredMessage") { wireType(it, ::readStarredMessage) }
@@ -41,12 +42,14 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is NewTextMessage -> "NewTextMessage"
     is NewPicMessage -> "NewPicMessage"
     is NewAudioMessage -> "NewAudioMessage"
+    is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
     is NewDocMessage -> "NewDocMessage"
     is NewVideoMessage -> "NewVideoMessage"
     is NewPollMessage -> "NewPollMessage"
     is UpdatedTextMessage -> "UpdatedTextMessage"
     is UpdatedPicMessage -> "UpdatedPicMessage"
     is UpdatedAudioMessage -> "UpdatedAudioMessage"
+    is UpdatedGroupChatInviteMessage -> "UpdatedGroupChatInviteMessage"
     is UpdatedDocMessage -> "UpdatedDocMessage"
     is UpdatedVideoMessage -> "UpdatedVideoMessage"
     is UpdatedPollMessage -> "UpdatedPollMessage"
@@ -95,6 +98,12 @@ private fun readAccountData(obj: Any): String = when (obj) {
     is Account -> "Account"
     is UpdatedContact -> "UpdatedContact"
     is NewContact -> "NewContact"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readBareGroupChat(obj: Any): String = when (obj) {
+    is GroupChatInfo -> "GroupChatInfo"
+    is GroupChat -> "GroupChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

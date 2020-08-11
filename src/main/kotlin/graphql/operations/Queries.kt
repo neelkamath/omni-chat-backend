@@ -6,11 +6,11 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
+import java.util.*
 
 interface ChatDto {
     val id: Int
@@ -18,7 +18,7 @@ interface ChatDto {
     fun getMessages(env: DataFetchingEnvironment): MessagesConnection
 }
 
-/** @param[userId] the user's view of the chat. */
+/** The [userId]'s view of the chat. */
 class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
     override val id: Int = chatId
 
@@ -32,6 +32,7 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
     val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
 
     val isBroadcast: Boolean
+    val inviteCode: UUID?
 
     init {
         val chat = GroupChats.readChat(
@@ -43,6 +44,7 @@ class GroupChatDto(private val userId: Int, chatId: Int) : ChatDto {
         title = chat.title
         description = chat.description
         isBroadcast = chat.isBroadcast
+        inviteCode = chat.inviteCode
     }
 
     @Suppress("unused")
@@ -78,7 +80,7 @@ sealed class ChatMessagesDto(val chat: ChatDto, private val messageEdges: List<M
     }
 }
 
-/** @param[userId] the user searching. */
+/** The [userId] searching. */
 private class SearchGroupChatMessagesDto(
     userId: Int,
     chatId: Int,
@@ -89,6 +91,24 @@ private class SearchPrivateChatMessagesDto(
     chatId: Int,
     messageEdges: List<MessageEdge>
 ) : ChatMessagesDto(PrivateChatDto(chatId), messageEdges)
+
+class GroupChatInfoDto(private val inviteCode: UUID) {
+    val adminIdList: List<Int>
+    val title: GroupChatTitle
+    val description: GroupChatDescription
+    val isBroadcast: Boolean
+
+    init {
+        val info = GroupChats.readChatInfo(inviteCode, usersPagination = ForwardPagination(first = 0))
+        adminIdList = info.adminIdList
+        title = info.title
+        description = info.description
+        isBroadcast = info.isBroadcast
+    }
+
+    fun getUsers(env: DataFetchingEnvironment): AccountsConnection =
+        GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
+}
 
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
@@ -214,4 +234,10 @@ fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     val query = env.getArgument<String>("query")
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
     return Users.search(query, pagination)
+}
+
+fun readGroupChat(env: DataFetchingEnvironment): GroupChatInfoDto {
+    val inviteCode = env.getArgument<UUID>("inviteCode")
+    if (!GroupChats.isExistentInviteCode(inviteCode)) throw InvalidInviteCodeException
+    return GroupChatInfoDto(inviteCode)
 }

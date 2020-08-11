@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.readUserById
 import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
+import java.util.*
 
 typealias Cursor = Int
 
@@ -112,6 +113,18 @@ interface BareMessage {
 
     fun toNewAudioMessage(): NewAudioMessage =
         NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+
+    fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
+        val chatId = Messages.readChatFromMessage(messageId)
+        return NewGroupChatInviteMessage(
+            chatId,
+            messageId,
+            sender,
+            dateTimes,
+            context,
+            GroupChats.readInviteCode(chatId)
+        )
+    }
 
     fun toNewDocMessage(): NewDocMessage =
         NewDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
@@ -311,15 +324,32 @@ data class PrivateChat(
     override val messages: MessagesConnection
 ) : Chat
 
+interface BareGroupChat {
+    val title: GroupChatTitle
+    val description: GroupChatDescription
+    val adminIdList: List<Int>
+    val users: AccountsConnection
+    val isBroadcast: Boolean
+}
+
+data class GroupChatInfo(
+    override val adminIdList: List<Int>,
+    override val users: AccountsConnection,
+    override val title: GroupChatTitle,
+    override val description: GroupChatDescription,
+    override val isBroadcast: Boolean
+) : BareGroupChat
+
 data class GroupChat(
     override val id: Int,
-    val adminIdList: List<Int>,
-    val users: AccountsConnection,
-    val title: GroupChatTitle,
-    val description: GroupChatDescription,
+    override val adminIdList: List<Int>,
+    override val users: AccountsConnection,
+    override val title: GroupChatTitle,
+    override val description: GroupChatDescription,
     override val messages: MessagesConnection,
-    val isBroadcast: Boolean
-) : Chat
+    override val isBroadcast: Boolean,
+    val inviteCode: UUID?
+) : Chat, BareGroupChat
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
@@ -363,6 +393,19 @@ interface Message : BareMessage {
     fun toUpdatedAudioMessage(): UpdatedAudioMessage =
         UpdatedAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
 
+    fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage {
+        val chatId = Messages.readChatFromMessage(messageId)
+        return UpdatedGroupChatInviteMessage(
+            chatId,
+            messageId,
+            sender,
+            dateTimes,
+            context,
+            hasStar,
+            GroupChats.readInviteCode(chatId)
+        )
+    }
+
     fun toUpdatedDocMessage(): UpdatedDocMessage =
         UpdatedDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
 
@@ -404,6 +447,18 @@ interface Message : BareMessage {
         dateTimes,
         context
     )
+
+    fun toStarredGroupChatInviteMessage(): StarredGroupChatInviteMessage {
+        val chatId = Messages.readChatFromMessage(messageId)
+        return StarredGroupChatInviteMessage(
+            chatId,
+            messageId,
+            sender,
+            dateTimes,
+            context,
+            GroupChats.readInviteCode(chatId)
+        )
+    }
 
     fun toStarredDocMessage(): StarredDocMessage = StarredDocMessage(
         Messages.readChatFromMessage(messageId),
@@ -491,6 +546,29 @@ data class AudioMessage(
     }
 }
 
+data class GroupChatInviteMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val inviteCode: UUID
+) : BareMessage, Message {
+    companion object {
+        /** Builds the message as seen by the [userId]. */
+        fun build(userId: Int, message: BareMessage): GroupChatInviteMessage = with(message) {
+            GroupChatInviteMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                Stargazers.hasStar(userId, messageId),
+                GroupChats.readInviteCode(Messages.readChatFromMessage(messageId))
+            )
+        }
+    }
+}
+
 data class DocMessage(
     override val messageId: Int,
     override val sender: Account,
@@ -556,6 +634,7 @@ interface StarredMessage : BareChatMessage, BareMessage {
                 is TextMessage -> message.toStarredTextMessage()
                 is PicMessage -> message.toStarredPicMessage()
                 is AudioMessage -> message.toStarredAudioMessage()
+                is GroupChatInviteMessage -> message.toStarredGroupChatInviteMessage()
                 is DocMessage -> message.toStarredDocMessage()
                 is VideoMessage -> message.toStarredVideoMessage()
                 is PollMessage -> message.toStarredPollMessage()
@@ -599,6 +678,15 @@ data class StarredAudioMessage(
     override val context: MessageContext
 ) : StarredMessage, BareChatMessage, BareMessage
 
+data class StarredGroupChatInviteMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val inviteCode: UUID
+) : StarredMessage, BareChatMessage, BareMessage
+
 data class StarredDocMessage(
     override val chatId: Int,
     override val messageId: Int,
@@ -632,6 +720,7 @@ interface NewMessage : BareChatMessage, BareMessage {
                 MessageType.TEXT -> message.toNewTextMessage()
                 MessageType.PIC -> message.toNewPicTextMessage()
                 MessageType.AUDIO -> message.toNewAudioMessage()
+                MessageType.GROUP_CHAT_INVITE -> message.toNewGroupChatInviteMessage()
                 MessageType.DOC -> message.toNewDocMessage()
                 MessageType.VIDEO -> message.toNewVideoMessage()
                 MessageType.POLL -> message.toNewPollMessage()
@@ -675,6 +764,15 @@ data class NewAudioMessage(
     override val context: MessageContext
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
+data class NewGroupChatInviteMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    val inviteCode: UUID
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
 data class NewDocMessage(
     override val chatId: Int,
     override val messageId: Int,
@@ -706,6 +804,7 @@ interface UpdatedMessage : BareChatMessage, BareMessage {
                 is TextMessage -> message.toUpdatedTextMessage()
                 is PicMessage -> message.toUpdatedPicMessage()
                 is AudioMessage -> message.toUpdatedAudioMessage()
+                is GroupChatInviteMessage -> message.toUpdatedGroupChatInviteMessage()
                 is DocMessage -> message.toUpdatedDocMessage()
                 is VideoMessage -> message.toUpdatedVideoMessage()
                 is PollMessage -> message.toUpdatedPollMessage()
@@ -751,6 +850,16 @@ data class UpdatedAudioMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val hasStar: Boolean
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedGroupChatInviteMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val hasStar: Boolean,
+    val inviteCode: UUID
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class UpdatedDocMessage(

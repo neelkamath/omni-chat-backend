@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.graphql.routing
 
-import com.neelkamath.omniChat.graphql.UnauthorizedException
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl

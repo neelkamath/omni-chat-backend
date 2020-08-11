@@ -21,7 +21,8 @@ private typealias Filter = Op<Boolean>?
  * @see [VideoMessages]
  * @see [DocMessages]
  * @see [PollMessages]
- * @see [CaptionedPic]
+ * @see [GroupChatInviteMessages]
+ * @see [PicMessages]
  * @see [Stargazers]
  * @see [MessageStatuses]
  */
@@ -90,6 +91,11 @@ object Messages : IntIdTable() {
     fun createPicMessage(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
         create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
             PicMessages.create(messageId, message)
+        }
+
+    fun createGroupChatInviteMessage(userId: Int, chatId: Int, invitedChatId: Int, contextMessageId: Int?): Unit =
+        create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId) { messageId ->
+            GroupChatInviteMessages.create(messageId, invitedChatId)
         }
 
     fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
@@ -245,6 +251,7 @@ object Messages : IntIdTable() {
             MessageType.TEXT -> TextMessage.build(userId, message)
             MessageType.PIC -> PicMessage.build(userId, message)
             MessageType.AUDIO -> AudioMessage.build(userId, message)
+            MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage.build(userId, message)
             MessageType.VIDEO -> VideoMessage.build(userId, message)
             MessageType.DOC -> DocMessage.build(userId, message)
             MessageType.POLL -> PollMessage.build(userId, message)
@@ -282,6 +289,8 @@ object Messages : IntIdTable() {
         PicMessages.delete(messageIdList)
         AudioMessages.delete(messageIdList)
         PollMessages.delete(messageIdList)
+        DocMessages.delete(messageIdList)
+        VideoMessages.delete(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
@@ -319,8 +328,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all messages the [userId] has. Subscribers will be notified of the [UserChatMessagesRemoval] via
-     * [messagesNotifier].
+     * Deletes all messages the [userId] has, and notifies subscribers of the [UserChatMessagesRemoval] via
+     * [messagesNotifier]. Nothing will happen if the [userId] doesn't exist.
      */
     fun deleteUserMessages(userId: Int) {
         MessageStatuses.deleteUserStatuses(userId)
@@ -342,7 +351,10 @@ object Messages : IntIdTable() {
         messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId).map(::MessagesAsset))
     }
 
-    /** Every [ChatAndMessageId] the [userId] created which are visible to at least one user. */
+    /**
+     * Every [ChatAndMessageId] the [userId] created which are visible to at least one user. Returns an empty list if
+     * the [userId] doesn't exist.
+     */
     private fun readChatMessages(userId: Int): List<ChatAndMessageId> = transaction {
         select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
     }

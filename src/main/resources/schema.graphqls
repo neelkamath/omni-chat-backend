@@ -22,6 +22,8 @@ scalar GroupChatDescription
 """1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark."""
 scalar MessageText
 
+scalar Uuid
+
 """
 GraphQL mandates data be returned for every operation, and data be present in every type. However, certain operations
 and types don't have relevant data. This type, which is an empty `String`, indicates such.
@@ -104,6 +106,13 @@ type Query {
     You must send an access token with this request.
     """
     readChat(id: Int!): Chat!
+
+    """
+    Returns the `GroupChatInfo` the `inviteCode` is for.
+
+    Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
+    """
+    readGroupChat(inviteCode: Uuid!): GroupChatInfo!
 
     """
     Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with
@@ -341,6 +350,15 @@ type Mutation {
     setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
+    Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat.
+
+    Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
+
+    You must send an access token with this request.
+    """
+    joinGroupChat(inviteCode: Uuid!): Placeholder!
+
+    """
     Deletes a private chat.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
@@ -370,6 +388,20 @@ type Mutation {
     You must send an access token with this request.
     """
     createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
+
+    """
+    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. The user might want
+    to give their message a context, such as when replying to a message sent several messages ago. In this case, the
+    `contextMessageId` is to be the ID of the message being replied to. A frontend UI might want to hide the
+    `GroupChatInviteMessage.inviteCode`, and instead display the `GroupChatInfo`.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`),
+    `"INVALID_INVITED_CHAT"` (i.e., the `invitedChatId` doesn't exist), or `"INVALID_MESSAGE_ID"` (i.e., the
+    `contextMessageId` didn't exist).
+
+    You must send an access token with this request.
+    """
+    createGroupChatInviteMessage(chatId: Int!, invitedChatId: Int!, contextMessageId: Int): Placeholder!
 
     """
     Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
@@ -479,12 +511,14 @@ union MessagesSubscription = CreatedSubscription
     | NewTextMessage
     | NewPicMessage
     | NewAudioMessage
+    | NewGroupChatInviteMessage
     | NewDocMessage
     | NewVideoMessage
     | NewPollMessage
     | UpdatedTextMessage
     | UpdatedPicMessage
     | UpdatedAudioMessage
+    | UpdatedGroupChatInviteMessage
     | UpdatedDocMessage
     | UpdatedVideoMessage
     | UpdatedPollMessage
@@ -712,15 +746,33 @@ type PageInfo {
     endCursor: Cursor
 }
 
-type GroupChat implements Chat {
-    id: Int!
-    messages(last: Int, before: Cursor): MessagesConnection!
+interface BareGroupChat {
     title: GroupChatTitle!
     description: GroupChatDescription!
     """The ID of the `users` who are the admins. There will be at least one admin."""
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
+}
+
+type GroupChatInfo implements BareGroupChat{
+    title: GroupChatTitle!
+    description: GroupChatDescription!
+    adminIdList: [Int!]!
+    users(first: Int, after: Cursor): AccountsConnection!
+    isBroadcast: Boolean!
+}
+
+type GroupChat implements Chat, BareGroupChat {
+    id: Int!
+    title: GroupChatTitle!
+    description: GroupChatDescription!
+    adminIdList: [Int!]!
+    users(first: Int, after: Cursor): AccountsConnection!
+    messages(last: Int, before: Cursor): MessagesConnection!
+    isBroadcast: Boolean!
+    """null if the user isn't the admin."""
+    inviteCode: Uuid
 }
 
 type PrivateChat implements Chat {
@@ -794,6 +846,15 @@ type AudioMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
+type GroupChatInviteMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    inviteCode: Uuid!
+}
+
 type DocMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
@@ -861,6 +922,15 @@ type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage
     context: MessageContext!
 }
 
+type StarredGroupChatInviteMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    inviteCode: Uuid!
+}
+
 type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -918,6 +988,15 @@ type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
     sender: Account!
     dateTimes: MessageDateTimes!
     context: MessageContext!
+}
+
+type NewGroupChatInviteMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    inviteCode: Uuid!
 }
 
 type NewDocMessage implements NewMessage, BareChatMessage, BareMessage {
@@ -983,6 +1062,16 @@ type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage
     dateTimes: MessageDateTimes!
     context: MessageContext!
     hasStar: Boolean!
+}
+
+type UpdatedGroupChatInviteMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    hasStar: Boolean!
+    inviteCode: Uuid!
 }
 
 type UpdatedDocMessage implements UpdatedMessage, BareChatMessage, BareMessage {

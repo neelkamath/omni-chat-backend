@@ -5,10 +5,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.IncorrectPasswordException
-import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.NonexistentUserException
-import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
@@ -18,6 +14,37 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
+import java.util.*
+
+const val READ_GROUP_CHAT_QUERY = """
+    query ReadGroupChat(
+        ${"$"}inviteCode: Uuid!
+        ${"$"}groupChatInfo_users_first: Int
+        ${"$"}groupChatInfo_users_after: Cursor
+    ) {
+        readGroupChat(inviteCode: ${"$"}inviteCode) {
+            $GROUP_CHAT_INFO_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GraphQlResponse =
+    executeGraphQlViaEngine(
+        READ_GROUP_CHAT_QUERY,
+        mapOf(
+            "inviteCode" to inviteCode.toString(),
+            "groupChatInfo_users_first" to usersPagination?.first,
+            "groupChatInfo_users_after" to usersPagination?.after?.toString()
+        )
+    )
+
+fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
+    val data = operateReadGroupChat(inviteCode, usersPagination).data!!["readGroupChat"] as Map<*, *>
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): String =
+    operateReadGroupChat(inviteCode, usersPagination).errors!![0].message
 
 const val READ_STARS_QUERY = """
     query ReadStars {
@@ -470,6 +497,19 @@ fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsC
 }
 
 class ChatMessagesDtoTest : FunSpec({
+    context("readGroupChat(DataFetchingEnvironment)") {
+        test("The chat's info should be read") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val inviteCode = GroupChats.readInviteCode(chatId)
+            readGroupChat(inviteCode) shouldBe GroupChats.readChatInfo(inviteCode)
+        }
+
+        test("Reading a chat using a nonexistent invite code should fail") {
+            errReadGroupChat(UUID.randomUUID()) shouldBe InvalidInviteCodeException.message
+        }
+    }
+
     context("getMessages(DataFetchingEnvironment") {
         /** Data on a group chat having only ever contained an admin. */
         data class AdminMessages(

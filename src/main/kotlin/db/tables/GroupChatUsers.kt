@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 /** The users in [GroupChats]. */
 object GroupChatUsers : IntIdTable() {
@@ -86,6 +87,15 @@ object GroupChatUsers : IntIdTable() {
         updatedChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UpdatedChatsAsset))
     }
 
+    fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
+
+    /** If the [userId] is in the chat having the [inviteCode], nothing happens. Otherwise, [addUsers] is called. */
+    fun addUserViaInvite(userId: Int, inviteCode: UUID) {
+        val chatId = GroupChats.readChatFromInvite(inviteCode)
+        if (isUserInChat(userId, chatId)) return
+        addUsers(chatId, userId)
+    }
+
     /**
      * Whether the [userIdList] can be removed from the [chatId]. Returns `false` if there would be users sans admins
      * left in the [chatId], or if the [userIdList] contains users who aren't in the [chatId].
@@ -130,10 +140,10 @@ object GroupChatUsers : IntIdTable() {
      */
     fun canUserLeave(userId: Int): Boolean = readChatIdList(userId).all { canUsersLeave(it, userId) }
 
-    /** Calls [removeUsers] on the [userId] for every chat they're in. */
+    /** Calls [removeUsers] on the [userId] for every chat they're in. The [userId] needn't exist. */
     fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
-    /** The chat ID list of every chat the [userId] is in. */
+    /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
     fun readChatIdList(userId: Int): List<Int> = transaction {
         select { GroupChatUsers.userId eq userId }.map { it[chatId] }
     }

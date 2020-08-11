@@ -146,12 +146,11 @@ object PrivateChats : Table() {
     fun search(userId: Int, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
         readUserChats(userId, pagination).filter { readUserById(it.user.id).matches(query) }
 
-    /** [delete]s every chat which the [userId] is in. */
+    /** [delete]s every chat which the [userId] is in. Nothing will happen if the [userId] doesn't exist. */
     fun deleteUserChats(userId: Int): Unit = readIdList(userId).forEach(::delete)
 
     /**
-     * Deletes the [chatId] from [Chats], [PrivateChats], [PrivateChatDeletions], [TypingStatuses], [Messages],
-     * [MessageStatuses].
+     * Deletes the [chatId].
      *
      * Clients will be notified of a [DeletionOfEveryMessage], and then [Notifier.unsubscribe]d via [messagesNotifier].
      *

@@ -5,6 +5,7 @@
 ### GraphQL API
 
 - New:
+    - `Uuid` `scalar`
     - `VideoMessage` `type`
     - `StarredVideoMessage` `type`
     - `NewVideoMessage` `type`
@@ -13,7 +14,17 @@
     - `StarredDocMessage` `type`
     - `NewDocMessage` `type`
     - `UpdatedDocMessage` `type`
+    - `Query.readGroupChat`
+    - `Mutation.joinGroupChat`
+    - `Mutation.createGroupChatInviteMessage`
+    - `GroupChatInfo` `type`
+    - `BareGroupChat` `interface`
+    - `GroupChatInviteMessage` `type`
+    - `StarredGroupChatInviteMessage` `type`
+    - `NewGroupChatInviteMessage` `type`
+    - `UpdatedGroupChatInviteMessage` `type`
 - Updated:
+    - `GroupChat` `type`
     - `MessagesSubscription` `union`
 
 ### REST API

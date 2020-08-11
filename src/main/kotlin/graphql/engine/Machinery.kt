@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.graphql.engine
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.graphql.GraphQlDocDataException
-import com.neelkamath.omniChat.graphql.UnauthorizedException
+import com.neelkamath.omniChat.graphql.routing.GraphQlDocDataException
 import com.neelkamath.omniChat.graphql.routing.GraphQlRequest
+import com.neelkamath.omniChat.graphql.routing.UnauthorizedException
 import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.userId
 import graphql.*

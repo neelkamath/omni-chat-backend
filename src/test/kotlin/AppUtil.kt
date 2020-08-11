@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.neelkamath.omniChat.db.unsubscribeFromMessageBroker
 import com.neelkamath.omniChat.graphql.routing.*
 import io.ktor.application.Application
+import java.util.*
 import kotlin.reflect.KClass
 
 /** The [objectMapper] for the test source set. */
@@ -27,6 +28,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
     .register(MessageTextDeserializer, MessageTextSerializer)
     .register(BioDeserializer, BioSerializer)
+    .register(UuidDeserializer, UuidSerializer)
 
 /** Use in place of [Application.main]. */
 fun Application.test() {
@@ -231,8 +233,18 @@ private object BioDeserializer : JsonDeserializer<Bio>() {
 }
 
 private object BioSerializer : JsonSerializer<Bio>() {
-    override fun serialize(textMessage: Bio, generator: JsonGenerator, provider: SerializerProvider): Unit =
-        generator.writeString(textMessage.value)
+    override fun serialize(bio: Bio, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(bio.value)
+}
+
+private object UuidDeserializer : JsonDeserializer<UUID>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): UUID =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(UUID::fromString)
+}
+
+private object UuidSerializer : JsonSerializer<UUID>() {
+    override fun serialize(uuid: UUID, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(uuid.toString())
 }
 
 /** Convenience function for [ObjectMapper.registerModule]. Registers the [T]'s [serializer] and [deserializer]. */

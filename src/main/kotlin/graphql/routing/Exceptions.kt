@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql
+package com.neelkamath.omniChat.graphql.routing
 
 object UnauthorizedException :
     Exception("The user didn't supply an auth token, supplied an invalid one, or lacks the required permissions.")
@@ -37,3 +37,7 @@ object CannotDeleteAccountException : GraphQlDocDataException("CANNOT_DELETE_ACC
 object InvalidPollException : GraphQlDocDataException("INVALID_POLL")
 
 object NonexistentOptionException : GraphQlDocDataException("NONEXISTENT_OPTION")
+
+object InvalidInviteCodeException : GraphQlDocDataException("INVALID_INVITE_CODE")
+
+object InvalidInvitedChatException : GraphQlDocDataException("INVALID_INVITED_CHAT")
