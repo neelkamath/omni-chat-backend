@@ -1,13 +1,11 @@
 package com.neelkamath.omniChat.restApi
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.PrivateChats
 import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import com.neelkamath.omniChat.test
-import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -39,35 +37,10 @@ class GroupChatPicTest : FunSpec({
             GroupChats.readPic(chatId) shouldBe Pic(dummy.file, Pic.Type.PNG)
         }
 
-        test("Updating a nonexistent chat should cause an error to be returned") {
-            val token = createVerifiedUsers(1)[0].accessToken
-            val dummy = DummyFile("pic.png", bytes = 1)
-            with(patchGroupChatPic(token, dummy, chatId = 1)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
-                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
-            }
-        }
-
-        test("Using a private chat should fail") {
-            val (user1, user2) = createVerifiedUsers(2)
-            val chatId = PrivateChats.create(user1.info.id, user2.info.id)
-            val dummy = DummyFile("pic.png", bytes = 1)
-            with(patchGroupChatPic(user1.accessToken, dummy, chatId)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
-                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
-            }
-        }
-
         fun testBadRequest(dummy: DummyFile) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(patchGroupChatPic(admin.accessToken, dummy, chatId)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidGroupChatPicUpdate>(content!!) shouldBe
-                        InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.INVALID_FILE)
-            }
+            patchGroupChatPic(admin.accessToken, dummy, chatId).status() shouldBe HttpStatusCode.BadRequest
         }
 
         test("Uploading an invalid file type should fail") { testBadRequest(DummyFile("pic.webp", bytes = 1)) }
@@ -79,8 +52,7 @@ class GroupChatPicTest : FunSpec({
         test("An HTTP status code of 401 should be received when a non-admin updates the pic") {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            patchGroupChatPic(user.accessToken, DummyFile("pic.png", bytes = 1), chatId).status() shouldBe
-                    HttpStatusCode.Unauthorized
+            patchGroupChatPic(user.accessToken, DummyFile("pic.png", bytes = 1), chatId).shouldHaveUnauthorizedStatus()
             GroupChats.readPic(chatId).shouldBeNull()
         }
     }

@@ -222,7 +222,7 @@ paths:
         '204':
           description: Pic updated.
         '400':
-          $ref: '#/components/responses/InvalidGroupChatPicUpdate'
+          description: The file had an invalid type or size.
         '401':
           $ref: '#/components/responses/Unauthorized'
   /health-check:
@@ -236,13 +236,6 @@ paths:
           description: Healthy.
 components:
   schemas:
-    InvalidGroupChatPicUpdate:
-      type: object
-      properties:
-        reason:
-          description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
-          type: string
-          enum: [USER_NOT_IN_CHAT, INVALID_FILE]
     InvalidMediaMessage:
       type: object
       properties:
@@ -275,12 +268,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InvalidPicMessage'
-    InvalidGroupChatPicUpdate:
-      description: Couldn't update pic.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/InvalidGroupChatPicUpdate'
     Audio:
       description: An MP3 audio not exceeding 25 MiB.
       content:

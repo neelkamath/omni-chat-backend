@@ -4,9 +4,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
-import com.neelkamath.omniChat.graphql.routing.GroupChatInput
-import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
+import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -60,7 +58,7 @@ class MediaHandlerTest : FunSpec({
             val dummy = DummyFile("audio.mp3", bytes = 1)
             postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = messageId).status() shouldBe
                     HttpStatusCode.NoContent
-            Messages.readGroupChat(admin.info.id, chatId).last().node.context.id shouldBe messageId
+            Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id shouldBe messageId
             AudioMessages.count() shouldBe 1
         }
 
@@ -103,16 +101,8 @@ class MediaHandlerTest : FunSpec({
 
         test("An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat") {
             val (admin, user) = createVerifiedUsers(2)
-            val chat = GroupChatInput(
-                GroupChatTitle("T"),
-                GroupChatDescription(""),
-                userIdList = listOf(admin.info.id, user.info.id),
-                adminIdList = listOf(admin.info.id),
-                isBroadcast = true
-            )
-            val chatId = GroupChats.create(chat)
-            postAudioMessage(user.accessToken, DummyFile("audio.mp3", bytes = 1), chatId).status() shouldBe
-                    HttpStatusCode.Unauthorized
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
+            postAudioMessage(user.accessToken, DummyFile("audio.mp3", bytes = 1), chatId).shouldHaveUnauthorizedStatus()
         }
     }
 })

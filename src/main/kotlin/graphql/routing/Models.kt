@@ -199,15 +199,17 @@ data class AccountUpdate(
 )
 
 /**
- * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, or if the [adminIdList] isn't a subset of
- * the [userIdList].
+ * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, the [adminIdList] isn't a subset of the
+ * [userIdList], or the chat [isPublic] but not [isInvitable].
  */
 data class GroupChatInput(
     val title: GroupChatTitle,
     val description: GroupChatDescription,
     val userIdList: List<Int>,
     val adminIdList: List<Int>,
-    val isBroadcast: Boolean
+    val isBroadcast: Boolean,
+    val isPublic: Boolean,
+    val isInvitable: Boolean
 ) {
     init {
         if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
@@ -215,6 +217,7 @@ data class GroupChatInput(
             throw IllegalArgumentException(
                 "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
             )
+        if (isPublic && !isInvitable) throw IllegalArgumentException("Public chats must be invitable.")
     }
 }
 
@@ -282,7 +285,8 @@ data class UpdatedGroupChat(
     val newUsers: List<Account>? = null,
     val removedUsers: List<Account>? = null,
     val adminIdList: List<Int>? = null,
-    val isBroadcast: Boolean? = null
+    val isBroadcast: Boolean? = null,
+    val isInvitable: Boolean? = null
 ) : UpdatedChatsSubscription {
     init {
         if (newUsers != null && removedUsers != null) {
@@ -330,6 +334,8 @@ interface BareGroupChat {
     val adminIdList: List<Int>
     val users: AccountsConnection
     val isBroadcast: Boolean
+    val isPublic: Boolean
+    val isInvitable: Boolean
 }
 
 data class GroupChatInfo(
@@ -337,7 +343,9 @@ data class GroupChatInfo(
     override val users: AccountsConnection,
     override val title: GroupChatTitle,
     override val description: GroupChatDescription,
-    override val isBroadcast: Boolean
+    override val isBroadcast: Boolean,
+    override val isPublic: Boolean,
+    override val isInvitable: Boolean
 ) : BareGroupChat
 
 data class GroupChat(
@@ -348,6 +356,8 @@ data class GroupChat(
     override val description: GroupChatDescription,
     override val messages: MessagesConnection,
     override val isBroadcast: Boolean,
+    override val isPublic: Boolean,
+    override val isInvitable: Boolean,
     val inviteCode: UUID?
 ) : Chat, BareGroupChat
 
@@ -496,13 +506,13 @@ data class TextMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): TextMessage = with(message) {
+        fun build(message: BareMessage, userId: Int? = null): TextMessage = with(message) {
             TextMessage(
                 messageId,
                 sender,
                 dateTimes,
                 context,
-                Stargazers.hasStar(userId, messageId),
+                if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 TextMessages.read(messageId)
             )
         }
@@ -519,13 +529,13 @@ data class PicMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): PicMessage = with(message) {
+        fun build(message: BareMessage, userId: Int? = null): PicMessage = with(message) {
             PicMessage(
                 messageId,
                 sender,
                 dateTimes,
                 context,
-                Stargazers.hasStar(userId, messageId),
+                if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 PicMessages.read(messageId).caption
             )
         }
@@ -541,8 +551,15 @@ data class AudioMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): AudioMessage =
-            with(message) { AudioMessage(messageId, sender, dateTimes, context, Stargazers.hasStar(userId, messageId)) }
+        fun build(message: BareMessage, userId: Int? = null): AudioMessage = with(message) {
+            AudioMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                if (userId == null) false else Stargazers.hasStar(userId, messageId)
+            )
+        }
     }
 }
 
@@ -556,13 +573,13 @@ data class GroupChatInviteMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): GroupChatInviteMessage = with(message) {
+        fun build(message: BareMessage, userId: Int? = null): GroupChatInviteMessage = with(message) {
             GroupChatInviteMessage(
                 messageId,
                 sender,
                 dateTimes,
                 context,
-                Stargazers.hasStar(userId, messageId),
+                if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 GroupChats.readInviteCode(Messages.readChatFromMessage(messageId))
             )
         }
@@ -578,8 +595,15 @@ data class DocMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): DocMessage =
-            with(message) { DocMessage(messageId, sender, dateTimes, context, Stargazers.hasStar(userId, messageId)) }
+        fun build(message: BareMessage, userId: Int? = null): DocMessage = with(message) {
+            DocMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                if (userId == null) false else Stargazers.hasStar(userId, messageId)
+            )
+        }
     }
 }
 
@@ -592,8 +616,15 @@ data class VideoMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): VideoMessage =
-            with(message) { VideoMessage(messageId, sender, dateTimes, context, Stargazers.hasStar(userId, messageId)) }
+        fun build(message: BareMessage, userId: Int? = null): VideoMessage = with(message) {
+            VideoMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                if (userId == null) false else Stargazers.hasStar(userId, messageId)
+            )
+        }
     }
 }
 
@@ -607,13 +638,13 @@ data class PollMessage(
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(userId: Int, message: BareMessage): PollMessage = with(message) {
+        fun build(message: BareMessage, userId: Int? = null): PollMessage = with(message) {
             PollMessage(
                 messageId,
                 sender,
                 dateTimes,
                 context,
-                Stargazers.hasStar(userId, messageId),
+                if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 PollMessages.read(messageId)
             )
         }

@@ -63,9 +63,10 @@ type Query {
     """
     Case-insensitively `query`s text messages, poll message title and options, and pic message captions in the `chatId`.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
+    chat).
 
-    You must send an access token with this request.
+    You must send an access token with this request if the `chatId` isn't a public chat.
     """
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
@@ -99,11 +100,9 @@ type Query {
     readChats: [Chat!]!
 
     """
-    Returns the chat `id`.
-
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
 
-    You must send an access token with this request.
+    You must send an access token with this request if the chat being read isn't a public chat.
     """
     readChat(id: Int!): Chat!
 
@@ -115,13 +114,16 @@ type Query {
     readGroupChat(inviteCode: Uuid!): GroupChatInfo!
 
     """
-    Case-insensitively searches group chats and private chats. Private chats are searched by matching the `query` with
-    the username, first name, and last name of users the user has chats with. Group chats are searched by matching the
-    `query` with the title of group chats the user is in.
+    Case-insensitively searches group chats and private chats the user is in. Private chats are searched by matching the
+    `query` with the username, first name, and last name of users the user has chats with. Group chats are searched by
+    matching the `query` with the title of group chats the user is in.
 
     You must send an access token with this request.
     """
     searchChats(query: String!): [Chat!]!
+
+    """Case-insensitively searches chats by case-insensitively `query`ing their titles."""
+    searchPublicChats(query: String!): [GroupChat!]!
 
     """
     Retrieves saved contacts.
@@ -215,8 +217,6 @@ type Mutation {
     """
     Deletes the group chat's profile pic. The user must be the admin.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
-
     You must send an access token with this request.
     """
     deleteGroupChatPic(chatId: Int!): Placeholder!
@@ -281,16 +281,12 @@ type Mutation {
     """
     Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
-
     You must send an access token with this request.
     """
     updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
 
     """
     Only an admin can perform this operation.
-
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
     You must send an access token with this request.
     """
@@ -299,8 +295,7 @@ type Mutation {
     """
     Users already in the chat will be ignored. Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
 
     You must send an access token with this request.
     """
@@ -309,9 +304,8 @@ type Mutation {
     """
     Only an admin can perform this operation. Messages sent by, and polls voted on, by removed users will remain.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat, or the user must first appoint another
-    user as an admin because they're the last admin).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat,
+    or the user must first appoint another user as an admin because they're the last admin but there are other users).
 
     You must send an access token with this request.
     """
@@ -321,8 +315,8 @@ type Mutation {
     Makes every user in the `userIdList` an admin of the `chatId`. If the `userId`'s already an admin, nothing will
     happen. Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_USER_ID"`
-    (i.e., one of the users in the `userIdList` isn't in the chat).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users in the `userIdList` isn't in the
+    chat).
 
     You must send an access token with this request.
     """
@@ -330,7 +324,8 @@ type Mutation {
 
     """
     Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
+    contain the user's own ID, as it is implicitly included. If `GroupChatInput.isPublic`, `GroupChatInput.isInvitable`
+    will be set to `true` on server-side regardless of what it is client-side. The created chat's ID is returned.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
     `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
@@ -343,11 +338,19 @@ type Mutation {
     """
     Sets whether the `chatId` `isBroadcast`. The user must be an admin to perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`).
-
     You must send an access token with this request.
     """
     setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
+
+    """
+    Sets whether the `chatId` `isInvitable`. The user must be an admin to perform this operation.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
+    public chat).
+
+    You must send an access token with this request.
+    """
+    setInvitability(chatId: Int!, isInvitable: Boolean!): Placeholder!
 
     """
     Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat.
@@ -390,14 +393,15 @@ type Mutation {
     createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
 
     """
-    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. The user might want
-    to give their message a context, such as when replying to a message sent several messages ago. In this case, the
-    `contextMessageId` is to be the ID of the message being replied to. A frontend UI might want to hide the
-    `GroupChatInviteMessage.inviteCode`, and instead display the `GroupChatInfo`.
+    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
+    broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
+    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
+    message being replied to. A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead
+    display the `GroupChatInfo`.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`),
-    `"INVALID_INVITED_CHAT"` (i.e., the `invitedChatId` doesn't exist), or `"INVALID_MESSAGE_ID"` (i.e., the
-    `contextMessageId` didn't exist).
+    `"INVALID_INVITED_CHAT"` (i.e., the `invitedChatId` isn't a group chat, or the chat has invitations switched off),
+    or `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` doesn't exist).
 
     You must send an access token with this request.
     """
@@ -595,6 +599,7 @@ type UpdatedGroupChat {
     removedUsers: [Account!]
     adminIdList: [Int!]
     isBroadcast: Boolean
+    isInvitable: Boolean
 }
 
 """
@@ -753,14 +758,18 @@ interface BareGroupChat {
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
+    isPublic: Boolean!
+    isInvitable: Boolean!
 }
 
-type GroupChatInfo implements BareGroupChat{
+type GroupChatInfo implements BareGroupChat {
     title: GroupChatTitle!
     description: GroupChatDescription!
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
+    isPublic: Boolean!
+    isInvitable: Boolean!
 }
 
 type GroupChat implements Chat, BareGroupChat {
@@ -771,7 +780,9 @@ type GroupChat implements Chat, BareGroupChat {
     users(first: Int, after: Cursor): AccountsConnection!
     messages(last: Int, before: Cursor): MessagesConnection!
     isBroadcast: Boolean!
-    """null if the user isn't the admin."""
+    isPublic: Boolean!
+    isInvitable: Boolean!
+    """null if invite codes are switched off."""
     inviteCode: Uuid
 }
 
@@ -1135,4 +1146,8 @@ input GroupChatInput {
     userIdList: [Int!]!
     adminIdList: [Int!]!
     isBroadcast: Boolean!
+    """Cannot be changed later."""
+    isPublic: Boolean!
+    """Whether users can join via an invitation. This can be changed later. This is always `true` for public chats."""
+    isInvitable: Boolean!
 }

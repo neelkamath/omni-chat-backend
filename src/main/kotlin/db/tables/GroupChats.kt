@@ -20,6 +20,8 @@ object GroupChats : Table() {
     private val description: Column<String> = varchar("description", GroupChatDescription.MAX_LENGTH)
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
     private val isBroadcast: Column<Boolean> = bool("is_broadcast")
+    private val isPublic: Column<Boolean> = bool("is_public")
+    private val isInvitable: Column<Boolean> = bool("is_invitable")
     private val inviteCode: Column<UUID> =
         uuid("invite_code").uniqueIndex().defaultExpression(CustomFunction("gen_random_uuid", UUIDColumnType()))
 
@@ -35,6 +37,8 @@ object GroupChats : Table() {
                 it[title] = chat.title.value
                 it[description] = chat.description.value
                 it[isBroadcast] = chat.isBroadcast
+                it[isInvitable] = chat.isInvitable
+                it[isPublic] = chat.isPublic
             }[GroupChats.id]
         }
         GroupChatUsers.addUsers(chatId, chat.userIdList)
@@ -42,21 +46,29 @@ object GroupChats : Table() {
         return chatId
     }
 
+    fun exists(chatId: Int): Boolean = transaction {
+        select { GroupChats.id eq chatId }.empty().not()
+    }
+
+    /** Whether the [chatId] exists, and it's public. */
+    fun isExistentPublicChat(chatId: Int): Boolean =
+        exists(chatId) && readChatInfo(chatId, usersPagination = ForwardPagination(first = 0)).isPublic
+
     /**
-     * Returns the [chatId] for the [userId].
+     * Returns the [chatId] for the [userId], or for an anonymous user if there's no [userId].
      *
      * @see [readChatInfo]
      */
     fun readChat(
-        userId: Int,
         chatId: Int,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
+        messagesPagination: BackwardPagination? = null,
+        userId: Int? = null
     ): GroupChat {
         val row = transaction {
             select { GroupChats.id eq chatId }.first()
         }
-        return buildGroupChat(row, userId, chatId, usersPagination, messagesPagination)
+        return buildGroupChat(row, usersPagination, messagesPagination, userId)
     }
 
     /** @see [readChat] */
@@ -64,14 +76,26 @@ object GroupChats : Table() {
         val row = transaction {
             select { GroupChats.inviteCode eq inviteCode }.first()
         }
-        return GroupChatInfo(
+        return buildChatInfo(row, usersPagination)
+    }
+
+    private fun readChatInfo(chatId: Int, usersPagination: ForwardPagination? = null): GroupChatInfo {
+        val row = transaction {
+            select { GroupChats.id eq chatId }.first()
+        }
+        return buildChatInfo(row, usersPagination)
+    }
+
+    private fun buildChatInfo(row: ResultRow, usersPagination: ForwardPagination? = null): GroupChatInfo =
+        GroupChatInfo(
             GroupChatUsers.readAdminIdList(row[id]),
             GroupChatUsers.readUsers(row[id], usersPagination),
             row[title].let(::GroupChatTitle),
             row[description].let(::GroupChatDescription),
-            row[isBroadcast]
+            row[isBroadcast],
+            row[isPublic],
+            row[isInvitable]
         )
-    }
 
     /**
      * Returns the [userId]'s chats.
@@ -83,7 +107,7 @@ object GroupChats : Table() {
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transaction {
-        GroupChatUsers.readChatIdList(userId).map { readChat(userId, it, usersPagination, messagesPagination) }
+        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination, userId) }
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier]. */
@@ -126,7 +150,8 @@ object GroupChats : Table() {
 
     /**
      * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who
-     * have [Notifier.subscribe]d to [MessagesSubscription]s via [messagesNotifier] will receive a [DeletionOfEveryMessage].
+     * have [Notifier.subscribe]d to [MessagesSubscription]s via [messagesNotifier] will receive a
+     * [DeletionOfEveryMessage].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      */
@@ -150,7 +175,16 @@ object GroupChats : Table() {
         messagesPagination: BackwardPagination? = null
     ): List<GroupChat> = transaction {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
-            .map { buildGroupChat(it, userId, it[GroupChats.id], usersPagination, messagesPagination) }
+            .map { buildGroupChat(it, usersPagination, messagesPagination, userId) }
+    }
+
+    /** Case-insensitively [query]s public chats. */
+    fun searchPublicChats(
+        query: String,
+        usersPagination: ForwardPagination? = null,
+        messagesPagination: BackwardPagination? = null
+    ): List<GroupChat> = transaction {
+        select { isPublic and (title iLike query) }.map { buildGroupChat(it, usersPagination, messagesPagination) }
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [updatedChatsNotifier]. */
@@ -162,23 +196,43 @@ object GroupChats : Table() {
         updatedChatsNotifier.publish(UpdatedGroupChat(chatId, isBroadcast = isBroadcast), subscribers)
     }
 
-    /** Builds the [chatId] from the [row] for the [userId]. */
+    /**
+     * Throws an [IllegalArgumentException] if the [chatId] is public. Subscribers are notified of the
+     * [UpdatedGroupChat] via [updatedChatsNotifier].
+     */
+    fun setInvitability(chatId: Int, isInvitable: Boolean) {
+        if (isExistentPublicChat(chatId))
+            throw IllegalArgumentException("A public chat's invitability cannot be updated.")
+        transaction {
+            update({ GroupChats.id eq chatId }) { it[this.isInvitable] = isInvitable }
+        }
+        val subscribers = GroupChatUsers.readUserIdList(chatId).map(::UpdatedChatsAsset)
+        updatedChatsNotifier.publish(UpdatedGroupChat(chatId, isInvitable = isInvitable), subscribers)
+    }
+
+    /** Builds the chat from the [row] for the [userId], or an anonymous user if there's no [userId]. */
     private fun buildGroupChat(
         row: ResultRow,
-        userId: Int,
-        chatId: Int,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
+        messagesPagination: BackwardPagination? = null,
+        userId: Int? = null
     ): GroupChat = GroupChat(
-        chatId,
-        GroupChatUsers.readAdminIdList(chatId),
-        GroupChatUsers.readUsers(chatId, usersPagination),
+        row[id],
+        GroupChatUsers.readAdminIdList(row[id]),
+        GroupChatUsers.readUsers(row[id], usersPagination),
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
-        Messages.readGroupChatConnection(userId, chatId, messagesPagination),
+        Messages.readGroupChatConnection(row[id], messagesPagination, userId),
         row[isBroadcast],
-        row[inviteCode].takeIf { GroupChatUsers.isAdmin(userId, chatId) }
+        row[isPublic],
+        row[isInvitable],
+        row[inviteCode].takeIf { row[isPublic] || row[isInvitable] }
     )
+
+    /** Returns `false` if the [chatId] doesn't exist, or isn't invitable. */
+    fun isInvitable(chatId: Int): Boolean = transaction {
+        select { GroupChats.id eq chatId }.firstOrNull()?.get(isInvitable) ?: false
+    }
 
     fun isExistentInviteCode(inviteCode: UUID): Boolean = transaction {
         select { GroupChats.inviteCode eq inviteCode }.empty().not()
@@ -199,7 +253,7 @@ object GroupChats : Table() {
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
     fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
-        .associateWith { Messages.searchGroupChat(userId, it, query) }
+        .associateWith { Messages.searchGroupChat(it, query, userId = userId) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 }

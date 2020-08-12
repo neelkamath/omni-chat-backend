@@ -34,18 +34,8 @@ private fun patchGroupChatPic(route: Route): Unit = with(route) {
         val chatId = call.parameters["chat-id"]!!.toInt()
         val pic = readMultipartPic()
         when {
-            pic == null -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.INVALID_FILE)
-            )
-
-            chatId !in GroupChatUsers.readChatIdList(call.userId!!) -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidGroupChatPicUpdate(InvalidGroupChatPicUpdate.Reason.USER_NOT_IN_CHAT)
-            )
-
+            pic == null -> call.respond(HttpStatusCode.BadRequest)
             !GroupChatUsers.isAdmin(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
-
             else -> {
                 GroupChats.updatePic(chatId, pic)
                 call.respond(HttpStatusCode.NoContent)

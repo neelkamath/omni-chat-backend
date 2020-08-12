@@ -41,7 +41,7 @@ object GroupChatUsers : IntIdTable() {
     fun readFellowParticipants(userId: Int): Set<Int> =
         readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
 
-    /** Whether the [userId] is an admin of the [chatId] (assumed to exist). */
+    /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
         select { GroupChatUsers.chatId eq chatId }.any { it[GroupChatUsers.userId] == userId && it[isAdmin] }
     }

@@ -23,15 +23,31 @@
     - `StarredGroupChatInviteMessage` `type`
     - `NewGroupChatInviteMessage` `type`
     - `UpdatedGroupChatInviteMessage` `type`
+    - `Query.searchPublicChats`
+    - `Mutation.setInvitability`
 - Updated:
+    - `UpdatedGroupChat` `type`
     - `GroupChat` `type`
+    - `GroupChatInput` `input`
     - `MessagesSubscription` `union`
+    - `Query.searchChatMessages`
+    - `Query.readChat`
+- Bug fixes:
+    - `Mutation.deleteGroupChatPic`
+    - `Mutation.updateGroupChatTitle`
+    - `Mutation.updateGroupChatDescription`
+    - `Mutation.addGroupChatUsers`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.makeGroupChatAdmins`
+    - `Mutation.setBroadcastStatus`
 
 ### REST API
 
 - New:
     - `/video-message`
     - `/doc-message`
+- Updated:
+    - `/group-chat-pic`
 
 ## v0.3.1
 

@@ -65,15 +65,15 @@ object Messages : IntIdTable() {
 
     /**
      * Returns whether the [chatId] is a broadcast group with the [userId] as an admin. It's assumed the [userId] is in
-     * the [chatId]. The [chatId] needn't be a broadcast group.
+     * the [chatId]. The [chatId] can be a private or group chat.
      */
     fun isInvalidBroadcast(userId: Int, chatId: Int): Boolean {
         if (chatId in PrivateChats.readIdList(userId)) return false
         val isBroadcast = GroupChats.readChat(
-            userId,
             chatId,
             usersPagination = ForwardPagination(first = 0),
-            messagesPagination = BackwardPagination(last = 0)
+            messagesPagination = BackwardPagination(last = 0),
+            userId = userId
         ).isBroadcast
         return isBroadcast && !GroupChatUsers.isAdmin(userId, chatId)
     }
@@ -143,13 +143,16 @@ object Messages : IntIdTable() {
         messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, subscribers)
     }
 
-    /** Case-insensitively [query]s the [chatId]'s messages as seen by the [userId]. */
+    /**
+     * Case-insensitively [query]s the [chatId]'s messages as seen by the [userId], or an anonymous user if there's no
+     * [userId].
+     */
     fun searchGroupChat(
-        userId: Int,
         chatId: Int,
         query: String,
-        pagination: BackwardPagination? = null
-    ): List<MessageEdge> = search(readGroupChat(userId, chatId, pagination), query)
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
+    ): List<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
 
     /**
      * [query]s the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions])
@@ -190,28 +193,30 @@ object Messages : IntIdTable() {
      */
     fun readPrivateChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
-        return readChat(userId, chatId, pagination, op)
+        return readChat(chatId, pagination, op, userId)
     }
 
     /**
-     * The [userId]'s [chatId]'s [MessageEdge]s.
+     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readGroupChatConnection]
      */
-    fun readGroupChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> =
-        readChat(userId, chatId, pagination)
+    fun readGroupChat(chatId: Int, pagination: BackwardPagination? = null, userId: Int? = null): List<MessageEdge> =
+        readChat(chatId, pagination, userId = userId)
 
     /**
-     * The [userId] reading the [chatId]'s [MessageEdge]s. The returned [MessageEdge]s are concrete classes.
+     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId]. The returned
+     * [MessageEdge.node]s are concrete classes.
      *
      * @see [readPrivateChat]
      * @see [readGroupChat]
+     * @see [readGroupChat]
      */
     private fun readChat(
-        userId: Int,
         chatId: Int,
         pagination: BackwardPagination? = null,
-        filter: Filter = null
+        filter: Filter = null,
+        userId: Int? = null
     ): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = this.chatId eq chatId
@@ -222,7 +227,7 @@ object Messages : IntIdTable() {
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
-                .map { MessageEdge(buildMessage(userId, it), cursor = it[Messages.id].value) }
+                .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
         }
     }
 
@@ -236,25 +241,25 @@ object Messages : IntIdTable() {
         val row = transaction {
             select { Messages.id eq messageId }.first()
         }
-        return buildMessage(userId, row)
+        return buildMessage(row, userId)
     }
 
     /**
-     * Returns a concrete class as seen by the [userId].
+     * Returns a concrete class as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readMessage]
      * @see [readTypedMessage]
      */
-    private fun buildMessage(userId: Int, row: ResultRow): Message {
+    private fun buildMessage(row: ResultRow, userId: Int? = null): Message {
         val (type, message) = readTypedMessage(row[id].value)
         return when (type) {
-            MessageType.TEXT -> TextMessage.build(userId, message)
-            MessageType.PIC -> PicMessage.build(userId, message)
-            MessageType.AUDIO -> AudioMessage.build(userId, message)
-            MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage.build(userId, message)
-            MessageType.VIDEO -> VideoMessage.build(userId, message)
-            MessageType.DOC -> DocMessage.build(userId, message)
-            MessageType.POLL -> PollMessage.build(userId, message)
+            MessageType.TEXT -> TextMessage.build(message, userId)
+            MessageType.PIC -> PicMessage.build(message, userId)
+            MessageType.AUDIO -> AudioMessage.build(message, userId)
+            MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage.build(message, userId)
+            MessageType.VIDEO -> VideoMessage.build(message, userId)
+            MessageType.DOC -> DocMessage.build(message, userId)
+            MessageType.POLL -> PollMessage.build(message, userId)
         }
     }
 
@@ -375,8 +380,13 @@ object Messages : IntIdTable() {
         select { Messages.id eq id }.empty().not()
     }
 
-    fun readGroupChatConnection(userId: Int, chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
-        MessagesConnection(readGroupChat(userId, chatId, pagination), buildPageInfo(chatId, pagination?.before))
+    /** The [MessagesConnection] as seen by the [userId], or an anonymous user if there's no [userId]. */
+    fun readGroupChatConnection(
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
+    ): MessagesConnection =
+        MessagesConnection(readGroupChat(chatId, pagination, userId), buildPageInfo(chatId, pagination?.before))
 
     fun readPrivateChatConnection(
         chatId: Int,

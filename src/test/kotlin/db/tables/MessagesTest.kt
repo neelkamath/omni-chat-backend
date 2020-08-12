@@ -34,14 +34,7 @@ class MessagesTest : FunSpec({
 
         test("Only an admin should be able to message in a broadcast group chat") {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chat = GroupChatInput(
-                GroupChatTitle("T"),
-                GroupChatDescription(""),
-                userIdList = listOf(adminId, userId),
-                adminIdList = listOf(adminId),
-                isBroadcast = true
-            )
-            val chatId = GroupChats.create(chat)
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId), isBroadcast = true)
             Messages.isInvalidBroadcast(adminId, chatId).shouldBeFalse()
             Messages.isInvalidBroadcast(userId, chatId).shouldBeTrue()
         }
@@ -98,7 +91,8 @@ class MessagesTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
             Messages.message(adminId, chatId, MessageText("Bye"))
-            Messages.searchGroupChat(adminId, chatId, "hi").map { it.node.messageId } shouldBe listOf(messageId)
+            Messages.searchGroupChat(chatId, "hi", userId = adminId)
+                .map { it.node.messageId } shouldBe listOf(messageId)
         }
 
         test("Pic message captions should be searched case insensitively") {
@@ -109,7 +103,8 @@ class MessagesTest : FunSpec({
             val messageId = Messages.message(adminId, chatId, message1)
             val message2 = CaptionedPic(pic, caption = MessageText("Bye"))
             Messages.message(adminId, chatId, message2)
-            Messages.searchGroupChat(adminId, chatId, "hi").map { it.node.messageId } shouldBe listOf(messageId)
+            Messages.searchGroupChat(chatId, "hi", userId = adminId).map { it.node.messageId } shouldBe
+                    listOf(messageId)
         }
 
         test("Poll message title and options should be searched case insensitively") {
@@ -124,7 +119,7 @@ class MessagesTest : FunSpec({
             val message3Options = listOf(MessageText("option 1"), MessageText("option 2"))
             val message3 = PollInput(MessageText("Title"), message3Options)
             Messages.message(adminId, chatId, message3)
-            Messages.searchGroupChat(adminId, chatId, "restaurant").map { it.node.messageId } shouldBe
+            Messages.searchGroupChat(chatId, "restaurant", userId = adminId).map { it.node.messageId } shouldBe
                     listOf(message1Id, message2Id)
         }
 
@@ -132,7 +127,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             Messages.message(adminId, chatId, Mp3(ByteArray(1)))
-            Messages.searchGroupChat(adminId, chatId, "query").shouldBeEmpty()
+            Messages.searchGroupChat(chatId, "query", userId = adminId).shouldBeEmpty()
         }
     }
 
@@ -146,7 +141,7 @@ class MessagesTest : FunSpec({
             awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
                 .forEach { (userId, subscriber) ->
-                    val updates = Messages.readGroupChat(userId, chatId).map { it.node.toNewTextMessage() }
+                    val updates = Messages.readGroupChat(chatId, userId = userId).map { it.node.toNewTextMessage() }
                     subscriber.assertValueSequence(updates)
                 }
         }
@@ -351,21 +346,21 @@ class MessagesTest : FunSpec({
                 GroupChats.create(listOf(adminId)).also { Messages.create(adminId, it) }
             }
             create()
-            Messages.readGroupChat(adminId, create()) shouldHaveSize 1
+            Messages.readGroupChat(create(), userId = adminId) shouldHaveSize 1
         }
 
         test("Messages should be retrieved in the order of their creation.") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messagesIdList = (1..3).map { Messages.message(adminId, chatId) }
-            Messages.readGroupChat(adminId, chatId).map { it.cursor } shouldBe messagesIdList
+            Messages.readGroupChat(chatId, userId = adminId).map { it.cursor } shouldBe messagesIdList
         }
 
         test("Every message should be retrieved if neither the cursor nor the limit are supplied") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageIdList = (1..3).map { Messages.message(adminId, chatId) }
-            Messages.readGroupChat(adminId, chatId).map { it.cursor } shouldBe messageIdList
+            Messages.readGroupChat(chatId, userId = adminId).map { it.cursor } shouldBe messageIdList
         }
 
         test(
@@ -381,7 +376,7 @@ class MessagesTest : FunSpec({
             val last = 3
             val cursorIndex = 7
             Messages
-                .readGroupChat(adminId, chatId, BackwardPagination(last, before = messageIdList[cursorIndex]))
+                .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]), adminId)
                 .map { it.cursor }
                 .shouldBe(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last))
         }
@@ -397,7 +392,7 @@ class MessagesTest : FunSpec({
             val chatId = GroupChats.create(listOf(adminId))
             val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
             val last = 3
-            Messages.readGroupChat(adminId, chatId, BackwardPagination(last)).map { it.cursor } shouldBe
+            Messages.readGroupChat(chatId, BackwardPagination(last), adminId).map { it.cursor } shouldBe
                     messageIdList.takeLast(last)
         }
 
@@ -414,7 +409,7 @@ class MessagesTest : FunSpec({
             val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }
             val index = 3
             val cursor = messageIdList[index]
-            Messages.readGroupChat(adminId, chatId, BackwardPagination(before = cursor)).map { it.cursor } shouldBe
+            Messages.readGroupChat(chatId, BackwardPagination(before = cursor), adminId).map { it.cursor } shouldBe
                     messageIdList.dropLast(messages - index)
         }
 
@@ -427,7 +422,7 @@ class MessagesTest : FunSpec({
             Messages.delete(deletedMessageId)
             val last = 3
             Messages
-                .readGroupChat(adminId, chatId, BackwardPagination(last, before = deletedMessageId))
+                .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId), adminId)
                 .map { it.cursor } shouldBe messageIdList.subList(index - last, index)
         }
     }
@@ -459,7 +454,7 @@ class MessagesTest : FunSpec({
 
         test("There shouldn't be messages before the first message") {
             val (adminId, chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(adminId, chatId, BackwardPagination(before = firstMessageId))
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
                 .pageInfo
                 .hasPreviousPage
                 .shouldBeFalse()
@@ -467,7 +462,7 @@ class MessagesTest : FunSpec({
 
         test("There shouldn't be messages after the last message") {
             val (adminId, chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(adminId, chatId, BackwardPagination(before = lastMessageId))
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId), adminId)
                 .pageInfo
                 .hasNextPage
                 .shouldBeFalse()
@@ -475,7 +470,7 @@ class MessagesTest : FunSpec({
 
         test("There should be messages before the last message") {
             val (adminId, chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(adminId, chatId, BackwardPagination(last = 0, before = lastMessageId))
+            Messages.readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId), adminId)
                 .pageInfo
                 .hasPreviousPage
                 .shouldBeTrue()
@@ -483,7 +478,7 @@ class MessagesTest : FunSpec({
 
         test("There should be messages after the first message") {
             val (adminId, chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(adminId, chatId, BackwardPagination(before = firstMessageId))
+            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
                 .pageInfo
                 .hasNextPage
                 .shouldBeTrue()
@@ -495,7 +490,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = if (hasMessage) Messages.message(adminId, chatId) else null
-            with(Messages.readGroupChatConnection(adminId, chatId).pageInfo) {
+            with(Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo) {
                 startCursor shouldBe messageId
                 endCursor shouldBe messageId
             }
@@ -511,7 +506,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
-            with(Messages.readGroupChatConnection(adminId, chatId).pageInfo) {
+            with(Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo) {
                 startCursor shouldBe messageIdList.first()
                 endCursor shouldBe messageIdList.last()
             }

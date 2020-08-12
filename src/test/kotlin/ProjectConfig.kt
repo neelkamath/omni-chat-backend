@@ -26,11 +26,12 @@ object AppListener : ProjectListener {
 @AutoScan
 @Suppress("unused")
 object DataListener : TestListener {
-    override suspend fun afterInvocation(testCase: TestCase, iteration: Int) {
-        wipe()
+    override suspend fun beforeInvocation(testCase: TestCase, iteration: Int) {
         unsubscribeFromMessageBroker()
         subscribeToMessageBroker()
     }
+
+    override suspend fun afterInvocation(testCase: TestCase, iteration: Int): Unit = wipe()
 }
 
 private fun wipe() {
