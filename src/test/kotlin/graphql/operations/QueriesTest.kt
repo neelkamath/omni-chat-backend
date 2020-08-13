@@ -599,8 +599,9 @@ class QueriesTest : FunSpec({
         test("Chats should be case-insensitively queried by their title") {
             val adminId = createVerifiedUsers(1)[0].info.id
             GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/Native"))
-            val chatId = GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), isPublic = true)
-            GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), isPublic = true)
+            val chatId = GroupChats
+                .create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), publicity = GroupChatPublicity.PUBLIC)
+            GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), publicity = GroupChatPublicity.PUBLIC)
             searchPublicChats("kotlin").map { it.id } shouldBe listOf(chatId)
         }
     }
@@ -690,7 +691,7 @@ class QueriesTest : FunSpec({
 
         test("Reading a public chat shouldn't require an access token") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             readChat(chatId)
         }
 
@@ -788,7 +789,7 @@ class QueriesTest : FunSpec({
 
         test("A public chat should be searchable without an account") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val text = "text"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
             searchChatMessages(chatId, text).map { it.node.messageId } shouldBe listOf(messageId)

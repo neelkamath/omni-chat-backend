@@ -41,5 +41,6 @@ fun wipeDb(): Unit = transaction {
 /** Drops every table and type created. */
 fun tearDownDb(): Unit = transaction {
     SchemaUtils.drop(*tables.toTypedArray())
-    listOf("message_status", "pic_type", "message_type").forEach { exec("DROP TYPE IF EXISTS $it;") }
+    listOf("message_status", "pic_type", "message_type", "group_chat_publicity")
+        .forEach { exec("DROP TYPE IF EXISTS $it;") }
 }

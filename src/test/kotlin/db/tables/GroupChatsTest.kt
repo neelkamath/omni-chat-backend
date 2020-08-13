@@ -129,7 +129,7 @@ class GroupChatsTest : FunSpec({
     context("setInvitability(Int, Boolean)") {
         test("An exception should be thrown if the chat is public") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             shouldThrowExactly<IllegalArgumentException> { GroupChats.setInvitability(chatId, isInvitable = true) }
         }
 
@@ -140,7 +140,7 @@ class GroupChatsTest : FunSpec({
                 .map { updatedChatsNotifier.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
             GroupChats.setInvitability(chatId, isInvitable = true)
             awaitBrokering()
-            adminSubscriber.assertValue(UpdatedGroupChat(chatId, isInvitable = true))
+            adminSubscriber.assertValue(UpdatedGroupChat(chatId, publicity = GroupChatPublicity.INVITABLE))
             userSubscriber.assertNoValues()
         }
     }
@@ -156,7 +156,7 @@ class GroupChatsTest : FunSpec({
 
         test("A chat allowing invites should state such") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isInvitable = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             GroupChats.isInvitable(chatId).shouldBeTrue()
         }
     }

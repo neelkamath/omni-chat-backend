@@ -166,8 +166,7 @@ const val GROUP_CHAT_INFO_FRAGMENT = """
             $ACCOUNTS_CONNECTION_FRAGMENT
         }
         isBroadcast
-        isPublic
-        isInvitable
+        publicity
     }
 """
 
@@ -300,8 +299,7 @@ const val GROUP_CHAT_FRAGMENT = """
             $MESSAGES_CONNECTION_FRAGMENT
         }
         isBroadcast
-        isPublic
-        isInvitable
+        publicity
         inviteCode
     }
 """

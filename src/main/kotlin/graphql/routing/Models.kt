@@ -96,6 +96,8 @@ data class Account(
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
 
+enum class GroupChatPublicity { NOT_INVITABLE, INVITABLE, PUBLIC }
+
 interface BareMessage {
     val messageId: Int
     val sender: Account
@@ -204,8 +206,8 @@ data class AccountUpdate(
 )
 
 /**
- * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, the [adminIdList] isn't a subset of the
- * [userIdList], or the chat [isPublic] but not [isInvitable].
+ * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, or the [adminIdList] isn't a subset of
+ * the [userIdList].
  */
 data class GroupChatInput(
     val title: GroupChatTitle,
@@ -213,8 +215,7 @@ data class GroupChatInput(
     val userIdList: List<Int>,
     val adminIdList: List<Int>,
     val isBroadcast: Boolean,
-    val isPublic: Boolean,
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
 ) {
     init {
         if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
@@ -222,7 +223,6 @@ data class GroupChatInput(
             throw IllegalArgumentException(
                 "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
             )
-        if (isPublic && !isInvitable) throw IllegalArgumentException("Public chats must be invitable.")
     }
 }
 
@@ -291,7 +291,7 @@ data class UpdatedGroupChat(
     val removedUsers: List<Account>? = null,
     val adminIdList: List<Int>? = null,
     val isBroadcast: Boolean? = null,
-    val isInvitable: Boolean? = null
+    val publicity: GroupChatPublicity? = null
 ) : UpdatedChatsSubscription {
     init {
         if (newUsers != null && removedUsers != null) {
@@ -339,8 +339,7 @@ interface BareGroupChat {
     val adminIdList: List<Int>
     val users: AccountsConnection
     val isBroadcast: Boolean
-    val isPublic: Boolean
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
 }
 
 data class GroupChatInfo(
@@ -349,8 +348,7 @@ data class GroupChatInfo(
     override val title: GroupChatTitle,
     override val description: GroupChatDescription,
     override val isBroadcast: Boolean,
-    override val isPublic: Boolean,
-    override val isInvitable: Boolean
+    override val publicity: GroupChatPublicity
 ) : BareGroupChat
 
 data class GroupChat(
@@ -361,8 +359,7 @@ data class GroupChat(
     override val description: GroupChatDescription,
     override val messages: MessagesConnection,
     override val isBroadcast: Boolean,
-    override val isPublic: Boolean,
-    override val isInvitable: Boolean,
+    override val publicity: GroupChatPublicity,
     val inviteCode: UUID?
 ) : Chat, BareGroupChat
 

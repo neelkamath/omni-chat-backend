@@ -634,12 +634,12 @@ class MutationsTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             setInvitability(adminId, chatId, isInvitable = true)
-            GroupChats.readChat(chatId).isInvitable.shouldBeTrue()
+            GroupChats.readChat(chatId).publicity shouldBe GroupChatPublicity.INVITABLE
         }
 
         test("Updating a public chat should fail") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             errSetInvitability(adminId, chatId, isInvitable = true) shouldBe InvalidChatIdException.message
         }
 
@@ -657,7 +657,8 @@ class MutationsTest : FunSpec({
     context("createGroupChatInviteMessage(DataFetchingEnvironment)") {
         test("A message should be created with a context") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId), isInvitable = true) }
+            val (chatId, invitedChatId) = listOf(1, 2)
+                .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
             createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId)
             GroupChatInviteMessages.count() shouldBe 1
@@ -670,7 +671,7 @@ class MutationsTest : FunSpec({
                 userIdList = listOf(admin2.info.id),
                 isBroadcast = true
             )
-            val invitedChatId = GroupChats.create(listOf(admin2.info.id), isInvitable = true)
+            val invitedChatId = GroupChats.create(listOf(admin2.info.id), publicity = GroupChatPublicity.INVITABLE)
             executeGraphQlViaHttp(
                 CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "invitedChatId" to invitedChatId),
@@ -701,7 +702,8 @@ class MutationsTest : FunSpec({
 
         test("Using an invalid content message should fail") {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId), isInvitable = true) }
+            val (chatId, invitedChatId) = listOf(1, 2)
+                .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = 1) shouldBe
                     InvalidMessageIdException.message
         }
@@ -1068,8 +1070,7 @@ class MutationsTest : FunSpec({
                 "userIdList" to listOf(user1Id, user2Id),
                 "adminIdList" to listOf<Int>(),
                 "isBroadcast" to false,
-                "isPublic" to false,
-                "isInvitable" to false
+                "publicity" to GroupChatPublicity.NOT_INVITABLE
             )
             val chatId = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
                 .data!!["createGroupChat"] as Int
@@ -1082,25 +1083,6 @@ class MutationsTest : FunSpec({
             }
         }
 
-        test("A public chat should be made invitable server-side even if the client stated it shouldn't be") {
-            val adminId = createVerifiedUsers(1)[0].info.id
-            val chat = mapOf(
-                "title" to "Title",
-                "description" to "description",
-                "userIdList" to listOf<Int>(),
-                "adminIdList" to listOf<Int>(),
-                "isBroadcast" to false,
-                "isPublic" to true,
-                "isInvitable" to false
-            )
-            val chatId = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
-                .data!!["createGroupChat"] as Int
-            with(GroupChats.readChat(chatId)) {
-                isPublic.shouldBeTrue()
-                isInvitable.shouldBeTrue()
-            }
-        }
-
         test("A group chat shouldn't be created when supplied with an invalid user ID") {
             val userId = createVerifiedUsers(1)[0].info.id
             val invalidUserId = -1
@@ -1110,8 +1092,7 @@ class MutationsTest : FunSpec({
                 userIdList = listOf(userId, invalidUserId),
                 adminIdList = listOf(userId),
                 isBroadcast = false,
-                isPublic = false,
-                isInvitable = false
+                publicity = GroupChatPublicity.NOT_INVITABLE
             )
             errCreateGroupChat(userId, chat) shouldBe InvalidUserIdException.message
         }
@@ -1124,8 +1105,7 @@ class MutationsTest : FunSpec({
                 "userIdList" to listOf<Int>(),
                 "adminIdList" to listOf(user2Id),
                 "isBroadcast" to false,
-                "isPublic" to false,
-                "isInvitable" to false
+                "publicity" to GroupChatPublicity.NOT_INVITABLE
             )
             executeGraphQlViaEngine(
                 CREATE_GROUP_CHAT_QUERY,

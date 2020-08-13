@@ -135,7 +135,8 @@ private fun createTypes(): Unit = transaction {
     mapOf(
         "message_status" to MessageStatus.values(),
         "pic_type" to Pic.Type.values(),
-        "message_type" to MessageType.values()
+        "message_type" to MessageType.values(),
+        "group_chat_publicity" to GroupChatPublicity.values()
     ).forEach { (name, enum) ->
         val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
         if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")

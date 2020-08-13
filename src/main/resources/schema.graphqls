@@ -326,8 +326,7 @@ type Mutation {
 
     """
     Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. If `GroupChatInput.isPublic`, `GroupChatInput.isInvitable`
-    will be set to `true` on server-side regardless of what it is client-side. The created chat's ID is returned.
+    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
     `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
@@ -345,7 +344,7 @@ type Mutation {
     setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    Sets whether the `chatId` `isInvitable`. The user must be an admin to perform this operation.
+    Sets whether the `chatId`'s publicity. The user must be an admin to perform this operation.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
     public chat).
@@ -613,7 +612,7 @@ type UpdatedGroupChat {
     removedUsers: [Account!]
     adminIdList: [Int!]
     isBroadcast: Boolean
-    isInvitable: Boolean
+    publicity: GroupChatPublicity
 }
 
 """
@@ -772,8 +771,7 @@ interface BareGroupChat {
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }
 
 type GroupChatInfo implements BareGroupChat {
@@ -782,8 +780,7 @@ type GroupChatInfo implements BareGroupChat {
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }
 
 type GroupChat implements Chat, BareGroupChat {
@@ -794,8 +791,7 @@ type GroupChat implements Chat, BareGroupChat {
     users(first: Int, after: Cursor): AccountsConnection!
     messages(last: Int, before: Cursor): MessagesConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
     """null if invite codes are switched off."""
     inviteCode: Uuid
 }
@@ -1168,6 +1164,20 @@ enum MessageStatus {
     READ
 }
 
+enum GroupChatPublicity {
+    """Users cannot join the chat via an invite code."""
+    NOT_INVITABLE
+    """Users can join the chat via an invite code."""
+    INVITABLE
+    """
+    People can search for, and view public chats without an account. Invite codes are permanently switched on. Anyone
+    with an account can join a public chat. A frontend UI may allow for a search engine to index the chat should the
+    administrator allow for it. A chat must be made public when it's being created because chats can't switch between
+    being public after they've been created.
+    """
+    PUBLIC
+}
+
 type TokenSet {
     accessToken: ID!
     refreshToken: ID!
@@ -1194,8 +1204,5 @@ input GroupChatInput {
     userIdList: [Int!]!
     adminIdList: [Int!]!
     isBroadcast: Boolean!
-    """Cannot be changed later."""
-    isPublic: Boolean!
-    """Whether users can join via an invitation. This can be changed later. This is always `true` for public chats."""
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }
