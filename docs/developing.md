@@ -124,5 +124,5 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 ## Releasing
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
-1. Add an entry to the [changelog](CHANGELOG.md).
-1. Commit to the `master` branch.
+1. Add a [changelog](CHANGELOG.md) entry.
+1. Commit to the `master` branch only when releasing a new version.

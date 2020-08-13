@@ -204,3 +204,9 @@ private fun createCredentials(password: Password): List<CredentialRepresentation
         value = password.value
     }
 )
+
+/** Whether the [emailAddress]'s domain (e.g., `"example.com"`) is allowed by this Omni Chat instance. */
+fun hasAllowedDomain(emailAddress: String): Boolean {
+    val domains = System.getenv("ALLOWED_DOMAINS") ?: return true
+    return emailAddress.substringAfter("@") in domains.split(",")
+}

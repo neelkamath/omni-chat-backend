@@ -55,6 +55,7 @@ services:
       POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD}
       POSTGRES_URL: chat-db:5432
       REDIS_URL: redis://message-broker:6379
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS}
   chat-db:
     image: postgres:12.3
     restart: always

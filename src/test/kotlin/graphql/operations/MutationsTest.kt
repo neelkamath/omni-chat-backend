@@ -1037,6 +1037,11 @@ class MutationsTest : FunSpec({
             val duplicateAccount = AccountInput(Username("username2"), Password("p"), address)
             errCreateAccount(duplicateAccount) shouldBe EmailAddressTakenException.message
         }
+
+        test("An account with a disallowed email address domain shouldn't be created") {
+            errCreateAccount(AccountInput(Username("u"), Password("p"), "bob@outlook.com")) shouldBe
+                    InvalidDomainException.message
+        }
     }
 
     context("createContacts(DataFetchingEnvironment)") {

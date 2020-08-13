@@ -13,6 +13,7 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
     if (isUsernameTaken(account.username)) throw UsernameTakenException
     if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
+    if (!hasAllowedDomain(account.emailAddress)) throw InvalidDomainException
     createUser(account)
     return Placeholder
 }

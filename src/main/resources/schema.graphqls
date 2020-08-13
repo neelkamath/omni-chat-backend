@@ -256,7 +256,9 @@ type Mutation {
     verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
     the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
+    this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
+    `"johndoe@private.company.com"` may be allowed, but not `"johndoe@gmail.com"`).
     """
     createAccount(account: AccountInput!): Placeholder!
 
