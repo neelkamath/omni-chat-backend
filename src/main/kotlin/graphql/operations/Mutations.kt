@@ -3,11 +3,11 @@ package com.neelkamath.omniChat.graphql.operations
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
+import java.util.*
 
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
@@ -27,7 +27,7 @@ fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val saved = Contacts.readIdList(env.userId!!)
     val userIdList = env.getArgument<List<Int>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
-    if (!userIdList.all(Users::exists)) throw InvalidContactException
+    if (userIdList.any { !Users.exists(it) }) throw InvalidContactException
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }
@@ -62,16 +62,19 @@ fun deleteStar(env: DataFetchingEnvironment): Placeholder {
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val args = env.getArgument<Map<*, *>>("chat")
-    val userIdList = (args["userIdList"] as List<*>).map { it as Int }
-    if (!userIdList.all(Users::exists)) throw InvalidUserIdException
-    val adminIdList = (args["adminIdList"] as List<*>).map { it as Int }
+    @Suppress("UNCHECKED_CAST") val userIdList = (args["userIdList"] as List<Int>)
+    if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
+    @Suppress("UNCHECKED_CAST") val adminIdList = (args["adminIdList"] as List<Int>)
     if (!userIdList.containsAll(adminIdList)) throw InvalidAdminIdException
+    val isPublic = args["isPublic"] as Boolean
     val chat = GroupChatInput(
         args["title"] as GroupChatTitle,
         args["description"] as GroupChatDescription,
         userIdList + env.userId!!,
         adminIdList + env.userId!!,
-        args["isBroadcast"] as Boolean
+        args["isBroadcast"] as Boolean,
+        isPublic,
+        if (isPublic) true else args["isInvitable"] as Boolean
     )
     return GroupChats.create(chat)
 }
@@ -90,15 +93,20 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
-    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    Messages.createTextMessage(
+        env.userId!!,
+        chatId,
+        env.getArgument<MessageText>("text"),
+        contextMessageId,
+        isForwarded = false
+    )
     return Placeholder
 }
 
 fun setBroadcastStatus(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     GroupChats.setBroadcastStatus(chatId, env.getArgument("isBroadcast"))
     return Placeholder
@@ -183,7 +191,6 @@ fun deleteProfilePic(env: DataFetchingEnvironment): Placeholder {
 fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!Chats.exists(chatId)) throw InvalidChatIdException
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     GroupChats.updatePic(chatId, pic = null)
     return Placeholder
@@ -202,36 +209,36 @@ fun sendEmailAddressVerification(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-private fun readGroupChatUpdate(env: DataFetchingEnvironment): Int {
-    val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    return chatId
-}
-
 fun updateGroupChatTitle(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    GroupChats.updateTitle(chatId = readGroupChatUpdate(env), title = env.getArgument("title"))
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    GroupChats.updateTitle(chatId, env.getArgument("title"))
     return Placeholder
 }
 
 fun updateGroupChatDescription(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    GroupChats.updateDescription(chatId = readGroupChatUpdate(env), description = env.getArgument("description"))
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    GroupChats.updateDescription(chatId, env.getArgument("description"))
     return Placeholder
 }
 
 fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (!userIdList.all(Users::exists)) throw InvalidUserIdException
-    GroupChatUsers.addUsers(chatId = readGroupChatUpdate(env), users = userIdList)
+    if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
+    GroupChatUsers.addUsers(chatId, userIdList)
     return Placeholder
 }
 
 fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val chatId = readGroupChatUpdate(env)
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     val userIdList = env.getArgument<List<Int>>("userIdList")
     if (!GroupChatUsers.canUsersLeave(chatId, userIdList)) throw InvalidUserIdException
     GroupChatUsers.removeUsers(chatId, userIdList)
@@ -240,9 +247,10 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
 
 fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val chatId = readGroupChatUpdate(env)
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (!userIdList.all { isUserInChat(it, chatId) }) throw InvalidUserIdException
+    if (userIdList.any { !isUserInChat(it, chatId) }) throw InvalidUserIdException
     GroupChatUsers.makeAdmins(chatId, userIdList)
     return Placeholder
 }
@@ -258,8 +266,8 @@ fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
         throw InvalidPollException
     }
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
-    if (contextMessageId != null && !Messages.exists(contextMessageId)) throw InvalidMessageIdException
-    Messages.create(env.userId!!, chatId, poll, contextMessageId)
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId, isForwarded = false)
     return Placeholder
 }
 
@@ -271,5 +279,48 @@ fun setPollVote(env: DataFetchingEnvironment): Placeholder {
     if (!PollMessages.hasOption(messageId, option)) throw NonexistentOptionException
     val vote = env.getArgument<Boolean>("vote")
     PollMessages.setVote(env.userId!!, messageId, option, vote)
+    return Placeholder
+}
+
+fun joinGroupChat(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val inviteCode = env.getArgument<UUID>("inviteCode")
+    if (!GroupChats.isExistentInviteCode(inviteCode)) throw InvalidInviteCodeException
+    GroupChatUsers.addUserViaInvite(env.userId!!, inviteCode)
+    return Placeholder
+}
+
+fun createGroupChatInviteMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val invitedChatId = env.getArgument<Int>("invitedChatId")
+    if (!GroupChats.isInvitable(invitedChatId)) throw InvalidInvitedChatException
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId, isForwarded = false)
+    return Placeholder
+}
+
+fun setInvitability(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (GroupChats.isExistentPublicChat(chatId)) throw InvalidChatIdException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    GroupChats.setInvitability(chatId, env.getArgument("isInvitable"))
+    return Placeholder
+}
+
+fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    Messages.forward(env.userId!!, chatId, messageId, contextMessageId)
     return Placeholder
 }

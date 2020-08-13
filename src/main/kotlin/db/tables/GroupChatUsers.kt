@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 /** The users in [GroupChats]. */
 object GroupChatUsers : IntIdTable() {
@@ -40,7 +41,7 @@ object GroupChatUsers : IntIdTable() {
     fun readFellowParticipants(userId: Int): Set<Int> =
         readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
 
-    /** Whether the [userId] is an admin of the [chatId] (assumed to exist). */
+    /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
         select { GroupChatUsers.chatId eq chatId }.any { it[GroupChatUsers.userId] == userId && it[isAdmin] }
     }
@@ -84,6 +85,15 @@ object GroupChatUsers : IntIdTable() {
         newGroupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::NewGroupChatsAsset))
         val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map(::readUserById))
         updatedChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UpdatedChatsAsset))
+    }
+
+    fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
+
+    /** If the [userId] is in the chat having the [inviteCode], nothing happens. Otherwise, [addUsers] is called. */
+    fun addUserViaInvite(userId: Int, inviteCode: UUID) {
+        val chatId = GroupChats.readChatFromInvite(inviteCode)
+        if (isUserInChat(userId, chatId)) return
+        addUsers(chatId, userId)
     }
 
     /**
@@ -130,10 +140,10 @@ object GroupChatUsers : IntIdTable() {
      */
     fun canUserLeave(userId: Int): Boolean = readChatIdList(userId).all { canUsersLeave(it, userId) }
 
-    /** Calls [removeUsers] on the [userId] for every chat they're in. */
+    /** Calls [removeUsers] on the [userId] for every chat they're in. The [userId] needn't exist. */
     fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
-    /** The chat ID list of every chat the [userId] is in. */
+    /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
     fun readChatIdList(userId: Int): List<Int> = transaction {
         select { GroupChatUsers.userId eq userId }.map { it[chatId] }
     }

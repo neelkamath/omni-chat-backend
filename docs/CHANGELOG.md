@@ -1,9 +1,80 @@
 # Changelog
 
-## v0.3.1
+## v0.4.0
 
 ### GraphQL API
 
+- New:
+    - `Uuid` `scalar`
+    - `VideoMessage` `type`
+    - `StarredVideoMessage` `type`
+    - `NewVideoMessage` `type`
+    - `UpdatedVideoMessage` `type`
+    - `DocMessage` `type`
+    - `StarredDocMessage` `type`
+    - `NewDocMessage` `type`
+    - `UpdatedDocMessage` `type`
+    - `Query.readGroupChat`
+    - `Mutation.joinGroupChat`
+    - `Mutation.createGroupChatInviteMessage`
+    - `GroupChatInfo` `type`
+    - `BareGroupChat` `interface`
+    - `GroupChatInviteMessage` `type`
+    - `StarredGroupChatInviteMessage` `type`
+    - `NewGroupChatInviteMessage` `type`
+    - `UpdatedGroupChatInviteMessage` `type`
+    - `Query.searchPublicChats`
+    - `Mutation.setInvitability`
+    - `Mutation.forwardMessage`
+- Updated:
+    - `TextMessage` `type`
+    - `PicMessage` `type`
+    - `PollMessage` `type`
+    - `AudioMessage` `type`
+    - `UpdatedGroupChat` `type`
+    - `GroupChat` `type`
+    - `StarredTextMessage` `type`
+    - `StarredPicMessage` `type`
+    - `StarredPollMessage` `type`
+    - `StarredAudioMessage` `type`
+    - `NewMessage` `interface`
+    - `NewTextMessage` `type`
+    - `NewPicMessage` `type`
+    - `NewPollMessage` `type`
+    - `NewAudioMessage` `type`
+    - `UpdatedMessage` `interface`
+    - `UpdatedTextMessage` `type`
+    - `UpdatedPicMessage` `type`
+    - `UpdatedPollMessage` `type`
+    - `UpdatedAudioMessage` `type`
+    - `GroupChatInput` `input`
+    - `MessagesSubscription` `union`
+    - `BareMessage` `interface`
+    - `BareChatMessage` `interface`
+    - `StarredMessage` `interface`
+    - `Message` `interface`
+    - `Query.searchChatMessages`
+    - `Query.readChat`
+- Bug fixes:
+    - `Mutation.deleteGroupChatPic`
+    - `Mutation.updateGroupChatTitle`
+    - `Mutation.updateGroupChatDescription`
+    - `Mutation.addGroupChatUsers`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.makeGroupChatAdmins`
+    - `Mutation.setBroadcastStatus`
+
+### REST API
+
+- New:
+    - `/video-message`
+    - `/doc-message`
+- Updated:
+    - `/group-chat-pic`
+
+## v0.3.1
+
+### GraphQL API
 - Bug fixes:
     - `Subscription`
 

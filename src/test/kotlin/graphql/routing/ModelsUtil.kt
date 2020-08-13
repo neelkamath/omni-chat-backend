@@ -12,4 +12,5 @@ fun NewMessage.Companion.build(message: Message): NewMessage = object : NewMessa
     override val sender: Account = message.sender
     override val dateTimes: MessageDateTimes = message.dateTimes
     override val context: MessageContext = message.context
+    override val isForwarded: Boolean = message.isForwarded
 }

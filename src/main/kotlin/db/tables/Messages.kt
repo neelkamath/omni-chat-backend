@@ -18,8 +18,11 @@ private typealias Filter = Op<Boolean>?
 /**
  * @see [TextMessages]
  * @see [AudioMessages]
+ * @see [VideoMessages]
+ * @see [DocMessages]
  * @see [PollMessages]
- * @see [CaptionedPic]
+ * @see [GroupChatInviteMessages]
+ * @see [PicMessages]
  * @see [Stargazers]
  * @see [MessageStatuses]
  */
@@ -45,6 +48,8 @@ object Messages : IntIdTable() {
      */
     private val contextMessageId: Column<Int?> = integer("context_message_id").references(Messages.id).nullable()
 
+    private val isForwarded: Column<Boolean> = bool("is_forwarded")
+
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
     data class TypedMessage(val type: MessageType, val message: BareMessage)
@@ -62,15 +67,15 @@ object Messages : IntIdTable() {
 
     /**
      * Returns whether the [chatId] is a broadcast group with the [userId] as an admin. It's assumed the [userId] is in
-     * the [chatId]. The [chatId] needn't be a broadcast group.
+     * the [chatId]. The [chatId] can be a private or group chat.
      */
     fun isInvalidBroadcast(userId: Int, chatId: Int): Boolean {
         if (chatId in PrivateChats.readIdList(userId)) return false
         val isBroadcast = GroupChats.readChat(
-            userId,
             chatId,
             usersPagination = ForwardPagination(first = 0),
-            messagesPagination = BackwardPagination(last = 0)
+            messagesPagination = BackwardPagination(last = 0),
+            userId = userId
         ).isBroadcast
         return isBroadcast && !GroupChatUsers.isAdmin(userId, chatId)
     }
@@ -78,39 +83,87 @@ object Messages : IntIdTable() {
     /**
      * Subscribers will be notified of the [NewMessage] via [messagesNotifier].
      *
-     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
+     * or the [contextMessageId] isn't in the [chatId].
      */
-    fun create(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId ->
-            TextMessages.create(messageId, message)
-        }
+    fun createTextMessage(
+        userId: Int,
+        chatId: Int,
+        message: MessageText,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.TEXT, contextMessageId, isForwarded) { messageId ->
+        TextMessages.create(messageId, message)
+    }
 
-    fun create(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
-            PicMessages.create(messageId, message)
-        }
+    fun createPicMessage(
+        userId: Int,
+        chatId: Int,
+        message: CaptionedPic,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
+        PicMessages.create(messageId, message)
+    }
 
-    fun create(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
+    fun createGroupChatInviteMessage(
+        userId: Int,
+        chatId: Int,
+        invitedChatId: Int,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId, isForwarded) { messageId ->
+        GroupChatInviteMessages.create(messageId, invitedChatId)
+    }
+
+    fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
             AudioMessages.create(messageId, message)
         }
 
-    fun create(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.POLL, contextMessageId) { messageId ->
-            PollMessages.create(messageId, message)
+    fun createVideoMessage(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
+            VideoMessages.create(messageId, message)
         }
 
+    fun createDocMessage(userId: Int, chatId: Int, message: Doc, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
+            DocMessages.create(messageId, message)
+        }
+
+    fun createPollMessage(
+        userId: Int,
+        chatId: Int,
+        message: PollInput,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.POLL, contextMessageId, isForwarded) { messageId ->
+        PollMessages.create(messageId, message)
+    }
+
+    /**
+     * Use the `create<TYPE>Message` (e.g., [createTextMessage]) functions instead.
+     *
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. An [IllegalArgumentException] will be
+     * thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast], or the [contextMessageId] isn't in the
+     * [chatId].
+     */
     private fun create(
         userId: Int,
         chatId: Int,
         type: MessageType,
         contextMessageId: Int?,
+        isForwarded: Boolean,
         creator: (messageId: Int) -> Unit
     ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         if (isInvalidBroadcast(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
+        if (contextMessageId != null && contextMessageId !in readIdList(chatId))
+            throw IllegalArgumentException(
+                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+            )
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
@@ -118,6 +171,7 @@ object Messages : IntIdTable() {
                 it[this.type] = type
                 it[hasContext] = contextMessageId != null
                 it[this.contextMessageId] = contextMessageId
+                it[this.isForwarded] = isForwarded
             }.resultedValues!![0]
         }
         creator(row[id].value)
@@ -125,13 +179,54 @@ object Messages : IntIdTable() {
         messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, subscribers)
     }
 
-    /** Case-insensitively [query]s the [chatId]'s messages as seen by the [userId]. */
+    /**
+     * Forwards the [messageId] to the [chatId] by calling the relevant `create<TYPE>Message`
+     * (e.g., [createTextMessage]) function.
+     */
+    fun forward(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int?): Unit = when (readType(messageId)) {
+        MessageType.TEXT ->
+            createTextMessage(userId, chatId, TextMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.PIC ->
+            createPicMessage(userId, chatId, PicMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.GROUP_CHAT_INVITE -> createGroupChatInviteMessage(
+            userId,
+            chatId,
+            GroupChatInviteMessages.read(messageId),
+            contextMessageId,
+            isForwarded = true
+        )
+
+        MessageType.AUDIO ->
+            createAudioMessage(userId, chatId, AudioMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.VIDEO ->
+            createVideoMessage(userId, chatId, VideoMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.DOC ->
+            createDocMessage(userId, chatId, DocMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.POLL -> {
+            val poll = with(PollMessages.read(messageId)) { PollInput(title, options.map { it.option }) }
+            createPollMessage(userId, chatId, poll, contextMessageId, isForwarded = true)
+        }
+    }
+
+    private fun readType(messageId: Int): MessageType = transaction {
+        select { Messages.id eq messageId }.first()[type]
+    }
+
+    /**
+     * Case-insensitively [query]s the [chatId]'s messages as seen by the [userId], or an anonymous user if there's no
+     * [userId].
+     */
     fun searchGroupChat(
-        userId: Int,
         chatId: Int,
         query: String,
-        pagination: BackwardPagination? = null
-    ): List<MessageEdge> = search(readGroupChat(userId, chatId, pagination), query)
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
+    ): List<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
 
     /**
      * [query]s the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions])
@@ -172,28 +267,30 @@ object Messages : IntIdTable() {
      */
     fun readPrivateChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
-        return readChat(userId, chatId, pagination, op)
+        return readChat(chatId, pagination, op, userId)
     }
 
     /**
-     * The [userId]'s [chatId]'s [MessageEdge]s.
+     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readGroupChatConnection]
      */
-    fun readGroupChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> =
-        readChat(userId, chatId, pagination)
+    fun readGroupChat(chatId: Int, pagination: BackwardPagination? = null, userId: Int? = null): List<MessageEdge> =
+        readChat(chatId, pagination, userId = userId)
 
     /**
-     * The [userId] reading the [chatId]'s [MessageEdge]s. The returned [MessageEdge]s are concrete classes.
+     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId]. The returned
+     * [MessageEdge.node]s are concrete classes.
      *
      * @see [readPrivateChat]
      * @see [readGroupChat]
+     * @see [readGroupChat]
      */
     private fun readChat(
-        userId: Int,
         chatId: Int,
         pagination: BackwardPagination? = null,
-        filter: Filter = null
+        filter: Filter = null,
+        userId: Int? = null
     ): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = this.chatId eq chatId
@@ -204,7 +301,7 @@ object Messages : IntIdTable() {
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
-                .map { MessageEdge(buildMessage(userId, it), cursor = it[Messages.id].value) }
+                .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
         }
     }
 
@@ -218,22 +315,25 @@ object Messages : IntIdTable() {
         val row = transaction {
             select { Messages.id eq messageId }.first()
         }
-        return buildMessage(userId, row)
+        return buildMessage(row, userId)
     }
 
     /**
-     * Returns a concrete class as seen by the [userId].
+     * Returns a concrete class as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readMessage]
      * @see [readTypedMessage]
      */
-    private fun buildMessage(userId: Int, row: ResultRow): Message {
+    private fun buildMessage(row: ResultRow, userId: Int? = null): Message {
         val (type, message) = readTypedMessage(row[id].value)
         return when (type) {
-            MessageType.TEXT -> TextMessage.build(userId, message)
-            MessageType.PIC -> PicMessage.build(userId, message)
-            MessageType.AUDIO -> AudioMessage.build(userId, message)
-            MessageType.POLL -> PollMessage.build(userId, message)
+            MessageType.TEXT -> TextMessage.build(message, userId)
+            MessageType.PIC -> PicMessage.build(message, userId)
+            MessageType.AUDIO -> AudioMessage.build(message, userId)
+            MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage.build(message, userId)
+            MessageType.VIDEO -> VideoMessage.build(message, userId)
+            MessageType.DOC -> DocMessage.build(message, userId)
+            MessageType.POLL -> PollMessage.build(message, userId)
         }
     }
 
@@ -247,6 +347,7 @@ object Messages : IntIdTable() {
             override val sender: Account = readUserById(row[senderId])
             override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
             override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
+            override val isForwarded: Boolean = row[this@Messages.isForwarded]
         }
         return TypedMessage(row[type], message)
     }
@@ -268,6 +369,8 @@ object Messages : IntIdTable() {
         PicMessages.delete(messageIdList)
         AudioMessages.delete(messageIdList)
         PollMessages.delete(messageIdList)
+        DocMessages.delete(messageIdList)
+        VideoMessages.delete(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
@@ -305,8 +408,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes all messages the [userId] has. Subscribers will be notified of the [UserChatMessagesRemoval] via
-     * [messagesNotifier].
+     * Deletes all messages the [userId] has, and notifies subscribers of the [UserChatMessagesRemoval] via
+     * [messagesNotifier]. Nothing will happen if the [userId] doesn't exist.
      */
     fun deleteUserMessages(userId: Int) {
         MessageStatuses.deleteUserStatuses(userId)
@@ -328,7 +431,10 @@ object Messages : IntIdTable() {
         messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId).map(::MessagesAsset))
     }
 
-    /** Every [ChatAndMessageId] the [userId] created which are visible to at least one user. */
+    /**
+     * Every [ChatAndMessageId] the [userId] created which are visible to at least one user. Returns an empty list if
+     * the [userId] doesn't exist.
+     */
     private fun readChatMessages(userId: Int): List<ChatAndMessageId> = transaction {
         select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
     }
@@ -349,8 +455,13 @@ object Messages : IntIdTable() {
         select { Messages.id eq id }.empty().not()
     }
 
-    fun readGroupChatConnection(userId: Int, chatId: Int, pagination: BackwardPagination? = null): MessagesConnection =
-        MessagesConnection(readGroupChat(userId, chatId, pagination), buildPageInfo(chatId, pagination?.before))
+    /** The [MessagesConnection] as seen by the [userId], or an anonymous user if there's no [userId]. */
+    fun readGroupChatConnection(
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
+    ): MessagesConnection =
+        MessagesConnection(readGroupChat(chatId, pagination, userId), buildPageInfo(chatId, pagination?.before))
 
     fun readPrivateChatConnection(
         chatId: Int,

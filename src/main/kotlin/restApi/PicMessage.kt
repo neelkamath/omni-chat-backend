@@ -10,22 +10,17 @@ import io.ktor.application.call
 import io.ktor.auth.authenticate
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
-import io.ktor.routing.*
+import io.ktor.routing.Route
+import io.ktor.routing.Routing
+import io.ktor.routing.post
+import io.ktor.routing.route
 
 fun routePicMessage(routing: Routing): Unit = with(routing) {
     authenticate {
         route("pic-message") {
-            getPicMessage(this)
+            getMediaMessage(this) { messageId -> PicMessages.read(messageId).pic.bytes }
             postPicMessage(this)
         }
-    }
-}
-
-private fun getPicMessage(route: Route): Unit = with(route) {
-    get {
-        val messageId = call.parameters["message-id"]!!.toInt()
-        if (!Messages.isVisible(call.userId!!, messageId)) call.respond(HttpStatusCode.BadRequest)
-        else call.respond(PicMessages.read(messageId).pic.bytes)
     }
 }
 
@@ -39,7 +34,7 @@ private fun postPicMessage(route: Route): Unit = with(route) {
             call.respond(HttpStatusCode.BadRequest, InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CAPTION))
             return@post
         }
-        val pic = readPic()
+        val pic = readMultipartPic()
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
                 HttpStatusCode.BadRequest,
@@ -59,7 +54,13 @@ private fun postPicMessage(route: Route): Unit = with(route) {
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
 
             else -> {
-                Messages.create(call.userId!!, chatId, CaptionedPic(pic, caption), contextMessageId)
+                Messages.createPicMessage(
+                    call.userId!!,
+                    chatId,
+                    CaptionedPic(pic, caption),
+                    contextMessageId,
+                    isForwarded = false
+                )
                 call.respond(HttpStatusCode.NoContent)
             }
         }

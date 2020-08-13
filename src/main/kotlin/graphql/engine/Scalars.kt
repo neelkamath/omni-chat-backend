@@ -7,6 +7,7 @@ import graphql.schema.idl.RuntimeWiring
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.*
 
 private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
@@ -97,6 +98,14 @@ private object BioCoercing : Coercing<Bio, String> {
     override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as Bio).value }
 }
 
+private object UuidCoercing : Coercing<UUID, String> {
+    override fun parseValue(input: Any): UUID = dissectValue { UUID.fromString(input as String) }
+
+    override fun parseLiteral(input: Any): UUID = dissectLiteral { UUID.fromString((input as StringValue).value) }
+
+    override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as UUID).toString() }
+}
+
 /**
  * The [parse]d value will be returned. A [CoercingParseValueException] will be thrown if [parse] threw an [Exception].
  */
@@ -133,6 +142,7 @@ fun wireGraphQlScalars(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = 
     .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
     .scalar(build("MessageText", MessageTextCoercing))
     .scalar(build("Bio", BioCoercing))
+    .scalar(build("Uuid", UuidCoercing))
 
 private fun build(name: String, coercing: Coercing<*, *>): GraphQLScalarType =
     GraphQLScalarType.Builder().name(name).coercing(coercing).build()

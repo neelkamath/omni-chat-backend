@@ -27,7 +27,7 @@ class SubscriptionsTest : FunSpec({
                     }
                 }
             """
-            val operationName = if (shouldSupplyOperationName) "SubscribeToContacts" else null
+            val operationName = "SubscribeToContacts".takeIf { shouldSupplyOperationName }
             val token = createVerifiedUsers(1)[0].accessToken
             executeGraphQlSubscriptionViaWebSocket(
                 uri = "contacts-subscription",

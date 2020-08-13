@@ -5,6 +5,8 @@ import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.longs.shouldBeZero
 import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
@@ -118,18 +120,44 @@ class GroupChatsTest : FunSpec({
         test("Chats should be searched case-insensitively") {
             val adminId = createVerifiedUsers(1)[0].info.id
             val titles = listOf("Title 1", "Title 2", "Iron Man Fan Club")
-            titles.forEach {
-                val chat = GroupChatInput(
-                    GroupChatTitle(it),
-                    GroupChatDescription(""),
-                    userIdList = listOf(adminId),
-                    adminIdList = listOf(adminId),
-                    isBroadcast = false
-                )
-                GroupChats.create(chat)
-            }
+            titles.forEach { GroupChats.create(listOf(adminId), title = GroupChatTitle(it)) }
             GroupChats.search(adminId, "itle ").map { it.title.value } shouldBe listOf(titles[0], titles[1])
             GroupChats.search(adminId, "iron").map { it.title.value } shouldBe listOf(titles[2])
+        }
+    }
+
+    context("setInvitability(Int, Boolean)") {
+        test("An exception should be thrown if the chat is public") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            shouldThrowExactly<IllegalArgumentException> { GroupChats.setInvitability(chatId, isInvitable = true) }
+        }
+
+        test("Only participants should be notified of the updated status") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
+                .map { updatedChatsNotifier.subscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+            GroupChats.setInvitability(chatId, isInvitable = true)
+            awaitBrokering()
+            adminSubscriber.assertValue(UpdatedGroupChat(chatId, isInvitable = true))
+            userSubscriber.assertNoValues()
+        }
+    }
+
+    context("isInvitable(Int)") {
+        test("A nonexistent chat shouldn't be invitable") { GroupChats.isInvitable(chatId = 1).shouldBeFalse() }
+
+        test("A chat disallowing invitations should be stated as such") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            GroupChats.isInvitable(chatId).shouldBeFalse()
+        }
+
+        test("A chat allowing invites should state such") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId), isInvitable = true)
+            GroupChats.isInvitable(chatId).shouldBeTrue()
         }
     }
 })

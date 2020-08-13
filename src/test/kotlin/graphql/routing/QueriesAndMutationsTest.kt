@@ -42,7 +42,7 @@ class QueriesAndMutationsTest : FunSpec({
                         }
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    val operationName = if (shouldSupplyOperationName) "IsEmailAddressTaken" else null
+                    val operationName = "IsEmailAddressTaken".takeIf { shouldSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }.response.status()!!.value shouldBe if (shouldSupplyOperationName) 200 else 400

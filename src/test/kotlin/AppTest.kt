@@ -27,7 +27,7 @@ class EncodingTest : FunSpec({
         val chatId = GroupChats.create(listOf(adminId))
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createTextMessage(adminId, chatId, message)
-        Messages.readGroupChat(adminId, chatId)[0].node.messageId.let(TextMessages::read) shouldBe message
+        Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read) shouldBe message
     }
 })
 

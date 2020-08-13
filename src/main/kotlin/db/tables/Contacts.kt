@@ -80,8 +80,9 @@ object Contacts : IntIdTable() {
     }
 
     /**
-     * Deletes every contact who owns, or is owned by, the given [userId]. Subscribers who have the [userId] in their
-     * contacts will be notified of the [DeletedContact] via [contactsNotifier].
+     * If the [userId] doesn't exist, nothing will happen. Otherwise, every contact who owns, or is owned by, the given
+     * [userId] is deleted, and subscribers who have the [userId] in their contacts will be notified of the
+     * [DeletedContact] via [contactsNotifier].
      */
     fun deleteUserEntries(userId: Int) {
         contactsNotifier.publish(DeletedContact(userId), readOwners(userId).map(::ContactsAsset))

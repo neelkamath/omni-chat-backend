@@ -5,9 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.GroupChatDescription
-import com.neelkamath.omniChat.graphql.routing.GroupChatInput
-import com.neelkamath.omniChat.graphql.routing.GroupChatTitle
+import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import com.neelkamath.omniChat.testingObjectMapper
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -61,7 +59,7 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             postPicMessage(admin.accessToken, dummy, chatId, "caption", contextMessageId = messageId).status() shouldBe
                     HttpStatusCode.NoContent
-            Messages.readGroupChat(admin.info.id, chatId).last().node.context.id shouldBe messageId
+            Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id shouldBe messageId
             PicMessages.count() shouldBe 1
         }
 
@@ -70,8 +68,8 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(token, dummy, chatId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.USER_NOT_IN_CHAT)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
             }
         }
 
@@ -81,8 +79,8 @@ class PicMessageTest : FunSpec({
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
             }
         }
 
@@ -91,8 +89,8 @@ class PicMessageTest : FunSpec({
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {
                 status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidAudioMessage>(content!!) shouldBe
-                        InvalidAudioMessage(InvalidAudioMessage.Reason.INVALID_FILE)
+                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
+                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE)
             }
         }
 
@@ -111,16 +109,8 @@ class PicMessageTest : FunSpec({
 
         test("An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat") {
             val (admin, user) = createVerifiedUsers(2)
-            val chat = GroupChatInput(
-                GroupChatTitle("T"),
-                GroupChatDescription(""),
-                userIdList = listOf(admin.info.id, user.info.id),
-                adminIdList = listOf(admin.info.id),
-                isBroadcast = true
-            )
-            val chatId = GroupChats.create(chat)
-            postPicMessage(user.accessToken, DummyFile("pic.png", bytes = 1), chatId).status() shouldBe
-                    HttpStatusCode.Unauthorized
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
+            postPicMessage(user.accessToken, DummyFile("pic.png", bytes = 1), chatId).shouldHaveUnauthorizedStatus()
         }
     }
 })

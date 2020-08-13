@@ -5,10 +5,6 @@ import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.IncorrectPasswordException
-import com.neelkamath.omniChat.graphql.InvalidChatIdException
-import com.neelkamath.omniChat.graphql.NonexistentUserException
-import com.neelkamath.omniChat.graphql.UnverifiedEmailAddressException
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import io.kotest.core.spec.style.FunSpec
@@ -18,6 +14,76 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
+import java.util.*
+
+const val SEARCH_PUBLIC_CHATS_QUERY = """
+    query SearchPublicChats(
+        ${"$"}query: String!
+        ${"$"}groupChat_users_first: Int
+        ${"$"}groupChat_users_after: Cursor
+        ${"$"}groupChat_messages_last: Int
+        ${"$"}groupChat_messages_before: Cursor
+    ) {
+        searchPublicChats(query: ${"$"}query) {
+            $GROUP_CHAT_FRAGMENT
+        }
+    }
+"""
+
+private fun operateSearchPublicChats(
+    query: String,
+    usersPagination: ForwardPagination? = null,
+    messagesPagination: BackwardPagination? = null
+): GraphQlResponse = executeGraphQlViaEngine(
+    SEARCH_PUBLIC_CHATS_QUERY,
+    mapOf(
+        "query" to query,
+        "groupChat_users_first" to usersPagination?.first,
+        "groupChat_users_after" to usersPagination?.after?.toString(),
+        "groupChat_messages_last" to messagesPagination?.last,
+        "groupChat_messages_before" to messagesPagination?.before?.toString()
+    )
+)
+
+fun searchPublicChats(
+    query: String,
+    usersPagination: ForwardPagination? = null,
+    messagesPagination: BackwardPagination? = null
+): List<GroupChat> {
+    val data =
+        operateSearchPublicChats(query, usersPagination, messagesPagination).data!!["searchPublicChats"] as List<*>
+    return testingObjectMapper.convertValue(data)
+}
+
+const val READ_GROUP_CHAT_QUERY = """
+    query ReadGroupChat(
+        ${"$"}inviteCode: Uuid!
+        ${"$"}groupChatInfo_users_first: Int
+        ${"$"}groupChatInfo_users_after: Cursor
+    ) {
+        readGroupChat(inviteCode: ${"$"}inviteCode) {
+            $GROUP_CHAT_INFO_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GraphQlResponse =
+    executeGraphQlViaEngine(
+        READ_GROUP_CHAT_QUERY,
+        mapOf(
+            "inviteCode" to inviteCode.toString(),
+            "groupChatInfo_users_first" to usersPagination?.first,
+            "groupChatInfo_users_after" to usersPagination?.after?.toString()
+        )
+    )
+
+fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
+    val data = operateReadGroupChat(inviteCode, usersPagination).data!!["readGroupChat"] as Map<*, *>
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): String =
+    operateReadGroupChat(inviteCode, usersPagination).errors!![0].message
 
 const val READ_STARS_QUERY = """
     query ReadStars {
@@ -167,11 +233,11 @@ const val READ_CHAT_QUERY = """
 """
 
 private fun operateReadChat(
-    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
+    userId: Int? = null
 ): GraphQlResponse = executeGraphQlViaEngine(
     READ_CHAT_QUERY,
     mapOf(
@@ -187,34 +253,34 @@ private fun operateReadChat(
 )
 
 fun readChat(
-    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
+    userId: Int? = null
 ): Chat {
     val data = operateReadChat(
-        userId,
         id,
         privateChatMessagesPagination,
         usersPagination,
-        groupChatMessagesPagination
+        groupChatMessagesPagination,
+        userId
     ).data!!["readChat"] as Map<*, *>
     return testingObjectMapper.convertValue(data)
 }
 
 fun errReadChat(
-    userId: Int,
     id: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
+    userId: Int? = null
 ): String = operateReadChat(
-    userId,
     id,
     privateChatMessagesPagination,
     usersPagination,
-    groupChatMessagesPagination
+    groupChatMessagesPagination,
+    userId
 ).errors!![0].message
 
 const val READ_CONTACTS_QUERY = """
@@ -280,10 +346,10 @@ const val SEARCH_CHAT_MESSAGES_QUERY = """
 """
 
 private fun operateSearchChatMessages(
-    userId: Int,
     chatId: Int,
     query: String,
-    pagination: BackwardPagination? = null
+    pagination: BackwardPagination? = null,
+    userId: Int? = null
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_CHAT_MESSAGES_QUERY,
     mapOf(
@@ -296,22 +362,21 @@ private fun operateSearchChatMessages(
 )
 
 fun searchChatMessages(
-    userId: Int,
     chatId: Int,
     query: String,
-    pagination: BackwardPagination? = null
+    pagination: BackwardPagination? = null,
+    userId: Int? = null
 ): List<MessageEdge> {
-    val data =
-        operateSearchChatMessages(userId, chatId, query, pagination).data!!["searchChatMessages"] as List<*>
+    val data = operateSearchChatMessages(chatId, query, pagination, userId).data!!["searchChatMessages"] as List<*>
     return testingObjectMapper.convertValue(data)
 }
 
 fun errSearchChatMessages(
-    userId: Int,
     chatId: Int,
     query: String,
-    pagination: BackwardPagination? = null
-): String = operateSearchChatMessages(userId, chatId, query, pagination).errors!![0].message
+    pagination: BackwardPagination? = null,
+    userId: Int? = null
+): String = operateSearchChatMessages(chatId, query, pagination, userId).errors!![0].message
 
 const val SEARCH_CHATS_QUERY = """
     query SearchChats(
@@ -470,6 +535,19 @@ fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsC
 }
 
 class ChatMessagesDtoTest : FunSpec({
+    context("readGroupChat(DataFetchingEnvironment)") {
+        test("The chat's info should be read") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val inviteCode = GroupChats.readInviteCode(chatId)
+            readGroupChat(inviteCode) shouldBe GroupChats.readChatInfo(inviteCode)
+        }
+
+        test("Reading a chat using a nonexistent invite code should fail") {
+            errReadGroupChat(UUID.randomUUID()) shouldBe InvalidInviteCodeException.message
+        }
+    }
+
     context("getMessages(DataFetchingEnvironment") {
         /** Data on a group chat having only ever contained an admin. */
         data class AdminMessages(
@@ -517,6 +595,16 @@ class ChatMessagesDtoTest : FunSpec({
 })
 
 class QueriesTest : FunSpec({
+    context("searchPublicChats(DataFetchingEnvironment)") {
+        test("Chats should be case-insensitively queried by their title") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/Native"))
+            val chatId = GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), isPublic = true)
+            GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), isPublic = true)
+            searchPublicChats("kotlin").map { it.id } shouldBe listOf(chatId)
+        }
+    }
+
     context("readStars(DataFetchingEnvironment)") {
         test("Only the user's starred messages should be read") {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -597,12 +685,27 @@ class QueriesTest : FunSpec({
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            readChat(user1Id, chatId)
+            readChat(chatId, userId = user1Id)
+        }
+
+        test("Reading a public chat shouldn't require an access token") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            readChat(chatId)
+        }
+
+        test("When a user reads a public chat, the chat should be represented the way they see it") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
+            Stargazers.create(adminId, messageId)
+            val chat = readChat(chatId, userId = adminId) as GroupChat
+            chat.messages.edges.map { it.node.hasStar } shouldBe listOf(true)
         }
 
         test("Requesting a chat using an invalid ID should return an error") {
             val userId = createVerifiedUsers(1)[0].info.id
-            errReadChat(userId, id = 1) shouldBe InvalidChatIdException.message
+            errReadChat(id = 1, userId = userId) shouldBe InvalidChatIdException.message
         }
 
         test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.READ_CHAT) }
@@ -673,13 +776,31 @@ class QueriesTest : FunSpec({
             Messages.create(user1Id, chatId, MessageText("Hey!"))
             Messages.create(user2Id, chatId, MessageText(":) hey"))
             Messages.create(user1Id, chatId, MessageText("How are you?"))
-            searchChatMessages(user1Id, chatId, "hey") shouldBe Messages.readPrivateChat(user1Id, chatId).dropLast(1)
+            searchChatMessages(chatId, "hey", userId = user1Id) shouldBe
+                    Messages.readPrivateChat(user1Id, chatId).dropLast(1)
         }
 
-        test("Searching in a chat the user isn't in should return an error") {
+        test("Searching in a non-public chat the user isn't in should return an error") {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = PrivateChats.create(user2Id, user3Id)
-            errSearchChatMessages(user1Id, chatId, "query") shouldBe InvalidChatIdException.message
+            errSearchChatMessages(chatId, "query", userId = user1Id) shouldBe InvalidChatIdException.message
+        }
+
+        test("A public chat should be searchable without an account") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val text = "text"
+            val messageId = Messages.message(adminId, chatId, MessageText(text))
+            searchChatMessages(chatId, text).map { it.node.messageId } shouldBe listOf(messageId)
+        }
+
+        test("When a user searches a public chat, it should be returned as it's seen by the user") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val text = "t"
+            val messageId = Messages.message(adminId, chatId, MessageText(text))
+            Stargazers.create(adminId, messageId)
+            searchChatMessages(chatId, text, userId = adminId).map { it.node.hasStar } shouldBe listOf(true)
         }
 
         test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES) }
@@ -838,29 +959,24 @@ enum class GroupChatUsersOperationName {
 /** Asserts that the [operation] paginates correctly. */
 fun testMessagesPagination(operation: MessagesOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
-    val chat = GroupChatInput(
-        GroupChatTitle("T"),
-        GroupChatDescription(""),
-        userIdList = listOf(adminId),
-        adminIdList = listOf(adminId),
-        isBroadcast = false
-    )
-    val chatId = GroupChats.create(chat)
+    val chatId = GroupChats.create(listOf(adminId))
     val text = MessageText("t")
     val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
     val last = 4
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
     when (operation) {
-        MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(adminId, chatId, text.value, pagination)
+        MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(chatId, text.value, pagination, adminId)
         MessagesOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text.value, chatMessagesPagination = pagination).flatMap { it.messages }
         MessagesOperationName.READ_CHATS ->
             readChats(adminId, groupChatMessagesPagination = pagination)[0].messages.edges
         MessagesOperationName.READ_CHAT ->
-            readChat(adminId, chatId, groupChatMessagesPagination = pagination).messages.edges
-        MessagesOperationName.SEARCH_CHATS ->
-            searchChats(adminId, chat.title.value, groupChatMessagesPagination = pagination)[0].messages.edges
+            readChat(chatId, groupChatMessagesPagination = pagination, userId = adminId).messages.edges
+        MessagesOperationName.SEARCH_CHATS -> {
+            val title = GroupChats.readChat(chatId, userId = adminId).title.value
+            searchChats(adminId, title, groupChatMessagesPagination = pagination)[0].messages.edges
+        }
     }.map { it.cursor } shouldBe messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last)
 }
 
@@ -882,14 +998,7 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
-    val groupChat = GroupChatInput(
-        GroupChatTitle("T"),
-        GroupChatDescription(""),
-        userIdList = userIdList + adminId,
-        adminIdList = listOf(adminId),
-        isBroadcast = false
-    )
-    val chatId = GroupChats.create(groupChat)
+    val chatId = GroupChats.create(listOf(adminId), userIdList)
     val text = "text"
     Messages.create(adminId, chatId, MessageText(text))
     val first = 3
@@ -897,10 +1006,12 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val index = 5
     val pagination = ForwardPagination(first, after = userCursors[index])
     val chat = when (operationName) {
-        GroupChatUsersOperationName.READ_CHAT -> readChat(adminId, chatId, usersPagination = pagination)
+        GroupChatUsersOperationName.READ_CHAT -> readChat(chatId, usersPagination = pagination, userId = adminId)
         GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination)[0]
-        GroupChatUsersOperationName.SEARCH_CHATS ->
-            searchChats(adminId, groupChat.title.value, usersPagination = pagination)[0]
+        GroupChatUsersOperationName.SEARCH_CHATS -> {
+            val title = GroupChats.readChat(chatId, userId = adminId).title.value
+            searchChats(adminId, title, usersPagination = pagination)[0]
+        }
         GroupChatUsersOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text, usersPagination = pagination)[0].chat
     } as GroupChat

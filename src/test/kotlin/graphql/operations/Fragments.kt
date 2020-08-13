@@ -113,6 +113,7 @@ const val TEXT_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         message
     }
@@ -131,6 +132,77 @@ const val AUDIO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
+        hasStar
+    }
+"""
+
+const val GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
+    ... on GroupChatInviteMessage {
+        __typename
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+        hasStar
+        inviteCode
+    }
+"""
+
+const val GROUP_CHAT_INFO_FRAGMENT = """
+    ... on GroupChatInfo {
+        __typename
+        title
+        description
+        adminIdList
+        users(first: ${"$"}groupChatInfo_users_first, after: ${"$"}groupChatInfo_users_after) {
+            $ACCOUNTS_CONNECTION_FRAGMENT
+        }
+        isBroadcast
+        isPublic
+        isInvitable
+    }
+"""
+
+const val DOC_MESSAGE_FRAGMENT = """
+    ... on DocMessage {
+        __typename
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+        hasStar
+    }
+"""
+
+const val VIDEO_MESSAGE_FRAGMENT = """
+    ... on VideoMessage {
+        __typename
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
         hasStar
     }
 """
@@ -148,6 +220,7 @@ const val PIC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         caption
     }
@@ -166,6 +239,7 @@ const val POLL_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         poll {
             $POLL_FRAGMENT
@@ -176,6 +250,9 @@ const val POLL_MESSAGE_FRAGMENT = """
 const val MESSAGE_FRAGMENT = """
     $TEXT_MESSAGE_FRAGMENT
     $AUDIO_MESSAGE_FRAGMENT
+    $GROUP_CHAT_INVITE_MESSAGE_FRAGMENT
+    $DOC_MESSAGE_FRAGMENT
+    $VIDEO_MESSAGE_FRAGMENT
     $PIC_MESSAGE_FRAGMENT
     $POLL_MESSAGE_FRAGMENT
 """
@@ -223,6 +300,9 @@ const val GROUP_CHAT_FRAGMENT = """
             $MESSAGES_CONNECTION_FRAGMENT
         }
         isBroadcast
+        isPublic
+        isInvitable
+        inviteCode
     }
 """
 
@@ -291,82 +371,6 @@ const val DELETED_CONTACT_FRAGMENT = """
     }
 """
 
-const val STARRED_TEXT_MESSAGE = """
-    ... on StarredTextMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        message
-    }
-"""
-
-const val STARRED_PIC_MESSAGE = """
-    ... on StarredPicMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        caption
-    }
-"""
-
-const val STARRED_POLL_MESSAGE = """
-    ... on StarredPollMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        poll {
-            $POLL_FRAGMENT
-        }
-    }
-"""
-
-const val NEW_TEXT_MESSAGE = """
-    ... on NewTextMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        message
-    }
-"""
-
-const val NEW_PIC_MESSAGE = """
-    ... on NewPicMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        caption
-    }
-"""
-
-const val NEW_POLL_MESSAGE = """
-    ... on NewPollMessage {
-        __typename
-        chatId
-        messageId
-        sender
-        dateTimes
-        context
-        poll {
-            $POLL_FRAGMENT
-        }
-    }
-"""
-
 const val STARRED_TEXT_MESSAGE_FRAGMENT = """
     ... on StarredTextMessage {
         __typename
@@ -381,6 +385,7 @@ const val STARRED_TEXT_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         message
     }
 """
@@ -399,6 +404,7 @@ const val STARRED_PIC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         caption
     }
 """
@@ -417,6 +423,62 @@ const val STARRED_AUDIO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
+    }
+"""
+
+const val STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
+    ... on StarredGroupChatInviteMessage {
+        __typename
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+        inviteCode
+    }
+"""
+
+const val STARRED_DOC_MESSAGE_FRAGMENT = """
+    ... on StarredDocMessage {
+        __typename
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+    }
+"""
+
+const val STARRED_VIDEO_MESSAGE_FRAGMENT = """
+    ... on StarredVideoMessage {
+        __typename
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
     }
 """
 
@@ -434,6 +496,7 @@ const val STARRED_POLL_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         poll {
             $POLL_FRAGMENT
         }
@@ -444,6 +507,9 @@ const val STARRED_MESSAGE_FRAGMENT = """
     $STARRED_TEXT_MESSAGE_FRAGMENT
     $STARRED_PIC_MESSAGE_FRAGMENT
     $STARRED_AUDIO_MESSAGE_FRAGMENT
+    $STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT
+    $STARRED_DOC_MESSAGE_FRAGMENT
+    $STARRED_VIDEO_MESSAGE_FRAGMENT
     $STARRED_POLL_MESSAGE_FRAGMENT
 """
 

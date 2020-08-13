@@ -18,7 +18,7 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 1. Install [Docker](https://docs.docker.com/get-docker/).
 1. [Configure](docs/config.md).
 1. Optionally, generate a wrapper for the GraphQL API using [GraphQL Code Generator](https://graphql-code-generator.com/) on [`schema.graphqls`](src/main/resources/schema.graphqls).
-1. Optionally, generate a wrapper for the REST API using [OpenAPI Generator](https://openapi-generator.tech/) on [`openapi.yaml`](docs/openapi.yaml).
+1. Optionally, generate a wrapper for the REST API using [OpenAPI Generator](https://openapi-generator.tech/) on [`openapi.yaml`](docs/openapi.yaml). Note that backwards compatible REST API updates don't guarantee backwards compatible wrappers. For example, a wrapper for REST API v0.3.1 may not be backwards compatible with a wrapper for REST API v0.3.0.
 
 ## Usage
 

@@ -13,8 +13,9 @@ class GroupChatInputTest : FunSpec({
                     GroupChatDescription(""),
                     userIdList = listOf(1),
                     adminIdList = listOf(),
-                    isBroadcast = false
-
+                    isBroadcast = false,
+                    isPublic = false,
+                    isInvitable = false
                 )
             }
         }
@@ -26,7 +27,23 @@ class GroupChatInputTest : FunSpec({
                     GroupChatDescription(""),
                     userIdList = listOf(1),
                     adminIdList = listOf(1, 2),
-                    isBroadcast = false
+                    isBroadcast = false,
+                    isPublic = false,
+                    isInvitable = false
+                )
+            }
+        }
+
+        test("An exception should be thrown if the chat is public but not invitable") {
+            shouldThrowExactly<IllegalArgumentException> {
+                GroupChatInput(
+                    GroupChatTitle("T"),
+                    GroupChatDescription(""),
+                    userIdList = listOf(1),
+                    adminIdList = listOf(1),
+                    isBroadcast = false,
+                    isPublic = true,
+                    isInvitable = false
                 )
             }
         }

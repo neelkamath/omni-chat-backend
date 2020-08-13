@@ -27,13 +27,22 @@ data class Pic(
             throw IllegalArgumentException("The pic mustn't exceed $MAX_BYTES bytes.")
     }
 
-    /** @see [buildType] */
     enum class Type {
         PNG {
             override fun toString() = "png"
         },
         JPEG {
             override fun toString() = "jpg"
+        };
+
+        companion object {
+            /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
+            fun build(extension: String): Type = when (extension) {
+                "png" -> PNG
+                "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> JPEG
+                else ->
+                    throw IllegalArgumentException("The pic ($extension) must be one of ${values().joinToString()}.")
+            }
         }
     }
 
@@ -59,18 +68,10 @@ data class Pic(
 
     companion object {
         const val MAX_BYTES = 25 * 1024 * 1024
-
-        /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-        fun buildType(extension: String): Type = when (extension) {
-            "png" -> Type.PNG
-            "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> Type.JPEG
-            else ->
-                throw IllegalArgumentException("The pic ($extension) must be one of ${Type.values().joinToString()}.")
-        }
     }
 }
 
-enum class MessageType { TEXT, PIC, AUDIO, POLL }
+enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -79,7 +80,7 @@ enum class MessageType { TEXT, PIC, AUDIO, POLL }
 class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject() {
     init {
         type = postgresName
-        this.value = kotlinName?.name?.toLowerCase()
+        value = kotlinName?.name?.toLowerCase()
     }
 }
 
@@ -89,7 +90,33 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
  */
 fun setUpDb() {
     connect()
-    create()
+    createTypes()
+    transaction {
+        exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
+        SchemaUtils.create(
+            TextMessages,
+            PicMessages,
+            AudioMessages,
+            VideoMessages,
+            DocMessages,
+            GroupChatInviteMessages,
+            PollMessages,
+            PollOptions,
+            PollVotes,
+            Pics,
+            Contacts,
+            Chats,
+            GroupChats,
+            GroupChatUsers,
+            PrivateChats,
+            PrivateChatDeletions,
+            Stargazers,
+            Messages,
+            MessageStatuses,
+            Users,
+            TypingStatuses
+        )
+    }
 }
 
 private fun connect() {
@@ -103,36 +130,7 @@ private fun connect() {
     )
 }
 
-/** Creates the required types and tables. */
-private fun create(): Unit = transaction {
-    createTypes()
-    SchemaUtils.create(
-        TextMessages,
-        PicMessages,
-        AudioMessages,
-        PollMessages,
-        PollOptions,
-        PollVotes,
-        Pics,
-        Contacts,
-        Chats,
-        GroupChats,
-        GroupChatUsers,
-        PrivateChats,
-        PrivateChatDeletions,
-        Stargazers,
-        Messages,
-        MessageStatuses,
-        Users,
-        TypingStatuses
-    )
-}
-
-/** Whether [user1Id] and [user2Id] are in a chat with each other, including private chats deleted by only one user. */
-fun shareChat(user1Id: Int, user2Id: Int): Boolean =
-    PrivateChats.exists(user1Id, user2Id) || user1Id in GroupChatUsers.readFellowParticipants(user2Id)
-
-/** Creates custom types if required. */
+/** Creates custom types. */
 private fun createTypes(): Unit = transaction {
     mapOf(
         "message_status" to MessageStatus.values(),
@@ -172,7 +170,8 @@ fun readChatSharers(userId: Int): List<Int> =
 
 /**
  * Deletes the [userId]'s data from the DB, and [Notifier.unsubscribe]s them from all notifiers. An
- * [IllegalArgumentException] will be thrown if the not [GroupChatUsers.canUserLeave].
+ * [IllegalArgumentException] will be thrown if the not [GroupChatUsers.canUserLeave]. Nothing will happen if the
+ * [userId] doesn't exist.
  *
  * ## Users
  *

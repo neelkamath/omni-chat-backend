@@ -29,7 +29,7 @@ private fun getProfilePic(route: Route): Unit = with(route) {
 
 private fun patchProfilePic(route: Route): Unit = with(route) {
     patch {
-        val pic = readPic()
+        val pic = readMultipartPic()
         if (pic == null) call.respond(HttpStatusCode.BadRequest)
         else {
             Users.updatePic(call.userId!!, pic)

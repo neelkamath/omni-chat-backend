@@ -14,7 +14,7 @@ fun TestApplicationResponse.shouldHaveUnauthorizedStatus(): Unit = this should h
 fun TestApplicationResponse.shouldNotHaveUnauthorizedStatus(): Unit = this shouldNot haveUnauthorizedStatus()
 
 /** Asserts a [TestApplicationResponse] has a [TestApplicationResponse.status] of [HttpStatusCode.Unauthorized]. */
-private fun haveUnauthorizedStatus() = object : Matcher<TestApplicationResponse> {
+private fun haveUnauthorizedStatus(): Matcher<TestApplicationResponse> = object : Matcher<TestApplicationResponse> {
     override fun test(value: TestApplicationResponse): MatcherResult = MatcherResult(
         value.status()!! == HttpStatusCode.Unauthorized,
         "TestApplicationResponse should have an HTTP status code of 401 Unauthorized, but was ${value.status()}.",

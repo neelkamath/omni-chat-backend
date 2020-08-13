@@ -2,15 +2,15 @@ package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import javax.annotation.Generated
+import javax.annotation.processing.Generated
 
-/** An MP3 audio. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp3.MAX_BYTES]. */
-data class Mp3(
-    /** At most [Mp3.MAX_BYTES]. */
+/** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
+data class Mp4(
+    /** At most [Mp4.MAX_BYTES]. */
     val bytes: ByteArray
 ) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The audio mustn't exceed $MAX_BYTES bytes.")
+        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
     }
 
     @Generated
@@ -18,7 +18,7 @@ data class Mp3(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Mp3
+        other as Mp4
 
         if (!bytes.contentEquals(other.bytes)) return false
 
@@ -36,21 +36,21 @@ data class Mp3(
 }
 
 /** @see [Messages] */
-object AudioMessages : Table() {
-    override val tableName = "audio_messages"
+object VideoMessages : Table() {
+    override val tableName = "video_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val audio: Column<ByteArray> = binary("audio", Mp3.MAX_BYTES)
+    private val video: Column<ByteArray> = binary("audio", Mp4.MAX_BYTES)
 
-    /** @see [Messages.createAudioMessage] */
-    fun create(id: Int, audio: Mp3): Unit = transaction {
+    /** @see [Messages.createVideoMessage] */
+    fun create(id: Int, video: Mp4): Unit = transaction {
         insert {
             it[this.messageId] = id
-            it[this.audio] = audio.bytes
+            it[this.video] = video.bytes
         }
     }
 
-    fun read(id: Int): Mp3 = transaction {
-        select { messageId eq id }.first()[audio].let(::Mp3)
+    fun read(id: Int): Mp4 = transaction {
+        select { messageId eq id }.first()[video].let(::Mp4)
     }
 
     fun delete(idList: List<Int>): Unit = transaction {
