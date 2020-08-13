@@ -25,11 +25,34 @@
     - `UpdatedGroupChatInviteMessage` `type`
     - `Query.searchPublicChats`
     - `Mutation.setInvitability`
+    - `Mutation.forwardMessage`
 - Updated:
+    - `TextMessage` `type`
+    - `PicMessage` `type`
+    - `PollMessage` `type`
+    - `AudioMessage` `type`
     - `UpdatedGroupChat` `type`
     - `GroupChat` `type`
+    - `StarredTextMessage` `type`
+    - `StarredPicMessage` `type`
+    - `StarredPollMessage` `type`
+    - `StarredAudioMessage` `type`
+    - `NewMessage` `interface`
+    - `NewTextMessage` `type`
+    - `NewPicMessage` `type`
+    - `NewPollMessage` `type`
+    - `NewAudioMessage` `type`
+    - `UpdatedMessage` `interface`
+    - `UpdatedTextMessage` `type`
+    - `UpdatedPicMessage` `type`
+    - `UpdatedPollMessage` `type`
+    - `UpdatedAudioMessage` `type`
     - `GroupChatInput` `input`
     - `MessagesSubscription` `union`
+    - `BareMessage` `interface`
+    - `BareChatMessage` `interface`
+    - `StarredMessage` `interface`
+    - `Message` `interface`
     - `Query.searchChatMessages`
     - `Query.readChat`
 - Bug fixes:

@@ -48,6 +48,8 @@ object Messages : IntIdTable() {
      */
     private val contextMessageId: Column<Int?> = integer("context_message_id").references(Messages.id).nullable()
 
+    private val isForwarded: Column<Boolean> = bool("is_forwarded")
+
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
     data class TypedMessage(val type: MessageType, val message: BareMessage)
@@ -81,54 +83,87 @@ object Messages : IntIdTable() {
     /**
      * Subscribers will be notified of the [NewMessage] via [messagesNotifier].
      *
-     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], or if [isInvalidBroadcast].
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
+     * or the [contextMessageId] isn't in the [chatId].
      */
-    fun createTextMessage(userId: Int, chatId: Int, message: MessageText, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.TEXT, contextMessageId) { messageId ->
-            TextMessages.create(messageId, message)
-        }
+    fun createTextMessage(
+        userId: Int,
+        chatId: Int,
+        message: MessageText,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.TEXT, contextMessageId, isForwarded) { messageId ->
+        TextMessages.create(messageId, message)
+    }
 
-    fun createPicMessage(userId: Int, chatId: Int, message: CaptionedPic, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.PIC, contextMessageId) { messageId ->
-            PicMessages.create(messageId, message)
-        }
+    fun createPicMessage(
+        userId: Int,
+        chatId: Int,
+        message: CaptionedPic,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
+        PicMessages.create(messageId, message)
+    }
 
-    fun createGroupChatInviteMessage(userId: Int, chatId: Int, invitedChatId: Int, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId) { messageId ->
-            GroupChatInviteMessages.create(messageId, invitedChatId)
-        }
+    fun createGroupChatInviteMessage(
+        userId: Int,
+        chatId: Int,
+        invitedChatId: Int,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId, isForwarded) { messageId ->
+        GroupChatInviteMessages.create(messageId, invitedChatId)
+    }
 
-    fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.AUDIO, contextMessageId) { messageId ->
+    fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
             AudioMessages.create(messageId, message)
         }
 
-    fun createVideoMessage(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.VIDEO, contextMessageId) { messageId ->
+    fun createVideoMessage(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
             VideoMessages.create(messageId, message)
         }
 
-    fun createDocMessage(userId: Int, chatId: Int, message: Doc, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.DOC, contextMessageId) { messageId ->
+    fun createDocMessage(userId: Int, chatId: Int, message: Doc, contextMessageId: Int?, isForwarded: Boolean): Unit =
+        create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
             DocMessages.create(messageId, message)
         }
 
-    fun createPollMessage(userId: Int, chatId: Int, message: PollInput, contextMessageId: Int?): Unit =
-        create(userId, chatId, MessageType.POLL, contextMessageId) { messageId ->
-            PollMessages.create(messageId, message)
-        }
+    fun createPollMessage(
+        userId: Int,
+        chatId: Int,
+        message: PollInput,
+        contextMessageId: Int?,
+        isForwarded: Boolean
+    ): Unit = create(userId, chatId, MessageType.POLL, contextMessageId, isForwarded) { messageId ->
+        PollMessages.create(messageId, message)
+    }
 
+    /**
+     * Use the `create<TYPE>Message` (e.g., [createTextMessage]) functions instead.
+     *
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. An [IllegalArgumentException] will be
+     * thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast], or the [contextMessageId] isn't in the
+     * [chatId].
+     */
     private fun create(
         userId: Int,
         chatId: Int,
         type: MessageType,
         contextMessageId: Int?,
+        isForwarded: Boolean,
         creator: (messageId: Int) -> Unit
     ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         if (isInvalidBroadcast(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
+        if (contextMessageId != null && contextMessageId !in readIdList(chatId))
+            throw IllegalArgumentException(
+                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+            )
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
@@ -136,11 +171,50 @@ object Messages : IntIdTable() {
                 it[this.type] = type
                 it[hasContext] = contextMessageId != null
                 it[this.contextMessageId] = contextMessageId
+                it[this.isForwarded] = isForwarded
             }.resultedValues!![0]
         }
         creator(row[id].value)
         val subscribers = readUserIdList(chatId).map(::MessagesAsset)
         messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, subscribers)
+    }
+
+    /**
+     * Forwards the [messageId] to the [chatId] by calling the relevant `create<TYPE>Message`
+     * (e.g., [createTextMessage]) function.
+     */
+    fun forward(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int?): Unit = when (readType(messageId)) {
+        MessageType.TEXT ->
+            createTextMessage(userId, chatId, TextMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.PIC ->
+            createPicMessage(userId, chatId, PicMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.GROUP_CHAT_INVITE -> createGroupChatInviteMessage(
+            userId,
+            chatId,
+            GroupChatInviteMessages.read(messageId),
+            contextMessageId,
+            isForwarded = true
+        )
+
+        MessageType.AUDIO ->
+            createAudioMessage(userId, chatId, AudioMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.VIDEO ->
+            createVideoMessage(userId, chatId, VideoMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.DOC ->
+            createDocMessage(userId, chatId, DocMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.POLL -> {
+            val poll = with(PollMessages.read(messageId)) { PollInput(title, options.map { it.option }) }
+            createPollMessage(userId, chatId, poll, contextMessageId, isForwarded = true)
+        }
+    }
+
+    private fun readType(messageId: Int): MessageType = transaction {
+        select { Messages.id eq messageId }.first()[type]
     }
 
     /**
@@ -273,6 +347,7 @@ object Messages : IntIdTable() {
             override val sender: Account = readUserById(row[senderId])
             override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
             override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
+            override val isForwarded: Boolean = row[this@Messages.isForwarded]
         }
         return TypedMessage(row[type], message)
     }

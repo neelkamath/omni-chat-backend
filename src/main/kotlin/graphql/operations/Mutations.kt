@@ -94,7 +94,13 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createTextMessage(env.userId!!, chatId, env.getArgument<MessageText>("text"), contextMessageId)
+    Messages.createTextMessage(
+        env.userId!!,
+        chatId,
+        env.getArgument<MessageText>("text"),
+        contextMessageId,
+        isForwarded = false
+    )
     return Placeholder
 }
 
@@ -261,7 +267,7 @@ fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
     }
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId)
+    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId, isForwarded = false)
     return Placeholder
 }
 
@@ -293,7 +299,7 @@ fun createGroupChatInviteMessage(env: DataFetchingEnvironment): Placeholder {
     if (!GroupChats.isInvitable(invitedChatId)) throw InvalidInvitedChatException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId)
+    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId, isForwarded = false)
     return Placeholder
 }
 
@@ -303,5 +309,18 @@ fun setInvitability(env: DataFetchingEnvironment): Placeholder {
     if (GroupChats.isExistentPublicChat(chatId)) throw InvalidChatIdException
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     GroupChats.setInvitability(chatId, env.getArgument("isInvitable"))
+    return Placeholder
+}
+
+fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    Messages.forward(env.userId!!, chatId, messageId, contextMessageId)
     return Placeholder
 }

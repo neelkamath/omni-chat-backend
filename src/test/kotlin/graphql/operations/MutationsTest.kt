@@ -18,6 +18,31 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import java.util.*
 
+const val FORWARD_MESSAGE_QUERY = """
+    mutation ForwardMessage(${"$"}chatId: Int!, ${"$"}messageId: Int!, ${"$"}contextMessageId: Int) {
+        forwardMessage(chatId: ${"$"}chatId, messageId: ${"$"}messageId, contextMessageId: ${"$"}contextMessageId)
+    }
+"""
+
+private fun operateForwardMessage(
+    userId: Int,
+    chatId: Int,
+    messageId: Int,
+    contextMessageId: Int? = null
+): GraphQlResponse = executeGraphQlViaEngine(
+    FORWARD_MESSAGE_QUERY,
+    mapOf("chatId" to chatId, "messageId" to messageId, "contextMessageId" to contextMessageId),
+    userId
+)
+
+fun forwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int? = null): Placeholder {
+    val data = operateForwardMessage(userId, chatId, messageId, contextMessageId).data!!["forwardMessage"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errForwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int? = null): String =
+    operateForwardMessage(userId, chatId, messageId, contextMessageId).errors!![0].message
+
 const val REMOVE_GROUP_CHAT_USERS_QUERY = """
     mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
         removeGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
@@ -231,9 +256,6 @@ fun updateGroupChatDescription(userId: Int, chatId: Int, description: GroupChatD
     return testingObjectMapper.convertValue(data)
 }
 
-fun errUpdateGroupChatDescription(userId: Int, chatId: Int, description: GroupChatDescription): String =
-    operateUpdateGroupChatDescription(userId, chatId, description).errors!![0].message
-
 const val UPDATE_GROUP_CHAT_TITLE_QUERY = """
     mutation UpdateGroupChatTitle(${"$"}chatId: Int!, ${"$"}title: GroupChatTitle!) {
         updateGroupChatTitle(chatId: ${"$"}chatId, title: ${"$"}title)
@@ -322,9 +344,6 @@ fun deleteGroupChatPic(userId: Int, chatId: Int): Placeholder {
     val data = operateDeleteGroupChatPic(userId, chatId).data!!["deleteGroupChatPic"] as String
     return testingObjectMapper.convertValue(data)
 }
-
-fun errDeleteGroupChatPic(userId: Int, chatId: Int): String =
-    operateDeleteGroupChatPic(userId, chatId).errors!![0].message
 
 const val DELETE_PROFILE_PIC_QUERY = """
     mutation DeleteProfilePic {
@@ -557,6 +576,59 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
     operateUpdateAccount(userId, update).errors!![0].message
 
 class MutationsTest : FunSpec({
+    context("forwardMessage(DataFetchingEnvironment)") {
+        test("The message should be forwarded with a context") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val (chat1Id, chat2Id) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
+            val messageId = Messages.message(adminId, chat1Id)
+            val contextMessageId = Messages.message(adminId, chat2Id)
+            forwardMessage(adminId, chat2Id, messageId, contextMessageId)
+            with(Messages.readGroupChat(chat2Id).last().node) {
+                context.id shouldBe contextMessageId
+                isForwarded.shouldBeTrue()
+            }
+        }
+
+        test("A non-admin shouldn't be allowed to forward a message to a broadcast chat") {
+            val (admin, user) = createVerifiedUsers(2)
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
+            val messageId = Messages.message(admin.info.id, chatId)
+            executeGraphQlViaHttp(
+                FORWARD_MESSAGE_QUERY,
+                mapOf("chatId" to chatId, "messageId" to messageId),
+                user.accessToken
+            ).shouldHaveUnauthorizedStatus()
+        }
+
+        test("Messaging in a chat the user isn't in should fail") {
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
+            val (chat1Id, chat2Id) = listOf(admin1Id, admin2Id).map { GroupChats.create(listOf(it)) }
+            val messageId = Messages.message(admin1Id, chat1Id)
+            errForwardMessage(admin1Id, chat2Id, messageId) shouldBe InvalidChatIdException.message
+        }
+
+        test("Forwarding a nonexistent message should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            errForwardMessage(adminId, chatId, messageId = 1) shouldBe InvalidMessageIdException.message
+        }
+
+        test("Using an invalid context message should fail") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
+            errForwardMessage(adminId, chatId, messageId, contextMessageId = 1) shouldBe
+                    InvalidMessageIdException.message
+        }
+
+        test("Forwarding a message the user can't see should fail") {
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
+            val (chat1Id, chat2Id) = listOf(admin1Id, admin2Id).map { GroupChats.create(listOf(it)) }
+            val messageId = Messages.message(admin1Id, chat1Id)
+            errForwardMessage(admin2Id, chat2Id, messageId) shouldBe InvalidMessageIdException.message
+        }
+    }
+
     context("setInvitability(DataFetchingEnvironment") {
         test("The chat's invitability should be updated") {
             val adminId = createVerifiedUsers(1)[0].info.id

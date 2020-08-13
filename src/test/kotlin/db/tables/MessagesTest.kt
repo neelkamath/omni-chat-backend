@@ -131,7 +131,7 @@ class MessagesTest : FunSpec({
         }
     }
 
-    context("create(Int, Int, MessageType, Int?, (Int) -> Unit)") {
+    context("create(Int, Int, MessageType, Int?, Boolean, (Int) -> Unit)") {
         test("Subscribers should receive notifications of created messages") {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
@@ -158,9 +158,19 @@ class MessagesTest : FunSpec({
 
         test("An exception should be thrown if the user isn't in the chat") {
             val userId = createVerifiedUsers(1)[0].info.id
-            shouldThrowExactly<IllegalArgumentException> {
-                Messages.create(userId, chatId = 1, text = MessageText("t"))
-            }
+            shouldThrowExactly<IllegalArgumentException> { Messages.create(userId, chatId = 1) }
+        }
+
+        test("An exception should be thrown if a non-admin messages in a broadcast chat") {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId), isBroadcast = true)
+            shouldThrowExactly<IllegalArgumentException> { Messages.create(userId, chatId) }
+        }
+
+        test("An exception should be thrown if the context message isn't in the chat") {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            shouldThrowExactly<IllegalArgumentException> { Messages.create(adminId, chatId, contextMessageId = 1) }
         }
     }
 
@@ -204,7 +214,7 @@ class MessagesTest : FunSpec({
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextId = Messages.message(adminId, chatId)
-            Messages.createTextMessage(adminId, chatId, MessageText("t"), contextId)
+            Messages.createTextMessage(adminId, chatId, MessageText("t"), contextId, isForwarded = false)
             shouldNotThrowAny { Messages.deleteChat(chatId) }
         }
 

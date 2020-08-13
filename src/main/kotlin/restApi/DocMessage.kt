@@ -11,7 +11,7 @@ fun routeDocMessage(routing: Routing): Unit = with(routing) {
         route("doc-message") {
             getMediaMessage(this) { messageId -> DocMessages.read(messageId).bytes }
             postMediaMessage(this, { readMultipartDoc() }) { userId, chatId, message, contextMessageId ->
-                Messages.createDocMessage(userId, chatId, message, contextMessageId)
+                Messages.createDocMessage(userId, chatId, message, contextMessageId, isForwarded = false)
             }
         }
     }

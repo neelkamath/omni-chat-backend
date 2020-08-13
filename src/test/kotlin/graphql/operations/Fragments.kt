@@ -113,6 +113,7 @@ const val TEXT_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         message
     }
@@ -131,6 +132,7 @@ const val AUDIO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
     }
 """
@@ -148,6 +150,7 @@ const val GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         inviteCode
     }
@@ -181,6 +184,7 @@ const val DOC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
     }
 """
@@ -198,6 +202,7 @@ const val VIDEO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
     }
 """
@@ -215,6 +220,7 @@ const val PIC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         caption
     }
@@ -233,6 +239,7 @@ const val POLL_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         hasStar
         poll {
             $POLL_FRAGMENT
@@ -378,6 +385,7 @@ const val STARRED_TEXT_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         message
     }
 """
@@ -396,6 +404,7 @@ const val STARRED_PIC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         caption
     }
 """
@@ -414,6 +423,7 @@ const val STARRED_AUDIO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
     }
 """
 
@@ -431,6 +441,7 @@ const val STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         inviteCode
     }
 """
@@ -449,6 +460,7 @@ const val STARRED_DOC_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
     }
 """
 
@@ -466,6 +478,7 @@ const val STARRED_VIDEO_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
     }
 """
 
@@ -483,6 +496,7 @@ const val STARRED_POLL_MESSAGE_FRAGMENT = """
         context {
             $MESSAGE_CONTEXT_FRAGMENT
         }
+        isForwarded
         poll {
             $POLL_FRAGMENT
         }

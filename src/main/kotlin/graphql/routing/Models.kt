@@ -101,6 +101,7 @@ interface BareMessage {
     val sender: Account
     val dateTimes: MessageDateTimes
     val context: MessageContext
+    val isForwarded: Boolean
 
     fun toNewTextMessage(): NewTextMessage = NewTextMessage(
         Messages.readChatFromMessage(messageId),
@@ -108,11 +109,12 @@ interface BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         TextMessages.read(messageId)
     )
 
     fun toNewAudioMessage(): NewAudioMessage =
-        NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+        NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
         val chatId = Messages.readChatFromMessage(messageId)
@@ -122,15 +124,16 @@ interface BareMessage {
             sender,
             dateTimes,
             context,
+            isForwarded,
             GroupChats.readInviteCode(chatId)
         )
     }
 
     fun toNewDocMessage(): NewDocMessage =
-        NewDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+        NewDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewVideoMessage(): NewVideoMessage =
-        NewVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context)
+        NewVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewPicTextMessage(): NewPicMessage = NewPicMessage(
         Messages.readChatFromMessage(messageId),
@@ -138,6 +141,7 @@ interface BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         PicMessages.read(messageId).caption
     )
 
@@ -147,6 +151,7 @@ interface BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         PollMessages.read(messageId)
     )
 }
@@ -371,6 +376,7 @@ interface BareChatMessage : BareMessage {
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
+    override val isForwarded: Boolean
 }
 
 interface Message : BareMessage {
@@ -378,6 +384,7 @@ interface Message : BareMessage {
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
+    override val isForwarded: Boolean
     val hasStar: Boolean
 
     fun toUpdatedTextMessage(): UpdatedTextMessage = UpdatedTextMessage(
@@ -386,6 +393,7 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         hasStar,
         TextMessages.read(messageId)
     )
@@ -396,12 +404,20 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         hasStar,
         PicMessages.read(messageId).caption
     )
 
-    fun toUpdatedAudioMessage(): UpdatedAudioMessage =
-        UpdatedAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
+    fun toUpdatedAudioMessage(): UpdatedAudioMessage = UpdatedAudioMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        hasStar
+    )
 
     fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage {
         val chatId = Messages.readChatFromMessage(messageId)
@@ -411,16 +427,31 @@ interface Message : BareMessage {
             sender,
             dateTimes,
             context,
+            isForwarded,
             hasStar,
             GroupChats.readInviteCode(chatId)
         )
     }
 
-    fun toUpdatedDocMessage(): UpdatedDocMessage =
-        UpdatedDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
+    fun toUpdatedDocMessage(): UpdatedDocMessage = UpdatedDocMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        hasStar
+    )
 
-    fun toUpdatedVideoMessage(): UpdatedVideoMessage =
-        UpdatedVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, hasStar)
+    fun toUpdatedVideoMessage(): UpdatedVideoMessage = UpdatedVideoMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        hasStar
+    )
 
     fun toUpdatedPollMessage(): UpdatedPollMessage = UpdatedPollMessage(
         Messages.readChatFromMessage(messageId),
@@ -428,6 +459,7 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         hasStar,
         PollMessages.read(messageId)
     )
@@ -438,6 +470,7 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         TextMessages.read(messageId)
     )
 
@@ -447,6 +480,7 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         PicMessages.read(messageId).caption
     )
 
@@ -455,7 +489,8 @@ interface Message : BareMessage {
         messageId,
         sender,
         dateTimes,
-        context
+        context,
+        isForwarded
     )
 
     fun toStarredGroupChatInviteMessage(): StarredGroupChatInviteMessage {
@@ -466,6 +501,7 @@ interface Message : BareMessage {
             sender,
             dateTimes,
             context,
+            isForwarded,
             GroupChats.readInviteCode(chatId)
         )
     }
@@ -475,7 +511,8 @@ interface Message : BareMessage {
         messageId,
         sender,
         dateTimes,
-        context
+        context,
+        isForwarded
     )
 
     fun toStarredVideoMessage(): StarredVideoMessage = StarredVideoMessage(
@@ -483,7 +520,8 @@ interface Message : BareMessage {
         messageId,
         sender,
         dateTimes,
-        context
+        context,
+        isForwarded
     )
 
     fun toStarredPollMessage(): StarredPollMessage = StarredPollMessage(
@@ -492,6 +530,7 @@ interface Message : BareMessage {
         sender,
         dateTimes,
         context,
+        isForwarded,
         PollMessages.read(messageId)
     )
 }
@@ -501,6 +540,7 @@ data class TextMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val message: MessageText
 ) : BareMessage, Message {
@@ -512,6 +552,7 @@ data class TextMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 TextMessages.read(messageId)
             )
@@ -524,6 +565,7 @@ data class PicMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val caption: MessageText?
 ) : BareMessage, Message {
@@ -535,6 +577,7 @@ data class PicMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 PicMessages.read(messageId).caption
             )
@@ -547,6 +590,7 @@ data class AudioMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : BareMessage, Message {
     companion object {
@@ -557,6 +601,7 @@ data class AudioMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId)
             )
         }
@@ -568,6 +613,7 @@ data class GroupChatInviteMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val inviteCode: UUID
 ) : BareMessage, Message {
@@ -579,6 +625,7 @@ data class GroupChatInviteMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 GroupChats.readInviteCode(Messages.readChatFromMessage(messageId))
             )
@@ -591,6 +638,7 @@ data class DocMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : BareMessage, Message {
     companion object {
@@ -601,6 +649,7 @@ data class DocMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId)
             )
         }
@@ -612,6 +661,7 @@ data class VideoMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : BareMessage, Message {
     companion object {
@@ -622,6 +672,7 @@ data class VideoMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId)
             )
         }
@@ -633,6 +684,7 @@ data class PollMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val poll: Poll
 ) : BareMessage, Message {
@@ -644,6 +696,7 @@ data class PollMessage(
                 sender,
                 dateTimes,
                 context,
+                isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 PollMessages.read(messageId)
             )
@@ -657,6 +710,7 @@ interface StarredMessage : BareChatMessage, BareMessage {
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
+    override val isForwarded: Boolean
 
     companion object {
         /** Returns a concrete class for the [messageId] as seen by the [userId]. */
@@ -680,6 +734,7 @@ data class StarredTextMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val message: MessageText
 ) : StarredMessage, BareChatMessage, BareMessage
 
@@ -689,6 +744,7 @@ data class StarredPicMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val caption: MessageText?
 ) : StarredMessage, BareChatMessage, BareMessage
 
@@ -698,6 +754,7 @@ data class StarredPollMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val poll: Poll
 ) : StarredMessage, BareChatMessage, BareMessage
 
@@ -706,7 +763,8 @@ data class StarredAudioMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : StarredMessage, BareChatMessage, BareMessage
 
 data class StarredGroupChatInviteMessage(
@@ -715,6 +773,7 @@ data class StarredGroupChatInviteMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val inviteCode: UUID
 ) : StarredMessage, BareChatMessage, BareMessage
 
@@ -723,7 +782,8 @@ data class StarredDocMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : StarredMessage, BareChatMessage, BareMessage
 
 data class StarredVideoMessage(
@@ -731,7 +791,8 @@ data class StarredVideoMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : StarredMessage, BareChatMessage, BareMessage
 
 interface MessagesSubscription
@@ -742,6 +803,7 @@ interface NewMessage : BareChatMessage, BareMessage {
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
+    override val isForwarded: Boolean
 
     companion object {
         /** Returns a concrete class for the [messageId]. */
@@ -766,6 +828,7 @@ data class NewTextMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val message: MessageText
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -775,6 +838,7 @@ data class NewPicMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val caption: MessageText?
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -784,6 +848,7 @@ data class NewPollMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val poll: Poll
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -792,7 +857,8 @@ data class NewAudioMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewGroupChatInviteMessage(
@@ -801,6 +867,7 @@ data class NewGroupChatInviteMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     val inviteCode: UUID
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -809,7 +876,8 @@ data class NewDocMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewVideoMessage(
@@ -817,7 +885,8 @@ data class NewVideoMessage(
     override val messageId: Int,
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
-    override val context: MessageContext
+    override val context: MessageContext,
+    override val isForwarded: Boolean
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 interface UpdatedMessage : BareChatMessage, BareMessage {
@@ -826,6 +895,7 @@ interface UpdatedMessage : BareChatMessage, BareMessage {
     override val sender: Account
     override val dateTimes: MessageDateTimes
     override val context: MessageContext
+    override val isForwarded: Boolean
     val hasStar: Boolean
 
     companion object {
@@ -850,6 +920,7 @@ data class UpdatedTextMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val message: MessageText
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
@@ -860,6 +931,7 @@ data class UpdatedPicMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val caption: MessageText?
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
@@ -870,6 +942,7 @@ data class UpdatedPollMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val poll: Poll
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
@@ -880,6 +953,7 @@ data class UpdatedAudioMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -889,6 +963,7 @@ data class UpdatedGroupChatInviteMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val inviteCode: UUID
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
@@ -899,6 +974,7 @@ data class UpdatedDocMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
@@ -908,6 +984,7 @@ data class UpdatedVideoMessage(
     override val sender: Account,
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
+    override val isForwarded: Boolean,
     override val hasStar: Boolean
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
