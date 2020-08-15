@@ -5,3 +5,5 @@ services:
       dockerfile: docker/Dockerfile
       context: .
     command: java -server -jar omni-chat-all.jar
+    environment:
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS}

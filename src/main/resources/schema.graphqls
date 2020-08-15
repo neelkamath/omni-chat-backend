@@ -54,7 +54,7 @@ type Query {
     readStars: [StarredMessage!]!
 
     """
-    The online statuses of users the user has in their contacts, or is in a chat with.
+    The online statuses of users the user has in their contacts, or has a chat with.
 
     You must send an access token with this request.
     """
@@ -256,7 +256,9 @@ type Mutation {
     verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
     the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
+    this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
+    `"johndoe@private.company.com"` may be allowed, but not `"johndoe@gmail.com"`).
     """
     createAccount(account: AccountInput!): Placeholder!
 
@@ -324,8 +326,7 @@ type Mutation {
 
     """
     Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. If `GroupChatInput.isPublic`, `GroupChatInput.isInvitable`
-    will be set to `true` on server-side regardless of what it is client-side. The created chat's ID is returned.
+    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
     `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
@@ -343,7 +344,7 @@ type Mutation {
     setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    Sets whether the `chatId` `isInvitable`. The user must be an admin to perform this operation.
+    The user must be an admin to perform this operation.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
     public chat).
@@ -482,7 +483,7 @@ type Subscription {
     subscribeToMessages: MessagesSubscription!
 
     """
-    Yields the online statuses of users the user has in their contacts, or is in a chat with. The subscription will be
+    Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
     stopped if the user deletes their account.
 
     You must send an access token with this request.
@@ -498,29 +499,21 @@ type Subscription {
     subscribeToTypingStatuses: TypingStatusesSubscription!
 
     """
-    Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
+    Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
+    with. The subscription will be stopped if the user deletes their account. The subscription will be stopped if the
+    user deletes their account.
+
+    You must send an access token with this request.
+    """
+    subscribeToAccounts: AccountsSubscription!
+
+    """
+    Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
     subscription will be stopped if the user deletes their account.
 
     You must send an access token with this request.
     """
-    subscribeToContacts: ContactsSubscription!
-
-    """
-    Yields updated accounts of users the user has private chats with, and metadata updates on group chats the user is
-    in. Updates will be sent for private chats the user has deleted because it's possible that the user recreated the
-    chat but hasn't finished sending a message in it yet. The subscription will be stopped if the user deletes their
-    account.
-
-    You must send an access token with this request.
-    """
-    subscribeToUpdatedChats: UpdatedChatsSubscription!
-
-    """
-    Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
-
-    You must send an access token with this request.
-    """
-    subscribeToNewGroupChats: NewGroupChatsSubscription!
+    subscribeToGroupChats: GroupChatsSubscription!
 }
 
 union MessagesSubscription = CreatedSubscription
@@ -547,21 +540,17 @@ union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
-"""An `UpdatedContact` might be sent if the contact's profile pic was updated."""
-union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
+"""An `UpdatedAccount` might be sent if the account's profile pic was updated."""
+union AccountsSubscription = CreatedSubscription | NewContact | UpdatedAccount | DeletedContact
 
 """
-An `UpdatedAccount` represents the account of a user which was updated. It's possible the user updated their profile
-pic. The subscriber's account updates will not be included.
-
-If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+A `GroupChatId` is the ID of the chat the user was added to.
 
 An `UpdatedGroupChat` might be sent if the chat's pic was updated.
-"""
-union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
-"""A `GroupChatId` is the ID of the chat the user was added to."""
-union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
+If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+"""
+union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
 
 type UpdatedOnlineStatus {
     userId: Int!
@@ -611,7 +600,7 @@ type UpdatedGroupChat {
     removedUsers: [Account!]
     adminIdList: [Int!]
     isBroadcast: Boolean
-    isInvitable: Boolean
+    publicity: GroupChatPublicity
 }
 
 """
@@ -709,15 +698,6 @@ type NewContact implements AccountData {
     bio: Bio
 }
 
-type UpdatedContact implements AccountData {
-    id: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
-}
-
 """
 The `id` of the contact which has been deleted for the user. This happens when the user deletes a contact, or the
 contact's account gets deleted.
@@ -770,8 +750,7 @@ interface BareGroupChat {
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }
 
 type GroupChatInfo implements BareGroupChat {
@@ -780,8 +759,7 @@ type GroupChatInfo implements BareGroupChat {
     adminIdList: [Int!]!
     users(first: Int, after: Cursor): AccountsConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }
 
 type GroupChat implements Chat, BareGroupChat {
@@ -792,8 +770,7 @@ type GroupChat implements Chat, BareGroupChat {
     users(first: Int, after: Cursor): AccountsConnection!
     messages(last: Int, before: Cursor): MessagesConnection!
     isBroadcast: Boolean!
-    isPublic: Boolean!
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
     """null if invite codes are switched off."""
     inviteCode: Uuid
 }
@@ -1166,6 +1143,20 @@ enum MessageStatus {
     READ
 }
 
+enum GroupChatPublicity {
+    """Users cannot join the chat via an invite code."""
+    NOT_INVITABLE
+    """Users can join the chat via an invite code."""
+    INVITABLE
+    """
+    People can search for, and view public chats without an account. Invite codes are permanently switched on. Anyone
+    with an account can join a public chat. A frontend UI may allow for a search engine to index the chat should the
+    administrator allow for it. A chat must be made public when it's being created because chats can't switch between
+    being public after they've been created.
+    """
+    PUBLIC
+}
+
 type TokenSet {
     accessToken: ID!
     refreshToken: ID!
@@ -1192,8 +1183,5 @@ input GroupChatInput {
     userIdList: [Int!]!
     adminIdList: [Int!]!
     isBroadcast: Boolean!
-    """Cannot be changed later."""
-    isPublic: Boolean!
-    """Whether users can join via an invitation. This can be changed later. This is always `true` for public chats."""
-    isInvitable: Boolean!
+    publicity: GroupChatPublicity!
 }

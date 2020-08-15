@@ -41,3 +41,5 @@ object NonexistentOptionException : GraphQlDocDataException("NONEXISTENT_OPTION"
 object InvalidInviteCodeException : GraphQlDocDataException("INVALID_INVITE_CODE")
 
 object InvalidInvitedChatException : GraphQlDocDataException("INVALID_INVITED_CHAT")
+
+object InvalidDomainException : GraphQlDocDataException("INVALID_DOMAIN")

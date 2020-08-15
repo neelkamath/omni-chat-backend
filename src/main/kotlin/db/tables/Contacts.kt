@@ -1,9 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.ContactsAsset
+import com.neelkamath.omniChat.db.AccountsAsset
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.Notifier
-import com.neelkamath.omniChat.db.contactsNotifier
+import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.DeletedContact
@@ -22,7 +22,7 @@ object Contacts : IntIdTable() {
 
     /**
      * Saves the [ownerId]'s [contactIdList], ignoring existing contacts. The [ownerId] will be notified of the
-     * [NewContact] if they've [Notifier.subscribe]d via [contactsNotifier].
+     * [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier].
      */
     fun create(ownerId: Int, contactIdList: Set<Int>) {
         val existingContacts = readIdList(ownerId)
@@ -33,7 +33,7 @@ object Contacts : IntIdTable() {
                 this[contactId] = it
             }
         }
-        for (newContact in newContacts) contactsNotifier.publish(NewContact.build(newContact), ContactsAsset(ownerId))
+        for (newContact in newContacts) accountsNotifier.publish(NewContact.build(newContact), AccountsAsset(ownerId))
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
@@ -69,23 +69,23 @@ object Contacts : IntIdTable() {
 
     /**
      * Deletes the [ownerId]'s contacts from the [contactIdList], ignoring nonexistent contacts. The [ownerId] will be
-     * notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [contactsNotifier].
+     * notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier].
      */
     fun delete(ownerId: Int, contactIdList: List<Int>) {
         val contacts = readIdList(ownerId).intersect(contactIdList)
         transaction {
             deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
         }
-        for (contact in contacts) contactsNotifier.publish(DeletedContact(contact), ContactsAsset(ownerId))
+        for (contact in contacts) accountsNotifier.publish(DeletedContact(contact), AccountsAsset(ownerId))
     }
 
     /**
      * If the [userId] doesn't exist, nothing will happen. Otherwise, every contact who owns, or is owned by, the given
      * [userId] is deleted, and subscribers who have the [userId] in their contacts will be notified of the
-     * [DeletedContact] via [contactsNotifier].
+     * [DeletedContact] via [accountsNotifier].
      */
     fun deleteUserEntries(userId: Int) {
-        contactsNotifier.publish(DeletedContact(userId), readOwners(userId).map(::ContactsAsset))
+        accountsNotifier.publish(DeletedContact(userId), readOwners(userId).map(::AccountsAsset))
         transaction {
             deleteWhere { (contactOwnerId eq userId) or (contactId eq userId) }
         }

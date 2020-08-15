@@ -45,7 +45,13 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 
 ### Migrating to a Newer Version
 
-Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
+Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version:
+1. Ensure the application isn't running: `docker-compose down`
+1. Delete the databases (replace `<DIR>` with the name of the present working directory):
+    ```
+    docker volume rm <DIR>_chat-db
+    docker volume rm <DIR>_auth-db
+    ```
 
 ## [Contributing](docs/CONTRIBUTING.md)
 

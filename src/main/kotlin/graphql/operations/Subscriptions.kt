@@ -12,19 +12,14 @@ fun subscribeToMessages(env: DataFetchingEnvironment): Publisher<MessagesSubscri
     return messagesNotifier.subscribe(MessagesAsset(env.userId!!))
 }
 
-fun subscribeToContacts(env: DataFetchingEnvironment): Publisher<ContactsSubscription> {
+fun subscribeToAccounts(env: DataFetchingEnvironment): Publisher<AccountsSubscription> {
     env.verifyAuth()
-    return contactsNotifier.subscribe(ContactsAsset(env.userId!!))
+    return accountsNotifier.subscribe(AccountsAsset(env.userId!!))
 }
 
-fun subscribeToUpdatedChats(env: DataFetchingEnvironment): Publisher<UpdatedChatsSubscription> {
+fun subscribeToGroupChats(env: DataFetchingEnvironment): Publisher<GroupChatsSubscription> {
     env.verifyAuth()
-    return updatedChatsNotifier.subscribe(UpdatedChatsAsset(env.userId!!))
-}
-
-fun subscribeToNewGroupChats(env: DataFetchingEnvironment): Publisher<NewGroupChatsSubscription> {
-    env.verifyAuth()
-    return newGroupChatsNotifier.subscribe(NewGroupChatsAsset(env.userId!!))
+    return groupChatsNotifier.subscribe(GroupChatsAsset(env.userId!!))
 }
 
 fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingStatusesSubscription> {

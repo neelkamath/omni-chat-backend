@@ -8,9 +8,8 @@ import graphql.schema.idl.TypeRuntimeWiring
 
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
     .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
-    .type("ContactsSubscription") { wireType(it, ::readContactsSubscription) }
-    .type("UpdatedChatsSubscription") { wireType(it, ::readUpdatedChatsSubscription) }
-    .type("NewGroupChatsSubscription") { wireType(it, ::readNewGroupChatsSubscription) }
+    .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
+    .type("GroupChatsSubscription") { wireType(it, ::readGroupChatsSubscription) }
     .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
     .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
     .type("Chat") { wireType(it, ::readChat) }
@@ -60,17 +59,10 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
-private fun readUpdatedChatsSubscription(obj: Any): String = when (obj) {
-    is CreatedSubscription -> "CreatedSubscription"
-    is UpdatedGroupChat -> "UpdatedGroupChat"
-    is UpdatedAccount -> "UpdatedAccount"
-    is ExitedUser -> "ExitedUser"
-    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
-}
-
-private fun readNewGroupChatsSubscription(obj: Any): String = when (obj) {
+private fun readGroupChatsSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is GroupChatId -> "GroupChatId"
+    is GroupChatInfo -> "GroupChatInfo"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -86,17 +78,16 @@ private fun readOnlineStatusesSubscription(obj: Any): String = when (obj) {
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
-private fun readContactsSubscription(obj: Any): String = when (obj) {
+private fun readAccountsSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is NewContact -> "NewContact"
-    is UpdatedContact -> "UpdatedContact"
+    is UpdatedAccount -> "UpdatedAccount"
     is DeletedContact -> "DeletedContact"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
 private fun readAccountData(obj: Any): String = when (obj) {
     is Account -> "Account"
-    is UpdatedContact -> "UpdatedContact"
     is NewContact -> "NewContact"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }

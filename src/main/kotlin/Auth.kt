@@ -63,7 +63,8 @@ fun UserRepresentation.toAccount(): Account {
 /**
  * Sets up account management.
  *
- * This takes a few seconds to run, and must be run before any account-related activities are performed.
+ * This takes a few seconds to run if the auth system hasn't been set up, and must be run before any account-related
+ * activities are performed.
  */
 fun setUpAuth() {
     val shouldBuild = REALM_NAME !in keycloak.realms().findAll().map { it.realm }
@@ -204,3 +205,9 @@ private fun createCredentials(password: Password): List<CredentialRepresentation
         value = password.value
     }
 )
+
+/** Whether the [emailAddress]'s domain (e.g., `"example.com"`) is allowed by this Omni Chat instance. */
+fun hasAllowedDomain(emailAddress: String): Boolean {
+    val domains = System.getenv("ALLOWED_DOMAINS") ?: return true
+    return emailAddress.substringAfter("@") in domains.split(",")
+}

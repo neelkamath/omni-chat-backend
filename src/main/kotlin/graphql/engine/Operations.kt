@@ -63,8 +63,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
 
 private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("subscribeToMessages", ::subscribeToMessages)
-    .dataFetcher("subscribeToContacts", ::subscribeToContacts)
-    .dataFetcher("subscribeToUpdatedChats", ::subscribeToUpdatedChats)
-    .dataFetcher("subscribeToNewGroupChats", ::subscribeToNewGroupChats)
+    .dataFetcher("subscribeToAccounts", ::subscribeToAccounts)
+    .dataFetcher("subscribeToGroupChats", ::subscribeToGroupChats)
     .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)
     .dataFetcher("subscribeToOnlineStatuses", ::subscribeToOnlineStatuses)

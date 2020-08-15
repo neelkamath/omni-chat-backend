@@ -7,14 +7,11 @@ import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.collections.shouldNotBeEmpty
-import io.kotest.matchers.shouldBe
+import io.ktor.http.HttpStatusCode
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
+import kotlin.test.*
 
 const val SEARCH_PUBLIC_CHATS_QUERY = """
     query SearchPublicChats(
@@ -534,31 +531,35 @@ fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsC
     return testingObjectMapper.convertValue(data)
 }
 
-class ChatMessagesDtoTest : FunSpec({
-    context("readGroupChat(DataFetchingEnvironment)") {
-        test("The chat's info should be read") {
+class ChatMessagesDtoTest {
+    @Nested
+    inner class ReadGroupChat {
+        @Test
+        fun `The chat's info should be read`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val inviteCode = GroupChats.readInviteCode(chatId)
-            readGroupChat(inviteCode) shouldBe GroupChats.readChatInfo(inviteCode)
+            assertEquals(GroupChats.readChatInfo(inviteCode), readGroupChat(inviteCode))
         }
 
-        test("Reading a chat using a nonexistent invite code should fail") {
-            errReadGroupChat(UUID.randomUUID()) shouldBe InvalidInviteCodeException.message
+        @Test
+        fun `Reading a chat using a nonexistent invite code should fail`() {
+            assertEquals(InvalidInviteCodeException.message, errReadGroupChat(UUID.randomUUID()))
         }
     }
 
-    context("getMessages(DataFetchingEnvironment") {
-        /** Data on a group chat having only ever contained an admin. */
-        data class AdminMessages(
-            /** The ID of the chat's admin. */
-            val adminId: Int,
-            /** Every message sent has this text. */
-            val text: MessageText,
-            /** The ten messages the admin sent. */
-            val messageIdList: List<Int>
-        )
+    /** Data on a group chat having only ever contained an admin. */
+    data class AdminMessages(
+        /** The ID of the chat's admin. */
+        val adminId: Int,
+        /** Every message sent has this text. */
+        val text: MessageText,
+        /** The ten messages the admin sent. */
+        val messageIdList: List<Int>
+    )
 
+    @Nested
+    inner class GetMessages {
         fun createUtilizedChat(): AdminMessages {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
@@ -572,257 +573,330 @@ class ChatMessagesDtoTest : FunSpec({
             val index = 5
             if (shouldDeleteMessage) Messages.delete(messageIdList[index])
             val last = 3
-            searchMessages(
+            val cursors = searchMessages(
                 adminId,
                 queryText.value,
                 chatMessagesPagination = BackwardPagination(last, before = messageIdList[index])
-            ).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList.take(index).takeLast(last)
+            ).flatMap { it.messages }.map { it.cursor }
+            assertEquals(messageIdList.take(index).takeLast(last), cursors)
         }
 
-        test("Messages should paginate using a cursor from a deleted message as if the message still exists") {
+        @Test
+        fun `Messages should paginate using a cursor from a deleted message as if the message still exists`() {
             testPagination(shouldDeleteMessage = true)
         }
 
-        test("Only the messages specified by the cursor and limit should be retrieved") {
+        @Test
+        fun `Only the messages specified by the cursor and limit should be retrieved`() {
             testPagination(shouldDeleteMessage = false)
         }
 
-        test("If neither cursor nor limit are supplied, every message should be retrieved") {
+        @Test
+        fun `If neither cursor nor limit are supplied, every message should be retrieved`() {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
-            searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor } shouldBe messageIdList
+            val cursors = searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor }
+            assertEquals(messageIdList, cursors)
         }
     }
-})
+}
 
-class QueriesTest : FunSpec({
-    context("searchPublicChats(DataFetchingEnvironment)") {
-        test("Chats should be case-insensitively queried by their title") {
+@ExtendWith(DbExtension::class)
+class QueriesTest {
+    @Nested
+    inner class SearchPublicChats {
+        @Test
+        fun `Chats should be case-insensitively queried by their title`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/Native"))
-            val chatId = GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), isPublic = true)
-            GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), isPublic = true)
-            searchPublicChats("kotlin").map { it.id } shouldBe listOf(chatId)
+            val chatId = GroupChats
+                .create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), publicity = GroupChatPublicity.PUBLIC)
+            GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), publicity = GroupChatPublicity.PUBLIC)
+            assertEquals(listOf(chatId), searchPublicChats("kotlin").map { it.id })
         }
     }
 
-    context("readStars(DataFetchingEnvironment)") {
-        test("Only the user's starred messages should be read") {
+    @Nested
+    inner class ReadStars {
+        @Test
+        fun `Only the user's starred messages should be read`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId) }
             listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
-            readStars(user1Id) shouldBe listOf(message1Id, message2Id).map { StarredMessage.build(user1Id, it) }
+            assertEquals(listOf(message1Id, message2Id).map { StarredMessage.build(user1Id, it) }, readStars(user1Id))
         }
     }
 
-    context("readOnlineStatuses(DataFetchingEnvironment)") {
-        test("Reading online statuses should only retrieve users the user has in their contacts, or has a chat with") {
+    @Nested
+    inner class ReadOnlineStatuses {
+        @Test
+        fun `Reading online statuses should only retrieve users the user has in their contacts, or has a chat with`() {
             val (contactOwnerId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
             Contacts.create(contactOwnerId, setOf(contactId))
             PrivateChats.create(contactOwnerId, chatSharerId)
-            readOnlineStatuses(contactOwnerId).map { it.userId } shouldContainExactlyInAnyOrder
-                    listOf(contactId, chatSharerId)
+            assertEquals(setOf(contactId, chatSharerId), readOnlineStatuses(contactOwnerId).map { it.userId }.toSet())
         }
     }
 
-    context("canDeleteAccount(DataFetchingEnvironment)") {
-        test("An account should be deletable if the user is the admin of an otherwise empty chat") {
+    @Nested
+    inner class CanDeleteAccount {
+        @Test
+        fun `An account should be deletable if the user is the admin of an otherwise empty chat`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             GroupChats.create(listOf(adminId))
-            canDeleteAccount(adminId).shouldBeTrue()
+            assertTrue(canDeleteAccount(adminId))
         }
 
-        test("An account shouldn't be deletable if the user is the last admin of a group chat with other users") {
+        @Test
+        fun `An account shouldn't be deletable if the user is the last admin of a group chat with other users`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             GroupChats.create(listOf(adminId), listOf(userId))
-            canDeleteAccount(adminId).shouldBeFalse()
+            assertFalse(canDeleteAccount(adminId))
         }
     }
 
-    context("isEmailAddressTaken(DataFetchingEnvironment)") {
-        test("The email shouldn't be taken") { isEmailAddressTaken("username@example.com").shouldBeFalse() }
+    @Nested
+    inner class IsEmailAddressTaken {
+        @Test
+        fun `The email shouldn't be taken`() {
+            assertFalse(isEmailAddressTaken("username@example.com"))
+        }
 
-        test("The email should be taken") {
+        @Test
+        fun `The email should be taken`() {
             val address = createVerifiedUsers(1)[0].info.emailAddress
-            isEmailAddressTaken(address).shouldBeTrue()
+            assertTrue(isEmailAddressTaken(address))
         }
     }
 
-    context("isUsernameTaken(DataFetchingEnvironment)") {
-        test("The username shouldn't be taken") { isUsernameTaken(Username("username")).shouldBeFalse() }
+    @Nested
+    inner class IsUsernameTaken {
+        @Test
+        fun `The username shouldn't be taken`() {
+            assertFalse(isUsernameTaken(Username("username")))
+        }
 
-        test("The username should be taken") {
+        @Test
+        fun `The username should be taken`() {
             val username = createVerifiedUsers(1)[0].info.username
-            isUsernameTaken(username).shouldBeTrue()
+            assertTrue(isUsernameTaken(username))
         }
     }
 
-    context("readAccount(DataFetchingEnvironment)") {
-        test("The user's account info should be returned") {
+    @Nested
+    inner class ReadAccount {
+        @Test
+        fun `The user's account info should be returned`() {
             val user = createVerifiedUsers(1)[0].info
-            readAccount(user.id) shouldBe user
+            assertEquals(user, readAccount(user.id))
         }
     }
 
-    context("readChats(DataFetchingEnvironment)") {
-        test("Private chats deleted by the user should be retrieved only for the other user") {
+    @Nested
+    inner class ReadChats {
+        @Test
+        fun `Private chats deleted by the user should be retrieved only for the other user`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            readChats(user1Id).shouldBeEmpty()
-            readChats(user2Id).shouldNotBeEmpty()
+            assertTrue(readChats(user1Id).isEmpty())
+            assertFalse(readChats(user2Id).isEmpty())
         }
 
-        test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.READ_CHATS) }
+        @Test
+        fun `Messages should be paginated`() {
+            testMessagesPagination(MessagesOperationName.READ_CHATS)
+        }
 
-        test("Group chat users should be paginated") {
+        @Test
+        fun `Group chat users should be paginated`() {
             testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHATS)
         }
     }
 
-    context("readChat(DataFetchingEnvironment)") {
-        test("The private chat the user just deleted should be read") {
+    @Nested
+    inner class ReadChat {
+        @Test
+        fun `The private chat the user just deleted should be read`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             readChat(chatId, userId = user1Id)
         }
 
-        test("Reading a public chat shouldn't require an access token") {
+        @Test
+        fun `Reading a public chat shouldn't require an access token`() {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             readChat(chatId)
         }
 
-        test("When a user reads a public chat, the chat should be represented the way they see it") {
+        @Test
+        fun `When a user reads a public chat, the chat should be represented the way they see it`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             val chat = readChat(chatId, userId = adminId) as GroupChat
-            chat.messages.edges.map { it.node.hasStar } shouldBe listOf(true)
+            assertEquals(listOf(true), chat.messages.edges.map { it.node.hasStar })
         }
 
-        test("Requesting a chat using an invalid ID should return an error") {
+        @Test
+        fun `Requesting a chat using an invalid ID should return an error`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errReadChat(id = 1, userId = userId) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errReadChat(id = 1, userId = userId))
         }
 
-        test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.READ_CHAT) }
+        @Test
+        fun `Messages should be paginated`() {
+            testMessagesPagination(MessagesOperationName.READ_CHAT)
+        }
 
-        test("Group chat users should be paginated") {
+        @Test
+        fun `Group chat users should be paginated`() {
             testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHAT)
         }
     }
 
-    context("readContacts(DataFetchingEnvironment)") {
-        test("Contacts should be read") {
+    @Nested
+    inner class ReadContacts {
+        @Test
+        fun `Contacts should be read`() {
             val (owner, contact1, contact2) = createVerifiedUsers(3).map { it.info }
             Contacts.create(owner.id, setOf(contact1.id, contact2.id))
-            readContacts(owner.id).edges.map { it.node } shouldBe listOf(contact1, contact2)
+            assertEquals(listOf(contact1, contact2), readContacts(owner.id).edges.map { it.node })
         }
 
-        test("Contacts should be paginated") { testContactsPagination(ContactsOperationName.READ_CONTACTS) }
+        @Test
+        fun `Contacts should be paginated`() {
+            testContactsPagination(ContactsOperationName.READ_CONTACTS)
+        }
     }
 
-    context("refreshTokenSet(DataFetchingEnvironment)") {
-        test("A refresh token should issue a new token set") {
+    @Nested
+    inner class RefreshTokenSet {
+        @Test
+        fun `A refresh token should issue a new token set`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val refreshToken = buildAuthToken(userId).refreshToken
             refreshTokenSet(refreshToken)
         }
 
-        test("An invalid refresh token should return an authorization error") {
+        @Test
+        fun `An invalid refresh token should return an authorization error`() {
             val variables = mapOf("refreshToken" to "invalid token")
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 REFRESH_TOKEN_SET_QUERY,
                 variables
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("requestTokenSet(DataFetchingEnvironment") {
-        test("The access token should work") {
+    @Nested
+    inner class RequestTokenSet {
+        @Test
+        fun `The access token should work`() {
             val login = createVerifiedUsers(1)[0].login
             val token = requestTokenSet(login).accessToken
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 READ_ACCOUNT_QUERY,
                 accessToken = token
-            ).shouldNotHaveUnauthorizedStatus()
+            )
+            assertNotEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
-        test("A token set shouldn't be created for a nonexistent user") {
+        @Test
+        fun `A token set shouldn't be created for a nonexistent user`() {
             val login = Login(Username("username"), Password("password"))
-            errRequestTokenSet(login) shouldBe NonexistentUserException.message
+            assertEquals(NonexistentUserException.message, errRequestTokenSet(login))
         }
 
-        test("A token set shouldn't be created for a user who hasn't verified their email") {
+        @Test
+        fun `A token set shouldn't be created for a user who hasn't verified their email`() {
             val login = Login(Username("username"), Password("password"))
             createUser(AccountInput(login.username, login.password, "username@example.com"))
-            errRequestTokenSet(login) shouldBe UnverifiedEmailAddressException.message
+            assertEquals(UnverifiedEmailAddressException.message, errRequestTokenSet(login))
         }
 
-        test("A token set shouldn't be created for an incorrect password") {
+        @Test
+        fun `A token set shouldn't be created for an incorrect password`() {
             val login = createVerifiedUsers(1)[0].login
             val invalidLogin = login.copy(password = Password("incorrect password"))
-            errRequestTokenSet(invalidLogin) shouldBe IncorrectPasswordException.message
+            assertEquals(IncorrectPasswordException.message, errRequestTokenSet(invalidLogin))
         }
     }
 
-    context("searchChatMessages(DataFetchingEnvironment)") {
-        test("Messages should be searched case-insensitively") {
+    @Nested
+    inner class SearchChatMessages {
+        @Test
+        fun `Messages should be searched case-insensitively`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(user1Id, chatId, MessageText("Hey!"))
             Messages.create(user2Id, chatId, MessageText(":) hey"))
             Messages.create(user1Id, chatId, MessageText("How are you?"))
-            searchChatMessages(chatId, "hey", userId = user1Id) shouldBe
-                    Messages.readPrivateChat(user1Id, chatId).dropLast(1)
+            val messages = searchChatMessages(chatId, "hey", userId = user1Id)
+            assertEquals(Messages.readPrivateChat(user1Id, chatId).dropLast(1), messages)
         }
 
-        test("Searching in a non-public chat the user isn't in should return an error") {
+        @Test
+        fun `Searching in a non-public chat the user isn't in should return an error`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = PrivateChats.create(user2Id, user3Id)
-            errSearchChatMessages(chatId, "query", userId = user1Id) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errSearchChatMessages(chatId, "query", userId = user1Id))
         }
 
-        test("A public chat should be searchable without an account") {
+        @Test
+        fun `A public chat should be searchable without an account`() {
             val adminId = createVerifiedUsers(1)[0].info.id
-            val chatId = GroupChats.create(listOf(adminId), isPublic = true)
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val text = "text"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
-            searchChatMessages(chatId, text).map { it.node.messageId } shouldBe listOf(messageId)
+            assertEquals(listOf(messageId), searchChatMessages(chatId, text).map { it.node.messageId })
         }
 
-        test("When a user searches a public chat, it should be returned as it's seen by the user") {
+        @Test
+        fun `When a user searches a public chat, it should be returned as it's seen by the user`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val text = "t"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
             Stargazers.create(adminId, messageId)
-            searchChatMessages(chatId, text, userId = adminId).map { it.node.hasStar } shouldBe listOf(true)
+            assertEquals(listOf(true), searchChatMessages(chatId, text, userId = adminId).map { it.node.hasStar })
         }
 
-        test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES) }
+        @Test
+        fun `Messages should be paginated`() {
+            testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES)
+        }
     }
 
-    context("searchChats(DataFetchingEnvironment)") {
-        test("Searching a private chat the user deleted shouldn't include the chat in the search results") {
+    @Nested
+    inner class SearchChats {
+        @Test
+        fun `Searching a private chat the user deleted shouldn't include the chat in the search results`() {
             val (user1, user2) = createVerifiedUsers(2).map { it.info }
             val chatId = PrivateChats.create(user1.id, user2.id)
             PrivateChatDeletions.create(chatId, user1.id)
-            searchChats(user1.id, user2.username.value).shouldBeEmpty()
+            assertTrue(searchChats(user1.id, user2.username.value).isEmpty())
         }
 
-        test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_CHATS) }
+        @Test
+        fun `Messages should be paginated`() {
+            testMessagesPagination(MessagesOperationName.SEARCH_CHATS)
+        }
 
-        test("Group chat users should be paginated") {
+        @Test
+        fun `Group chat users should be paginated`() {
             testGroupChatUsersPagination(GroupChatUsersOperationName.SEARCH_CHATS)
         }
     }
 
-    context("searchContacts(DataFetchingEnvironment)") {
-        test("Contacts should be searched case-insensitively") {
+    @Nested
+    inner class SearchContacts {
+        @Test
+        fun `Contacts should be searched case-insensitively`() {
             val accounts = listOf(
                 AccountInput(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
                 AccountInput(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
@@ -840,41 +914,41 @@ class QueriesTest : FunSpec({
             val userId = createVerifiedUsers(1)[0].info.id
             Contacts.create(userId, accounts.map { it.id }.toSet())
             val testContacts = { query: String, accountList: List<Account> ->
-                searchContacts(userId, query).edges.map { it.node } shouldBe accountList
+                assertEquals(accountList, searchContacts(userId, query).edges.map { it.node })
             }
             testContacts("john", listOf(accounts[0], accounts[1], accounts[3]))
             testContacts("bost", listOf(accounts[2]))
             testContacts("Roger", listOf(accounts[1], accounts[3]))
         }
 
-        test("Contacts should be paginated") { testContactsPagination(ContactsOperationName.SEARCH_CONTACTS) }
+        @Test
+        fun `Contacts should be paginated`() {
+            testContactsPagination(ContactsOperationName.SEARCH_CONTACTS)
+        }
     }
 
-    context("searchMessages(DataFetchingEnvironment)") {
-        test(
-            """
-            Given a user who created a private chat, sent a message, and deleted the chat,
-            when searching for the message,
-            then it shouldn't be retrieved
-            """
-        ) {
+    @Nested
+    inner class SearchMessages {
+        @Test
+        fun `Searching for a message sent before the private chat was deleted shouldn't be found`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val text = "text"
             Messages.message(user1Id, chatId, MessageText(text))
             PrivateChatDeletions.create(chatId, user1Id)
-            searchMessages(user1Id, text).shouldBeEmpty()
+            assertTrue(searchMessages(user1Id, text).isEmpty())
         }
 
-        test("Messages should be paginated") { testMessagesPagination(MessagesOperationName.SEARCH_MESSAGES) }
-
-        test("Group chat users should be paginated") {
+        @Test
+        fun `Messages should be paginated`() {
             testGroupChatUsersPagination(GroupChatUsersOperationName.SEARCH_MESSAGES)
         }
     }
 
-    context("searchUsers(DataFetchingEnvironment)") {
-        test("Users should be searched") {
+    @Nested
+    inner class SearchUsers {
+        @Test
+        fun `Users should be searched`() {
             val accounts = listOf(
                 AccountInput(Username("iron_man"), Password("p"), "tony@example.com"),
                 AccountInput(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
@@ -883,7 +957,7 @@ class QueriesTest : FunSpec({
                 createUser(it)
                 it.toAccount()
             }
-            searchUsers("iron").edges.map { it.node } shouldContainExactlyInAnyOrder accounts.dropLast(1)
+            assertEquals(accounts.dropLast(1), searchUsers("iron").edges.map { it.node })
         }
 
         fun createAccounts(): List<AccountInput> {
@@ -901,21 +975,22 @@ class QueriesTest : FunSpec({
             return accounts
         }
 
-        test("Users should be paginated") {
+        @Test
+        fun `Users should be paginated`() {
             val infoCursors = createAccounts()
                 .zip(Users.read())
                 .map { (newAccount, cursor) -> AccountEdge(newAccount.toAccount(), cursor) }
             val searchedUsers = listOf(infoCursors[0], infoCursors[2], infoCursors[4], infoCursors[5], infoCursors[7])
             val first = 3
             val index = 0
-            searchUsers("iron", ForwardPagination(first, infoCursors[index].cursor)).edges shouldBe
-                    searchedUsers.subList(index + 1, index + 1 + first)
+            val users = searchUsers("iron", ForwardPagination(first, infoCursors[index].cursor)).edges
+            assertEquals(searchedUsers.subList(index + 1, index + 1 + first), users)
         }
     }
-})
+}
 
 /** The name of a GraphQL operation which is concerned with the pagination of messages. */
-enum class MessagesOperationName {
+private enum class MessagesOperationName {
     /** Represents `Query.searchChatMessages`. */
     SEARCH_CHAT_MESSAGES,
 
@@ -933,7 +1008,7 @@ enum class MessagesOperationName {
 }
 
 /** The name of a GraphQL operation which is concerned with the pagination of contacts. */
-enum class ContactsOperationName {
+private enum class ContactsOperationName {
     /** Represents `Query.readContacts`. */
     READ_CONTACTS,
 
@@ -942,7 +1017,7 @@ enum class ContactsOperationName {
 }
 
 /** The name of a GraphQL operation which is concerned with the pagination of accounts. */
-enum class GroupChatUsersOperationName {
+private enum class GroupChatUsersOperationName {
     /** Represents `Query.readChat`. */
     READ_CHAT,
 
@@ -957,7 +1032,7 @@ enum class GroupChatUsersOperationName {
 }
 
 /** Asserts that the [operation] paginates correctly. */
-fun testMessagesPagination(operation: MessagesOperationName) {
+private fun testMessagesPagination(operation: MessagesOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val chatId = GroupChats.create(listOf(adminId))
     val text = MessageText("t")
@@ -965,7 +1040,7 @@ fun testMessagesPagination(operation: MessagesOperationName) {
     val last = 4
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
-    when (operation) {
+    val messages = when (operation) {
         MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(chatId, text.value, pagination, adminId)
         MessagesOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text.value, chatMessagesPagination = pagination).flatMap { it.messages }
@@ -977,24 +1052,26 @@ fun testMessagesPagination(operation: MessagesOperationName) {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value
             searchChats(adminId, title, groupChatMessagesPagination = pagination)[0].messages.edges
         }
-    }.map { it.cursor } shouldBe messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last)
+    }
+    assertEquals(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last), messages.map { it.cursor })
 }
 
-fun testContactsPagination(operation: ContactsOperationName) {
+private fun testContactsPagination(operation: ContactsOperationName) {
     val ownerId = createVerifiedUsers(1)[0].info.id
     val userIdList = createVerifiedUsers(10)
     Contacts.create(ownerId, userIdList.map { it.info.id }.toSet())
     val index = 5
     val cursor = readContacts(ownerId).edges[index].cursor
     val first = 3
-    when (operation) {
+    val contacts = when (operation) {
         ContactsOperationName.READ_CONTACTS -> readContacts(ownerId, ForwardPagination(first, cursor))
         ContactsOperationName.SEARCH_CONTACTS ->
             searchContacts(ownerId, query = "username", pagination = ForwardPagination(first, cursor))
-    }.edges.map { it.node } shouldBe userIdList.subList(index + 1, index + 1 + first).map { it.info }
+    }.edges.map { it.node }
+    assertEquals(userIdList.subList(index + 1, index + 1 + first).map { it.info }, contacts)
 }
 
-fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
+private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
     val adminId = createVerifiedUsers(1)[0].info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
@@ -1015,5 +1092,5 @@ fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
         GroupChatUsersOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text, usersPagination = pagination)[0].chat
     } as GroupChat
-    chat.users.edges.map { it.cursor } shouldBe userCursors.subList(index + 1, index + 1 + first).map { it }
+    assertEquals(userCursors.subList(index + 1, index + 1 + first).map { it }, chat.users.edges.map { it.cursor })
 }

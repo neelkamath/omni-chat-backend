@@ -1,31 +1,33 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createUser
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ChatEdges
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readUserByUsername
-import io.kotest.assertions.throwables.shouldThrowAny
-import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.longs.shouldBeZero
-import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.test.*
 
-class PrivateChatsTest : FunSpec({
-    context("create(String, String)") {
-        test("Creating an existing chat should throw an exception") {
+@ExtendWith(DbExtension::class)
+class PrivateChatsTest {
+    @Nested
+    inner class Create {
+        @Test
+        fun `Creating an existing chat should throw an exception`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val create = { PrivateChats.create(user1Id, user2Id) }
             create()
-            shouldThrowExactly<IllegalArgumentException> { create() }
+            assertFailsWith<IllegalArgumentException> { create() }
         }
     }
 
-    context("delete(Int)") {
-        test("Deleting the chat should wipe it from the DB") {
+    @Nested
+    inner class Delete {
+        @Test
+        fun `Deleting the chat should wipe it from the DB`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             TypingStatuses.set(chatId, user1Id, isTyping = true)
@@ -35,22 +37,25 @@ class PrivateChatsTest : FunSpec({
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChats.delete(chatId)
             listOf(Chats, Messages, MessageStatuses, PrivateChatDeletions, PrivateChats, Stargazers, TypingStatuses)
-                .forEach { it.count().shouldBeZero() }
+                .forEach { assertEquals(0, it.count()) }
         }
     }
 
-    context("read(String, BackwardPagination?)") {
-        test("Reading a chat should give the ID of the user being chatted with, and not the user's own ID") {
+    @Nested
+    inner class Read {
+        @Test
+        fun `Reading a chat should give the ID of the user being chatted with, and not the user's own ID`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             val test = { userId: Int, otherUserId: Int ->
-                PrivateChats.readUserChats(userId)[0].user.id shouldBe otherUserId
+                assertEquals(otherUserId, PrivateChats.readUserChats(userId)[0].user.id)
             }
             test(user1Id, user2Id)
             test(user2Id, user1Id)
         }
 
-        test("Chats which didn't have any activity after their deletion shouldn't be read") {
+        @Test
+        fun `Chats which did not have any activity after their deletion shouldn't be read`() {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             val chat1Id = PrivateChats.create(user1Id, user2Id)
             val chat2Id = PrivateChats.create(user1Id, user3Id)
@@ -58,29 +63,34 @@ class PrivateChatsTest : FunSpec({
             PrivateChatDeletions.create(chat2Id, user1Id)
             Messages.create(user1Id, chat2Id)
             PrivateChatDeletions.create(chat3Id, user1Id)
-            PrivateChats.readUserChats(user1Id).map { it.id } shouldBe listOf(chat1Id, chat2Id)
+            assertEquals(listOf(chat1Id, chat2Id), PrivateChats.readUserChats(user1Id).map { it.id })
         }
     }
 
-    context("exists(String, String)") {
-        test("A chat between two users should be said to exist") {
+    @Nested
+    inner class Exists {
+        @Test
+        fun `A chat between two users should be said to exist`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
-            PrivateChats.exists(user1Id, user2Id).shouldBeTrue()
-            PrivateChats.exists(user2Id, user1Id).shouldBeTrue()
+            assertTrue(PrivateChats.exists(user1Id, user2Id))
+            assertTrue(PrivateChats.exists(user2Id, user1Id))
         }
 
-        test("If two users aren't in a chat with each other, it shouldn't be said that they are") {
+        @Test
+        fun `If two users aren't in a chat with each other, it shouldn't be said that they are`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             PrivateChats.create(user2Id, user3Id)
-            PrivateChats.exists(user1Id, user3Id).shouldBeFalse()
-            PrivateChats.exists(user3Id, user1Id).shouldBeFalse()
+            assertFalse(PrivateChats.exists(user1Id, user3Id))
+            assertFalse(PrivateChats.exists(user3Id, user1Id))
         }
     }
 
-    context("queryUserChatEdges(String, String)") {
-        test("Chats should be queried") {
+    @Nested
+    inner class QueryUserChatEdges {
+        @Test
+        fun `Chats should be queried`() {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             val (chat1Id, chat2Id, chat3Id) = listOf(user2Id, user3Id, user4Id).map { PrivateChats.create(user1Id, it) }
             val queryText = "hi"
@@ -91,17 +101,14 @@ class PrivateChatsTest : FunSpec({
             Messages.create(user1Id, chat3Id, MessageText("bye"))
             val chat1Edges = ChatEdges(chat1Id, listOf(message1))
             val chat2Edges = ChatEdges(chat2Id, listOf(message2))
-            PrivateChats.queryUserChatEdges(user1Id, queryText) shouldBe listOf(chat1Edges, chat2Edges)
+            assertEquals(listOf(chat1Edges, chat2Edges), PrivateChats.queryUserChatEdges(user1Id, queryText))
         }
     }
 
-    context("search(String, String, BackwardPagination?)") {
-        test(
-            """
-            Chats should be searched by case-insensitively querying usernames, email addresses, first names, and 
-            last names
-            """
-        ) {
+    @Nested
+    inner class Search {
+        @Test
+        fun `Chats should be searched by case-insensitively querying usernames, email addresses, and names`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
                 AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
@@ -115,64 +122,77 @@ class PrivateChatsTest : FunSpec({
                 PrivateChats.create(userId, otherUserId)
                 otherUserId
             }
-            PrivateChats.search(userId, "tom").map { it.user.id } shouldBe userIdList.dropLast(1)
+            assertEquals(userIdList.dropLast(1), PrivateChats.search(userId, "tom").map { it.user.id })
         }
     }
 
-    context("areInChat(String, String)") {
-        test("Two users should be said to be in a chat") {
+    @Nested
+    inner class AreInChat {
+        @Test
+        fun `Two users should be said to be in a chat`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
-            PrivateChats.areInChat(user1Id, user2Id).shouldBeTrue()
+            assertTrue(PrivateChats.areInChat(user1Id, user2Id))
         }
 
-        test("Two users shouldn't be said to be in a chat if one of them deleted the chat") {
+        @Test
+        fun `Two users shouldn't be said to be in a chat if one of them deleted the chat`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            PrivateChats.areInChat(user1Id, user2Id).shouldBeFalse()
+            assertFalse(PrivateChats.areInChat(user1Id, user2Id))
         }
     }
 
-    context("readChatId(String, String)") {
-        test("""The chat's ID should be read if the "participant" is in the chat but the "user" isn't""") {
+    @Nested
+    inner class ReadChatId {
+        @Test
+        fun `The chat's ID should be read if the "participant" is in the chat but the "user" isn't`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, userId)
-            PrivateChats.readChatId(participantId, userId) shouldBe chatId
+            assertEquals(chatId, PrivateChats.readChatId(participantId, userId))
         }
 
-        test("""Reading the ID of a chat the "participant" isn't in but the "user" is should fail""") {
+        @Test
+        fun `Reading the ID of a chat the "participant" isn't in but the "user" is should fail`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, participantId)
-            shouldThrowAny { PrivateChats.readChatId(participantId, userId) }
+            assertFails { PrivateChats.readChatId(participantId, userId) }
         }
     }
 
-    context("readUserIdList(Int)") {
-        test("Retrieving the user IDs of a chat should return them") {
+    @Nested
+    inner class ReadUserIdList {
+        @Test
+        fun `Retrieving the user IDs of a chat should return them`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            PrivateChats.readUserIdList(chatId) shouldBe listOf(user1Id, user2Id)
+            assertEquals(listOf(user1Id, user2Id), PrivateChats.readUserIdList(chatId))
         }
     }
 
-    context("readOtherUserId(Int, String)") {
-        test("The other user ID should be returned") {
+    @Nested
+    inner class ReadOtherUserId {
+        @Test
+        fun `The other user ID should be returned`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            PrivateChats.readOtherUserId(chatId, user1Id) shouldBe user2Id
-            PrivateChats.readOtherUserId(chatId, user2Id) shouldBe user1Id
+            assertEquals(user2Id, PrivateChats.readOtherUserId(chatId, user1Id))
+            assertEquals(user1Id, PrivateChats.readOtherUserId(chatId, user2Id))
         }
     }
 
-    context("readOtherUserIdList(String)") {
-        test("Reading the user ID list the user is chatting with should include those from deleted chats") {
+    @Nested
+    inner class ReadOtherUserIdList {
+        @Test
+        fun `Reading the user ID list the user is chatting with should excluding those from deleted chats`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }[0]
+            PrivateChats.create(user1Id, user2Id)
+            val chatId = PrivateChats.create(user1Id, user3Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            PrivateChats.readOtherUserIdList(user1Id) shouldBe listOf(user2Id, user3Id)
+            assertEquals(listOf(user2Id), PrivateChats.readOtherUserIdList(user1Id))
         }
     }
-})
+}

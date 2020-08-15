@@ -32,8 +32,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
     val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
 
     val isBroadcast: Boolean
-    val isPublic: Boolean
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
     val inviteCode: UUID?
 
     init {
@@ -46,8 +45,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
         title = chat.title
         description = chat.description
         isBroadcast = chat.isBroadcast
-        isPublic = chat.isPublic
-        isInvitable = chat.isInvitable
+        publicity = chat.publicity
         inviteCode = chat.inviteCode
     }
 
@@ -101,8 +99,7 @@ class GroupChatInfoDto(private val inviteCode: UUID) {
     val title: GroupChatTitle
     val description: GroupChatDescription
     val isBroadcast: Boolean
-    val isPublic: Boolean
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
 
     init {
         val info = GroupChats.readChatInfo(inviteCode, usersPagination = ForwardPagination(first = 0))
@@ -110,8 +107,7 @@ class GroupChatInfoDto(private val inviteCode: UUID) {
         title = info.title
         description = info.description
         isBroadcast = info.isBroadcast
-        isPublic = info.isPublic
-        isInvitable = info.isInvitable
+        publicity = info.publicity
     }
 
     @Suppress("unused")

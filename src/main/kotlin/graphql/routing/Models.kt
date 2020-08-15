@@ -96,6 +96,8 @@ data class Account(
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
 
+enum class GroupChatPublicity { NOT_INVITABLE, INVITABLE, PUBLIC }
+
 interface BareMessage {
     val messageId: Int
     val sender: Account
@@ -156,7 +158,7 @@ interface BareMessage {
     )
 }
 
-interface ContactsSubscription
+interface AccountsSubscription
 
 data class NewContact(
     override val id: Int,
@@ -165,24 +167,10 @@ data class NewContact(
     override val firstName: String? = null,
     override val lastName: String? = null,
     override val bio: Bio? = null
-) : AccountData, ContactsSubscription {
+) : AccountData, AccountsSubscription {
     companion object {
         fun build(userId: Int): NewContact =
             with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
-    }
-}
-
-data class UpdatedContact(
-    override val id: Int,
-    override val username: Username,
-    override val emailAddress: String,
-    override val firstName: String? = null,
-    override val lastName: String? = null,
-    override val bio: Bio? = null
-) : AccountData, ContactsSubscription {
-    companion object {
-        fun build(userId: Int): UpdatedContact =
-            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
@@ -192,7 +180,7 @@ data class UpdatedOnlineStatus(val userId: Int, val isOnline: Boolean) : OnlineS
 
 data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?)
 
-data class DeletedContact(val id: Int) : ContactsSubscription
+data class DeletedContact(val id: Int) : AccountsSubscription
 
 data class AccountUpdate(
     val username: Username? = null,
@@ -204,8 +192,8 @@ data class AccountUpdate(
 )
 
 /**
- * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, the [adminIdList] isn't a subset of the
- * [userIdList], or the chat [isPublic] but not [isInvitable].
+ * An [IllegalArgumentException] will be thrown if the [adminIdList] is empty, or the [adminIdList] isn't a subset of
+ * the [userIdList].
  */
 data class GroupChatInput(
     val title: GroupChatTitle,
@@ -213,8 +201,7 @@ data class GroupChatInput(
     val userIdList: List<Int>,
     val adminIdList: List<Int>,
     val isBroadcast: Boolean,
-    val isPublic: Boolean,
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
 ) {
     init {
         if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
@@ -222,11 +209,8 @@ data class GroupChatInput(
             throw IllegalArgumentException(
                 "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
             )
-        if (isPublic && !isInvitable) throw IllegalArgumentException("Public chats must be invitable.")
     }
 }
-
-interface UpdatedChatsSubscription
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[MessageText.MAX_LENGTH] characters with at least
@@ -291,8 +275,8 @@ data class UpdatedGroupChat(
     val removedUsers: List<Account>? = null,
     val adminIdList: List<Int>? = null,
     val isBroadcast: Boolean? = null,
-    val isInvitable: Boolean? = null
-) : UpdatedChatsSubscription {
+    val publicity: GroupChatPublicity? = null
+) : GroupChatsSubscription {
     init {
         if (newUsers != null && removedUsers != null) {
             val intersection = newUsers.intersect(removedUsers)
@@ -315,7 +299,7 @@ data class UpdatedAccount(
     val firstName: String? = null,
     val lastName: String? = null,
     val bio: Bio? = null
-) : UpdatedChatsSubscription {
+) : AccountsSubscription {
     companion object {
         fun build(userId: Int): UpdatedAccount =
             with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
@@ -339,8 +323,7 @@ interface BareGroupChat {
     val adminIdList: List<Int>
     val users: AccountsConnection
     val isBroadcast: Boolean
-    val isPublic: Boolean
-    val isInvitable: Boolean
+    val publicity: GroupChatPublicity
 }
 
 data class GroupChatInfo(
@@ -349,8 +332,7 @@ data class GroupChatInfo(
     override val title: GroupChatTitle,
     override val description: GroupChatDescription,
     override val isBroadcast: Boolean,
-    override val isPublic: Boolean,
-    override val isInvitable: Boolean
+    override val publicity: GroupChatPublicity
 ) : BareGroupChat
 
 data class GroupChat(
@@ -361,8 +343,7 @@ data class GroupChat(
     override val description: GroupChatDescription,
     override val messages: MessagesConnection,
     override val isBroadcast: Boolean,
-    override val isPublic: Boolean,
-    override val isInvitable: Boolean,
+    override val publicity: GroupChatPublicity,
     val inviteCode: UUID?
 ) : Chat, BareGroupChat
 
@@ -1000,19 +981,18 @@ data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : Mes
 
 data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesSubscription
 
-data class ExitedUser(val userId: Int, val chatId: Int) : UpdatedChatsSubscription
+data class ExitedUser(val userId: Int, val chatId: Int) : GroupChatsSubscription
 
-interface NewGroupChatsSubscription
+interface GroupChatsSubscription
 
-data class GroupChatId(val id: Int) : NewGroupChatsSubscription
+data class GroupChatId(val id: Int) : GroupChatsSubscription
 
 data class DeletionOfEveryMessage(val chatId: Int) : MessagesSubscription
 
 object CreatedSubscription :
     MessagesSubscription,
-    ContactsSubscription,
-    UpdatedChatsSubscription,
-    NewGroupChatsSubscription,
+    AccountsSubscription,
+    GroupChatsSubscription,
     TypingStatusesSubscription,
     OnlineStatusesSubscription {
 

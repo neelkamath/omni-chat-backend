@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.graphql.operations
 
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
@@ -13,6 +14,7 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
     if (isUsernameTaken(account.username)) throw UsernameTakenException
     if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
+    if (!hasAllowedDomain(account.emailAddress)) throw InvalidDomainException
     createUser(account)
     return Placeholder
 }
@@ -62,19 +64,17 @@ fun deleteStar(env: DataFetchingEnvironment): Placeholder {
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val args = env.getArgument<Map<*, *>>("chat")
-    @Suppress("UNCHECKED_CAST") val userIdList = (args["userIdList"] as List<Int>)
+    @Suppress("UNCHECKED_CAST") val userIdList = args["userIdList"] as List<Int>
     if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
-    @Suppress("UNCHECKED_CAST") val adminIdList = (args["adminIdList"] as List<Int>)
+    @Suppress("UNCHECKED_CAST") val adminIdList = args["adminIdList"] as List<Int>
     if (!userIdList.containsAll(adminIdList)) throw InvalidAdminIdException
-    val isPublic = args["isPublic"] as Boolean
     val chat = GroupChatInput(
         args["title"] as GroupChatTitle,
         args["description"] as GroupChatDescription,
         userIdList + env.userId!!,
         adminIdList + env.userId!!,
         args["isBroadcast"] as Boolean,
-        isPublic,
-        if (isPublic) true else args["isInvitable"] as Boolean
+        objectMapper.convertValue(args["publicity"] as String)
     )
     return GroupChats.create(chat)
 }
@@ -87,6 +87,7 @@ fun setTyping(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -225,6 +226,7 @@ fun updateGroupChatDescription(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -235,6 +237,7 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -245,6 +248,7 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -312,6 +316,7 @@ fun setInvitability(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")

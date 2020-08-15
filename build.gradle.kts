@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.4.0"
+version = "0.5.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -21,6 +21,8 @@ dependencies {
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.0")
     testImplementation("io.mockk:mockk:1.10.0")
+    testImplementation(kotlin("test-junit5"))
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
 
     val ktorVersion = "1.3.2"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
@@ -39,15 +41,12 @@ dependencies {
     val keycloakVersion = "10.0.2"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
-
-    val kotestVersion = "4.1.2"
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:$kotestVersion")
-    testImplementation("io.kotest:kotest-assertions-core-jvm:$kotestVersion")
 }
 
 tasks {
     withType<Test> {
         useJUnitPlatform()
+        systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
         // Workaround for remote debugging a JVM 9+ target (https://github.com/gradle/gradle/issues/13118).
         jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }

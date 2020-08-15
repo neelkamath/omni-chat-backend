@@ -30,9 +30,6 @@ fun wipeAuth(): Unit = with(realm.users()) {
     list().forEach { delete(it.id) }
 }
 
-/** Deletes the app's realm. */
-fun tearDownAuth(): Unit = realm.remove()
-
 /** Sets the [username]'s email status to verified without sending them an email. */
 fun verifyEmailAddress(username: Username) {
     val user = realm.users().list().first { it.username == username.value }.apply { isEmailVerified = true }

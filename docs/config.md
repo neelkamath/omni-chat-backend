@@ -18,3 +18,4 @@
     |`KEYCLOAK_SMTP_USER`|Your email account's username.|
     |`KEYCLOAK_SMTP_PASSWORD`|Your email account's password. If your email account requires multi-factor authentication, you'll have to use an app password (e.g., [Gmail app password](https://support.google.com/accounts/answer/185833?hl=en)).|
     |`JWT_SECRET`|The password used internally to create JWTs.|
+    |`ALLOWED_DOMAINS`|Since Omni Chat can be deployed by anyone, a company might want to use it for internal communications, and hence disallow non-employees from using their instance. This can be achieved by specifying which email address domains (i.e., the part of the email address after the `@`) are allowed during sign-ups. If you don't have this use case, simply excluding this key-value pair from the `.env` file will allow every email address domain to be used. Otherwise, set the value to a comma-separated list of email address domains (e.g., `private.company.com,gmail.com`).|

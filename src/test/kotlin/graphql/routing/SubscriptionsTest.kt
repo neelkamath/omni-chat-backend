@@ -1,19 +1,24 @@
 package com.neelkamath.omniChat.graphql.routing
 
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.graphql.operations.CONTACTS_SUBSCRIPTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
 import io.ktor.http.cio.websocket.FrameType
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
-class SubscriptionsTest : FunSpec({
-    context("routeSubscription(Routing, String, GraphQlSubscription)") {
-        fun testOperationName(shouldSupplyOperationName: Boolean) {
+@ExtendWith(DbExtension::class)
+class SubscriptionsTest {
+    @Nested
+    inner class RouteSubscription {
+        private fun testOperationName(shouldSupplyOperationName: Boolean) {
             val query = """
                 subscription SubscribeToMessages {
                     subscribeToMessages {
@@ -21,86 +26,72 @@ class SubscriptionsTest : FunSpec({
                     }
                 }
                 
-                subscription SubscribeToContacts {
-                    subscribeToContacts {
+                subscription SubscribeToAccounts {
+                    subscribeToAccounts {
                         $CREATED_SUBSCRIPTION_FRAGMENT
                     }
                 }
             """
-            val operationName = "SubscribeToContacts".takeIf { shouldSupplyOperationName }
+            val operationName = "SubscribeToAccounts".takeIf { shouldSupplyOperationName }
             val token = createVerifiedUsers(1)[0].accessToken
             executeGraphQlSubscriptionViaWebSocket(
-                uri = "contacts-subscription",
+                uri = "accounts-subscription",
                 request = GraphQlRequest(query, operationName = operationName),
                 accessToken = token
             ) { incoming ->
                 if (shouldSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
-                else incoming.receive().frameType shouldBe FrameType.CLOSE
+                else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
             }
         }
 
-        test(
-            """
-            Given multiple operations, 
-            when an operation name is supplied, 
-            then the specified operation should be executed
-            """
-        ) { testOperationName(shouldSupplyOperationName = true) }
+        @Test
+        fun `The specified operation should be executed when there are multiple`() {
+            testOperationName(shouldSupplyOperationName = true)
+        }
 
-        test(
-            """
-            Given multiple operations, 
-            when no operation name is supplied, 
-            then an error should be returned
-            """
-        ) { testOperationName(shouldSupplyOperationName = false) }
+        @Test
+        fun `An error should be returned when supplying multiple operations but not which to execute`() {
+            testOperationName(shouldSupplyOperationName = false)
+        }
     }
 
-    fun subscribeToContacts(accessToken: String? = null, callback: SubscriptionCallback) {
-        val subscribeToContactsQuery = """
-            subscription SubscribeToContacts {
-                subscribeToContacts {
-                    $CONTACTS_SUBSCRIPTION_FRAGMENT
+    private fun subscribeToAccounts(accessToken: String? = null, callback: SubscriptionCallback) {
+        val subscribeToAccountsQuery = """
+            subscription SubscribeToAccounts {
+                subscribeToAccounts {
+                    $ACCOUNTS_SUBSCRIPTION_FRAGMENT
                 }
             }
         """
         executeGraphQlSubscriptionViaWebSocket(
-            uri = "contacts-subscription",
-            request = GraphQlRequest(subscribeToContactsQuery),
+            uri = "accounts-subscription",
+            request = GraphQlRequest(subscribeToAccountsQuery),
             accessToken = accessToken,
             callback = callback
         )
     }
 
-    context("subscribe(DefaultWebSocketServerSession, GraphQlSubscription, ExecutionResult)") {
-        test(
-            """
-            Given a client who recreated a GraphQL subscription,
-            when they receive an event,
-            then they should only receive it once because their previous notifier should've been removed
-            """
-        ) {
+    @Nested
+    inner class Subscribe {
+        @Test
+        fun `Recreating a subscription shouldn't cause duplicate notifications from the previous connection`() {
             val (owner, user) = createVerifiedUsers(2)
-            subscribeToContacts(owner.accessToken) {}
-            subscribeToContacts(owner.accessToken) { incoming ->
+            subscribeToAccounts(owner.accessToken) {}
+            subscribeToAccounts(owner.accessToken) { incoming ->
                 parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(owner.info.id, setOf(user.info.id))
                 awaitBrokering()
-                incoming.poll().shouldNotBeNull()
-                incoming.poll().shouldBeNull()
+                assertNotNull(incoming.poll())
+                assertNull(incoming.poll())
             }
         }
     }
 
-    context("closeWithError(DefaultWebSocketServerSession, ExecutionResult)") {
-        test(
-            """
-            Given an operation requiring an access token,
-            when calling the operation without a token,
-            then the connection should be closed
-            """
-        ) {
-            subscribeToContacts { incoming -> incoming.receive().frameType shouldBe FrameType.CLOSE }
+    @Nested
+    inner class CloseWithError {
+        @Test
+        fun `The connection should be closed when calling an operation with an invalid token`() {
+            subscribeToAccounts { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
-})
+}

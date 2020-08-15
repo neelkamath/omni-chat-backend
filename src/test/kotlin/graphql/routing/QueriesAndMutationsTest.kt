@@ -2,35 +2,41 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
-import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import com.neelkamath.omniChat.test
 import com.neelkamath.omniChat.testingObjectMapper
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
 import io.ktor.application.Application
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.server.testing.withTestApplication
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-class QueriesAndMutationsTest : FunSpec({
-    context("routeGraphQlQueriesAndMutations(Routing)") {
-        test("The GraphQL engine should be queried via the HTTP interface") {
+@ExtendWith(DbExtension::class)
+class QueriesAndMutationsTest {
+    @Nested
+    inner class RouteGraphQlQueriesAndMutations {
+        @Test
+        fun `The GraphQL engine should be queried via the HTTP interface`() {
             val user = createVerifiedUsers(1)[0]
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
             val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
-            testingObjectMapper.convertValue<Account>(data) shouldBe user.info
+            assertEquals(user.info, testingObjectMapper.convertValue(data))
         }
 
-        fun testOperationName(shouldSupplyOperationName: Boolean) {
-            withTestApplication(Application::test) {
+        private fun testOperationName(shouldSupplyOperationName: Boolean) {
+            val call = withTestApplication(Application::test) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
                         query IsUsernameTaken {
@@ -45,56 +51,37 @@ class QueriesAndMutationsTest : FunSpec({
                     val operationName = "IsEmailAddressTaken".takeIf { shouldSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
-                }.response.status()!!.value shouldBe if (shouldSupplyOperationName) 200 else 400
+                }
             }
+            assertEquals(if (shouldSupplyOperationName) 200 else 400, call.response.status()!!.value)
         }
 
-        test(
-            """
-            Given multiple operations, 
-            when an operation name is supplied, 
-            then the specified operation should be executed
-            """
-        ) { testOperationName(shouldSupplyOperationName = true) }
-
-        test(
-            """
-            Given multiple operations, 
-            when no operation name is supplied, 
-            then an error should be returned
-            """
-        ) { testOperationName(shouldSupplyOperationName = false) }
-
-        test("An HTTP status code of 401 should be received when a mandatory access token wasn't supplied") {
-            executeGraphQlViaHttp(READ_ACCOUNT_QUERY)
-                .shouldHaveUnauthorizedStatus()
+        @Test
+        fun `The specified operation should be executed when there are multiple`() {
+            testOperationName(shouldSupplyOperationName = true)
         }
 
-        test(
-            """
-            Given an operation requiring an access token,
-            when supplying an invalid token to the operation,
-            then an HTTP status code of 401 should be received
-            """
-        ) {
-            executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
-                .shouldHaveUnauthorizedStatus()
+        @Test
+        fun `An error should be returned when multiple operations are supplied without an operation name`() {
+            testOperationName(shouldSupplyOperationName = false)
         }
 
-        test(
-            """
-            Given an operation which can only be called by particular users,
-            when supplying the access token of a user who lacks the required permissions,
-            then an HTTP status code of 401 should be received
-            """
-        ) {
+        @Test
+        fun `An HTTP status code of 401 should be received when supplying an invalid access token`() {
+            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
+        }
+
+        @Test
+        fun `An HTTP status code of 401 should be received when supplying the token of a user who lacks permissions`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_TITLE_QUERY,
                 mapOf("chatId" to chatId, "title" to "T"),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
-})
+}

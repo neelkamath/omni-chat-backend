@@ -1,12 +1,15 @@
 package com.neelkamath.omniChat.db.tables
 
-import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.core.spec.style.FunSpec
+import org.junit.jupiter.api.Nested
+import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
-class DocMessagesTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the doc is too big") {
-            shouldThrowExactly<IllegalArgumentException> { Doc(ByteArray(Doc.MAX_BYTES + 1)) }
+class DocMessagesTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the doc is too big`() {
+            assertFailsWith<IllegalArgumentException> { Doc(ByteArray(Doc.MAX_BYTES + 1)) }
         }
     }
-})
+}
