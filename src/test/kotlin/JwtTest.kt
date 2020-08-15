@@ -1,29 +1,31 @@
 package com.neelkamath.omniChat
 
 import com.auth0.jwt.JWT
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.date.shouldBeAfter
-import io.kotest.matchers.date.shouldBeBefore
+import org.junit.jupiter.api.Nested
 import java.sql.Timestamp
 import java.time.LocalDateTime
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
-class JwtTest : FunSpec({
-    context("build(String, LocalDateTime)") {
+class JwtTest {
+    @Nested
+    inner class Build {
         /** Tests that the [actual] [LocalDateTime] is within five seconds of the [expected] [LocalDateTime]. */
-        fun testDateTime(actual: LocalDateTime, expected: LocalDateTime) {
+        private fun testDateTime(actual: LocalDateTime, expected: LocalDateTime) {
             val leewayInSeconds = 5L
-            actual shouldBeAfter expected.minusSeconds(leewayInSeconds)
-            actual shouldBeBefore expected.plusSeconds(leewayInSeconds)
+            assertTrue(actual.isAfter(expected.minusSeconds(leewayInSeconds)))
+            assertTrue(actual.isBefore(expected.plusSeconds(leewayInSeconds)))
         }
 
-        fun readExpiry(token: String): LocalDateTime =
+        private fun readExpiry(token: String): LocalDateTime =
             JWT.decode(token).expiresAt.run { Timestamp(time).toLocalDateTime() }
 
-        test("The access and refresh tokens should expire in one hour and one week respectively") {
+        @Test
+        fun `The access and refresh tokens should expire in one hour and one week respectively`() {
             val (accessToken, refreshToken) = buildAuthToken(userId = 1)
             val now = LocalDateTime.now()
             testDateTime(actual = readExpiry(accessToken), expected = now.plusHours(1))
             testDateTime(actual = readExpiry(refreshToken), expected = now.plusWeeks(1))
         }
     }
-})
+}

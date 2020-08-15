@@ -1,18 +1,21 @@
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.shouldHaveUnauthorizedStatus
 import com.neelkamath.omniChat.testingObjectMapper
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.formUrlEncode
 import io.ktor.server.testing.TestApplicationResponse
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 private fun getPicMessage(accessToken: String, messageId: Int): TestApplicationResponse =
     getFileMessage(accessToken, messageId, path = "pic-message")
@@ -32,55 +35,65 @@ private fun postPicMessage(
     return uploadFile(accessToken, dummy, HttpMethod.Post, "pic-message", parameters)
 }
 
-class PicMessageTest : FunSpec({
-    context("getPicMessage(Route)") {
-        test("A pic message should be read with an HTTP status code of 200") {
+@ExtendWith(DbExtension::class)
+class PicMessageTest {
+    @Nested
+    inner class GetPicMessage {
+        @Test
+        fun `A pic message should be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val pic = Pic(ByteArray(1), Pic.Type.PNG)
             val messageId = Messages.message(admin.info.id, chatId, CaptionedPic(pic, caption = null))
             with(getPicMessage(admin.accessToken, messageId)) {
-                status() shouldBe HttpStatusCode.OK
-                byteContent shouldBe pic.bytes
+                assertEquals(HttpStatusCode.OK, status())
+                assertTrue(pic.bytes.contentEquals(byteContent!!))
             }
         }
 
-        test("An HTTP status code of 400 should be returned when retrieving a nonexistent message") {
+        @Test
+        fun `An HTTP status code of 400 should be returned when retrieving a nonexistent message`() {
             val token = createVerifiedUsers(1)[0].accessToken
-            getPicMessage(token, messageId = 1).status() shouldBe HttpStatusCode.BadRequest
+            assertEquals(HttpStatusCode.BadRequest, getPicMessage(token, messageId = 1).status())
         }
     }
 
-    context("postPicMessage(Route)") {
-        test("An HTTP status code of 204 should be returned when a captioned pic with a context has been created") {
+    @Nested
+    inner class PostPicMessage {
+        @Test
+        fun `An HTTP status code of 204 should be returned when a captioned pic with a context has been created`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val messageId = Messages.message(admin.info.id, chatId)
             val dummy = DummyFile("pic.png", bytes = 1)
-            postPicMessage(admin.accessToken, dummy, chatId, "caption", contextMessageId = messageId).status() shouldBe
-                    HttpStatusCode.NoContent
-            Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id shouldBe messageId
-            PicMessages.count() shouldBe 1
+            assertEquals(
+                HttpStatusCode.NoContent,
+                postPicMessage(admin.accessToken, dummy, chatId, "caption", contextMessageId = messageId).status()
+            )
+            assertEquals(messageId, Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id)
+            assertEquals(1, PicMessages.count())
         }
 
-        test("Messaging in a nonexistent chat should fail") {
+        @Test
+        fun `Messaging in a nonexistent chat should fail`() {
             val token = createVerifiedUsers(1)[0].accessToken
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(token, dummy, chatId = 1)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
-                        InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
+                assertEquals(HttpStatusCode.BadRequest, status())
+                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
+                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT), body)
             }
         }
 
-        test("Using an invalid message context should fail") {
+        @Test
+        fun `Using an invalid message context should fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("pic.png", bytes = 1)
             with(postPicMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
-                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                assertEquals(HttpStatusCode.BadRequest, status())
+                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
+                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE), body)
             }
         }
 
@@ -88,29 +101,36 @@ class PicMessageTest : FunSpec({
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {
-                status() shouldBe HttpStatusCode.BadRequest
-                testingObjectMapper.readValue<InvalidMediaMessage>(content!!) shouldBe
-                        InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE)
+                assertEquals(HttpStatusCode.BadRequest, status())
+                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
+                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE), body)
             }
         }
 
-        test("Uploading an invalid file type should fail") { testBadRequest(DummyFile("pic.webp", bytes = 1)) }
+        @Test
+        fun `Uploading an invalid file type should fail`() {
+            testBadRequest(DummyFile("pic.webp", bytes = 1))
+        }
 
-        test("Uploading an excessively large audio file should fail") {
+        @Test
+        fun `Uploading an excessively large audio file should fail`() {
             testBadRequest(DummyFile("pic.png", Pic.MAX_BYTES + 1))
         }
 
-        test("Using an invalid caption should fail") {
+        @Test
+        fun `Using an invalid caption should fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("pic.png", bytes = 1)
             postPicMessage(admin.accessToken, dummy, chatId, caption = "")
         }
 
-        test("An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat") {
+        @Test
+        fun `An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
-            postPicMessage(user.accessToken, DummyFile("pic.png", bytes = 1), chatId).shouldHaveUnauthorizedStatus()
+            val response = postPicMessage(user.accessToken, DummyFile("pic.png", bytes = 1), chatId)
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
-})
+}

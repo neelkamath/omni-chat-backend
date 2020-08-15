@@ -1,13 +1,16 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.createVerifiedUsers
-import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.core.spec.style.FunSpec
+import org.junit.jupiter.api.Nested
+import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
-class GroupChatInputTest : FunSpec({
-    context("init") {
-        test("Having zero admins should fail") {
-            shouldThrowExactly<IllegalArgumentException> {
+class GroupChatInputTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `Having zero admins should fail`() {
+            assertFailsWith<IllegalArgumentException> {
                 GroupChatInput(
                     GroupChatTitle("T"),
                     GroupChatDescription(""),
@@ -19,8 +22,9 @@ class GroupChatInputTest : FunSpec({
             }
         }
 
-        test("An exception should be thrown if the admin ID list isn't a subset of the user ID list") {
-            shouldThrowExactly<IllegalArgumentException> {
+        @Test
+        fun `An exception should be thrown if the admin ID list isn't a subset of the user ID list`() {
+            assertFailsWith<IllegalArgumentException> {
                 GroupChatInput(
                     GroupChatTitle("T"),
                     GroupChatDescription(""),
@@ -32,106 +36,129 @@ class GroupChatInputTest : FunSpec({
             }
         }
     }
-})
+}
 
-class BioTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the value is too big") {
+class BioTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the value is too big`() {
             val value = CharArray(Bio.MAX_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { Bio(value) }
+            assertFailsWith<IllegalArgumentException> { Bio(value) }
         }
     }
-})
+}
 
-class MessageTextTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the value is too short") {
-            shouldThrowExactly<IllegalArgumentException> { MessageText("") }
+class MessageTextTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the value is too short`() {
+            assertFailsWith<IllegalArgumentException> { MessageText("") }
         }
 
-        test("An exception should be thrown if the value is only whitespace") {
-            shouldThrowExactly<IllegalArgumentException> { MessageText("  ") }
+        @Test
+        fun `An exception should be thrown if the value is only whitespace`() {
+            assertFailsWith<IllegalArgumentException> { MessageText("  ") }
         }
 
-        test("An exception should be thrown if the value is too long") {
+        @Test
+        fun `An exception should be thrown if the value is too long`() {
             val text = CharArray(MessageText.MAX_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { MessageText(text) }
+            assertFailsWith<IllegalArgumentException> { MessageText(text) }
         }
     }
-})
+}
 
-class GroupChatTitleTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the title is only whitespace") {
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("  ") }
+class GroupChatTitleTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the title is only whitespace`() {
+            assertFailsWith<IllegalArgumentException> { GroupChatTitle("  ") }
         }
 
-        test("An exception should be thrown if the title is too long") {
+        @Test
+        fun `An exception should be thrown if the title is too long`() {
             val title = CharArray(GroupChatTitle.MAX_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle(title) }
+            assertFailsWith<IllegalArgumentException> { GroupChatTitle(title) }
         }
 
-        test("An exception should be thrown if the title is too short") {
-            shouldThrowExactly<IllegalArgumentException> { GroupChatTitle("") }
+        @Test
+        fun `An exception should be thrown if the title is too short`() {
+            assertFailsWith<IllegalArgumentException> { GroupChatTitle("") }
         }
     }
-})
+}
 
-class GroupChatDescriptionTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the description is too long") {
+class GroupChatDescriptionTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the description is too long`() {
             val description = CharArray(GroupChatDescription.MAX_LENGTH + 1) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { GroupChatDescription(description) }
+            assertFailsWith<IllegalArgumentException> { GroupChatDescription(description) }
         }
     }
-})
+}
 
-class UsernameTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown for a username which doesn't contain non-whitespace characters") {
-            shouldThrowExactly<IllegalArgumentException> { Username("  ") }
+class UsernameTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown for a username which doesn't contain non-whitespace characters`() {
+            assertFailsWith<IllegalArgumentException> { Username("  ") }
         }
 
-        test("An exception should be thrown for a username which isn't lowercase") {
-            shouldThrowExactly<IllegalArgumentException> { Username("Username") }
+        @Test
+        fun `An exception should be thrown for a username which isn't lowercase`() {
+            assertFailsWith<IllegalArgumentException> { Username("Username") }
         }
 
-        test("An exception should be thrown for a username greater than 255 characters") {
+        @Test
+        fun `An exception should be thrown for a username greater than 255 characters`() {
             val value = CharArray(256) { 'a' }.joinToString("")
-            shouldThrowExactly<IllegalArgumentException> { Username(value) }
+            assertFailsWith<IllegalArgumentException> { Username(value) }
         }
     }
-})
+}
 
-class PasswordTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the password doesn't contain non-whitespace characters") {
-            shouldThrowExactly<IllegalArgumentException> { Password("  ") }
+class PasswordTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the password doesn't contain non-whitespace characters`() {
+            assertFailsWith<IllegalArgumentException> { Password("  ") }
         }
     }
-})
+}
 
-class UpdatedGroupChatTest : FunSpec({
-    context("init") {
-        test("An exception should be thrown if the new and removed users intersect") {
+class UpdatedGroupChatTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown if the new and removed users intersect`() {
             val (user1, user2) = createVerifiedUsers(2).map { it.info }
-            shouldThrowExactly<IllegalArgumentException> {
+            assertFailsWith<IllegalArgumentException> {
                 UpdatedGroupChat(chatId = 1, newUsers = listOf(user1), removedUsers = listOf(user1, user2))
             }
         }
     }
-})
+}
 
-class ModelsTest : FunSpec({
-    context("assertOptions(List<T>)") {
-        test("An exception should be thrown if there are fewer than two options") {
+class ModelsTest {
+    @Nested
+    inner class AssertOptions {
+        @Test
+        fun `An exception should be thrown if there are fewer than two options`() {
             val options = listOf(MessageText("option 1"))
-            shouldThrowExactly<IllegalArgumentException> { PollInput(MessageText("Title"), options) }
+            assertFailsWith<IllegalArgumentException> { PollInput(MessageText("Title"), options) }
         }
 
-        test("An exception should be thrown if the options aren't unique") {
+        @Test
+        fun `An exception should be thrown if the options aren't unique`() {
             val option = MessageText("option")
-            shouldThrowExactly<IllegalArgumentException> { PollInput(MessageText("Title"), listOf(option, option)) }
+            assertFailsWith<IllegalArgumentException> { PollInput(MessageText("Title"), listOf(option, option)) }
         }
     }
-})
+}

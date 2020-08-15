@@ -1,186 +1,225 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
-import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.longs.shouldBeZero
-import io.kotest.matchers.shouldBe
 import io.reactivex.rxjava3.subscribers.TestSubscriber
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
+import kotlin.test.*
 
-class GroupChatUsersTest : FunSpec({
-    context("readFellowParticipants(Int)") {
-        test("Reading fellow participants should only include other participants in the chats") {
+@ExtendWith(DbExtension::class)
+class GroupChatUsersTest {
+    @Nested
+    inner class ReadFellowParticipants {
+        @Test
+        fun `Reading fellow participants should only include other participants in the chats`() {
             val (adminId, participantId) = createVerifiedUsers(2).map { it.info.id }
             GroupChats.create(listOf(adminId), listOf(participantId))
-            GroupChatUsers.readFellowParticipants(adminId) shouldBe setOf(participantId)
+            assertEquals(setOf(participantId), GroupChatUsers.readFellowParticipants(adminId))
         }
     }
 
-    context("addUsers(Int, List<String>)") {
-        test("Users should be added to the chat while ignoring duplicates and participants") {
+    @Nested
+    inner class AddUsers {
+        @Test
+        fun `Users should be added to the chat while ignoring duplicates and participants`() {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id))
             GroupChatUsers.addUsers(chatId, user1Id, user2Id, user2Id)
-            GroupChatUsers.readUserIdList(chatId) shouldContainExactlyInAnyOrder listOf(adminId, user1Id, user2Id)
+            assertEquals(setOf(adminId, user1Id, user2Id), GroupChatUsers.readUserIdList(chatId).toSet())
         }
 
-        test("Only added users should be notified of the new group chat") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId))
-            val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChatUsers.addUsers(chatId, userId)
-            awaitBrokering()
-            adminSubscriber.assertNoValues()
-            userSubscriber.assertValue(GroupChatId(chatId))
+        @Test
+        fun `Only added users should be notified of the new group chat`() {
+            runBlocking {
+                val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+                val chatId = GroupChats.create(listOf(adminId))
+                val (adminSubscriber, userSubscriber) = listOf(adminId, userId).map {
+                    newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(it)).subscribeWith(TestSubscriber())
+                }
+                GroupChatUsers.addUsers(chatId, userId)
+                awaitBrokering()
+                adminSubscriber.assertNoValues()
+                userSubscriber.assertValue(GroupChatId(chatId))
+            }
         }
 
-        test("Only existing participants should get notified when users are added") {
-            val (admin, user) = createVerifiedUsers(2).map { it.info }
-            val chatId = GroupChats.create(listOf(admin.id))
-            val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChatUsers.addUsers(chatId, user.id)
-            val update = UpdatedGroupChat(chatId, newUsers = listOf(user))
-            awaitBrokering()
-            adminSubscriber.assertValue(update)
-            userSubscriber.assertNoValues()
-        }
-    }
-
-    context("canUserLeave(Int)") {
-        test("The user should be able to leave if they aren't the last admin of a chat with other users in it") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.canUserLeave(userId).shouldBeTrue()
-        }
-
-        test("The user shouldn't be able to leave if they're the last admin of a chat with other users in it") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.canUserLeave(adminId).shouldBeFalse()
+        @Test
+        fun `Only existing participants should get notified when users are added`() {
+            runBlocking {
+                val (admin, user) = createVerifiedUsers(2).map { it.info }
+                val chatId = GroupChats.create(listOf(admin.id))
+                val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
+                    .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                GroupChatUsers.addUsers(chatId, user.id)
+                val update = UpdatedGroupChat(chatId, newUsers = listOf(user))
+                awaitBrokering()
+                adminSubscriber.assertValue(update)
+                userSubscriber.assertNoValues()
+            }
         }
     }
 
-    context("canUsersLeave(Int, Set<Int>)") {
-        test("""Checking if users who aren't in the chat can leave should return "false"""") {
+    @Nested
+    inner class CanUserLeave {
+        @Test
+        fun `The user should be able to leave if they aren't the last admin of a chat with other users in it`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            GroupChats.create(listOf(adminId), listOf(userId))
+            assertTrue(GroupChatUsers.canUserLeave(userId))
+        }
+
+        @Test
+        fun `The user shouldn't be able to leave if they're the last admin of a chat with other users in it`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            GroupChats.create(listOf(adminId), listOf(userId))
+            assertFalse(GroupChatUsers.canUserLeave(adminId))
+        }
+    }
+
+    @Nested
+    inner class CanUsersLeave {
+        @Test
+        fun `Checking if users who aren't in the chat can leave should return "false"`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            GroupChatUsers.canUsersLeave(chatId, userId).shouldBeFalse()
+            assertFalse(GroupChatUsers.canUsersLeave(chatId, userId))
         }
 
-        test("The users should be able to leave if the chat will be empty") {
+        @Test
+        fun `The users should be able to leave if the chat will be empty`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.canUsersLeave(chatId, adminId, userId).shouldBeTrue()
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, adminId, userId))
         }
 
-        test("The users shouldn't be able to leave if the chat will have users sans admins") {
+        @Test
+        fun `The users shouldn't be able to leave if the chat will have users sans admins`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.canUsersLeave(chatId, adminId).shouldBeFalse()
+            assertFalse(GroupChatUsers.canUsersLeave(chatId, adminId))
         }
 
-        test("A non-admin should be able to leave if the chat will have admins remaining") {
+        @Test
+        fun `A non-admin should be able to leave if the chat will have admins remaining`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.canUsersLeave(chatId, userId).shouldBeTrue()
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, userId))
         }
 
-        test("An admin should be able to leave if the chat has another admin") {
+        @Test
+        fun `An admin should be able to leave if the chat has another admin`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id, admin2Id))
-            GroupChatUsers.canUsersLeave(chatId, admin1Id).shouldBeTrue()
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, admin1Id))
         }
     }
 
-    context("makeAdmins(Int, List<String>)") {
-        test("Setting the admin to a user who isn't in the chat should throw an exception") {
+    @Nested
+    inner class MakeAdmins {
+        @Test
+        fun `Setting the admin to a user who isn't in the chat should throw an exception`() {
             val (adminId, invalidAdminId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            shouldThrowExactly<IllegalArgumentException> { GroupChatUsers.makeAdmins(chatId, invalidAdminId) }
+            assertFailsWith<IllegalArgumentException> { GroupChatUsers.makeAdmins(chatId, invalidAdminId) }
         }
 
-        test("Only the specified users should be made admins") {
+        @Test
+        fun `Only the specified users should be made admins`() {
             val (adminId, user1Id, user2Id, user3Id) = createVerifiedUsers(4).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id, user3Id))
             GroupChatUsers.makeAdmins(chatId, user1Id, user2Id)
-            GroupChatUsers.isAdmin(user1Id, chatId).shouldBeTrue()
-            GroupChatUsers.isAdmin(user2Id, chatId).shouldBeTrue()
-            GroupChatUsers.isAdmin(user3Id, chatId).shouldBeFalse()
+            assertTrue(GroupChatUsers.isAdmin(user1Id, chatId))
+            assertTrue(GroupChatUsers.isAdmin(user2Id, chatId))
+            assertFalse(GroupChatUsers.isAdmin(user3Id, chatId))
         }
 
-        test("Making admins should only notify participants") {
-            val (adminId, toBeAdminId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), userIdList = listOf(toBeAdminId))
-            val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
-                listOf(adminId, toBeAdminId, nonParticipantId)
-                    .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChatUsers.makeAdmins(chatId, toBeAdminId)
-            awaitBrokering()
-            listOf(adminSubscriber, toBeAdminSubscriber)
-                .forEach { it.assertValue(UpdatedGroupChat(chatId, adminIdList = listOf(adminId, toBeAdminId))) }
-            nonParticipantSubscriber.assertNoValues()
-        }
-    }
-
-    context("removeUsers(Int, List<Int>)") {
-        test("An exception should be thrown if the users can't leave the chat") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            shouldThrowExactly<IllegalArgumentException> { GroupChatUsers.removeUsers(chatId, adminId) }
-        }
-
-        test("""Users should be removed from the chat returning "false"""") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.removeUsers(chatId, userId).shouldBeFalse()
-            GroupChatUsers.readUserIdList(chatId) shouldBe listOf(adminId)
-        }
-
-        test("Participants should be notified of removed users once even if the user was removed twice") {
-            val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            val (adminSubscriber, userSubscriber, nonParticipantSubscriber) = listOf(adminId, userId, nonParticipantId)
-                .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
-            GroupChatUsers.removeUsers(chatId, userId, userId)
-            awaitBrokering()
-            adminSubscriber.assertValue(ExitedUser(userId, chatId))
-            listOf(userSubscriber, nonParticipantSubscriber).forEach { it.assertNoValues() }
-        }
-
-        test("""Removing every user should delete the chat returning "true"""") {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.removeUsers(chatId, adminId, userId).shouldBeTrue()
-            GroupChats.count().shouldBeZero()
+        @Test
+        fun `Making admins should only notify participants`() {
+            runBlocking {
+                val (adminId, toBeAdminId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
+                val chatId = GroupChats.create(listOf(adminId), userIdList = listOf(toBeAdminId))
+                val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
+                    listOf(adminId, toBeAdminId, nonParticipantId).map {
+                        updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber())
+                    }
+                GroupChatUsers.makeAdmins(chatId, toBeAdminId)
+                awaitBrokering()
+                listOf(adminSubscriber, toBeAdminSubscriber)
+                    .forEach { it.assertValue(UpdatedGroupChat(chatId, adminIdList = listOf(adminId, toBeAdminId))) }
+                nonParticipantSubscriber.assertNoValues()
+            }
         }
     }
 
-    context("isAdmin(Int, Int)") {
-        test("A non-admin participating in the chat shouldn't be said to be an admin") {
+    @Nested
+    inner class RemoveUsers {
+        @Test
+        fun `An exception should be thrown if the users can't leave the chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.isAdmin(userId, chatId).shouldBeFalse()
+            assertFailsWith<IllegalArgumentException> { GroupChatUsers.removeUsers(chatId, adminId) }
         }
 
-        test("A non-participant shouldn't be said to be an admin") {
+        @Test
+        fun `Users should be removed from the chat returning "false"`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            assertFalse(GroupChatUsers.removeUsers(chatId, userId))
+            assertEquals(listOf(adminId), GroupChatUsers.readUserIdList(chatId))
+        }
+
+        @Test
+        fun `Participants should be notified of removed users once even if the user was removed twice`() {
+            runBlocking {
+                val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
+                val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+                val (adminSubscriber, userSubscriber, nonParticipantSubscriber) =
+                    listOf(adminId, userId, nonParticipantId).map {
+                        updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber())
+                    }
+                GroupChatUsers.removeUsers(chatId, userId, userId)
+                awaitBrokering()
+                adminSubscriber.assertValue(ExitedUser(userId, chatId))
+                listOf(userSubscriber, nonParticipantSubscriber).forEach { it.assertNoValues() }
+            }
+        }
+
+        @Test
+        fun `Removing every user should delete the chat returning "true"`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            assertTrue(GroupChatUsers.removeUsers(chatId, adminId, userId))
+            assertEquals(0, GroupChats.count())
+        }
+    }
+
+    @Nested
+    inner class IsAdmin {
+        @Test
+        fun `A non-admin participating in the chat shouldn't be said to be an admin`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            assertFalse(GroupChatUsers.isAdmin(userId, chatId))
+        }
+
+        @Test
+        fun `A non-participant shouldn't be said to be an admin`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            GroupChatUsers.isAdmin(userId, chatId).shouldBeFalse()
+            assertFalse(GroupChatUsers.isAdmin(userId, chatId))
         }
 
-        test("The admin of a chat should have such stated") {
+        @Test
+        fun `The admin of a chat should have such stated`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            GroupChatUsers.isAdmin(adminId, chatId).shouldBeTrue()
+            assertTrue(GroupChatUsers.isAdmin(adminId, chatId))
         }
     }
-})
+}

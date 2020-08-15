@@ -36,6 +36,18 @@
         down
     ```
 
+If you have changed the auth system's setup, or the chat DB's schema, you must delete the existing databases:
+1. Ensure the application isn't running:
+    ```
+    docker-compose \
+        -f docker/docker-compose.yml \
+        -f docker/docker-compose.override.yml \
+        --project-directory . \
+        down
+    ```
+1. `docker volume rm omni-chat_auth-db`
+1. `docker volume rm omni-chat_chat-db`
+
 ### Development
 
 1. Run the server on http://localhost:80 with autoreload enabled:
@@ -115,11 +127,11 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 
 ## Testing
 
-- Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
-- Should you require extra functionality for a file, create a mirror utility file in the test source set. For example, [`GroupChatsUtil.kt`](../src/test/kotlin/db/tables/GroupChatsUtil.kt) for [`GroupChats.kt`](../src/main/kotlin/db/tables/GroupChats.kt).
 - These test cases must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
-- Keep tests for top-level functions in a `io.kotest.core.spec.style.FunSpec` (`FunSpec`) named after the file (e.g., a top-level function `myFun` in a file `MyFile.kt` would have its test placed in a `MyFileTest` `FunSpec`).
-- Each function tested should have its test cases placed in a `io.kotest.core.spec.style.FunSpecDsl.context` (`context`). The argument to the `context` must be the function's name and variables. For example, the argument to `context` for the function `infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"` would be `"Expression<String>.iLike(String)"`, the `context` for a function `build()` on a `class`'s `companion object` would be `Companion.build()`, and the `context` for an `init` in a nested class `NestedClass` would be `"NestedClass.init"`. If you're testing a private function through its public interface, the signature in the `context` must be the private function's signature so that you can easily find where its functionality gets tested. If you're testing a function through another function (e.g., a private function, a convenience function), place the tests in the `context` of the function getting tested (i.e., the private function's `context`, etc.).
+- Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
+- The test source set should mirror the main source set. Files containing tests should be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files containing extra functionality should be named using the format `<FILE>Util.kt` (e.g., [`GroupChatsUtil.kt`](../src/test/kotlin/db/tables/GroupChatsUtil.kt) for [`GroupChats.kt`](../src/main/kotlin/db/tables/GroupChats.kt)).
+- Test cases should be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
+- Each function tested should have its test cases placed in an `@Nested inner class` with the first letter capitalized, and replacing `.`s with `_`s (e.g., `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`, `Companion_build` for `fun build()` in a `companion object`, `MyNestedClass_myFun` for `fun myFun()` in `class MyNestedClass`). Test cases should be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
 
 ## Releasing
 

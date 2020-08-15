@@ -87,6 +87,7 @@ fun setTyping(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -225,6 +226,7 @@ fun updateGroupChatDescription(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -235,6 +237,7 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -245,6 +248,7 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
@@ -312,6 +316,7 @@ fun setInvitability(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
+@Suppress("DuplicatedCode")
 fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")

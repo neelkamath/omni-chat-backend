@@ -7,16 +7,11 @@ import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.longs.shouldBeZero
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.shouldBe
+import io.ktor.http.HttpStatusCode
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
+import kotlin.test.*
 
 const val FORWARD_MESSAGE_QUERY = """
     mutation ForwardMessage(${"$"}chatId: Int!, ${"$"}messageId: Int!, ${"$"}contextMessageId: Int) {
@@ -196,9 +191,6 @@ fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placehol
     val data = operateSetBroadcastStatus(userId, chatId, isBroadcast).data!!["setBroadcastStatus"] as String
     return testingObjectMapper.convertValue(data)
 }
-
-fun errSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): String =
-    operateSetBroadcastStatus(userId, chatId, isBroadcast).errors!![0].message
 
 const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
     mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
@@ -575,96 +567,113 @@ fun updateAccount(userId: Int, update: AccountUpdate): Placeholder {
 fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
     operateUpdateAccount(userId, update).errors!![0].message
 
-class MutationsTest : FunSpec({
-    context("forwardMessage(DataFetchingEnvironment)") {
-        test("The message should be forwarded with a context") {
+@ExtendWith(DbExtension::class)
+class MutationsTest {
+    @Nested
+    inner class ForwardMessage {
+        @Test
+        fun `The message should be forwarded with a context`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chat1Id, chat2Id) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
             val messageId = Messages.message(adminId, chat1Id)
             val contextMessageId = Messages.message(adminId, chat2Id)
             forwardMessage(adminId, chat2Id, messageId, contextMessageId)
             with(Messages.readGroupChat(chat2Id).last().node) {
-                context.id shouldBe contextMessageId
-                isForwarded.shouldBeTrue()
+                assertEquals(contextMessageId, context.id)
+                assertTrue(isForwarded)
             }
         }
 
-        test("A non-admin shouldn't be allowed to forward a message to a broadcast chat") {
+        @Test
+        fun `A non-admin shouldn't be allowed to forward a message to a broadcast chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
             val messageId = Messages.message(admin.info.id, chatId)
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 FORWARD_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "messageId" to messageId),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
-        test("Messaging in a chat the user isn't in should fail") {
+        @Test
+        fun `Messaging in a chat the user isn't in should fail`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val (chat1Id, chat2Id) = listOf(admin1Id, admin2Id).map { GroupChats.create(listOf(it)) }
             val messageId = Messages.message(admin1Id, chat1Id)
-            errForwardMessage(admin1Id, chat2Id, messageId) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errForwardMessage(admin1Id, chat2Id, messageId))
         }
 
-        test("Forwarding a nonexistent message should fail") {
+        @Test
+        fun `Forwarding a nonexistent message should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            errForwardMessage(adminId, chatId, messageId = 1) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errForwardMessage(adminId, chatId, messageId = 1))
         }
 
-        test("Using an invalid context message should fail") {
+        @Test
+        fun `Using an invalid context message should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            errForwardMessage(adminId, chatId, messageId, contextMessageId = 1) shouldBe
-                    InvalidMessageIdException.message
+            val response = errForwardMessage(adminId, chatId, messageId, contextMessageId = 1)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("Forwarding a message the user can't see should fail") {
+        @Test
+        fun `Forwarding a message the user can't see should fail`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val (chat1Id, chat2Id) = listOf(admin1Id, admin2Id).map { GroupChats.create(listOf(it)) }
             val messageId = Messages.message(admin1Id, chat1Id)
-            errForwardMessage(admin2Id, chat2Id, messageId) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errForwardMessage(admin2Id, chat2Id, messageId))
         }
     }
 
-    context("setInvitability(DataFetchingEnvironment") {
-        test("The chat's invitability should be updated") {
+    @Nested
+    inner class SetInvitability {
+        @Test
+        fun `The chat's invitability should be updated`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             setInvitability(adminId, chatId, isInvitable = true)
-            GroupChats.readChat(chatId).publicity shouldBe GroupChatPublicity.INVITABLE
+            assertEquals(GroupChatPublicity.INVITABLE, GroupChats.readChat(chatId).publicity)
         }
 
-        test("Updating a public chat should fail") {
+        @Test
+        fun `Updating a public chat should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            errSetInvitability(adminId, chatId, isInvitable = true) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errSetInvitability(adminId, chatId, isInvitable = true))
         }
 
-        test("An error should be returned when a non-admin updates the invitability") {
+        @Test
+        fun `An error should be returned when a non-admin updates the invitability`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 SET_INVITABILITY_QUERY,
                 mapOf("chatId" to chatId, "isInvitable" to true),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("createGroupChatInviteMessage(DataFetchingEnvironment)") {
-        test("A message should be created with a context") {
+    @Nested
+    inner class CreateGroupChatInviteMessage {
+        @Test
+        fun `A message should be created with a context`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
             createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId)
-            GroupChatInviteMessages.count() shouldBe 1
+            assertEquals(1, GroupChatInviteMessages.count())
         }
 
-        test("Messaging in a broadcast chat should fail") {
+        @Test
+        fun `Messaging in a broadcast chat should fail`() {
             val (admin1, admin2) = createVerifiedUsers(2)
             val chatId = GroupChats.create(
                 adminIdList = listOf(admin1.info.id),
@@ -672,397 +681,475 @@ class MutationsTest : FunSpec({
                 isBroadcast = true
             )
             val invitedChatId = GroupChats.create(listOf(admin2.info.id), publicity = GroupChatPublicity.INVITABLE)
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "invitedChatId" to invitedChatId),
                 admin2.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
-        test("Creating a message in a chat the user isn't in should fail") {
+        @Test
+        fun `Creating a message in a chat the user isn't in should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val invitedChatId = GroupChats.create(listOf(adminId))
-            errCreateGroupChatInviteMessage(adminId, chatId = 1, invitedChatId = invitedChatId) shouldBe
-                    InvalidChatIdException.message
+            val response = errCreateGroupChatInviteMessage(adminId, chatId = 1, invitedChatId = invitedChatId)
+            assertEquals(InvalidChatIdException.message, response)
         }
 
-        test("Inviting users to a private chat should fail") {
+        @Test
+        fun `Inviting users to a private chat should fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(adminIdList = listOf(user1Id))
             val invitedChatId = PrivateChats.create(user1Id, user2Id)
-            errCreateGroupChatInviteMessage(user1Id, chatId, invitedChatId) shouldBe InvalidInvitedChatException.message
+            val response = errCreateGroupChatInviteMessage(user1Id, chatId, invitedChatId)
+            assertEquals(InvalidInvitedChatException.message, response)
         }
 
-        test("Inviting users to a group chat with invites turned off should fail") {
+        @Test
+        fun `Inviting users to a group chat with invites turned off should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
-            errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId) shouldBe
-                    InvalidInvitedChatException.message
+            val response = errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId)
+            assertEquals(InvalidInvitedChatException.message, response)
         }
 
-        test("Using an invalid content message should fail") {
+        @Test
+        fun `Using an invalid content message should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
-            errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = 1) shouldBe
-                    InvalidMessageIdException.message
+            val response = errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = 1)
+            assertEquals(InvalidMessageIdException.message, response)
         }
     }
 
-    context("joinGroupChat(DataFetchingEnvironment)") {
-        test("An invite code should be used to join the chat, even if the chat has already been joined") {
+    @Nested
+    inner class JoinGroupChat {
+        @Test
+        fun `An invite code should be used to join the chat, even if the chat has already been joined`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             repeat(2) { joinGroupChat(userId, GroupChats.readInviteCode(chatId)) }
-            GroupChatUsers.readUserIdList(chatId) shouldContainExactlyInAnyOrder listOf(adminId, userId)
+            assertEquals(setOf(adminId, userId), GroupChatUsers.readUserIdList(chatId).toSet())
         }
 
-        test("Using an invalid invite code should fail") {
+        @Test
+        fun `Using an invalid invite code should fail`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errJoinGroupChat(userId, inviteCode = UUID.randomUUID()) shouldBe InvalidInviteCodeException.message
+            assertEquals(InvalidInviteCodeException.message, errJoinGroupChat(userId, inviteCode = UUID.randomUUID()))
         }
     }
 
-    context("createPollMessage(DataFetchingEnvironment)") {
-        test("A poll message should be created with a context") {
+    @Nested
+    inner class CreatePollMessage {
+        @Test
+        fun `A poll message should be created with a context`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId)
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
             createPollMessage(adminId, chatId, poll, contextMessageId)
             val message = Messages.readGroupChat(chatId, userId = adminId).last().node
-            message.context.id shouldBe contextMessageId
+            assertEquals(contextMessageId, message.context.id)
             val options = poll.options.map { PollOption(it, votes = listOf()) }
-            PollMessages.read(message.messageId) shouldBe Poll(poll.title, options)
+            assertEquals(Poll(poll.title, options), PollMessages.read(message.messageId))
         }
 
-        test("Messaging a poll in a chat the user isn't in should fail") {
+        @Test
+        fun `Messaging a poll in a chat the user isn't in should fail`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
-            errCreatePollMessage(userId, chatId = 1, poll = poll) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errCreatePollMessage(userId, chatId = 1, poll = poll))
         }
 
-        test("Creating a poll in response to a nonexistent message should fail") {
+        @Test
+        fun `Creating a poll in response to a nonexistent message should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
-            errCreatePollMessage(adminId, chatId, poll, contextMessageId = 1) shouldBe InvalidMessageIdException.message
+            val response = errCreatePollMessage(adminId, chatId, poll, contextMessageId = 1)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("Using an invalid poll should fail") {
+        @Test
+        fun `Using an invalid poll should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = mapOf("title" to "Title", "options" to listOf("option"))
-            executeGraphQlViaEngine(
+            val response = executeGraphQlViaEngine(
                 CREATE_POLL_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to null),
                 adminId
-            ).errors!![0].message shouldBe InvalidPollException.message
+            ).errors!![0].message
+            assertEquals(InvalidPollException.message, response)
         }
     }
 
-    context("setPollVote(DataFetchingEnvironment)") {
-        test("The user's vote should be updated") {
+    @Nested
+    inner class SetPollVote {
+        @Test
+        fun `The user's vote should be updated`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val option = MessageText("option 1")
             val poll = PollInput(MessageText("Title"), listOf(option, MessageText("option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             setPollVote(adminId, messageId, option, vote = true)
-            PollMessages.read(messageId).options.first { it.option == option }.votes shouldBe listOf(adminId)
+            assertEquals(listOf(adminId), PollMessages.read(messageId).options.first { it.option == option }.votes)
         }
 
-        test("Voting on a nonexistent poll should fail") {
+        @Test
+        fun `Voting on a nonexistent poll should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
-            errSetPollVote(adminId, messageId = 1, option = MessageText("option"), vote = true) shouldBe
-                    InvalidMessageIdException.message
+            val response = errSetPollVote(adminId, messageId = 1, option = MessageText("option"), vote = true)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("Voting for a nonexistent option should fail") {
+        @Test
+        fun `Voting for a nonexistent option should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
-            errSetPollVote(adminId, messageId, MessageText("nonexistent option"), vote = true) shouldBe
-                    NonexistentOptionException.message
+            val response = errSetPollVote(adminId, messageId, MessageText("nonexistent option"), vote = true)
+            assertEquals(NonexistentOptionException.message, response)
         }
     }
 
-    context("setBroadcastStatus(DataFetchingEnvironment)") {
-        test("Only an admin should be allowed to set the broadcast status") {
+    @Nested
+    inner class SetBroadcastStatus {
+        @Test
+        fun `Only an admin should be allowed to set the broadcast status`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 SET_BROADCAST_STATUS_QUERY,
                 mapOf("chatId" to chatId, "isBroadcast" to true),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
-        test("The broadcast status should be updated") {
+        @Test
+        fun `The broadcast status should be updated`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isBroadcast = true
             setBroadcastStatus(adminId, chatId, isBroadcast)
-            GroupChats.readChat(chatId, userId = adminId).isBroadcast shouldBe isBroadcast
+            assertEquals(isBroadcast, GroupChats.readChat(chatId, userId = adminId).isBroadcast)
         }
     }
 
-    context("makeGroupChatAdmins(DataFetchingEnvironment)") {
-        test("The users should be made admins") {
+    @Nested
+    inner class MakeGroupChatAdmins {
+        @Test
+        fun `The users should be made admins`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             makeGroupChatAdmins(adminId, chatId, listOf(userId))
-            GroupChatUsers.readAdminIdList(chatId) shouldBe listOf(adminId, userId)
+            assertEquals(listOf(adminId, userId), GroupChatUsers.readAdminIdList(chatId))
         }
 
-        test("Making a user who isn't in the chat an admin should fail") {
+        @Test
+        fun `Making a user who isn't in the chat an admin should fail`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            errMakeGroupChatAdmins(adminId, chatId, listOf(userId)) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errMakeGroupChatAdmins(adminId, chatId, listOf(userId)))
         }
 
-        test("A non-admin shouldn't be allowed to make users admins") {
+        @Test
+        fun `A non-admin shouldn't be allowed to make users admins`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 MAKE_GROUP_CHAT_ADMINS_QUERY,
                 mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("addGroupChatUsers(DataFetchingEnvironment)") {
-        test("Users should be added to the chat while ignoring duplicates and existing users") {
+    @Nested
+    inner class AddGroupChatUsers {
+        @Test
+        fun `Users should be added to the chat while ignoring duplicates and existing users`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             addGroupChatUsers(adminId, chatId, listOf(adminId, userId, userId))
-            GroupChatUsers.readUserIdList(chatId) shouldBe listOf(adminId, userId)
+            assertEquals(listOf(adminId, userId), GroupChatUsers.readUserIdList(chatId))
         }
 
-        test("An exception should be thrown when adding a nonexistent user") {
+        @Test
+        fun `An exception should be thrown when adding a nonexistent user`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val invalidUserId = -1
-            errAddGroupChatUsers(adminId, chatId, listOf(invalidUserId)) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errAddGroupChatUsers(adminId, chatId, listOf(invalidUserId)))
         }
 
-        test("A non-admin shouldn't be allowed to update the chat") {
+        @Test
+        fun `A non-admin shouldn't be allowed to update the chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 ADD_GROUP_CHAT_USERS_QUERY,
                 mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("removeGroupChatUsers(DataFetchingEnvironment)") {
-        test("The admin should be allowed to remove themselves along with non-admins if they aren't the last admin") {
+    @Nested
+    inner class RemoveGroupChatUsers {
+        @Test
+        fun `The admin should be allowed to remove themselves along with non-admins if they aren't the last admin`() {
             val (admin1Id, admin2Id, userId) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id, admin2Id), listOf(userId))
             removeGroupChatUsers(admin1Id, chatId, listOf(admin1Id, userId))
-            GroupChats.readChat(chatId).users.edges.map { it.node.id } shouldBe listOf(admin2Id)
+            assertEquals(listOf(admin2Id), GroupChats.readChat(chatId).users.edges.map { it.node.id })
         }
 
-        test("Removing the last admin should be allowed if there won't be any remaining users") {
+        @Test
+        fun `Removing the last admin should be allowed if there won't be any remaining users`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             removeGroupChatUsers(adminId, chatId, listOf(adminId, userId))
-            GroupChats.count().shouldBeZero()
+            assertEquals(0, GroupChats.count())
         }
 
-        test("Removing the last admin shouldn't be allowed if there are other users") {
+        @Test
+        fun `Removing the last admin shouldn't be allowed if there are other users`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            errRemoveGroupChatUsers(adminId, chatId, listOf(adminId)) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errRemoveGroupChatUsers(adminId, chatId, listOf(adminId)))
         }
 
-        test("Removing a nonexistent user should fail") {
+        @Test
+        fun `Removing a nonexistent user should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            errRemoveGroupChatUsers(adminId, chatId, listOf(-1)) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errRemoveGroupChatUsers(adminId, chatId, listOf(-1)))
         }
     }
 
-    context("updateGroupChatDescription(DataFetchingEnvironment)") {
-        test("The admin should update the description") {
+    @Nested
+    inner class UpdateGroupChatDescription {
+        @Test
+        fun `The admin should update the description`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val description = GroupChatDescription("New description.")
             updateGroupChatDescription(adminId, chatId, description)
-            GroupChats.readChat(chatId, userId = adminId).description shouldBe description
+            assertEquals(description, GroupChats.readChat(chatId, userId = adminId).description)
         }
 
-        test("A non-admin shouldn't be allowed to update the chat") {
+        @Test
+        fun `A non-admin shouldn't be allowed to update the chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_DESCRIPTION_QUERY,
                 mapOf("chatId" to chatId, "description" to "d"),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("updateGroupChatTitle(DataFetchingEnvironment)") {
-        test("The admin should update the title") {
+    @Nested
+    inner class UpdateGroupChatTitle {
+        @Test
+        fun `The admin should update the title`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val title = GroupChatTitle("New Title")
             updateGroupChatTitle(adminId, chatId, title)
-            GroupChats.readChat(chatId, userId = adminId).title shouldBe title
+            assertEquals(title, GroupChats.readChat(chatId, userId = adminId).title)
         }
 
-        test("A non-admin shouldn't be allowed to update the chat") {
+        @Test
+        fun `A non-admin shouldn't be allowed to update the chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_TITLE_QUERY,
                 mapOf("chatId" to chatId, "title" to "T"),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("deleteStar(DataFetchingEnvironment)") {
-        test("A message should be starred") {
+    @Nested
+    inner class DeleteStar {
+        @Test
+        fun `A message should be starred`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             deleteStar(adminId, messageId)
-            Stargazers.hasStar(adminId, messageId).shouldBeFalse()
+            assertFalse(Stargazers.hasStar(adminId, messageId))
         }
     }
 
-    context("star(DataFetchingEnvironment)") {
-        test("A message should be starred") {
+    @Nested
+    inner class Star {
+        @Test
+        fun `A message should be starred`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             star(adminId, messageId)
-            Stargazers.read(adminId) shouldBe listOf(messageId)
+            assertEquals(listOf(messageId), Stargazers.read(adminId))
         }
 
-        test("Starring a message from a chat the user isn't in should fail") {
+        @Test
+        fun `Starring a message from a chat the user isn't in should fail`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id))
             val messageId = Messages.message(admin1Id, chatId)
-            errStar(admin2Id, messageId) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errStar(admin2Id, messageId))
         }
     }
 
-    context("setOnlineStatus(DataFetchingEnvironment)") {
+    @Nested
+    inner class SetOnlineStatus {
         fun assertOnlineStatus(isOnline: Boolean) {
             val userId = createVerifiedUsers(1)[0].info.id
             setOnlineStatus(userId, isOnline)
-            Users.read(userId).isOnline shouldBe isOnline
+            assertEquals(isOnline, Users.read(userId).isOnline)
         }
 
-        test("""The user's online status should be set to "true"""") { assertOnlineStatus(true) }
+        @Test
+        fun `The user's online status should be set to "true"`() {
+            assertOnlineStatus(true)
+        }
 
-        test("""The user's online status should be set to "false"""") { assertOnlineStatus(false) }
+        @Test
+        fun `The user's online status should be set to "false"`() {
+            assertOnlineStatus(false)
+        }
     }
 
-    context("setTyping(DataFetchingEnvironment)") {
+    @Nested
+    inner class SetTyping {
         fun assertTypingStatus(isTyping: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             setTyping(adminId, chatId, isTyping)
-            TypingStatuses.read(chatId, adminId) shouldBe isTyping
+            assertEquals(isTyping, TypingStatuses.read(chatId, adminId))
         }
 
-        test("""The user's typing status should be set to "true"""") { assertTypingStatus(isTyping = true) }
+        @Test
+        fun `The user's typing status should be set to "true"`() {
+            assertTypingStatus(isTyping = false)
+        }
 
-        test("""The user's typing status should be set to "false"""") { assertTypingStatus(isTyping = false) }
-
-        test("Setting the typing status in a chat the user isn't in should fail") {
+        @Test
+        fun `Setting the typing status in a chat the user isn't in should fail`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errSetTyping(userId, chatId = 1, isTyping = true) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errSetTyping(userId, chatId = 1, isTyping = true))
         }
     }
 
-    context("deleteGroupChatPic(DataFetchingEnvironment)") {
-        test("Deleting the pic should remove it") {
+    @Nested
+    inner class DeleteGroupChatPic {
+        @Test
+        fun `Deleting the pic should remove it`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             GroupChats.updatePic(chatId, Pic(ByteArray(1), Pic.Type.PNG))
             deleteGroupChatPic(adminId, chatId)
-            GroupChats.readPic(chatId).shouldBeNull()
+            assertNull(GroupChats.readPic(chatId))
         }
 
-        test("An exception should be thrown when a non-admin updates the pic") {
+        @Test
+        fun `An exception should be thrown when a non-admin updates the pic`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 DELETE_GROUP_CHAT_PIC_QUERY,
                 mapOf("chatId" to chatId),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("deleteProfilePic(DataFetchingEnvironment)") {
-        test("The user's profile pic should be deleted") {
+    @Nested
+    inner class DeleteProfilePic {
+        @Test
+        fun `The user's profile pic should be deleted`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val pic = Pic(ByteArray(1), Pic.Type.PNG)
             Users.updatePic(userId, pic)
             deleteProfilePic(userId)
-            Users.read(userId).pic.shouldBeNull()
+            assertNull(Users.read(userId).pic)
         }
     }
 
-    context("createAccount(DataFetchingEnvironment)") {
-        test("Creating an account should save it to the auth system, and the DB") {
+    @Nested
+    inner class CreateAccount {
+        @Test
+        fun `Creating an account should save it to the auth system, and the DB`() {
             val account = AccountInput(Username("username"), Password("password"), "username@example.com")
             createAccount(account)
             with(readUserByUsername(account.username)) {
-                username shouldBe account.username
-                emailAddress shouldBe account.emailAddress
+                assertEquals(account.username, username)
+                assertEquals(account.emailAddress, emailAddress)
             }
-            Users.count() shouldBe 1
+            assertEquals(1, Users.count())
         }
 
-        test("An account with a taken username shouldn't be created") {
+        @Test
+        fun `An account with a taken username shouldn't be created`() {
             val account = AccountInput(Username("username"), Password("password"), "username@example.com")
             createAccount(account)
-            errCreateAccount(account) shouldBe UsernameTakenException.message
+            assertEquals(UsernameTakenException.message, errCreateAccount(account))
         }
 
-        test("An account with a taken email shouldn't be created") {
+        @Test
+        fun `An account with a taken email shouldn't be created`() {
             val address = "username@example.com"
             val account = AccountInput(Username("username1"), Password("p"), address)
             createAccount(account)
             val duplicateAccount = AccountInput(Username("username2"), Password("p"), address)
-            errCreateAccount(duplicateAccount) shouldBe EmailAddressTakenException.message
+            assertEquals(EmailAddressTakenException.message, errCreateAccount(duplicateAccount))
         }
 
-        test("An account with a disallowed email address domain shouldn't be created") {
-            errCreateAccount(AccountInput(Username("u"), Password("p"), "bob@outlook.com")) shouldBe
-                    InvalidDomainException.message
+        @Test
+        fun `An account with a disallowed email address domain shouldn't be created`() {
+            val response = errCreateAccount(AccountInput(Username("u"), Password("p"), "bob@outlook.com"))
+            assertEquals(InvalidDomainException.message, response)
         }
     }
 
-    context("createContacts(DataFetchingEnvironment)") {
-        test("Trying to save the user's own contact should be ignored") {
+    @Nested
+    inner class CreateContacts {
+        @Test
+        fun `Trying to save the user's own contact should be ignored`() {
             val (ownerId, userId) = createVerifiedUsers(2).map { it.info.id }
             createContacts(ownerId, listOf(ownerId, userId))
-            Contacts.readIdList(ownerId) shouldBe listOf(userId)
+            assertEquals(listOf(userId), Contacts.readIdList(ownerId))
         }
 
-        test("If one of the contacts to be saved is invalid, then none of them should be saved") {
+        @Test
+        fun `If one of the contacts to be saved is invalid, then none of them should be saved`() {
             val (ownerId, userId) = createVerifiedUsers(2).map { it.info.id }
             val contacts = listOf(userId, -1)
-            errCreateContacts(ownerId, contacts) shouldBe InvalidContactException.message
-            Contacts.readIdList(ownerId).shouldBeEmpty()
+            assertEquals(InvalidContactException.message, errCreateContacts(ownerId, contacts))
+            assertTrue(Contacts.readIdList(ownerId).isEmpty())
         }
     }
 
-    context("createGroupChat(DataFetchingEnvironment)") {
-        test("A group chat should be created automatically including the creator as a user and admin") {
+    @Nested
+    inner class CreateGroupChat {
+        @Test
+        fun `A group chat should be created automatically including the creator as a user and admin`() {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chat = mapOf(
                 "title" to "Title",
@@ -1075,15 +1162,16 @@ class MutationsTest : FunSpec({
             val chatId = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
                 .data!!["createGroupChat"] as Int
             val chats = GroupChats.readUserChats(adminId)
-            chats shouldHaveSize 1
+            assertEquals(1, chats.size)
             with(chats[0]) {
-                id shouldBe chatId
-                users.edges.map { it.node.id } shouldContainExactlyInAnyOrder listOf(adminId, user1Id, user2Id)
-                adminIdList shouldBe listOf(adminId)
+                assertEquals(chatId, id)
+                assertEquals(setOf(adminId, user1Id, user2Id), users.edges.map { it.node.id }.toSet())
+                assertEquals(listOf(adminId), adminIdList)
             }
         }
 
-        test("A group chat shouldn't be created when supplied with an invalid user ID") {
+        @Test
+        fun `A group chat shouldn't be created when supplied with an invalid user ID`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val invalidUserId = -1
             val chat = GroupChatInput(
@@ -1094,10 +1182,11 @@ class MutationsTest : FunSpec({
                 isBroadcast = false,
                 publicity = GroupChatPublicity.NOT_INVITABLE
             )
-            errCreateGroupChat(userId, chat) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errCreateGroupChat(userId, chat))
         }
 
-        test("A group chat shouldn't be created if the admin ID list isn't a subset of the user ID list") {
+        @Test
+        fun `A group chat shouldn't be created if the admin ID list isn't a subset of the user ID list`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chat = mapOf(
                 "title" to "Title",
@@ -1107,285 +1196,315 @@ class MutationsTest : FunSpec({
                 "isBroadcast" to false,
                 "publicity" to GroupChatPublicity.NOT_INVITABLE
             )
-            executeGraphQlViaEngine(
+            val response = executeGraphQlViaEngine(
                 CREATE_GROUP_CHAT_QUERY,
                 mapOf("chat" to chat),
                 user1Id
-            ).errors!![0].message shouldBe InvalidAdminIdException.message
+            ).errors!![0].message
+            assertEquals(InvalidAdminIdException.message, response)
         }
     }
 
-    context("createTextMessage(DataFetchingEnvironment)") {
-        test("The user should be able to create a message in a private chat they just deleted") {
+    @Nested
+    inner class CreateTextMessage {
+        @Test
+        fun `The user should be able to create a message in a private chat they just deleted`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             createTextMessage(user1Id, chatId, MessageText("t"))
         }
 
-        test("Messaging in a chat the user isn't in should throw an exception") {
+        @Test
+        fun `Messaging in a chat the user isn't in should throw an exception`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id))
             GroupChats.create(listOf(admin2Id))
-            errCreateTextMessage(admin2Id, chatId, MessageText("t")) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errCreateTextMessage(admin2Id, chatId, MessageText("t")))
         }
 
-        test("The message should be created sans context") {
+        @Test
+        fun `The message should be created sans context`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             createTextMessage(adminId, chatId, MessageText("t"))
-            Messages.readGroupChat(chatId, userId = adminId).map { it.node.context } shouldBe
-                    listOf(MessageContext(hasContext = false, id = null))
+            val contexts = Messages.readGroupChat(chatId, userId = adminId).map { it.node.context }
+            assertEquals(listOf(MessageContext(hasContext = false, id = null)), contexts)
         }
 
-        test("The message should be created with a context") {
+        @Test
+        fun `The message should be created with a context`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             createTextMessage(adminId, chatId, MessageText("t"), contextMessageId = messageId)
-            Messages.readGroupChat(chatId, userId = adminId)[1].node.context shouldBe
-                    MessageContext(hasContext = true, id = messageId)
+            val context = Messages.readGroupChat(chatId, userId = adminId)[1].node.context
+            assertEquals(MessageContext(hasContext = true, id = messageId), context)
         }
 
-        test("Using a nonexistent message context should fail") {
+        @Test
+        fun `Using a nonexistent message context should fail`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            errCreateTextMessage(adminId, chatId, MessageText("t"), contextMessageId = 1) shouldBe
-                    InvalidMessageIdException.message
+            val response = errCreateTextMessage(adminId, chatId, MessageText("t"), contextMessageId = 1)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("A non-admin shouldn't be allowed to message in a broadcast chat") {
+        @Test
+        fun `A non-admin shouldn't be allowed to message in a broadcast chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
-            executeGraphQlViaHttp(
+            val response = executeGraphQlViaHttp(
                 CREATE_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "text" to "Hi"),
                 user.accessToken
-            ).shouldHaveUnauthorizedStatus()
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 
-    context("createPrivateChat(DataFetchingEnvironment)") {
-        test("A chat should be created") {
+    @Nested
+    inner class CreatePrivateChat {
+        @Test
+        fun `A chat should be created`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = createPrivateChat(user1Id, user2Id)
-            PrivateChats.readIdList(user1Id) shouldBe listOf(chatId)
+            assertEquals(listOf(chatId), PrivateChats.readIdList(user1Id))
         }
 
-        test("Attempting to create a chat the user is in should return an error") {
+        @Test
+        fun `Attempting to create a chat the user is in should return an error`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             createPrivateChat(user1Id, user2Id)
-            errCreatePrivateChat(user1Id, user2Id) shouldBe ChatExistsException.message
+            assertEquals(ChatExistsException.message, errCreatePrivateChat(user1Id, user2Id))
         }
 
-        test(
-            """
-            Given a chat which was deleted by the user,
-            when the user recreates the chat,
-            then the existing chat's ID should be received
-            """
-        ) {
+        @Test
+        fun `Recreating a chat the user deleted should cause the existing chat's ID to be returned`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = createPrivateChat(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            createPrivateChat(user1Id, user2Id) shouldBe chatId
+            assertEquals(chatId, createPrivateChat(user1Id, user2Id))
         }
 
-        test("A chat shouldn't be created with a nonexistent user") {
+        @Test
+        fun `A chat shouldn't be created with a nonexistent user`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errCreatePrivateChat(userId, otherUserId = -1) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errCreatePrivateChat(userId, otherUserId = -1))
         }
 
-        test("A chat shouldn't be created with the user themselves") {
+        @Test
+        fun `A chat shouldn't be created with the user themselves`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errCreatePrivateChat(userId, userId) shouldBe InvalidUserIdException.message
+            assertEquals(InvalidUserIdException.message, errCreatePrivateChat(userId, userId))
         }
     }
 
-    context("createStatus(DataFetchingEnvironment") {
-        /** A private chat between two users where [user2Id] sent the [messageId]. */
-        data class UtilizedPrivateChat(val messageId: Int, val user1Id: Int, val user2Id: Int)
+    /** A private chat between two users where [user2Id] sent the [messageId]. */
+    data class UtilizedPrivateChat(val messageId: Int, val user1Id: Int, val user2Id: Int)
 
-        fun createUtilizedPrivateChat(): UtilizedPrivateChat {
+    @Nested
+    inner class CreateStatus {
+        private fun createUtilizedPrivateChat(): UtilizedPrivateChat {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user2Id, chatId)
             return UtilizedPrivateChat(messageId, user1Id, user2Id)
         }
 
-        test("A status should be created") {
+        @Test
+        fun `A status should be created`() {
             val (messageId, user1Id) = createUtilizedPrivateChat()
             createStatus(user1Id, messageId, MessageStatus.DELIVERED)
             val statuses = MessageStatuses.read(messageId)
-            statuses shouldHaveSize 1
-            statuses[0].status shouldBe MessageStatus.DELIVERED
+            assertEquals(1, statuses.size)
+            assertEquals(MessageStatus.DELIVERED, statuses[0].status)
         }
 
-        test("Creating a duplicate status should fail") {
+        @Test
+        fun `Creating a duplicate status should fail`() {
             val (messageId, user1Id) = createUtilizedPrivateChat()
             createStatus(user1Id, messageId, MessageStatus.DELIVERED)
-            errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED) shouldBe DuplicateStatusException.message
+            assertEquals(DuplicateStatusException.message, errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED))
         }
 
-        test("Creating a status on the user's own message should fail") {
+        @Test
+        fun `Creating a status on the user's own message should fail`() {
             val (messageId, _, user2Id) = createUtilizedPrivateChat()
-            errCreateStatus(user2Id, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
+            val response = errCreateStatus(user2Id, messageId, MessageStatus.DELIVERED)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("Creating a status on a message from a chat the user isn't in should fail") {
+        @Test
+        fun `Creating a status on a message from a chat the user isn't in should fail`() {
             val (messageId) = createUtilizedPrivateChat()
             val userId = createVerifiedUsers(1)[0].info.id
-            errCreateStatus(userId, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errCreateStatus(userId, messageId, MessageStatus.DELIVERED))
         }
 
-        test("Creating a status on a nonexistent message should fail") {
+        @Test
+        fun `Creating a status on a nonexistent message should fail`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errCreateStatus(userId, messageId = 1, status = MessageStatus.DELIVERED) shouldBe
-                    InvalidMessageIdException.message
+            val response = errCreateStatus(userId, messageId = 1, status = MessageStatus.DELIVERED)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test("Creating a status in a private chat the user deleted should fail") {
+        @Test
+        fun `Creating a status in a private chat the user deleted should fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
+            val response = errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
-        test(
-            """
-            Given a private chat in which the first user sent a message, and the second user deleted the chat,
-            when the second user creates a status on the message,
-            then it should fail
-            """
-        ) {
+        @Test
+        fun `Creating a status on a message which was sent before the user deleted the private chat should fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user2Id)
-            errCreateStatus(user2Id, messageId, MessageStatus.DELIVERED) shouldBe InvalidMessageIdException.message
+            val response = errCreateStatus(user2Id, messageId, MessageStatus.DELIVERED)
+            assertEquals(InvalidMessageIdException.message, response)
         }
     }
 
-    context("deleteAccount(DataFetchingEnvironment)") {
-        test("An account should be deleted from the auth system") {
+    @Nested
+    inner class DeleteAccount {
+        @Test
+        fun `An account should be deleted from the auth system`() {
             val userId = createVerifiedUsers(1)[0].info.id
             deleteAccount(userId)
-            Users.exists(userId).shouldBeFalse()
+            assertFalse(Users.exists(userId))
         }
 
-        test("An account shouldn't be deleted if the user is the last admin of a group chat with other users") {
+        @Test
+        fun `An account shouldn't be deleted if the user is the last admin of a group chat with other users`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             GroupChats.create(listOf(adminId), listOf(userId))
-            errDeleteAccount(adminId) shouldBe CannotDeleteAccountException.message
+            assertEquals(CannotDeleteAccountException.message, errDeleteAccount(adminId))
         }
     }
 
-    context("deleteContacts(DataFetchingEnvironment)") {
-        test("Contacts should be deleted, ignoring invalid ones") {
+    @Nested
+    inner class DeleteContacts {
+        @Test
+        fun `Contacts should be deleted, ignoring invalid ones`() {
             val (ownerId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val userIdList = listOf(user1Id, user2Id)
             Contacts.create(ownerId, userIdList.toSet())
             deleteContacts(ownerId, userIdList + -1)
-            Contacts.readIdList(ownerId).shouldBeEmpty()
+            assertTrue(Contacts.readIdList(ownerId).isEmpty())
         }
     }
 
-    context("deleteMessage(DataFetchingEnvironment)") {
-        test("The user's message should be deleted") {
+    @Nested
+    inner class DeleteMessage {
+        @Test
+        fun `The user's message should be deleted`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             deleteMessage(adminId, messageId)
-            Messages.readGroupChat(chatId, userId = adminId).shouldBeEmpty()
+            assertTrue(Messages.readGroupChat(chatId, userId = adminId).isEmpty())
         }
 
-        test("Deleting a nonexistent message should return an error") {
+        @Test
+        fun `Deleting a nonexistent message should return an error`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errDeleteMessage(userId, messageId = 0) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errDeleteMessage(userId, messageId = 0))
         }
 
-        test("Deleting a message from a chat the user isn't in should throw an exception") {
+        @Test
+        fun `Deleting a message from a chat the user isn't in should throw an exception`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            errDeleteMessage(userId, messageId) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errDeleteMessage(userId, messageId))
         }
 
-        test("Deleting another user's message should return an error") {
+        @Test
+        fun `Deleting another user's message should return an error`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user2Id, chatId)
-            errDeleteMessage(user1Id, messageId) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errDeleteMessage(user1Id, messageId))
         }
 
-        test(
-            """
-            Given a user who created a private chat, sent a message, and deleted the chat,
-            when deleting the message,
-            then it should fail
-            """
-        ) {
+        @Test
+        fun `Deleting a message sent before the private chat was deleted by the user should fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            errDeleteMessage(user1Id, messageId) shouldBe InvalidMessageIdException.message
+            assertEquals(InvalidMessageIdException.message, errDeleteMessage(user1Id, messageId))
         }
     }
 
-    context("deletePrivateChat(DataFetchingEnvironment)") {
-        test("A chat should be deleted") {
+    @Nested
+    inner class DeletePrivateChat {
+        @Test
+        fun `A chat should be deleted`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             deletePrivateChat(user1Id, chatId)
-            PrivateChatDeletions.isDeleted(user1Id, chatId).shouldBeTrue()
+            assertTrue(PrivateChatDeletions.isDeleted(user1Id, chatId))
         }
 
-        test("Deleting an invalid chat ID should throw an exception") {
+        @Test
+        fun `Deleting an invalid chat ID should throw an exception`() {
             val userId = createVerifiedUsers(1)[0].info.id
-            errDeletePrivateChat(userId, chatId = 1) shouldBe InvalidChatIdException.message
+            assertEquals(InvalidChatIdException.message, errDeletePrivateChat(userId, chatId = 1))
         }
     }
 
-    context("resetPassword(DataFetchingEnvironment") {
-        test("A password reset request should be sent") {
+    @Nested
+    inner class ResetPassword {
+        @Test
+        fun `A password reset request should be sent`() {
             val address = createVerifiedUsers(1)[0].info.emailAddress
             resetPassword(address)
         }
 
-        test("Requesting a password reset for an unregistered address should throw an exception") {
-            errResetPassword("username@example.com") shouldBe UnregisteredEmailAddressException.message
+        @Test
+        fun `Requesting a password reset for an unregistered address should throw an exception`() {
+            assertEquals(UnregisteredEmailAddressException.message, errResetPassword("username@example.com"))
         }
     }
 
-    context("sendEmailAddressVerification(DataFetchingEnvironment)") {
-        test("A verification email should be sent") {
+    @Nested
+    inner class SendEmailAddressVerification {
+        @Test
+        fun `A verification email should be sent`() {
             val address = "username@example.com"
             val account = AccountInput(Username("username"), Password("password"), address)
             createUser(account)
             sendEmailAddressVerification(address)
         }
 
-        test("Sending a verification email to an unregistered address should throw an exception") {
-            errSendEmailVerification("username@example.com") shouldBe UnregisteredEmailAddressException.message
+        @Test
+        fun `Sending a verification email to an unregistered address should throw an exception`() {
+            assertEquals(UnregisteredEmailAddressException.message, errSendEmailVerification("username@example.com"))
         }
     }
 
-    context("updateAccount(DataFetchingEnvironment)") {
+    @Nested
+    inner class UpdateAccount {
         fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
-            isUsernameTaken(accountBeforeUpdate.username).shouldBeFalse()
+            assertFalse(isUsernameTaken(accountBeforeUpdate.username))
             with(readUserByUsername(accountAfterUpdate.username!!)) {
-                username shouldBe accountAfterUpdate.username
-                emailAddress shouldBe accountAfterUpdate.emailAddress
-                isEmailVerified(id).shouldBeFalse()
-                firstName shouldBe accountBeforeUpdate.firstName
-                lastName shouldBe accountAfterUpdate.lastName
-                bio shouldBe accountBeforeUpdate.bio
+                assertEquals(accountAfterUpdate.username, username)
+                assertEquals(accountAfterUpdate.emailAddress, emailAddress)
+                assertFalse(isEmailVerified(id))
+                assertEquals(accountBeforeUpdate.firstName, firstName)
+                assertEquals(accountAfterUpdate.lastName, lastName)
+                assertEquals(accountBeforeUpdate.bio, bio)
             }
         }
 
-        test("Only the specified fields should be updated") {
+        @Test
+        fun `Only the specified fields should be updated`() {
             val user = createVerifiedUsers(1)[0].info
             val update =
                 AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = "Roger")
@@ -1393,15 +1512,18 @@ class MutationsTest : FunSpec({
             testAccount(user, update)
         }
 
-        test("Updating a username to one already taken shouldn't allow the account to be updated") {
+        @Test
+        fun `Updating a username to one already taken shouldn't allow the account to be updated`() {
             val (user1, user2) = createVerifiedUsers(2).map { it.info }
-            errUpdateAccount(user1.id, AccountUpdate(username = user2.username)) shouldBe UsernameTakenException.message
+            val response = errUpdateAccount(user1.id, AccountUpdate(username = user2.username))
+            assertEquals(UsernameTakenException.message, response)
         }
 
-        test("Updating an email to one already taken shouldn't allow the account to be updated") {
+        @Test
+        fun `Updating an email to one already taken shouldn't allow the account to be updated`() {
             val (user1, user2) = createVerifiedUsers(2).map { it.info }
-            errUpdateAccount(user1.id, AccountUpdate(emailAddress = user2.emailAddress)) shouldBe
-                    EmailAddressTakenException.message
+            val response = errUpdateAccount(user1.id, AccountUpdate(emailAddress = user2.emailAddress))
+            assertEquals(EmailAddressTakenException.message, response)
         }
     }
-})
+}

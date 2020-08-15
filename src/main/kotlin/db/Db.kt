@@ -84,12 +84,19 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
     }
 }
 
+private val db = Database.connect(
+    "jdbc:postgresql://${System.getenv("POSTGRES_URL")}/${System.getenv("POSTGRES_DB")}?reWriteBatchedInserts=true",
+    "org.postgresql.Driver",
+    System.getenv("POSTGRES_USER"),
+    System.getenv("POSTGRES_PASSWORD")
+)
+
 /**
  * Opens the DB connection, and creates the required types and tables. This must be run before any DB-related activities
- * are performed. This takes a small, but noticeable amount of time.
+ * are performed. This takes a small, but noticeable amount of time, and is safe to run more than once.
  */
 fun setUpDb() {
-    connect()
+    db
     createTypes()
     transaction {
         exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
@@ -117,17 +124,6 @@ fun setUpDb() {
             TypingStatuses
         )
     }
-}
-
-private fun connect() {
-    val url = System.getenv("POSTGRES_URL")
-    val db = System.getenv("POSTGRES_DB")
-    Database.connect(
-        "jdbc:postgresql://$url/$db?reWriteBatchedInserts=true",
-        "org.postgresql.Driver",
-        System.getenv("POSTGRES_USER"),
-        System.getenv("POSTGRES_PASSWORD")
-    )
 }
 
 /** Creates custom types. */
