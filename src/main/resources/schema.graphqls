@@ -344,7 +344,7 @@ type Mutation {
     setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    Sets whether the `chatId`'s publicity. The user must be an admin to perform this operation.
+    The user must be an admin to perform this operation.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
     public chat).

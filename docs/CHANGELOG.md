@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.5.0
+
+### GraphQL QPI
+
+- New:
+    - `Subscription.subscribeToAccounts`
+    - `Subscription.subscribeToGroupChats`
+    - `AccountsSubscription` `union`
+    - `GroupChatsSubscription` `union`
+    - `GroupChatPublicity` `enum`
+- Updated:
+    - `Mutation.createAccount`
+    - `UpdatedOnlineStatus` `type`
+    - `BareGroupChat` `interface`
+    - `GroupChatInfo` `type`
+    - `GroupChat` `type`
+    - `GroupChatInput` `input`
+- Removed:
+    - `Subscription.subscribeToContacts`
+    - `Subscription.subscribeToUpdatedChats`
+    - `Subscription.subscribeToNewGroupChats`
+    - `ContactsSubscription` `union`
+    - `UpdatedChatsSubscription` `union`
+    - `NewGroupChatsSubscription` `union`
+    - `UpdatedContact` `type`
+- Bug fixes:
+    - `Query.readOnlineStatuses`
+    - `Subscription.subscribeToOnlineStatuses`
+
 ## v0.4.0
 
 ### GraphQL API
