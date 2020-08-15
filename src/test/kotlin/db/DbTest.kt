@@ -39,7 +39,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                    newGroupChatsNotifier.safelySubscribe(NewGroupChatsAsset(userId)).subscribeWith(TestSubscriber())
+                    groupChatsNotifier.safelySubscribe(GroupChatsAsset(userId)).subscribeWith(TestSubscriber())
                 deleteUserFromDb(userId)
                 subscriber.assertComplete()
             }
@@ -59,7 +59,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                    contactsNotifier.safelySubscribe(ContactsAsset(userId)).subscribeWith(TestSubscriber())
+                    accountsNotifier.safelySubscribe(AccountsAsset(userId)).subscribeWith(TestSubscriber())
                 deleteUserFromDb(userId)
                 subscriber.assertComplete()
             }
@@ -71,7 +71,7 @@ class DbTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { updatedChatsNotifier.safelySubscribe(UpdatedChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 deleteUserFromDb(userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))

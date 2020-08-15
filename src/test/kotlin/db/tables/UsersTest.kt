@@ -32,18 +32,18 @@ class UsersTest {
         @Test
         fun `Updating the user's status should only notify users who have them in their contacts or chats`(): Unit =
             runBlocking {
-                val (updaterId, contactOwnerId, chatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
+                val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
                 Contacts.create(contactOwnerId, setOf(updaterId))
-                PrivateChats.create(chatSharerId, updaterId)
-                val (updaterSubscriber, contactOwnerSubscriber, chatSharerSubscriber, userSubscriber) =
-                    listOf(updaterId, contactOwnerId, chatSharerId, userId).map {
+                PrivateChats.create(privateChatSharerId, updaterId)
+                val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
+                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
                         onlineStatusesNotifier.safelySubscribe(OnlineStatusesAsset(it)).subscribeWith(TestSubscriber())
                     }
                 val status = Users.read(updaterId).isOnline.not()
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
                 listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, chatSharerSubscriber)
+                listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
                     .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
             }
     }

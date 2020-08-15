@@ -350,10 +350,10 @@ const val NEW_CONTACT_FRAGMENT = """
     }
 """
 
-const val UPDATED_CONTACT_FRAGMENT = """
-    ... on UpdatedContact {
+const val UPDATED_ACCOUNT_FRAGMENT = """
+    ... on UpdatedAccount {
         __typename
-        id
+        userId
         username
         emailAddress
         firstName
@@ -511,9 +511,9 @@ const val STARRED_MESSAGE_FRAGMENT = """
     $STARRED_POLL_MESSAGE_FRAGMENT
 """
 
-const val CONTACTS_SUBSCRIPTION_FRAGMENT = """
+const val ACCOUNTS_SUBSCRIPTION_FRAGMENT = """
     $CREATED_SUBSCRIPTION_FRAGMENT
     $NEW_CONTACT_FRAGMENT
-    $UPDATED_CONTACT_FRAGMENT
+    $UPDATED_ACCOUNT_FRAGMENT
     $DELETED_CONTACT_FRAGMENT
 """

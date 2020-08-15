@@ -158,7 +158,7 @@ interface BareMessage {
     )
 }
 
-interface ContactsSubscription
+interface AccountsSubscription
 
 data class NewContact(
     override val id: Int,
@@ -167,24 +167,10 @@ data class NewContact(
     override val firstName: String? = null,
     override val lastName: String? = null,
     override val bio: Bio? = null
-) : AccountData, ContactsSubscription {
+) : AccountData, AccountsSubscription {
     companion object {
         fun build(userId: Int): NewContact =
             with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
-    }
-}
-
-data class UpdatedContact(
-    override val id: Int,
-    override val username: Username,
-    override val emailAddress: String,
-    override val firstName: String? = null,
-    override val lastName: String? = null,
-    override val bio: Bio? = null
-) : AccountData, ContactsSubscription {
-    companion object {
-        fun build(userId: Int): UpdatedContact =
-            with(readUserById(userId)) { UpdatedContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
@@ -194,7 +180,7 @@ data class UpdatedOnlineStatus(val userId: Int, val isOnline: Boolean) : OnlineS
 
 data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?)
 
-data class DeletedContact(val id: Int) : ContactsSubscription
+data class DeletedContact(val id: Int) : AccountsSubscription
 
 data class AccountUpdate(
     val username: Username? = null,
@@ -225,8 +211,6 @@ data class GroupChatInput(
             )
     }
 }
-
-interface UpdatedChatsSubscription
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[MessageText.MAX_LENGTH] characters with at least
@@ -292,7 +276,7 @@ data class UpdatedGroupChat(
     val adminIdList: List<Int>? = null,
     val isBroadcast: Boolean? = null,
     val publicity: GroupChatPublicity? = null
-) : UpdatedChatsSubscription {
+) : GroupChatsSubscription {
     init {
         if (newUsers != null && removedUsers != null) {
             val intersection = newUsers.intersect(removedUsers)
@@ -315,7 +299,7 @@ data class UpdatedAccount(
     val firstName: String? = null,
     val lastName: String? = null,
     val bio: Bio? = null
-) : UpdatedChatsSubscription {
+) : AccountsSubscription {
     companion object {
         fun build(userId: Int): UpdatedAccount =
             with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
@@ -997,19 +981,18 @@ data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : Mes
 
 data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesSubscription
 
-data class ExitedUser(val userId: Int, val chatId: Int) : UpdatedChatsSubscription
+data class ExitedUser(val userId: Int, val chatId: Int) : GroupChatsSubscription
 
-interface NewGroupChatsSubscription
+interface GroupChatsSubscription
 
-data class GroupChatId(val id: Int) : NewGroupChatsSubscription
+data class GroupChatId(val id: Int) : GroupChatsSubscription
 
 data class DeletionOfEveryMessage(val chatId: Int) : MessagesSubscription
 
 object CreatedSubscription :
     MessagesSubscription,
-    ContactsSubscription,
-    UpdatedChatsSubscription,
-    NewGroupChatsSubscription,
+    AccountsSubscription,
+    GroupChatsSubscription,
     TypingStatusesSubscription,
     OnlineStatusesSubscription {
 

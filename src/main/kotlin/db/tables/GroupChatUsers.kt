@@ -1,6 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.ForwardPagination
+import com.neelkamath.omniChat.db.GroupChatsAsset
+import com.neelkamath.omniChat.db.groupChatsNotifier
+import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -23,7 +26,7 @@ object GroupChatUsers : IntIdTable() {
      * Makes the [userIdList] admins of the [chatId]. An [IllegalArgumentException] will be thrown if the a user isn't
      * in the chat.
      *
-     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [updatedChatsNotifier].
+     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier].
      */
     fun makeAdmins(chatId: Int, userIdList: List<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
@@ -33,7 +36,7 @@ object GroupChatUsers : IntIdTable() {
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
-            updatedChatsNotifier.publish(update, readUserIdList(chatId).map(::UpdatedChatsAsset))
+            groupChatsNotifier.publish(update, readUserIdList(chatId).map(::GroupChatsAsset))
         }
     }
 
@@ -71,7 +74,7 @@ object GroupChatUsers : IntIdTable() {
 
     /**
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
-     * [updatedChatsNotifier], and new users of the [GroupChatId] via [newGroupChatsNotifier].
+     * [groupChatsNotifier], and new users of the [GroupChatId] via [groupChatsNotifier].
      */
     fun addUsers(chatId: Int, users: List<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
@@ -82,9 +85,9 @@ object GroupChatUsers : IntIdTable() {
                 this[isAdmin] = false
             }
         }
-        newGroupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::NewGroupChatsAsset))
+        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::GroupChatsAsset))
         val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map(::readUserById))
-        updatedChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UpdatedChatsAsset))
+        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::GroupChatsAsset))
     }
 
     fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
@@ -115,7 +118,7 @@ object GroupChatUsers : IntIdTable() {
      * [canUsersLeave]. If every user is removed, the [chatId] will be [GroupChats.delete]d. Returns whether the chat
      * was deleted.
      *
-     * Subscribers, excluding the [userIdList], will be notified of the [ExitedUser]s via [updatedChatsNotifier].
+     * Subscribers, excluding the [userIdList], will be notified of the [ExitedUser]s via [groupChatsNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: List<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
@@ -124,7 +127,7 @@ object GroupChatUsers : IntIdTable() {
             deleteWhere { (GroupChatUsers.chatId eq chatId) and (userId inList userIdList) }
         }
         for (userId in userIdList.toSet())
-            updatedChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId).map(::UpdatedChatsAsset))
+            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId).map(::GroupChatsAsset))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.graphql.operations.CONTACTS_SUBSCRIPTION_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import io.ktor.http.cio.websocket.FrameType
 import org.junit.jupiter.api.Nested
@@ -26,16 +26,16 @@ class SubscriptionsTest {
                     }
                 }
                 
-                subscription SubscribeToContacts {
-                    subscribeToContacts {
+                subscription SubscribeToAccounts {
+                    subscribeToAccounts {
                         $CREATED_SUBSCRIPTION_FRAGMENT
                     }
                 }
             """
-            val operationName = "SubscribeToContacts".takeIf { shouldSupplyOperationName }
+            val operationName = "SubscribeToAccounts".takeIf { shouldSupplyOperationName }
             val token = createVerifiedUsers(1)[0].accessToken
             executeGraphQlSubscriptionViaWebSocket(
-                uri = "contacts-subscription",
+                uri = "accounts-subscription",
                 request = GraphQlRequest(query, operationName = operationName),
                 accessToken = token
             ) { incoming ->
@@ -55,17 +55,17 @@ class SubscriptionsTest {
         }
     }
 
-    private fun subscribeToContacts(accessToken: String? = null, callback: SubscriptionCallback) {
-        val subscribeToContactsQuery = """
-            subscription SubscribeToContacts {
-                subscribeToContacts {
-                    $CONTACTS_SUBSCRIPTION_FRAGMENT
+    private fun subscribeToAccounts(accessToken: String? = null, callback: SubscriptionCallback) {
+        val subscribeToAccountsQuery = """
+            subscription SubscribeToAccounts {
+                subscribeToAccounts {
+                    $ACCOUNTS_SUBSCRIPTION_FRAGMENT
                 }
             }
         """
         executeGraphQlSubscriptionViaWebSocket(
-            uri = "contacts-subscription",
-            request = GraphQlRequest(subscribeToContactsQuery),
+            uri = "accounts-subscription",
+            request = GraphQlRequest(subscribeToAccountsQuery),
             accessToken = accessToken,
             callback = callback
         )
@@ -76,8 +76,8 @@ class SubscriptionsTest {
         @Test
         fun `Recreating a subscription shouldn't cause duplicate notifications from the previous connection`() {
             val (owner, user) = createVerifiedUsers(2)
-            subscribeToContacts(owner.accessToken) {}
-            subscribeToContacts(owner.accessToken) { incoming ->
+            subscribeToAccounts(owner.accessToken) {}
+            subscribeToAccounts(owner.accessToken) { incoming ->
                 parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(owner.info.id, setOf(user.info.id))
                 awaitBrokering()
@@ -91,7 +91,7 @@ class SubscriptionsTest {
     inner class CloseWithError {
         @Test
         fun `The connection should be closed when calling an operation with an invalid token`() {
-            subscribeToContacts { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
+            subscribeToAccounts { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
 }

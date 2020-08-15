@@ -36,9 +36,8 @@ fun routeGraphQlSubscriptions(context: Routing) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     val subscriptions = mapOf(
         "messages-subscription" to "subscribeToMessages",
-        "contacts-subscription" to "subscribeToContacts",
-        "updated-chats-subscription" to "subscribeToUpdatedChats",
-        "new-group-chats-subscription" to "subscribeToNewGroupChats",
+        "accounts-subscription" to "subscribeToAccounts",
+        "group-chats-subscription" to "subscribeToGroupChats",
         "typing-statuses-subscription" to "subscribeToTypingStatuses",
         "online-statuses-subscription" to "subscribeToOnlineStatuses"
     )

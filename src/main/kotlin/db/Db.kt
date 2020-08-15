@@ -161,7 +161,7 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
 fun readUserIdList(chatId: Int): List<Int> =
     if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
 
-/** Returns the ID of every user who shares a chat with the [userId], including deleted private chats. */
+/** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
 fun readChatSharers(userId: Int): List<Int> =
     PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
 
@@ -173,14 +173,14 @@ fun readChatSharers(userId: Int): List<Int> =
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
- * - Clients who have [Notifier.subscribe]d via [updatedChatsNotifier] will be [Notifier.unsubscribe]d.
+ * - Clients who have [Notifier.subscribe]d via [groupChatsNotifier] will be [Notifier.unsubscribe]d.
  *
  * ## Contacts
  *
  * - The user's [Contacts] will be deleted.
  * - Everyone's [Contacts] of the user will be deleted.
- * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [contactsNotifier].
- * - The [userId] will be unsubscribed via [contactsNotifier].
+ * - Subscribers who have the [userId] in their contacts will be notified of this [DeletedContact] via [accountsNotifier].
+ * - The [userId] will be unsubscribed via [accountsNotifier].
  *
  * ## Private Chats
  *
@@ -192,7 +192,7 @@ fun readChatSharers(userId: Int): List<Int> =
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Notifier.unsubscribe]d via [updatedChatsNotifier].
+ * - Clients will be [Notifier.unsubscribe]d via [groupChatsNotifier].
  *
  * ## Messages
  *
@@ -221,9 +221,8 @@ fun deleteUserFromDb(userId: Int) {
     TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
     Users.delete(userId)
-    updatedChatsNotifier.unsubscribe { it.userId == userId }
-    newGroupChatsNotifier.unsubscribe { it.userId == userId }
-    contactsNotifier.unsubscribe { it.userId == userId }
+    groupChatsNotifier.unsubscribe { it.userId == userId }
+    accountsNotifier.unsubscribe { it.userId == userId }
     typingStatusesNotifier.unsubscribe { it.userId == userId }
     messagesNotifier.unsubscribe { it.userId == userId }
     onlineStatusesNotifier.unsubscribe { it.userId == userId }

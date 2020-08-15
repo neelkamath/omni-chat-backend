@@ -187,11 +187,12 @@ class PrivateChatsTest {
     @Nested
     inner class ReadOtherUserIdList {
         @Test
-        fun `Reading the user ID list the user is chatting with should include those from deleted chats`() {
+        fun `Reading the user ID list the user is chatting with should excluding those from deleted chats`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = listOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }[0]
+            PrivateChats.create(user1Id, user2Id)
+            val chatId = PrivateChats.create(user1Id, user3Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertEquals(listOf(user2Id, user3Id), PrivateChats.readOtherUserIdList(user1Id))
+            assertEquals(listOf(user2Id), PrivateChats.readOtherUserIdList(user1Id))
         }
     }
 }

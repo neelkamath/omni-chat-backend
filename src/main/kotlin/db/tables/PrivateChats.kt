@@ -188,9 +188,10 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Returns the ID of every other user the [userId] has chats with, including deleted chats.
+     * Returns the ID of every other user the [userId] has chats with (excluding deleted chats).
      *
      * @see [areInChat]
      */
-    fun readOtherUserIdList(userId: Int): List<Int> = readIdList(userId).map { readOtherUserId(it, userId) }
+    fun readOtherUserIdList(userId: Int): List<Int> =
+        readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }
 }

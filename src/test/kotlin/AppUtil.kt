@@ -60,7 +60,6 @@ private object AccountDataDeserializer : JsonDeserializer<AccountData>() {
         val clazz = when (val type = node["__typename"].asText()) {
             "Account" -> Account::class
             "NewContact" -> NewContact::class
-            "UpdatedContact" -> UpdatedContact::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

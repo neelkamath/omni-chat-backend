@@ -54,7 +54,7 @@ type Query {
     readStars: [StarredMessage!]!
 
     """
-    The online statuses of users the user has in their contacts, or is in a chat with.
+    The online statuses of users the user has in their contacts, or has a chat with.
 
     You must send an access token with this request.
     """
@@ -483,7 +483,7 @@ type Subscription {
     subscribeToMessages: MessagesSubscription!
 
     """
-    Yields the online statuses of users the user has in their contacts, or is in a chat with. The subscription will be
+    Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
     stopped if the user deletes their account.
 
     You must send an access token with this request.
@@ -499,29 +499,21 @@ type Subscription {
     subscribeToTypingStatuses: TypingStatusesSubscription!
 
     """
-    Yields updates on the user's contacts. The subscription will be stopped if the user deletes their account. The
+    Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
+    with. The subscription will be stopped if the user deletes their account. The subscription will be stopped if the
+    user deletes their account.
+
+    You must send an access token with this request.
+    """
+    subscribeToAccounts: AccountsSubscription!
+
+    """
+    Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
     subscription will be stopped if the user deletes their account.
 
     You must send an access token with this request.
     """
-    subscribeToContacts: ContactsSubscription!
-
-    """
-    Yields updated accounts of users the user has private chats with, and metadata updates on group chats the user is
-    in. Updates will be sent for private chats the user has deleted because it's possible that the user recreated the
-    chat but hasn't finished sending a message in it yet. The subscription will be stopped if the user deletes their
-    account.
-
-    You must send an access token with this request.
-    """
-    subscribeToUpdatedChats: UpdatedChatsSubscription!
-
-    """
-    Yields group chats the user was added to. The subscription will be stopped if the user deletes their account.
-
-    You must send an access token with this request.
-    """
-    subscribeToNewGroupChats: NewGroupChatsSubscription!
+    subscribeToGroupChats: GroupChatsSubscription!
 }
 
 union MessagesSubscription = CreatedSubscription
@@ -548,21 +540,17 @@ union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
-"""An `UpdatedContact` might be sent if the contact's profile pic was updated."""
-union ContactsSubscription = CreatedSubscription | NewContact | UpdatedContact | DeletedContact
+"""An `UpdatedAccount` might be sent if the account's profile pic was updated."""
+union AccountsSubscription = CreatedSubscription | NewContact | UpdatedAccount | DeletedContact
 
 """
-An `UpdatedAccount` represents the account of a user which was updated. It's possible the user updated their profile
-pic. The subscriber's account updates will not be included.
-
-If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+A `GroupChatId` is the ID of the chat the user was added to.
 
 An `UpdatedGroupChat` might be sent if the chat's pic was updated.
-"""
-union UpdatedChatsSubscription = CreatedSubscription | UpdatedGroupChat | UpdatedAccount | ExitedUser
 
-"""A `GroupChatId` is the ID of the chat the user was added to."""
-union NewGroupChatsSubscription = CreatedSubscription | GroupChatId
+If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+"""
+union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
 
 type UpdatedOnlineStatus {
     userId: Int!
@@ -702,15 +690,6 @@ type Account implements AccountData {
 }
 
 type NewContact implements AccountData {
-    id: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
-}
-
-type UpdatedContact implements AccountData {
     id: Int!
     username: Username!
     emailAddress: String!

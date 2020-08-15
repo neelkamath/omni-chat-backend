@@ -12,7 +12,6 @@ import org.redisson.api.RedissonClient
 import org.redisson.codec.JsonJacksonCodec
 import org.redisson.config.Config
 
-/** Only exposed for the test source set. */
 val redisson: RedissonClient = Redisson.create(
     Config().apply {
         useSingleServer().address = System.getenv("REDIS_URL")
@@ -23,9 +22,8 @@ val redisson: RedissonClient = Redisson.create(
 /** [Notifier.notify]s all [Notifier.publish]ed notifications. */
 fun subscribeToMessageBroker() {
     brokerMessages()
-    brokerContacts()
-    brokerUpdatedChats()
-    brokerNewGroupChats()
+    brokerAccounts()
+    brokerGroupChats()
     brokerTypingStatuses()
     brokerOnlineStatuses()
 }
@@ -38,29 +36,19 @@ private fun brokerMessages() {
     }
 }
 
-/** [Notifier.notify]s [Notifier.publish]ed updates for [contactsNotifier]. */
-private fun brokerContacts() {
-    redisson.getTopic(Topic.CONTACTS.toString()).addListener(List::class.java) { _, message ->
+/** [Notifier.notify]s [Notifier.publish]ed updates for [accountsNotifier]. */
+private fun brokerAccounts() {
+    redisson.getTopic(Topic.ACCOUNTS.toString()).addListener(List::class.java) { _, message ->
         @Suppress("UNCHECKED_CAST")
-        contactsNotifier.notify(message as List<Notification<ContactsAsset, ContactsSubscription>>)
+        accountsNotifier.notify(message as List<Notification<AccountsAsset, AccountsSubscription>>)
     }
 }
 
-/** [Notifier.notify]s [Notifier.publish]ed updates for [updatedChatsNotifier]. */
-private fun brokerUpdatedChats() {
-    redisson.getTopic(Topic.UPDATED_CHATS.toString()).addListener(List::class.java) { _, message ->
+/** [Notifier.notify]s [Notifier.publish]ed updates for [groupChatsNotifier]. */
+private fun brokerGroupChats() {
+    redisson.getTopic(Topic.GROUP_CHATS.toString()).addListener(List::class.java) { _, message ->
         @Suppress("UNCHECKED_CAST")
-        updatedChatsNotifier.notify(message as List<Notification<UpdatedChatsAsset, UpdatedChatsSubscription>>)
-    }
-}
-
-/** [Notifier.notify]s [Notifier.publish]ed updates for [newGroupChatsNotifier]. */
-private fun brokerNewGroupChats() {
-    redisson.getTopic(Topic.NEW_GROUP_CHATS.toString()).addListener(List::class.java) { _, message ->
-        @Suppress("UNCHECKED_CAST")
-        newGroupChatsNotifier.notify(
-            message as List<Notification<NewGroupChatsAsset, NewGroupChatsSubscription>>
-        )
+        groupChatsNotifier.notify(message as List<Notification<GroupChatsAsset, GroupChatsSubscription>>)
     }
 }
 
@@ -85,14 +73,11 @@ enum class Topic {
     MESSAGES {
         override fun toString() = "messages"
     },
-    CONTACTS {
-        override fun toString() = "contacts"
+    ACCOUNTS {
+        override fun toString() = "accounts"
     },
-    UPDATED_CHATS {
-        override fun toString() = "updatedChats"
-    },
-    NEW_GROUP_CHATS {
-        override fun toString() = "newGroupChats"
+    GROUP_CHATS {
+        override fun toString() = "groupChats"
     },
     TYPING_STATUSES {
         override fun toString() = "typingStatuses"
@@ -168,19 +153,14 @@ data class MessagesAsset(val userId: Int)
 
 val messagesNotifier = Notifier<MessagesAsset, MessagesSubscription>(Topic.MESSAGES)
 
-data class ContactsAsset(val userId: Int)
+data class AccountsAsset(val userId: Int)
 
 /** @see [negotiateUserUpdate] */
-val contactsNotifier = Notifier<ContactsAsset, ContactsSubscription>(Topic.CONTACTS)
+val accountsNotifier = Notifier<AccountsAsset, AccountsSubscription>(Topic.ACCOUNTS)
 
-data class UpdatedChatsAsset(val userId: Int)
+data class GroupChatsAsset(val userId: Int)
 
-/** @see [negotiateUserUpdate] */
-val updatedChatsNotifier = Notifier<UpdatedChatsAsset, UpdatedChatsSubscription>(Topic.UPDATED_CHATS)
-
-data class NewGroupChatsAsset(val userId: Int)
-
-val newGroupChatsNotifier = Notifier<NewGroupChatsAsset, NewGroupChatsSubscription>(Topic.NEW_GROUP_CHATS)
+val groupChatsNotifier = Notifier<GroupChatsAsset, GroupChatsSubscription>(Topic.GROUP_CHATS)
 
 data class TypingStatusesAsset(val userId: Int)
 
@@ -190,9 +170,8 @@ data class OnlineStatusesAsset(val userId: Int)
 
 val onlineStatusesNotifier = Notifier<OnlineStatusesAsset, OnlineStatusesSubscription>(Topic.ONLINE_STATUSES)
 
-/** Notifies subscribers of the updated [userId] via [contactsNotifier] and [updatedChatsNotifier]. */
+/** Notifies subscribers of the updated [userId] via [accountsNotifier]. */
 fun negotiateUserUpdate(userId: Int) {
-    val contactOwners = Contacts.readOwners(userId).map(::ContactsAsset)
-    contactsNotifier.publish(UpdatedContact.build(userId), contactOwners)
-    updatedChatsNotifier.publish(UpdatedAccount.build(userId), readChatSharers(userId).map(::UpdatedChatsAsset))
+    val subscribers = Contacts.readOwners(userId) + userId + readChatSharers(userId)
+    accountsNotifier.publish(UpdatedAccount.build(userId), subscribers.map(::AccountsAsset))
 }
