@@ -20,7 +20,7 @@ Since this repo is for the backend API, here are recommendations for a developer
 - Public chats should be indexable by search engines so that users without an account can search for messages, etc. This could be done by giving every message a URL (e.g, a message with ID `1` in a chat with ID `4` could have a URL `https://example.com/chats/4/1`). Omni Chat instances meant for internal company use may not want this, so indexability should be configurable.
 - When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
 - Many times you only want to switch on notifications for important chats. The user will be able to switch on notifications only for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
-- [ ] Perhaps you could have the option to disallow screenshots on certain chats.
+- Disallow screenshots on certain chats.
 
 ### Free
 

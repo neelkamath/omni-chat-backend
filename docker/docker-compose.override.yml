@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   chat:
-    image: gradle:6.5.1-jdk14
+    image: gradle:6.6.0-jdk14
     command: sh -c 'gradle --stacktrace -t installDist & gradle run'
     # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name.
     working_dir: /home/gradle/omni-chat

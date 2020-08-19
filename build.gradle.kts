@@ -2,7 +2,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     application
-    kotlin("jvm") version "1.3.72"
+    kotlin("jvm") version "1.4.0"
     id("com.github.johnrengelman.shadow") version "6.0.0"
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
@@ -13,7 +13,6 @@ application.mainClassName = "io.ktor.server.netty.EngineMain"
 repositories { jcenter() }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
     implementation("com.graphql-java:graphql-java:15.0")
     implementation("org.redisson:redisson:3.13.3")
     implementation("org.postgresql:postgresql:42.2.2")
@@ -24,7 +23,7 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
 
-    val ktorVersion = "1.3.2"
+    val ktorVersion = "1.4.0"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-jackson:$ktorVersion")
@@ -38,7 +37,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
 
-    val keycloakVersion = "10.0.2"
+    val keycloakVersion = "11.0.0"
     implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
     implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
 }
