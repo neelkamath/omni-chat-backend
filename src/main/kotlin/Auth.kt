@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.db.deleteUserFromDb
 import com.neelkamath.omniChat.db.negotiateUserUpdate
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.routing.*
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
 import org.keycloak.admin.client.resource.RealmResource
@@ -209,5 +209,6 @@ private fun createCredentials(password: Password): List<CredentialRepresentation
 /** Whether the [emailAddress]'s domain (e.g., `"example.com"`) is allowed by this Omni Chat instance. */
 fun hasAllowedDomain(emailAddress: String): Boolean {
     val domains = System.getenv("ALLOWED_DOMAINS") ?: return true
+    if (domains.isEmpty()) return true
     return emailAddress.substringAfter("@") in domains.split(",")
 }

@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat
 
 import com.neelkamath.omniChat.graphql.routing.*
@@ -64,7 +66,7 @@ class AuthTest {
     @Nested
     inner class SearchUsers {
         /** Creates users, and returns their IDs. */
-        fun createUsers(): List<Int> = listOf(
+        private fun createUsers(): List<Int> = listOf(
             AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", firstName = "Tony"),
             AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", firstName = "John"),
             AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),

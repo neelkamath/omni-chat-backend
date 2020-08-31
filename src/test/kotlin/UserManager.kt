@@ -7,7 +7,7 @@ private var userCount = 0
 
 data class VerifiedUser(val info: Account, val password: Password) {
     val login = Login(info.username, password)
-    val accessToken = buildAuthToken(info.id).accessToken
+    val accessToken = buildTokenSet(info.id).accessToken
 
     companion object {
         fun build(account: AccountInput): VerifiedUser = with(account) {

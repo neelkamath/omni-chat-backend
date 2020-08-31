@@ -3,14 +3,14 @@ package com.neelkamath.omniChat.graphql.routing
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl
+import com.neelkamath.omniChat.userId
 import graphql.execution.UnknownOperationException
-import io.ktor.application.call
-import io.ktor.auth.authenticate
-import io.ktor.http.HttpStatusCode
-import io.ktor.request.receive
-import io.ktor.response.respond
-import io.ktor.routing.Routing
-import io.ktor.routing.post
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.http.*
+import io.ktor.request.*
+import io.ktor.response.*
+import io.ktor.routing.*
 
 /**
  * Adds the HTTP POST `/query-or-mutation` endpoint to the [context], which deals with every GraphQL query and mutation.
@@ -18,7 +18,7 @@ import io.ktor.routing.post
 fun routeGraphQlQueriesAndMutations(context: Routing): Unit = with(context) {
     authenticate(optional = true) {
         post("query-or-mutation") {
-            val builder = buildExecutionInput(call.receive(), call)
+            val builder = buildExecutionInput(call.receive(), call.userId)
             try {
                 val result = graphQl.execute(builder)
                 call.respond(buildSpecification(result))

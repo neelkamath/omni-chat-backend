@@ -5,27 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.db.subscribeToMessageBroker
+import com.neelkamath.omniChat.db.tables.OnetimeTokens
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
 import com.neelkamath.omniChat.restApi.*
 import graphql.schema.DataFetchingEnvironment
-import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
-import io.ktor.application.install
-import io.ktor.auth.Authentication
-import io.ktor.auth.authentication
-import io.ktor.auth.jwt.JWTPrincipal
-import io.ktor.auth.jwt.jwt
-import io.ktor.features.CORS
-import io.ktor.features.CallLogging
-import io.ktor.features.ContentNegotiation
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.cio.websocket.pingPeriod
-import io.ktor.jackson.JacksonConverter
-import io.ktor.routing.routing
-import io.ktor.websocket.WebSockets
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.auth.jwt.*
+import io.ktor.features.*
+import io.ktor.http.*
+import io.ktor.http.cio.websocket.*
+import io.ktor.jackson.*
+import io.ktor.routing.*
+import io.ktor.websocket.*
 import java.time.Duration
 
 /** Project-wide Jackson config. */
@@ -54,8 +48,12 @@ fun Application.main() {
     install(WebSockets) { pingPeriod = Duration.ofMinutes(1) }
     install(Authentication) {
         jwt {
-            verifier(buildVerifier())
-            validate { if (Users.exists(it.payload.subject.toInt())) JWTPrincipal(it.payload) else null }
+            verifier(jwtVerifier)
+            validate { credential ->
+                if (isInvalidOnetimeToken(credential)) return@validate null
+                credential.payload.id?.let { OnetimeTokens.delete(it.toInt()) }
+                if (Users.exists(credential.payload.subject.toInt())) JWTPrincipal(credential.payload) else null
+            }
         }
     }
     routing {

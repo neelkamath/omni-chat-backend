@@ -12,9 +12,6 @@ import graphql.schema.DataFetchingEnvironment
 import graphql.schema.idl.RuntimeWiring.newRuntimeWiring
 import graphql.schema.idl.SchemaGenerator
 import graphql.schema.idl.SchemaParser
-import io.ktor.application.ApplicationCall
-import io.ktor.auth.authentication
-import io.ktor.auth.jwt.JWTPrincipal
 import java.lang.ClassLoader.getSystemClassLoader
 
 val graphQl: GraphQL = run {
@@ -45,13 +42,12 @@ fun DataFetchingEnvironment.verifyAuth() {
     userId ?: throw UnauthorizedException
 }
 
-/** If there's a [JWTPrincipal] in the [call], the JWT's `sub` will be saved as the [ExecutionInput.Builder.context]. */
-fun buildExecutionInput(request: GraphQlRequest, call: ApplicationCall): ExecutionInput.Builder =
-    ExecutionInput.Builder()
-        .query(request.query)
-        .variables(request.variables ?: mapOf())
-        .operationName(request.operationName)
-        .context(call.authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt())
+/** The [userId] will be saved as the [ExecutionInput.Builder.context]. */
+fun buildExecutionInput(request: GraphQlRequest, userId: Int?): ExecutionInput.Builder = ExecutionInput.Builder()
+    .query(request.query)
+    .variables(request.variables ?: mapOf())
+    .operationName(request.operationName)
+    .context(userId)
 
 /**
  * Returns the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with

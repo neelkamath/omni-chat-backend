@@ -6,13 +6,52 @@ import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.TextMessages
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.graphql.operations.READ_CHATS_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createTextMessage
 import com.neelkamath.omniChat.graphql.routing.*
+import io.ktor.http.*
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+
+@ExtendWith(DbExtension::class)
+@Suppress("ClassName")
+class Application_MainTest {
+    @Test
+    fun `A non-onetime access token should work for queries and mutations`() {
+        val userId = createVerifiedUsers(1)[0].info.id
+        val token = buildTokenSet(userId).accessToken
+        assertNotEquals(
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+        )
+    }
+
+    @Test
+    fun `A unused onetime access token should work for queries and mutations`() {
+        val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
+        assertNotEquals(
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+        )
+    }
+
+    @Test
+    fun `A used onetime access token shouldn't work for queries and mutations`() {
+        val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
+        assertNotEquals(
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+        )
+        assertEquals(
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+        )
+    }
+}
 
 /**
  * Sanity tests for encoding.
@@ -67,7 +106,7 @@ class SpecComplianceTest {
         val account = AccountInput(Username("username"), Password("password"), "username@example.com")
         createUser(account)
         val userId = readUserByUsername(account.username).id
-        val accessToken = buildAuthToken(userId).accessToken
+        val accessToken = buildTokenSet(userId).accessToken
         val response = readGraphQlHttpResponse(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
         val data = objectMapper.convertValue<Map<String, Any?>>(response["readAccount"]!!).toList()
         assertTrue(Pair("firstName", null) in data)
