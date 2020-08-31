@@ -36,7 +36,7 @@
         down
     ```
 
-If you have changed the auth system's setup, or the chat DB's schema, you must delete the existing databases:
+If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database:
 1. Ensure the application isn't running:
     ```
     docker-compose \
@@ -45,8 +45,8 @@ If you have changed the auth system's setup, or the chat DB's schema, you must d
         --project-directory . \
         down
     ```
-1. `docker volume rm omni-chat_auth-db`
-1. `docker volume rm omni-chat_chat-db`
+1. If you've changed the auth system's setup: `docker volume rm omni-chat_auth-db`
+1. If you've removed a column from the chat DB's schema: `docker volume rm omni-chat_chat-db`
 
 ### Development
 
@@ -58,7 +58,6 @@ If you have changed the auth system's setup, or the chat DB's schema, you must d
         --project-directory . \
         up -d
     ```
-1. [Set up the auth system](auth_setup.md) if you haven't already.
 1. To shut down:
     ```
     docker-compose \
@@ -79,7 +78,6 @@ Here's how to test the production build:
         --project-directory . \
         up --build -d
     ```
-1. [Set up the auth system](auth_setup.md) if you haven't already.
 1. To shut down:
     ```
     docker-compose \
@@ -137,4 +135,4 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
 1. Add a [changelog](CHANGELOG.md) entry.
-1. Commit to the `master` branch only when releasing a new version.
+1. Only commit to the `master` branch when releasing a new version.

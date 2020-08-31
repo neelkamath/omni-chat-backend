@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.0
+
+### Server
+
+- Updated:
+    - Docker `auth` service's `image`
+    - Docker `auth-db` service's `image`
+    - Docker `chat-db` service's `image`
+- Bug fixes:
+    - `ALLOWED_DOMAINS` environment variable
+    - Access tokens are now to be sent in the URL instead of an HTTP header for WebSockets.
+
 ## v0.5.0
 
 ### GraphQL QPI

@@ -4,7 +4,7 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-For people who need to communicate via instant messaging, Omni Chat is a free and open core chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
+For people who need to communicate via instant messaging, Omni Chat is a free and [open-core](https://en.wikipedia.org/wiki/Open-core_model) chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
 
 The [spec](docs/spec.md) explains how Omni Chat differentiates itself from existing services, and which features have been implemented so far. This repo is for the backend API. There's no frontend UI yet.
 
@@ -40,18 +40,19 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
     1. Stop streaming logs:
         - macOS: `control+C`
         - Other: `Ctrl+C`
-1. [Set up the auth system](docs/auth_setup.md) if you haven't already.
 1. To shut down: `docker-compose down`
 
 ### Migrating to a Newer Version
 
-Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version:
+Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
+
 1. Ensure the application isn't running: `docker-compose down`
-1. Delete the databases (replace `<DIR>` with the name of the present working directory):
+1. Delete the databases (replace `<DIR>` with the name of the present working directory in lowercase):
     ```
     docker volume rm <DIR>_chat-db
     docker volume rm <DIR>_auth-db
     ```
+1. Delete all the server files you installed (e.g., `Caddyfile`, `docker-compose.yml`), and follow the **Installation** and **Usage** instructions again because the server setup may have changed.
 
 ## [Contributing](docs/CONTRIBUTING.md)
 

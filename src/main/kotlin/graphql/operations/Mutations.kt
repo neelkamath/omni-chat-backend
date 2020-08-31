@@ -21,7 +21,7 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
 
 fun setOnlineStatus(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    Users.setOnlineStatus(env.userId!!, env.getArgument<Boolean>("isOnline"))
+    Users.setOnlineStatus(env.userId!!, env.getArgument("isOnline"))
     return Placeholder
 }
 
@@ -57,7 +57,7 @@ private fun verifyCanCreateStatus(messageId: Int, userId: Int, status: MessageSt
 
 fun deleteStar(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    Stargazers.deleteUserStar(env.userId!!, env.getArgument<Int>("messageId"))
+    Stargazers.deleteUserStar(env.userId!!, env.getArgument("messageId"))
     return Placeholder
 }
 
@@ -83,7 +83,7 @@ fun setTyping(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    TypingStatuses.set(chatId, env.userId!!, env.getArgument<Boolean>("isTyping"))
+    TypingStatuses.set(chatId, env.userId!!, env.getArgument("isTyping"))
     return Placeholder
 }
 
@@ -98,7 +98,7 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     Messages.createTextMessage(
         env.userId!!,
         chatId,
-        env.getArgument<MessageText>("text"),
+        env.getArgument("text"),
         contextMessageId,
         isForwarded = false
     )

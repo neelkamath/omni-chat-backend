@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   auth:
-    image: jboss/keycloak:10.0.2
+    image: jboss/keycloak:11.0.0
     entrypoint: /dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [proxy, auth-db]
@@ -22,7 +22,7 @@ services:
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_USER: admin
   auth-db:
-    image: postgres:12.3
+    image: postgres:12.4
     networks: [auth-db]
     expose: [5432]
     restart: always
@@ -54,7 +54,7 @@ services:
       POSTGRES_URL: chat-db:5432
       REDIS_URL: redis://message-broker:6379
   chat-db:
-    image: postgres:12.3
+    image: postgres:12.4
     restart: always
     expose: [5432]
     networks: [chat-db]

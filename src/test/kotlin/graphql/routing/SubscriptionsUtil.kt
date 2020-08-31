@@ -4,11 +4,9 @@ import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.test
 import com.neelkamath.omniChat.testingObjectMapper
-import io.ktor.application.Application
-import io.ktor.http.HttpHeaders
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
-import io.ktor.server.testing.withTestApplication
+import io.ktor.application.*
+import io.ktor.http.cio.websocket.*
+import io.ktor.server.testing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
@@ -17,19 +15,17 @@ import kotlinx.coroutines.launch
 typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
 
 /**
- * Opens a WebSocket connection on the [uri], sends the GraphQL subscription [request], and has the [callback]
- * [ReceiveChannel] and [SendChannel].
+ * Opens a WebSocket connection on the URI's [path] (e.g., `"messages-subscription"`), sends the GraphQL subscription
+ * [request], and has the [callback] [ReceiveChannel] and [SendChannel].
  */
 fun executeGraphQlSubscriptionViaWebSocket(
-    uri: String,
+    path: String,
     request: GraphQlRequest,
     accessToken: String? = null,
     callback: SubscriptionCallback
 ): Unit = withTestApplication(Application::test) {
-    handleWebSocketConversation(
-        uri,
-        { if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken") }
-    ) { incoming, outgoing ->
+    val uri = if (accessToken == null) path else "$path?access_token=$accessToken"
+    handleWebSocketConversation(uri) { incoming, outgoing ->
         launch(Dispatchers.IO) {
             val json = testingObjectMapper.writeValueAsString(request)
             outgoing.send(Frame.Text(json))

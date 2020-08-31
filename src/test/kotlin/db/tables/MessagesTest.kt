@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
@@ -521,7 +523,7 @@ class MessagesTest {
 
     @Nested
     inner class ReadCursor {
-        fun assertCursor(hasMessage: Boolean) {
+        private fun assertCursor(hasMessage: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = if (hasMessage) Messages.message(adminId, chatId) else null

@@ -87,7 +87,7 @@ object PrivateChatDeletions : IntIdTable() {
         val getDateTime = { index: Int ->
             deletions.last { it[userId] == userIdList.elementAt(index) }[dateTime]
         }
-        listOf(getDateTime(0), getDateTime(1)).min()
+        listOf(getDateTime(0), getDateTime(1)).minOrNull()
     }
 
     /** Returns the last time the [userId] deleted the [chatId], if they ever did. */

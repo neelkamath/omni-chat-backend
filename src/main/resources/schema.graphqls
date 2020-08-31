@@ -141,12 +141,24 @@ type Query {
 
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-    authenticate the user by passing their `Login` to this operation.
+    authenticate the user by passing their `Login` to this operation. For insecure contexts such as URLs, always use
+    `Query.requestOnetimeToken` instead.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
     """
     requestTokenSet(login: Login!): TokenSet!
+
+    """
+    Operations such as `Subscription.subscribeToMessages` require authentication via an access token. You can acquire one
+    to authenticate the user by passing their `Login` to this operation. This access token can only be used once, and is
+    meant for use in insecure contexts. For secure contexts such as HTTPS headers, using `Query.requestTokenSet` is
+    easier.
+
+    Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
+    `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
+    """
+    requestOnetimeToken(login: Login!): ID!
 
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by

@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
@@ -10,14 +12,9 @@ import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import com.neelkamath.omniChat.test
 import com.neelkamath.omniChat.testingObjectMapper
-import io.ktor.application.Application
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.setBody
-import io.ktor.server.testing.withTestApplication
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test

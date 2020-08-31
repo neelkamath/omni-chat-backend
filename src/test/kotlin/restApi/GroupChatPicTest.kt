@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.restApi
 
 import com.neelkamath.omniChat.DbExtension
@@ -6,13 +8,9 @@ import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.test
-import io.ktor.application.Application
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.formUrlEncode
-import io.ktor.server.testing.TestApplicationResponse
-import io.ktor.server.testing.handleRequest
-import io.ktor.server.testing.withTestApplication
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test

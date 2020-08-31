@@ -13,7 +13,7 @@ Here's the usual flow for using the API:
 
 - The base URL is http://localhost:80.
 - The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
-- When the docs refer to CommonMarks, they're referring to the [Markdown spec](https://commonmark.org/).
+- When the docs refer to CommonMark, they're referring to the [Markdown spec](https://commonmark.org/).
 - Unless explicitly stated, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
@@ -48,14 +48,18 @@ Here's an example:
 
 ### Schema
 
-Here's the current version's [schema](../src/main/resources/schema.graphqls).
+The [schema](../src/main/resources/schema.graphqls) contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message gets returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it, or sign up for a new account. Here's an example GraphQL document containing the `"NONEXISTENT_USER"` error message:
+```json
+{
+  "errors": [
+    {
+      "message": "NONEXISTENT_USER"
+    }
+  ]    
+}
+```
 
-The schema contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message gets returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it or sign up for a new account.
-
-There are other types of error messages which could be returned which aren't explicitly documented in the schema because they would be repetitive and irrelevant. They are:
-- Receiving the `"INTERNAL_SERVER_ERROR"` `errors[0].message` indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "Something went wrong. Please try again.".
-- Receiving the `"UNAUTHORIZED"` `errors[0].message` indicates that a mandatory access token wasn't supplied.
-- If descriptive error messages get returned, then the GraphQL engine is explaining why the client's request was invalid. In this case, there's a bug in the client's code, and the programmer consuming the API must fix it. 
+There is one error message which every operation can return which isn't explicitly documented because it'd be repetitive and irrelevant. This is the `"INTERNAL_SERVER_ERROR"` `errors[0].message`. It indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "Something went wrong. Please try again.".
 
 ### Pagination
 
@@ -100,30 +104,28 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of one minute, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
+`Subscription`s may require access tokens but browsers can't pass HTTP headers when using WebSockets. Therefore, we pass the token in the URL as the parameter `access_token`. Since this is insecure, you must only ever use the token from `Query.requestOnetimeToken` instead of the access token from `Query.requestTokenSet`.
+
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
 
 The server only accepts the first event you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
 
 Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
-1. Open the WebSocket connection. Note that if you supply an invalid access token, the connection will not be opened. Here's an example WebSocket handshake request:
-
+1. Open the WebSocket connection. Note that if you supply an invalid access token, the connection will be closed with a status code of 1008. Here's an example WebSocket handshake request (you won't need to manually perform the handshake if you're using a library which deals with WebSocket implementation details for you):
     ```http request
-    GET http://localhost:80/messages-subscription HTTP/1.1
-    Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YjNhNzRhZi03Y2M4LTRjZTMtYTg2ZC05YzI4ZmNlZTAzODciLCJleHAiOjE1ODg3NTE0MjR9.JuVC92_Zz6Cnb5p2ZQ_lMKU_9lfIfAP7PcLkVVKnMkU
+    GET http://localhost:80/messages-subscription?access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YjNhNzRhZi03Y2M4LTRjZTMtYTg2ZC05YzI4ZmNlZTAzODciLCJleHAiOjE1ODg3NTE0MjR9.JuVC92_Zz6Cnb5p2ZQ_lMKU_9lfIfAP7PcLkVVKnMkU HTTP/1.1
     Upgrade: websocket
     Connection: Upgrade
     
     ```
 1. Send the GraphQL document in JSON serialized as text. Here's an example JSON string:
-
     ```json
     {
-      "query": "subscription SubscribeToMessages { subscribeToMessages { ... on CreatedSubscription { placeholder } ... on NewMessage { senderId, text } } }"
+      "query": "subscription SubscribeToMessages { subscribeToMessages { ... on CreatedSubscription { placeholder } ... on NewTextMessage { chatId, message } } }"
     }
     ```
 1. If the user is unauthorized, the connection will be closed with a status code of 1008.
 1. If the user's authorized, but the GraphQL document you sent was invalid, the error will be returned, and then the connection will be closed. Here's an example of such a GraphQL document (a JSON string):
-
     ```json
     {
       "errors": [
@@ -134,13 +136,12 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
     }
     ```
 1. If the user's authorized, and the GraphQL document you sent was valid, you will receive events (GraphQL documents in JSON serialized as text). Here's an example of such an event (a JSON string):
-
     ```json
     {
       "data": {
         "subscribeToMessageUpdates": {
-          "senderId": "586a42c6-1fd4-4bfa-9b78-5f32727042ca",
-          "text": "Hi!"
+          "chatId": 3,
+          "message": "Hi!"
         }
       }
     }

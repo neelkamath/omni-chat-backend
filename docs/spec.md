@@ -2,7 +2,15 @@
 
 ## The Problem
 
-There are way too many chat apps. Every new one tries to implement features another lacks, but in the process don't implement the features they do. The end result is that users get forced to use several apps, none of which do not serve their purpose well. What's more is that certain people will refuse to use certain apps because they're already on too many. Another issue is that you don't know which app to use for which person at what time for a particular type of message. For example, if Bob wants to send Lisa an important message, he doesn't know whether to use Telegram, Snapchat, etc. because each person checks different apps at different intervals for different types of messages.
+There are too many chat apps. Every new one tries to implement features another lacks, but in the process don't implement the features they do. The end result is that users get forced to use several apps, none of which serve their purpose well. What's more is that certain people will refuse to use certain apps because they're already on too many. Another issue is that you don't know which app to use for which person at what time for a particular type of message. For example, if Bob wants to send Lisa an important message, he doesn't know whether to use Telegram, Snapchat, etc. because each person checks different apps at different intervals for different types of messages.
+
+There are currently only two good chat apps, [Discord](http://discord.com) and [Signal](https://www.signal.org/). There are other decent apps like WhatsApp, but the aforementioned apps provide more features than its competitors provide, and hence we'll only focus on them for comparing Omni Chat with competitors. Discord, Signal, and Omni Chat all have group video calls, etc., so we'll focus on the non-common features:
+
+|App|E2E Encryption|Screen Sharing|Open-core|
+|:---:|:---:|:---:|:---:|
+|Discord|❌|✅|❌|
+|Signal|✅|❌|✅|
+|Omni Chat|✅|✅|✅|
 
 ## Features
 
@@ -20,7 +28,7 @@ Since this repo is for the backend API, here are recommendations for a developer
 - Public chats should be indexable by search engines so that users without an account can search for messages, etc. This could be done by giving every message a URL (e.g, a message with ID `1` in a chat with ID `4` could have a URL `https://example.com/chats/4/1`). Omni Chat instances meant for internal company use may not want this, so indexability should be configurable.
 - When a user who isn't in the user's contacts creates a chat with the user, it should go to an "Invites" tab where the user will have to go to ignore the chat, delete the chat, block the user, or add them to their contacts so that the chat will appear in the "Chats" tab. Otherwise, users and bots might spam each other, especially if they're a celebrity.
 - Many times you only want to switch on notifications for important chats. The user will be able to switch on notifications only for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
-- [ ] Perhaps you could have the option to disallow screenshots on certain chats.
+- Disallow screenshots on certain chats.
 
 ### Free
 
@@ -77,9 +85,6 @@ Features must be free if they're a unique selling point, are useful for the aver
 ### Paid
 
 - [ ] Auto-reply suggestions.
-- [ ] The citizens of Oman have to use a VPN to use WhatsApp video calls because their government had it blocked. It could also have an automatic VPN so that places like Oman can't block its services. This can be paid because it's not a unique selling point; even external VPNs would work.
 - [ ] Realtime translation for text, audio, and video.
 - [ ] Builtin suggestions for restaurants you're talking about, etc. (i.e., a personal assistant like the one Allo has).
 - [ ] Have a default voicemail, or video-mail message. For example, you could set up voicemail to tell people you're currently on vacation.
-- [ ] UI themes.
-- [ ] Even nontechnical users can build bots for things like Swiggy chat integrations (e.g., a bot which serves FAQs via buttons).

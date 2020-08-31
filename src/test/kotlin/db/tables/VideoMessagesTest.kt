@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.db.tables
 
 import org.junit.jupiter.api.Nested

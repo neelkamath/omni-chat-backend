@@ -166,13 +166,17 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
     return Contacts.read(env.userId!!, pagination)
 }
 
-fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
+fun requestTokenSet(env: DataFetchingEnvironment): TokenSet = buildTokenSet(validateLogin(env))
+
+fun requestOnetimeToken(env: DataFetchingEnvironment): String = buildOnetimeToken(validateLogin(env))
+
+private fun validateLogin(env: DataFetchingEnvironment): Int {
     val login = env.parseArgument<Login>("login")
     if (!isUsernameTaken(login.username)) throw NonexistentUserException
     val userId = readUserByUsername(login.username).id
     if (!isEmailVerified(userId)) throw UnverifiedEmailAddressException
     if (!isValidLogin(login)) throw IncorrectPasswordException
-    return buildAuthToken(userId)
+    return userId
 }
 
 fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
@@ -182,7 +186,7 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     } catch (_: JWTDecodeException) {
         throw UnauthorizedException
     }
-    return buildAuthToken(userId)
+    return buildTokenSet(userId)
 }
 
 fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
@@ -224,7 +228,7 @@ fun readStars(env: DataFetchingEnvironment): List<StarredMessage> {
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    return Contacts.search(env.userId!!, env.getArgument<String>("query"), pagination)
+    return Contacts.search(env.userId!!, env.getArgument("query"), pagination)
 }
 
 fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.5.0
+  version: 0.6.0
   title: Omni Chat
   description: Functionality supplementary to the GraphQL API such as uploading and downloading image and audio files.
   contact:

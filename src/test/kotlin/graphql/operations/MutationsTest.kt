@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
@@ -7,7 +9,7 @@ import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
@@ -1018,7 +1020,7 @@ class MutationsTest {
 
     @Nested
     inner class SetOnlineStatus {
-        fun assertOnlineStatus(isOnline: Boolean) {
+        private fun assertOnlineStatus(isOnline: Boolean) {
             val userId = createVerifiedUsers(1)[0].info.id
             setOnlineStatus(userId, isOnline)
             assertEquals(isOnline, Users.read(userId).isOnline)
@@ -1037,7 +1039,7 @@ class MutationsTest {
 
     @Nested
     inner class SetTyping {
-        fun assertTypingStatus(isTyping: Boolean) {
+        private fun assertTypingStatus(isTyping: Boolean) {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             setTyping(adminId, chatId, isTyping)
@@ -1491,7 +1493,7 @@ class MutationsTest {
 
     @Nested
     inner class UpdateAccount {
-        fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
+        private fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
             assertFalse(isUsernameTaken(accountBeforeUpdate.username))
             with(readUserByUsername(accountAfterUpdate.username!!)) {
                 assertEquals(accountAfterUpdate.username, username)

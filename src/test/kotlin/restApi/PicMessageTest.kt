@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -7,10 +9,8 @@ import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.testingObjectMapper
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.formUrlEncode
-import io.ktor.server.testing.TestApplicationResponse
+import io.ktor.http.*
+import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
@@ -97,7 +97,7 @@ class PicMessageTest {
             }
         }
 
-        fun testBadRequest(dummy: DummyFile) {
+        private fun testBadRequest(dummy: DummyFile) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             with(postPicMessage(admin.accessToken, dummy, chatId)) {

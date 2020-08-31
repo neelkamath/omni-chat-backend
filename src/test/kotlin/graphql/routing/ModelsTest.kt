@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.createVerifiedUsers
