@@ -86,5 +86,4 @@ Features must be free if they're a unique selling point, are useful for the aver
 
 - [ ] Auto-reply suggestions.
 - [ ] Realtime translation for text, audio, and video.
-- [ ] Builtin suggestions for restaurants you're talking about, etc. (i.e., a personal assistant like the one Allo has).
-- [ ] Have a default voicemail, or video-mail message. For example, you could set up voicemail to tell people you're currently on vacation.
+- [ ] Builtin suggestions for restaurants you're talking about, etc. (i.e., a personal assistant like the one Google Allo had).

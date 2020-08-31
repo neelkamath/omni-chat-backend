@@ -158,8 +158,14 @@ private class Subscriber(
 
     /** [DefaultWebSocketServerSession.send]s a [CreatedSubscription]. */
     private fun sendCreatedSubscription() {
-        val data = mapOf(graphQlSubscription.operation to mapOf("placeholder" to ""))
-        val json = objectMapper.writeValueAsString(GraphQlResponse(data))
+        val doc = mapOf(
+            "data" to mapOf(
+                graphQlSubscription.operation to mapOf(
+                    "placeholder" to ""
+                )
+            )
+        )
+        val json = objectMapper.writeValueAsString(doc)
         withSession { send(Frame.Text(json)) }
     }
 

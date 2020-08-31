@@ -35,7 +35,7 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
     1. Run `echo <TOKEN> | docker login docker.pkg.github.com -u <USERNAME> --password-stdin`, where `<TOKEN>` is your personal access token, and `<USERNAME>` is your GitHub username. 
 1. Start the server on http://localhost:80: `docker-compose up -d`
 1. Wait for the server to start:
-    1. Run `docker logs -f <DIR>_chat_1`, where `<DIR>` is the name of the directory you're currently in.
+    1. Run `docker logs -f <DIR>_chat_1`, where `<DIR>` is the lowercase name of the directory you're currently in.
     1. Wait for something similar to `2020-08-05 01:29:38.946 [main] INFO  Application - Responding at http://0.0.0.0:80` to be printed.
     1. Stop streaming logs:
         - macOS: `control+C`
@@ -47,7 +47,7 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
 
 1. Ensure the application isn't running: `docker-compose down`
-1. Delete the databases (replace `<DIR>` with the name of the present working directory in lowercase):
+1. Delete the databases (replace `<DIR>` with the lowercase name of the present working directory):
     ```
     docker volume rm <DIR>_chat-db
     docker volume rm <DIR>_auth-db
