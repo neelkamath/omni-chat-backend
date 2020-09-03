@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.1
+
+### Server
+
+- Bug fixes:
+    - The example Docker Compose file now works for Windows users.
+
+### GraphQL API
+
+- Bug fixes:
+    - `Subscription`s no longer give back GraphQL documents with `null` `errors` keys.
+
 ## v0.6.0
 
 ### Server

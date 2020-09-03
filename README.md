@@ -14,6 +14,7 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 
 1. Download the `rest-api.html` asset from a [release](https://github.com/neelkamath/omni-chat/releases).
 1. Download [`dockerize`](docker/dockerize).
+1. If you're not using Windows, run `chmod +x dockerize`.
 1. Download [`docker-compose.yml`](docs/docker-compose.yml).
 1. Install [Docker](https://docs.docker.com/get-docker/).
 1. [Configure](docs/config.md).

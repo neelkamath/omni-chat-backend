@@ -2,9 +2,8 @@ version: '3.8'
 services:
   auth:
     image: jboss/keycloak:11.0.0
-    entrypoint: sh -c '
-      chmod +x /dockerize && /dockerize -wait tcp://auth-db:5432 && /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
-      '
+    entrypoint: /dockerize -wait tcp://auth-db:5432
+    command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [ proxy, auth-db ]
     restart: always
     expose: [ 8080 ]
@@ -12,6 +11,7 @@ services:
       - type: bind
         source: ./dockerize
         target: /dockerize
+        read_only: true
     environment:
       DB_ADDR: auth-db
       DB_DATABASE: postgres

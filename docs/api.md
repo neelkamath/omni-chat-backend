@@ -2,16 +2,21 @@
 
 ## Flow
 
-Here's the usual flow for using the API:
+Here's the usual flow for using the API if you're building a frontend UI:
 1. Have the user sign up for an account. Pass the info they give you to `Mutatation.createAccount`.
 1. Have the user verify their email.
 1. Have the user log in. Pass the credentials they give you to `Query.requestTokenSet`. This will give you an access token to authenticate their future actions.
 1. Use the access token to authorize requests on behalf of the user (e.g., `Query.readChats`).
-1. Periodically request a new token set using `Query.refreshTokenSet`.
+
+Here's the usual flow for using the API if you're building a bot:
+1. Create an account for the bot using either the frontend UI or by making an HTTP request to `Mutation.createAccount`, and verify the account's email address.
+1. Store the created account's username and password in the bot's source code.
+1. Program the bot to call `Query.requestTokenSet` when it first starts, and to use `Query.refreshTokenSet` periodically.
+1. Program the bot to use the API (e.g., `Mutation.createTextMessage`).
 
 ## Notes
 
-- The base URL is http://localhost:80.
+- If you're running Omni Chat yourself, the base URL is http://localhost:80. Otherwise, it's the URL the server admin is running it on (e.g., `https://example.com`).
 - The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
 - When the docs refer to CommonMark, they're referring to the [Markdown spec](https://commonmark.org/).
 - Unless explicitly stated, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).

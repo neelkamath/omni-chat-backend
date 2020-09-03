@@ -141,8 +141,9 @@ type Query {
 
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-    authenticate the user by passing their `Login` to this operation. For insecure contexts such as URLs, always use
-    `Query.requestOnetimeToken` instead.
+    authenticate the user by passing their `Login` to this operation. Once the access token has expired, you can pass
+    the `TokenSet.refreshToken` to `Query.refreshTokenSet`. When passing access tokens in insecure contexts such as a
+    URL, always use `Query.requestOnetimeToken` instead.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
@@ -162,7 +163,8 @@ type Query {
 
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
-    passing the `refreshToken` to this operation to request a new set of tokens.
+    passing the `refreshToken` to this operation to request a new set of tokens. You can get a refresh token from
+    `Query.requestTokenSet`.
     """
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
