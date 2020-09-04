@@ -6,14 +6,11 @@ import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.PicMessages
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.userId
-import io.ktor.application.call
-import io.ktor.auth.authenticate
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
-import io.ktor.routing.Route
-import io.ktor.routing.Routing
-import io.ktor.routing.post
-import io.ktor.routing.route
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.http.*
+import io.ktor.response.*
+import io.ktor.routing.*
 
 fun routePicMessage(routing: Routing): Unit = with(routing) {
     authenticate {
@@ -54,13 +51,7 @@ private fun postPicMessage(route: Route): Unit = with(route) {
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
 
             else -> {
-                Messages.createPicMessage(
-                    call.userId!!,
-                    chatId,
-                    CaptionedPic(pic, caption),
-                    contextMessageId,
-                    isForwarded = false
-                )
+                Messages.createPicMessage(call.userId!!, chatId, CaptionedPic(pic, caption), contextMessageId)
                 call.respond(HttpStatusCode.NoContent)
             }
         }

@@ -28,6 +28,10 @@ object PollMessages : IntIdTable() {
         PollOptions.create(pollId, poll.options)
     }
 
+    fun exists(messageId: Int): Boolean = transaction {
+        select { PollMessages.messageId eq messageId }.empty().not()
+    }
+
     fun read(messageId: Int): Poll {
         val row = transaction {
             select { PollMessages.messageId eq messageId }.first()

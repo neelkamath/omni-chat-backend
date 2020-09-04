@@ -115,6 +115,16 @@ interface BareMessage {
         TextMessages.read(messageId)
     )
 
+    fun toNewActionMessage(): NewActionMessage = NewActionMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        ActionMessages.read(messageId)
+    )
+
     fun toNewAudioMessage(): NewAudioMessage =
         NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
 
@@ -137,7 +147,7 @@ interface BareMessage {
     fun toNewVideoMessage(): NewVideoMessage =
         NewVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
 
-    fun toNewPicTextMessage(): NewPicMessage = NewPicMessage(
+    fun toNewPicMessage(): NewPicMessage = NewPicMessage(
         Messages.readChatFromMessage(messageId),
         messageId,
         sender,
@@ -379,6 +389,17 @@ interface Message : BareMessage {
         TextMessages.read(messageId)
     )
 
+    fun toUpdatedActionMessage(): UpdatedActionMessage = UpdatedActionMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        hasStar,
+        ActionMessages.read(messageId)
+    )
+
     fun toUpdatedPicMessage(): UpdatedPicMessage = UpdatedPicMessage(
         Messages.readChatFromMessage(messageId),
         messageId,
@@ -453,6 +474,16 @@ interface Message : BareMessage {
         context,
         isForwarded,
         TextMessages.read(messageId)
+    )
+
+    fun toStarredActionMessage(): StarredActionMessage = StarredActionMessage(
+        Messages.readChatFromMessage(messageId),
+        messageId,
+        sender,
+        dateTimes,
+        context,
+        isForwarded,
+        ActionMessages.read(messageId)
     )
 
     fun toStarredPicMessage(): StarredPicMessage = StarredPicMessage(
@@ -536,6 +567,31 @@ data class TextMessage(
                 isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
                 TextMessages.read(messageId)
+            )
+        }
+    }
+}
+
+data class ActionMessage(
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val isForwarded: Boolean,
+    override val hasStar: Boolean,
+    val message: ActionableMessage
+) : BareMessage, Message {
+    companion object {
+        /** Builds the message as seen by the [userId]. */
+        fun build(message: BareMessage, userId: Int? = null): ActionMessage = with(message) {
+            ActionMessage(
+                messageId,
+                sender,
+                dateTimes,
+                context,
+                isForwarded,
+                if (userId == null) false else Stargazers.hasStar(userId, messageId),
+                ActionMessages.read(messageId)
             )
         }
     }
@@ -698,6 +754,7 @@ interface StarredMessage : BareChatMessage, BareMessage {
         fun build(userId: Int, messageId: Int): StarredMessage =
             when (val message = Messages.readMessage(userId, messageId)) {
                 is TextMessage -> message.toStarredTextMessage()
+                is ActionMessage -> message.toStarredActionMessage()
                 is PicMessage -> message.toStarredPicMessage()
                 is AudioMessage -> message.toStarredAudioMessage()
                 is GroupChatInviteMessage -> message.toStarredGroupChatInviteMessage()
@@ -717,6 +774,16 @@ data class StarredTextMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val message: MessageText
+) : StarredMessage, BareChatMessage, BareMessage
+
+data class StarredActionMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val isForwarded: Boolean,
+    val message: ActionableMessage
 ) : StarredMessage, BareChatMessage, BareMessage
 
 data class StarredPicMessage(
@@ -792,7 +859,8 @@ interface NewMessage : BareChatMessage, BareMessage {
             val (type, message) = Messages.readTypedMessage(messageId)
             return when (type) {
                 MessageType.TEXT -> message.toNewTextMessage()
-                MessageType.PIC -> message.toNewPicTextMessage()
+                MessageType.ACTION -> message.toNewActionMessage()
+                MessageType.PIC -> message.toNewPicMessage()
                 MessageType.AUDIO -> message.toNewAudioMessage()
                 MessageType.GROUP_CHAT_INVITE -> message.toNewGroupChatInviteMessage()
                 MessageType.DOC -> message.toNewDocMessage()
@@ -811,6 +879,16 @@ data class NewTextMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val message: MessageText
+) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class NewActionMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val isForwarded: Boolean,
+    val message: ActionableMessage
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewPicMessage(
@@ -884,6 +962,7 @@ interface UpdatedMessage : BareChatMessage, BareMessage {
         fun build(userId: Int, messageId: Int): UpdatedMessage =
             when (val message = Messages.readMessage(userId, messageId)) {
                 is TextMessage -> message.toUpdatedTextMessage()
+                is ActionMessage -> message.toUpdatedActionMessage()
                 is PicMessage -> message.toUpdatedPicMessage()
                 is AudioMessage -> message.toUpdatedAudioMessage()
                 is GroupChatInviteMessage -> message.toUpdatedGroupChatInviteMessage()
@@ -904,6 +983,17 @@ data class UpdatedTextMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val message: MessageText
+) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+
+data class UpdatedActionMessage(
+    override val chatId: Int,
+    override val messageId: Int,
+    override val sender: Account,
+    override val dateTimes: MessageDateTimes,
+    override val context: MessageContext,
+    override val isForwarded: Boolean,
+    override val hasStar: Boolean,
+    val message: ActionableMessage
 ) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class UpdatedPicMessage(
@@ -1032,7 +1122,7 @@ data class PageInfo(
 )
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
-private fun <T> assertOptions(options: List<T>) {
+private fun <T> validateOptions(options: List<T>) {
     if (options.size < 2) throw IllegalArgumentException("There must be at least two options: $options.")
     if (options.toSet().size != options.size) throw IllegalArgumentException("Options must be unique: $options.")
 }
@@ -1040,7 +1130,7 @@ private fun <T> assertOptions(options: List<T>) {
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
 data class PollInput(val title: MessageText, val options: List<MessageText>) {
     init {
-        assertOptions(options)
+        validateOptions(options)
     }
 }
 
@@ -1049,6 +1139,24 @@ data class PollOption(val option: MessageText, val votes: List<Int>)
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
 data class Poll(val title: MessageText, val options: List<PollOption>) {
     init {
-        assertOptions(options)
+        validateOptions(options)
     }
 }
+
+/** An [IllegalArgumentException] is thrown if there isn't at least one [actions], or the [actions] aren't unique. */
+data class ActionableMessage(val text: MessageText, val actions: List<MessageText>) {
+    init {
+        validateOptions(actions)
+    }
+
+    fun toActionMessageInput(): ActionMessageInput = ActionMessageInput(text, actions)
+}
+
+/** An [IllegalArgumentException] is thrown if there isn't at least one [actions], or the [actions] aren't unique. */
+data class ActionMessageInput(val text: MessageText, val actions: List<MessageText>) {
+    init {
+        validateOptions(actions)
+    }
+}
+
+data class TriggeredAction(val messageId: Int, val action: MessageText, val triggeredBy: Account) : MessagesSubscription

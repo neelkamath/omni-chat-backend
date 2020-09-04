@@ -17,6 +17,7 @@ private typealias Filter = Op<Boolean>?
 
 /**
  * @see [TextMessages]
+ * @see [ActionMessages]
  * @see [AudioMessages]
  * @see [VideoMessages]
  * @see [DocMessages]
@@ -91,9 +92,19 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: MessageText,
         contextMessageId: Int?,
-        isForwarded: Boolean
+        isForwarded: Boolean = false
     ): Unit = create(userId, chatId, MessageType.TEXT, contextMessageId, isForwarded) { messageId ->
         TextMessages.create(messageId, message)
+    }
+
+    fun createActionMessage(
+        userId: Int,
+        chatId: Int,
+        message: ActionMessageInput,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false
+    ): Unit = create(userId, chatId, MessageType.ACTION, contextMessageId, isForwarded) { messageId ->
+        ActionMessages.create(messageId, message)
     }
 
     fun createPicMessage(
@@ -101,7 +112,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: CaptionedPic,
         contextMessageId: Int?,
-        isForwarded: Boolean
+        isForwarded: Boolean = false
     ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
         PicMessages.create(messageId, message)
     }
@@ -111,22 +122,40 @@ object Messages : IntIdTable() {
         chatId: Int,
         invitedChatId: Int,
         contextMessageId: Int?,
-        isForwarded: Boolean
+        isForwarded: Boolean = false
     ): Unit = create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId, isForwarded) { messageId ->
         GroupChatInviteMessages.create(messageId, invitedChatId)
     }
 
-    fun createAudioMessage(userId: Int, chatId: Int, message: Mp3, contextMessageId: Int?, isForwarded: Boolean): Unit =
+    fun createAudioMessage(
+        userId: Int,
+        chatId: Int,
+        message: Mp3,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false
+    ): Unit =
         create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
             AudioMessages.create(messageId, message)
         }
 
-    fun createVideoMessage(userId: Int, chatId: Int, message: Mp4, contextMessageId: Int?, isForwarded: Boolean): Unit =
+    fun createVideoMessage(
+        userId: Int,
+        chatId: Int,
+        message: Mp4,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false
+    ): Unit =
         create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
             VideoMessages.create(messageId, message)
         }
 
-    fun createDocMessage(userId: Int, chatId: Int, message: Doc, contextMessageId: Int?, isForwarded: Boolean): Unit =
+    fun createDocMessage(
+        userId: Int,
+        chatId: Int,
+        message: Doc,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false
+    ): Unit =
         create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
             DocMessages.create(messageId, message)
         }
@@ -136,7 +165,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: PollInput,
         contextMessageId: Int?,
-        isForwarded: Boolean
+        isForwarded: Boolean = false
     ): Unit = create(userId, chatId, MessageType.POLL, contextMessageId, isForwarded) { messageId ->
         PollMessages.create(messageId, message)
     }
@@ -153,7 +182,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         type: MessageType,
         contextMessageId: Int?,
-        isForwarded: Boolean,
+        isForwarded: Boolean = false,
         creator: (messageId: Int) -> Unit
     ) {
         if (!isUserInChat(userId, chatId))
@@ -186,6 +215,14 @@ object Messages : IntIdTable() {
     fun forward(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int?): Unit = when (readType(messageId)) {
         MessageType.TEXT ->
             createTextMessage(userId, chatId, TextMessages.read(messageId), contextMessageId, isForwarded = true)
+
+        MessageType.ACTION -> createActionMessage(
+            userId,
+            chatId,
+            ActionMessages.read(messageId).toActionMessageInput(),
+            contextMessageId,
+            isForwarded = true
+        )
 
         MessageType.PIC ->
             createPicMessage(userId, chatId, PicMessages.read(messageId), contextMessageId, isForwarded = true)
@@ -254,6 +291,11 @@ object Messages : IntIdTable() {
                 val poll = PollMessages.read(edge.node.messageId)
                 poll.title.value.contains(query, ignoreCase = true) ||
                         poll.options.any { it.option.value.contains(query, ignoreCase = true) }
+            }
+            is ActionMessage -> {
+                val actionableMessage = ActionMessages.read(edge.node.messageId)
+                actionableMessage.text.value.contains(query, ignoreCase = true) ||
+                        actionableMessage.actions.any { it.value.contains(query, ignoreCase = true) }
             }
             is AudioMessage -> false
             else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
@@ -328,6 +370,7 @@ object Messages : IntIdTable() {
         val (type, message) = readTypedMessage(row[id].value)
         return when (type) {
             MessageType.TEXT -> TextMessage.build(message, userId)
+            MessageType.ACTION -> ActionMessage.build(message, userId)
             MessageType.PIC -> PicMessage.build(message, userId)
             MessageType.AUDIO -> AudioMessage.build(message, userId)
             MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage.build(message, userId)
@@ -366,6 +409,7 @@ object Messages : IntIdTable() {
         MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
         TextMessages.delete(messageIdList)
+        ActionMessages.delete(messageIdList)
         PicMessages.delete(messageIdList)
         AudioMessages.delete(messageIdList)
         PollMessages.delete(messageIdList)

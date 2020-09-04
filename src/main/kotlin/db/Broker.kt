@@ -112,7 +112,7 @@ class Notifier<A, U>(private val topic: Topic) {
             .toFlowable(BackpressureStrategy.BUFFER)
     }
 
-    /** Publishes [notifications] to the message broker, which causes every server to [notify]. */
+    /** Publishes [notifications] to the message broker which in turn [notify]s every server. */
     fun publish(notifications: List<Notification<A, U>>) {
         redisson.getTopic(topic.toString()).publish(notifications)
     }
