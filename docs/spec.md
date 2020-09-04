@@ -6,15 +6,13 @@ There are too many chat apps. Every new one tries to implement features another 
 
 There are currently only two good chat apps, [Discord](http://discord.com) and [Signal](https://www.signal.org/). There are other decent apps like WhatsApp, but the aforementioned apps provide more features than its competitors provide, and hence we'll only focus on them for comparing Omni Chat with competitors. Discord, Signal, and Omni Chat all have group video calls, etc., so we'll focus on the non-common features:
 
-|App|E2E Encryption|Screen Sharing|Open-core|
+|App|E2E Encryption|Screen Sharing|Open source|
 |:---:|:---:|:---:|:---:|
 |Discord|❌|✅|❌|
 |Signal|✅|❌|✅|
 |Omni Chat|✅|✅|✅|
 
-## Features
-
-Checkboxes indicate which features have been implemented.
+## Recommendations for Frontend UI Developers
 
 Since this repo is for the backend API, here are recommendations for a developer creating a frontend UI:
 - Have a _Developers_ section which links to the URL Omni Chat is running on, and Omni Chat's [docs](api.md) so that third party developers can create and run bots, etc. for your app.
@@ -31,9 +29,9 @@ Since this repo is for the backend API, here are recommendations for a developer
 - Many times you only want to switch on notifications for important chats. The user will be able to switch on notifications only for specific chats unlike WhatsApp which only lets you switch them off for specific chats.
 - Disallow screenshots on certain chats.
 
-### Free
+## Features
 
-Features must be free if they're a unique selling point, are useful for the average user, or if they're already free in another popular service (e.g., video-mail in Google Duo).
+Checkboxes indicate which features have been implemented.
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that you have to constantly update, and no one takes seriously.
 - [x] Private chats. These are for conversations between two people, like you and your friend.
@@ -48,6 +46,7 @@ Features must be free if they're a unique selling point, are useful for the aver
 - [x] Reply to a message to prevent context loss.
 - Message types:
     - [x] Text
+    - [x] Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
     - [x] Audio
     - [x] Pictures
     - [x] Polls
@@ -69,7 +68,8 @@ Features must be free if they're a unique selling point, are useful for the aver
     - [x] Public chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat). People can search for, and view public chats without an account. Anyone with an account can join them. A frontend UI may allow for a search engine to index the chat should the administrator allow for it.
 - [x] Forward messages.
 - [x] Omni Chat can be deployed for private use as well. For example, a company may only want to use it as an internal platform, in which case they can specify that only certain email address domains can create accounts. This way, even if an intruder gets into the company's network, they won't be able to create an account since they won't have a company issued email address. This feature also prevents employees from creating an account with their personal email address.
-- [ ] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
+- [x] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
+- [ ] Auto-reply suggestions. For example, if the other user asks "Did you buy the new bed?", auto-reply suggestions could be "Yes", "No", and "Not yet.". Another example is if the user asks about going to Pizza Hut, an auto-reply suggestion could be the Google Maps entry for the restaurant showing its location, rating, and business hours.
 - [ ] Allow companies like BookMyShow and Uber to set up business accounts through which bots and customer service humans operate. Users will be able to search for business accounts. This way businesses can have easier customer support systems, and increase revenue.
 - [ ] Group audio calls.
 - [ ] Spatial audio calls (important for gamers).
@@ -77,8 +77,4 @@ Features must be free if they're a unique selling point, are useful for the aver
 - [ ] Screen sharing.
 - [ ] Background noise cancellation for both audio and video calls.
 - [ ] E2E encryption.
-
-### Paid
-
-- [ ] Auto-reply suggestions. For example, if the other user asks "Did you buy the new bed?", auto-reply suggestions could be "Yes", "No", and "Not yet.". Another example is if the user asks about going to Pizza Hut, an auto-reply suggestion could be the Google Maps entry for the restaurant showing its location, rating, and business hours.
 - [ ] Realtime translation for text, audio, and video.

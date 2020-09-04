@@ -4,7 +4,7 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-For people who need to communicate via instant messaging, Omni Chat is a free and [open-core](https://en.wikipedia.org/wiki/Open-core_model) chat system that can replace every existing chat app. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
+For developers who need to build a chat UI or bot, Omni Chat is a chat API. Unlike other chat apps, our product brings together all the useful features of existing services, while leaving out their annoying parts.
 
 The [spec](docs/spec.md) explains how Omni Chat differentiates itself from existing services, and which features have been implemented so far. This repo is for the backend API. There's no frontend UI yet.
 
@@ -37,7 +37,14 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 1. Start the server on http://localhost:80: `docker-compose up -d`
 1. Wait for the server to start:
     1. Run `docker logs -f <DIR>_chat_1`, where `<DIR>` is the lowercase name of the directory you're currently in.
-    1. Wait for something similar to `2020-08-05 01:29:38.946 [main] INFO  Application - Responding at http://0.0.0.0:80` to be printed.
+    1. Messages similar to the following will be printed, and aren't an issue:
+        ```
+        2020/09/04 10:53:06 Problem with request: Get http://auth:8080: dial tcp 172.21.0.4:8080: connect: connection refused. Sleeping 1s
+        ```
+        Wait for a message similar to the following to be printed:
+        ```
+        2020-08-05 01:29:38.946 [main] INFO  Application - Responding at http://0.0.0.0:80
+        ```
     1. Stop streaming logs:
         - macOS: `control+C`
         - Other: `Ctrl+C`

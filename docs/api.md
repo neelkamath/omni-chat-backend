@@ -68,7 +68,7 @@ There is one error message which every operation can return which isn't explicit
 
 ### Pagination
 
-Pagination follows [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) with the exception that fields are nullable based on what's more logical. The following explanation clarifies the parts Relay's spec isn't clear on.
+[Pagination](https://graphql.org/learn/pagination/) follows [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) with the exception that fields are nullable based on what's more logical. The following explanation clarifies the parts Relay's spec isn't clear on.
 
 It's possible that a previously valid cursor no longer is. For example, you might read five messages, and then attempt to read another five by passing the cursor of the oldest message; but it happens that the oldest message just got deleted. In such cases, the expected messages will still be returned (i.e., it will seem as if the cursor is valid).
 

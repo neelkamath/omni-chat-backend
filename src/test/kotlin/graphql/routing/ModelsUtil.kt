@@ -14,3 +14,5 @@ fun NewMessage.Companion.build(message: Message): NewMessage = object : NewMessa
     override val context: MessageContext = message.context
     override val isForwarded: Boolean = message.isForwarded
 }
+
+fun ActionMessageInput.toActionableMessage(): ActionableMessage = ActionableMessage(text, actions)

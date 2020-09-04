@@ -71,7 +71,7 @@ data class Pic(
     }
 }
 
-enum class MessageType { TEXT, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
+enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -122,7 +122,9 @@ fun setUpDb() {
             MessageStatuses,
             Users,
             TypingStatuses,
-            OnetimeTokens
+            OnetimeTokens,
+            ActionMessages,
+            ActionMessageActions
         )
     }
 }

@@ -95,13 +95,7 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createTextMessage(
-        env.userId!!,
-        chatId,
-        env.getArgument("text"),
-        contextMessageId,
-        isForwarded = false
-    )
+    Messages.createTextMessage(env.userId!!, chatId, env.getArgument("text"), contextMessageId)
     return Placeholder
 }
 
@@ -271,14 +265,14 @@ fun createPollMessage(env: DataFetchingEnvironment): Placeholder {
     }
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId, isForwarded = false)
+    Messages.createPollMessage(env.userId!!, chatId, poll, contextMessageId)
     return Placeholder
 }
 
 fun setPollVote(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
-    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    if (!Messages.isVisible(env.userId!!, messageId) || !PollMessages.exists(messageId)) throw InvalidMessageIdException
     val option = env.getArgument<MessageText>("option")
     if (!PollMessages.hasOption(messageId, option)) throw NonexistentOptionException
     val vote = env.getArgument<Boolean>("vote")
@@ -303,7 +297,7 @@ fun createGroupChatInviteMessage(env: DataFetchingEnvironment): Placeholder {
     if (!GroupChats.isInvitable(invitedChatId)) throw InvalidInvitedChatException
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId, isForwarded = false)
+    Messages.createGroupChatInviteMessage(env.userId!!, chatId, invitedChatId, contextMessageId)
     return Placeholder
 }
 
@@ -327,5 +321,32 @@ fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
     val messageId = env.getArgument<Int>("messageId")
     if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
     Messages.forward(env.userId!!, chatId, messageId, contextMessageId)
+    return Placeholder
+}
+
+fun createActionMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val message = try {
+        env.parseArgument<ActionMessageInput>("message")
+    } catch (_: IllegalArgumentException) {
+        throw InvalidActionException
+    }
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    Messages.createActionMessage(env.userId!!, chatId, message, contextMessageId)
+    return Placeholder
+}
+
+fun triggerAction(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId) || !ActionMessages.exists(messageId))
+        throw InvalidMessageIdException
+    val action = env.getArgument<MessageText>("action")
+    if (!ActionMessages.hasAction(messageId, action)) throw InvalidActionException
+    ActionMessages.trigger(env.userId!!, messageId, action)
     return Placeholder
 }

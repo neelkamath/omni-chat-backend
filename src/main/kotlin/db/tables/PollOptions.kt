@@ -31,7 +31,7 @@ object PollOptions : IntIdTable() {
         select { (PollOptions.pollId eq pollId) and (PollOptions.option eq option.value) }.first()[PollOptions.id].value
     }
 
-    /** Returns the ID of all [PollOptions] every poll in the [pollIdList] has. */
+    /** Returns the IDs of all [PollOptions] every poll in the [pollIdList] has. */
     private fun readIdList(pollIdList: List<Int>): List<Int> = transaction {
         select { pollId inList pollIdList }.map { it[PollOptions.id].value }
     }

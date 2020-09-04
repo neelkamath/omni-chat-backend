@@ -127,18 +127,41 @@ class MessagesTest {
             val message1Options = listOf(MessageText("Burger King"), MessageText("Pizza Hut"))
             val message1 = PollInput(title = MessageText("Restaurant"), options = message1Options)
             val message1Id = Messages.message(adminId, chatId, message1)
-            val message2Options = listOf(MessageText("Japanese Restaurant"), MessageText("Thai Restaraunt"))
+            val message2Options = listOf(MessageText("Japanese Restaurant"), MessageText("Thai Restaurant"))
             val message2 = PollInput(MessageText("Title"), message2Options)
             val message2Id = Messages.message(adminId, chatId, message2)
             val message3Options = listOf(MessageText("option 1"), MessageText("option 2"))
             val message3 = PollInput(MessageText("Title"), message3Options)
             Messages.message(adminId, chatId, message3)
-            val messages = Messages.searchGroupChat(chatId, "restaurant", userId = adminId).map { it.node.messageId }
+            val messages = Messages.searchGroupChat(chatId, "restaurant").map { it.node.messageId }
             assertEquals(listOf(message1Id, message2Id), messages)
         }
 
         @Test
-        fun `Audio messages shouldn't be returned`() {
+        fun `Action messages should be searched by their text and actions case insensitively`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val message1Id = Messages.message(
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Order food."), listOf(MessageText("Pizza"), MessageText("Burger")))
+            )
+            val message2Id = Messages.message(
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Pizza toppings?"), listOf(MessageText("Yes"), MessageText("No")))
+            )
+            Messages.message(
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+            )
+            val messages = Messages.searchGroupChat(chatId, "pIzZa").map { it.node.messageId }
+            assertEquals(listOf(message1Id, message2Id), messages)
+        }
+
+        @Test
+        fun `Messages which don't contain text shouldn't be returned`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             Messages.message(adminId, chatId, Mp3(ByteArray(1)))
@@ -237,7 +260,7 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextId = Messages.message(adminId, chatId)
-            Messages.createTextMessage(adminId, chatId, MessageText("t"), contextId, isForwarded = false)
+            Messages.createTextMessage(adminId, chatId, MessageText("t"), contextId)
             Messages.deleteChat(chatId)
         }
 

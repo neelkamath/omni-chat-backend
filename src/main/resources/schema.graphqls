@@ -61,7 +61,8 @@ type Query {
     readOnlineStatuses: [OnlineStatus!]!
 
     """
-    Case-insensitively `query`s text messages, poll message title and options, and pic message captions in the `chatId`.
+    Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
+    message captions in the `chatId`.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
     chat).
@@ -71,9 +72,9 @@ type Query {
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
     """
-    Case-insensitively `query`s every text messages, poll message title and options, and pic message captions in every
-    chat the user is in. Each item in the returned `ChatMessages` will be for a particular `ChatMessages.chat`, and have
-    the `ChatMessages.messages` from the search results.
+    Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
+    and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
+    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results.
 
     You must send an access token with this request.
     """
@@ -408,6 +409,24 @@ type Mutation {
     createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
 
     """
+    Sends the `text` in the `chatId`. For example, a restaurant's bot asks if the user wants a burger or a pizza in the
+    `text`, and the `actions` are `"burger"` and `"pizza"`. If the `chatId` is a broadcast chat, the user must be an
+    admin to message. The user might want to give their message a context, such as when replying to a message sent
+    several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
+
+    A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
+    meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be notifed
+    when `Mutation.triggerAction` is called.
+
+    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_ACTION"`
+    (i.e., either there were zero `actions` or the `actions` weren't unique), or `"INVALID_MESSAGE_ID"` (i.e., the
+    `contextMessageId` didn't exist).
+
+    You must send an access token with this request.
+    """
+    createActionMessage(chatId: Int!, message: ActionMessageInput!, contextMessageId: Int): Placeholder!
+
+    """
     Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
     broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
     when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
@@ -448,10 +467,20 @@ type Mutation {
     forwardMessage(chatId: Int!, messageId: Int!, contextMessageId: Int): Placeholder!
 
     """
+    Triggers the `action` on the `messageId`'s action message.
+
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such action message), or
+    `"NONEXISTENT_ACTION"` (i.e., the `action` doesn't exist).
+
+    You must send an access token with this request.
+    """
+    triggerAction(messageId: Int!, action: MessageText!): Placeholder!
+
+    """
     Updates the user's vote for the `option` on the `messageId`'s poll. If `vote` is `true`, the user's vote will be
     added if it hasn't already. If `vote` is `false`, the user's vote will be removed if there is one.
 
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist), or
+    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such poll message), or
     `"NONEXISTENT_OPTION"` (i.e., the `option` isn't in the poll).
 
     You must send an access token with this request.
@@ -532,6 +561,7 @@ type Subscription {
 
 union MessagesSubscription = CreatedSubscription
     | NewTextMessage
+    | NewActionMessage
     | NewPicMessage
     | NewAudioMessage
     | NewGroupChatInviteMessage
@@ -539,12 +569,14 @@ union MessagesSubscription = CreatedSubscription
     | NewVideoMessage
     | NewPollMessage
     | UpdatedTextMessage
+    | UpdatedActionMessage
     | UpdatedPicMessage
     | UpdatedAudioMessage
     | UpdatedGroupChatInviteMessage
     | UpdatedDocMessage
     | UpdatedVideoMessage
     | UpdatedPollMessage
+    | TriggeredAction
     | DeletedMessage
     | MessageDeletionPoint
     | DeletionOfEveryMessage
@@ -565,6 +597,16 @@ An `UpdatedGroupChat` might be sent if the chat's pic was updated.
 If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
 """
 union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
+
+"""
+The `action` on the action `messageId` which was `triggeredBy` the user. This will only be sent to the user who created
+the action message.
+"""
+type TriggeredAction {
+    messageId: Int!
+    action: MessageText!
+    triggeredBy: Account!
+}
 
 type UpdatedOnlineStatus {
     userId: Int!
@@ -656,7 +698,7 @@ type DeletedMessage {
 }
 
 input PollInput {
-    """For example, `"Restaraunt"`."""
+    """For example, `"Where should we meet?"`."""
     title: MessageText!
     """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
     options: [MessageText!]!
@@ -673,6 +715,19 @@ type Poll {
     title: MessageText!
     """There are at least two options, each of which are unique."""
     options: [PollOption!]!
+}
+
+input ActionMessageInput {
+    """For example, `"What would you like to order?"`."""
+    text: MessageText!
+    """There must be at least one action. Each action must be unique. For example, `["Pizza", "Burger"]`."""
+    actions: [MessageText!]!
+}
+
+type ActionableMessage {
+    text: MessageText!
+    """There's at least one action. Each action is unique."""
+    actions: [MessageText!]!
 }
 
 type AccountsConnection {
@@ -837,6 +892,16 @@ type TextMessage implements BareMessage, Message {
     message: MessageText!
 }
 
+type ActionMessage implements BareMessage, Message {
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    isForwarded: Boolean!
+    hasStar: Boolean!
+    message: ActionMessage!
+}
+
 type PicMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
@@ -922,6 +987,16 @@ type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage 
     message: MessageText!
 }
 
+type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    isForwarded: Boolean!
+    message: ActionMessage!
+}
+
 type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -996,6 +1071,16 @@ type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
     context: MessageContext!
     isForwarded: Boolean!
     message: MessageText!
+}
+
+type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    isForwarded: Boolean!
+    message: ActionMessage!
 }
 
 type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
@@ -1075,6 +1160,17 @@ type UpdatedTextMessage implements UpdatedMessage, BareChatMessage, BareMessage 
     isForwarded: Boolean!
     hasStar: Boolean!
     message: MessageText!
+}
+
+type UpdatedActionMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+    chatId: Int!
+    messageId: Int!
+    sender: Account!
+    dateTimes: MessageDateTimes!
+    context: MessageContext!
+    isForwarded: Boolean!
+    hasStar: Boolean!
+    message: ActionMessage!
 }
 
 type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {

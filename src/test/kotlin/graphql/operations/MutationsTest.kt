@@ -4,16 +4,69 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import io.ktor.http.*
+import io.reactivex.rxjava3.subscribers.TestSubscriber
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
+
+const val TRIGGER_ACTION_QUERY = """
+    mutation TriggerAction(${"$"}messageId: Int!, ${"$"}action: MessageText!) {
+        triggerAction(messageId: ${"$"}messageId, action: ${"$"}action)
+    }
+"""
+
+private fun operateTriggerAction(userId: Int, messageId: Int, action: MessageText): GraphQlResponse =
+    executeGraphQlViaEngine(TRIGGER_ACTION_QUERY, mapOf("messageId" to messageId, "action" to action), userId)
+
+fun triggerAction(userId: Int, messageId: Int, action: MessageText): Placeholder {
+    val data = operateTriggerAction(userId, messageId, action).data!!["triggerAction"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errTriggerAction(userId: Int, messageId: Int, action: MessageText): String =
+    operateTriggerAction(userId, messageId, action).errors!![0].message
+
+const val CREATE_ACTION_MESSAGE_QUERY = """
+    mutation CreateActionMessage(${"$"}chatId: Int!, ${"$"}message: ActionMessageInput!, ${"$"}contextMessageId: Int) {
+        createActionMessage(chatId: ${"$"}chatId, message: ${"$"}message, contextMessageId: ${"$"}contextMessageId)
+    }
+"""
+
+private fun operateCreateActionMessage(
+    userId: Int,
+    chatId: Int,
+    message: ActionMessageInput,
+    contextMessageId: Int? = null
+): GraphQlResponse = executeGraphQlViaEngine(
+    CREATE_ACTION_MESSAGE_QUERY,
+    mapOf("chatId" to chatId, "message" to message, "contextMessageId" to contextMessageId),
+    userId
+)
+
+fun createActionMessage(
+    userId: Int,
+    chatId: Int,
+    message: ActionMessageInput,
+    contextMessageId: Int? = null
+): Placeholder {
+    val data = operateCreateActionMessage(userId, chatId, message, contextMessageId)
+        .data!!["createActionMessage"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+fun errCreateActionMessage(
+    userId: Int,
+    chatId: Int,
+    message: ActionMessageInput,
+    contextMessageId: Int? = null
+): String = operateCreateActionMessage(userId, chatId, message, contextMessageId).errors!![0].message
 
 const val FORWARD_MESSAGE_QUERY = """
     mutation ForwardMessage(${"$"}chatId: Int!, ${"$"}messageId: Int!, ${"$"}contextMessageId: Int) {
@@ -572,6 +625,121 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
 @ExtendWith(DbExtension::class)
 class MutationsTest {
     @Nested
+    inner class TriggerAction {
+        @Test
+        fun `The action should be triggered`(): Unit = runBlocking {
+            val admin = createVerifiedUsers(1)[0].info
+            val chatId = GroupChats.create(listOf(admin.id))
+            val action = MessageText("Yes")
+            val messageId = Messages.message(
+                admin.id,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+            )
+            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(admin.id)).subscribeWith(TestSubscriber())
+            triggerAction(admin.id, messageId, action)
+            awaitBrokering()
+            subscriber.assertValue(TriggeredAction(messageId, action, admin))
+        }
+
+        @Test
+        fun `Triggering a message which isn't an action message should fail`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId, MessageText("t"))
+            assertEquals(
+                InvalidMessageIdException.message,
+                errTriggerAction(adminId, messageId, MessageText("action"))
+            )
+        }
+
+        @Test
+        fun `Triggering a nonexistent action should fail`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+            )
+            assertEquals(
+                InvalidActionException.message,
+                errTriggerAction(adminId, messageId, MessageText("action"))
+            )
+        }
+    }
+
+    @Nested
+    inner class CreateActionMessage {
+        @Test
+        fun `The message should be created with the context`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
+            val message = ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+            createActionMessage(adminId, chatId, message, contextMessageId)
+            with(Messages.readGroupChatConnection(chatId).edges.last().node) {
+                assertEquals(context.id, contextMessageId)
+                assertEquals(message.toActionableMessage(), ActionMessages.read(messageId))
+            }
+        }
+
+        @Test
+        fun `A non-admin shouldn't be allowed to message in a broadcast chat`() {
+            val (admin, user) = createVerifiedUsers(2)
+            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
+            val response = executeGraphQlViaHttp(
+                CREATE_ACTION_MESSAGE_QUERY,
+                mapOf(
+                    "chatId" to chatId,
+                    "message" to ActionMessageInput(
+                        MessageText("Do you code?"),
+                        listOf(MessageText("Yes"), MessageText("No"))
+                    )
+                ),
+                user.accessToken
+            )
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
+        }
+
+        @Test
+        fun `Messaging in a chat the user isn't in should fail`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val response = errCreateActionMessage(
+                userId,
+                chatId = 1,
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+            )
+            assertEquals(InvalidChatIdException.message, response)
+        }
+
+        @Test
+        fun `Supplying an invalid action message should fail`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val error = executeGraphQlViaEngine(
+                CREATE_ACTION_MESSAGE_QUERY,
+                mapOf("chatId" to chatId, "message" to mapOf("text" to "Do you code?", "actions" to listOf<String>())),
+                adminId
+            ).errors!![0].message
+            assertEquals(InvalidActionException.message, error)
+        }
+
+        @Test
+        fun `Using a nonexistent context message ID should fail`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val error = errCreateActionMessage(
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No"))),
+                contextMessageId = 1
+            )
+            assertEquals(InvalidMessageIdException.message, error)
+        }
+    }
+
+    @Nested
     inner class ForwardMessage {
         @Test
         fun `The message should be forwarded with a context`() {
@@ -799,6 +967,15 @@ class MutationsTest {
             val messageId = Messages.message(adminId, chatId, poll)
             setPollVote(adminId, messageId, option, vote = true)
             assertEquals(listOf(adminId), PollMessages.read(messageId).options.first { it.option == option }.votes)
+        }
+
+        @Test
+        fun `Voting on a message which isn't a poll should fail`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId, MessageText("t"))
+            val response = errSetPollVote(adminId, messageId, MessageText("option"), vote = true)
+            assertEquals(InvalidMessageIdException.message, response)
         }
 
         @Test
@@ -1048,6 +1225,11 @@ class MutationsTest {
 
         @Test
         fun `The user's typing status should be set to "true"`() {
+            assertTypingStatus(isTyping = true)
+        }
+
+        @Test
+        fun `The user's typing status should be set to "false"`() {
             assertTypingStatus(isTyping = false)
         }
 

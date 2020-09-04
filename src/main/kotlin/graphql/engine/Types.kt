@@ -39,6 +39,7 @@ private fun readChat(obj: Any): String = when (obj) {
 private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is NewTextMessage -> "NewTextMessage"
+    is NewActionMessage -> "NewActionMessage"
     is NewPicMessage -> "NewPicMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
@@ -46,12 +47,14 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is NewVideoMessage -> "NewVideoMessage"
     is NewPollMessage -> "NewPollMessage"
     is UpdatedTextMessage -> "UpdatedTextMessage"
+    is UpdatedActionMessage -> "UpdatedActionMessage"
     is UpdatedPicMessage -> "UpdatedPicMessage"
     is UpdatedAudioMessage -> "UpdatedAudioMessage"
     is UpdatedGroupChatInviteMessage -> "UpdatedGroupChatInviteMessage"
     is UpdatedDocMessage -> "UpdatedDocMessage"
     is UpdatedVideoMessage -> "UpdatedVideoMessage"
     is UpdatedPollMessage -> "UpdatedPollMessage"
+    is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
     is MessageDeletionPoint -> "MessageDeletionPoint"
     is DeletionOfEveryMessage -> "DeletionOfEveryMessage"
@@ -100,18 +103,22 @@ private fun readBareGroupChat(obj: Any): String = when (obj) {
 
 private fun readBareMessage(obj: Any): String = when (obj) {
     is TextMessage -> "TextMessage"
+    is ActionMessage -> "ActionMessage"
     is PicMessage -> "PicMessage"
     is PollMessage -> "PollMessage"
     is AudioMessage -> "AudioMessage"
     is StarredTextMessage -> "StarredTextMessage"
+    is StarredActionMessage -> "StarredActionMessage"
     is StarredPicMessage -> "StarredPicMessage"
     is StarredPollMessage -> "StarredPollMessage"
     is StarredAudioMessage -> "StarredAudioMessage"
     is NewTextMessage -> "NewTextMessage"
+    is NewActionMessage -> "NewActionMessage"
     is NewPicMessage -> "NewPicMessage"
     is NewPollMessage -> "NewPollMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is UpdatedTextMessage -> "UpdatedTextMessage"
+    is UpdatedActionMessage -> "UpdatedActionMessage"
     is UpdatedPicMessage -> "UpdatedPicMessage"
     is UpdatedPollMessage -> "UpdatedPollMessage"
     is UpdatedAudioMessage -> "UpdatedAudioMessage"
@@ -120,6 +127,7 @@ private fun readBareMessage(obj: Any): String = when (obj) {
 
 private fun readMessage(obj: Any): String = when (obj) {
     is TextMessage -> "TextMessage"
+    is ActionMessage -> "ActionMessage"
     is PicMessage -> "PicMessage"
     is PollMessage -> "PollMessage"
     is AudioMessage -> "AudioMessage"
@@ -128,15 +136,18 @@ private fun readMessage(obj: Any): String = when (obj) {
 
 private fun readBareChatMessage(obj: Any): String = when (obj) {
     is StarredTextMessage -> "StarredTextMessage"
+    is StarredActionMessage -> "StarredActionMessage"
     is StarredPicMessage -> "StarredPicMessage"
     is StarredPollMessage -> "StarredPollMessage"
     is StarredAudioMessage -> "StarredAudioMessage"
     is NewTextMessage -> "NewTextMessage"
+    is NewActionMessage -> "NewActionMessage"
     is NewPicMessage -> "NewPicMessage"
     is NewPollMessage -> "NewPollMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is UpdatedAudioMessage -> "UpdatedAudioMessage"
     is UpdatedTextMessage -> "UpdatedTextMessage"
+    is UpdatedActionMessage -> "UpdatedActionMessage"
     is UpdatedPicMessage -> "UpdatedPicMessage"
     is UpdatedPollMessage -> "UpdatedPollMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -144,6 +155,7 @@ private fun readBareChatMessage(obj: Any): String = when (obj) {
 
 private fun readStarredMessage(obj: Any): String = when (obj) {
     is StarredTextMessage -> "StarredTextMessage"
+    is StarredActionMessage -> "StarredActionMessage"
     is StarredPicMessage -> "StarredPicMessage"
     is StarredPollMessage -> "StarredPollMessage"
     is StarredAudioMessage -> "StarredAudioMessage"
@@ -152,6 +164,7 @@ private fun readStarredMessage(obj: Any): String = when (obj) {
 
 private fun readNewMessage(obj: Any): String = when (obj) {
     is NewTextMessage -> "NewTextMessage"
+    is NewActionMessage -> "NewActionMessage"
     is NewPicMessage -> "NewPicMessage"
     is NewPollMessage -> "NewPollMessage"
     is NewAudioMessage -> "NewAudioMessage"
@@ -160,6 +173,7 @@ private fun readNewMessage(obj: Any): String = when (obj) {
 
 private fun readUpdatedMessage(obj: Any): String = when (obj) {
     is UpdatedTextMessage -> "UpdatedTextMessage"
+    is UpdatedActionMessage -> "UpdatedActionMessage"
     is UpdatedPicMessage -> "UpdatedPicMessage"
     is UpdatedPollMessage -> "UpdatedPollMessage"
     is UpdatedAudioMessage -> "UpdatedAudioMessage"
