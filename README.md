@@ -34,33 +34,15 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 1. Log in to GitHub Package Registry:
     1. Create a GitHub [personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with the `read:packages` scope.
     1. Run `echo <TOKEN> | docker login docker.pkg.github.com -u <USERNAME> --password-stdin`, where `<TOKEN>` is your personal access token, and `<USERNAME>` is your GitHub username. 
-1. Start the server on http://localhost:80: `docker-compose up -d`
-1. Wait for the server to start:
-    1. Run `docker logs -f <DIR>_chat_1`, where `<DIR>` is the lowercase name of the directory you're currently in.
-    1. Messages similar to the following will be printed, and aren't an issue:
-        ```
-        2020/09/04 10:53:06 Problem with request: Get http://auth:8080: dial tcp 172.21.0.4:8080: connect: connection refused. Sleeping 1s
-        ```
-        Wait for a message similar to the following to be printed:
-        ```
-        2020-08-05 01:29:38.946 [main] INFO  Application - Responding at http://0.0.0.0:80
-        ```
-    1. Stop streaming logs:
-        - macOS: `control+C`
-        - Other: `Ctrl+C`
+1. Start the server on http://localhost:80 (it'll take around 2 minutes to start): `docker-compose up -d`
 1. To shut down: `docker-compose down`
 
 ### Migrating to a Newer Version
 
-Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version.
-
+Since the application is still pre-release software quality, DB migrations aren't provided. This means you must delete the existing databases when you migrate to a newer version:
 1. Ensure the application isn't running: `docker-compose down`
-1. Delete the databases (replace `<DIR>` with the lowercase name of the present working directory):
-    ```
-    docker volume rm <DIR>_chat-db
-    docker volume rm <DIR>_auth-db
-    ```
-1. Delete all the server files you installed (e.g., `Caddyfile`, `docker-compose.yml`), and follow the **Installation** and **Usage** instructions again because the server setup may have changed.
+1. `docker volume rm <DIR>_chat-db <DIR>_auth-db` where `<DIR>` is the lowercase name of the present working directory
+1. Delete the server files (e.g., `.env`, `docker-compose.yml`), and follow the **Installation** and **Usage** instructions again because the server setup may have changed.
 
 ## [Contributing](docs/CONTRIBUTING.md)
 

@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   auth:
-    image: jboss/keycloak:11.0.0
+    image: jboss/keycloak:11.0.2
     entrypoint: /dockerize -wait tcp://auth-db:5432
     command: /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0
     networks: [ proxy, auth-db ]
