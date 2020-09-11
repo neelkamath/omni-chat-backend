@@ -2,7 +2,7 @@ package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import javax.annotation.Generated
+import javax.annotation.processing.Generated
 
 /** An MP3 audio. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp3.MAX_BYTES]. */
 data class Mp3(

@@ -3,12 +3,15 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.DbExtension
+import com.neelkamath.omniChat.buildTokenSet
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -545,6 +548,7 @@ fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsC
     return testingObjectMapper.convertValue(data)
 }
 
+@ExtendWith(DbExtension::class)
 class ChatMessagesDtoTest {
     @Nested
     inner class ReadGroupChat {
@@ -687,7 +691,7 @@ class QueriesTest {
     inner class IsUsernameTaken {
         @Test
         fun `The username shouldn't be taken`() {
-            assertFalse(isUsernameTaken(Username("username")))
+            assertFalse(isUsernameTaken(Username("u")))
         }
 
         @Test
@@ -808,14 +812,14 @@ class QueriesTest {
     inner class ValidateLogin {
         @Test
         fun `A nonexistent user should cause an exception to be thrown`() {
-            val login = Login(Username("username"), Password("password"))
+            val login = Login(Username("u"), Password("p"))
             assertEquals(NonexistentUserException.message, errRequestOnetimeToken(login))
         }
 
         @Test
         fun `A user who hasn't verified their email should cause an exception to be thrown`() {
-            val login = Login(Username("username"), Password("password"))
-            createUser(AccountInput(login.username, login.password, "username@example.com"))
+            val login = Login(Username("u"), Password("p"))
+            Users.create(AccountInput(login.username, login.password, "username@example.com"))
             assertEquals(UnverifiedEmailAddressException.message, errRequestOnetimeToken(login))
         }
 
@@ -923,14 +927,9 @@ class QueriesTest {
                 AccountInput(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
                 AccountInput(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
                 AccountInput(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
-                AccountInput(
-                    Username("iron_man"),
-                    Password("p"),
-                    emailAddress = "roger@example.com",
-                    firstName = "John"
-                )
+                AccountInput(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", Name("John"))
             ).map {
-                createUser(it)
+                Users.create(it)
                 it.toAccount()
             }
             val userId = createVerifiedUsers(1)[0].info.id
@@ -976,7 +975,7 @@ class QueriesTest {
                 AccountInput(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
                 AccountInput(Username("hulk"), Password("p"), "bruce@example.com")
             ).map {
-                createUser(it)
+                Users.create(it)
                 it.toAccount()
             }
             assertEquals(accounts.dropLast(1), searchUsers("iron").edges.map { it.node })
@@ -988,12 +987,12 @@ class QueriesTest {
                 AccountInput(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
                 AccountInput(Username("lol"), Password("p"), "iron.fist@example.com"),
                 AccountInput(Username("another_one"), Password("p"), "another_one@example.com"),
-                AccountInput(Username("jo_mama"), Password("p"), "mama@example.com", firstName = "Iron"),
-                AccountInput(Username("nope"), Password("p"), "nope@example.com", lastName = "Irony"),
+                AccountInput(Username("jo_mama"), Password("p"), "mama@example.com", firstName = Name("Iron")),
+                AccountInput(Username("nope"), Password("p"), "nope@example.com", lastName = Name("Irony")),
                 AccountInput(Username("black_widow"), Password("p"), "black.widow@example.com"),
                 AccountInput(Username("iron_spider"), Password("p"), "iron.spider@example.com")
             )
-            accounts.forEach(::createUser)
+            accounts.forEach(Users::create)
             return accounts
         }
 

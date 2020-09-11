@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.graphql.routing.MessageDateTimeStatus
 import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -108,6 +107,6 @@ object MessageStatuses : Table() {
     /** [messageId]'s [MessageDateTimeStatus]es. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transaction {
         select { MessageStatuses.messageId eq messageId }
-            .map { MessageDateTimeStatus(readUserById(it[userId]), it[dateTime], it[status]) }
+            .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
     }
 }

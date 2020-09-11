@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat
 
+import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.routing.*
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
@@ -11,7 +12,7 @@ data class VerifiedUser(val info: Account, val password: Password) {
 
     companion object {
         fun build(account: AccountInput): VerifiedUser = with(account) {
-            val userId = readUserByUsername(username).id
+            val userId = Users.read(username).id
             VerifiedUser(Account(userId, username, emailAddress, firstName, lastName, bio), password)
         }
     }
@@ -29,10 +30,10 @@ fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
         Username("username${++userCount}"),
         Password("password$userCount"),
         "username$userCount@example.com",
-        "firstName$userCount",
-        "lastName$userCount"
+        Name("firstName$userCount"),
+        Name("lastName$userCount")
     )
-    createUser(account)
+    Users.create(account)
     verifyEmailAddress(account.username)
     VerifiedUser.build(account)
 }

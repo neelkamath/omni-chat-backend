@@ -3,6 +3,7 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.tables.Users
 import org.junit.jupiter.api.Nested
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -104,12 +105,28 @@ class GroupChatDescriptionTest {
     }
 }
 
+class NameTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception should be thrown for a name which contains whitespace characters`() {
+            assertFailsWith<IllegalArgumentException> { Name("john doe") }
+        }
+
+        @Test
+        fun `An exception should be thrown for a name greater than 30 characters`() {
+            val value = CharArray(Users.MAX_NAME_LENGTH + 1) { 'a' }.joinToString("")
+            assertFailsWith<IllegalArgumentException> { Name(value) }
+        }
+    }
+}
+
 class UsernameTest {
     @Nested
     inner class Init {
         @Test
-        fun `An exception should be thrown for a username which doesn't contain non-whitespace characters`() {
-            assertFailsWith<IllegalArgumentException> { Username("  ") }
+        fun `An exception should be thrown for a username which contains whitespace`() {
+            assertFailsWith<IllegalArgumentException> { Username("john doe") }
         }
 
         @Test
@@ -118,8 +135,13 @@ class UsernameTest {
         }
 
         @Test
-        fun `An exception should be thrown for a username greater than 255 characters`() {
-            val value = CharArray(256) { 'a' }.joinToString("")
+        fun `An exception should be thrown for a username which is too short`() {
+            assertFailsWith<IllegalArgumentException> { Username("") }
+        }
+
+        @Test
+        fun `An exception should be thrown for a username which is too long`() {
+            val value = CharArray(Users.MAX_NAME_LENGTH + 1) { 'a' }.joinToString("")
             assertFailsWith<IllegalArgumentException> { Username(value) }
         }
     }

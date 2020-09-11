@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.neelkamath.omniChat.db.unsubscribeFromMessageBroker
 import com.neelkamath.omniChat.graphql.routing.*
-import io.ktor.application.Application
+import io.ktor.application.*
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -23,6 +23,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(NewMessageDeserializer)
     .register(UpdatedMessageDeserializer)
     .register(UsernameDeserializer, UsernameSerializer)
+    .register(NameDeserializer, NameSerializer)
     .register(PasswordDeserializer, PasswordSerializer)
     .register(GroupChatTitleDeserializer, GroupChatTitleSerializer)
     .register(GroupChatDescriptionDeserializer, GroupChatDescriptionSerializer)
@@ -178,6 +179,16 @@ private object UsernameDeserializer : JsonDeserializer<Username>() {
 private object UsernameSerializer : JsonSerializer<Username>() {
     override fun serialize(username: Username, generator: JsonGenerator, provider: SerializerProvider): Unit =
         generator.writeString(username.value)
+}
+
+private object NameDeserializer : JsonDeserializer<Name>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): Name =
+        parser.codec.readTree<JsonNode>(parser).textValue().let(::Name)
+}
+
+private object NameSerializer : JsonSerializer<Name>() {
+    override fun serialize(name: Name, generator: JsonGenerator, provider: SerializerProvider): Unit =
+        generator.writeString(name.value)
 }
 
 private object PasswordDeserializer : JsonDeserializer<Password>() {

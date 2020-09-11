@@ -4,8 +4,11 @@ scalar DateTime
 """A cursor for pagination."""
 scalar Cursor
 
-"""A username which has non-whitespace characters, is less than 256 characters, and is lowercase."""
+"""A username must contain whitespace, must be lowercase, and must be 1-30 characters long."""
 scalar Username
+
+"""A name must neither contain whitespace nor exceed 30 characters."""
+scalar Name
 
 """A user's bio which cannot exceed 2,500 characters, and uses CommonMark."""
 scalar Bio
@@ -143,8 +146,9 @@ type Query {
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
     authenticate the user by passing their `Login` to this operation. Once the access token has expired, you can pass
-    the `TokenSet.refreshToken` to `Query.refreshTokenSet`. When passing access tokens in insecure contexts such as a
-    URL, always use `Query.requestOnetimeToken` instead.
+    the `TokenSet.refreshToken` to `Query.refreshTokenSet`. The returned access token is meant for secure contexts such
+    as HTTPS headers. When passing access tokens in insecure contexts such as a URL, always use
+    `Query.requestOnetimeToken` instead.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
@@ -152,10 +156,10 @@ type Query {
     requestTokenSet(login: Login!): TokenSet!
 
     """
-    Operations such as `Subscription.subscribeToMessages` require authentication via an access token. You can acquire one
-    to authenticate the user by passing their `Login` to this operation. This access token can only be used once, and is
-    meant for use in insecure contexts. For secure contexts such as HTTPS headers, using `Query.requestTokenSet` is
-    easier.
+    Operations such as `Subscription.subscribeToMessages` require authentication via an access token. You can acquire
+    one to authenticate the user by passing their `Login` to this operation. This access token can only be used once,
+    and is meant for use in insecure contexts such as URLs. For secure contexts such as HTTPS headers, using
+    `Query.requestTokenSet` is easier.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
@@ -164,8 +168,7 @@ type Query {
 
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
-    passing the `refreshToken` to this operation to request a new set of tokens. You can get a refresh token from
-    `Query.requestTokenSet`.
+    passing the `TokenSet.refreshToken` from `Query.requestTokenSet` as the `refreshToken` to request a new `TokenSet`.
     """
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
@@ -186,6 +189,26 @@ type Mutation {
     You must send an access token with this request.
     """
     deleteAccount: Placeholder!
+
+    """
+    When a user creates an account, or updates their email address, they'll receive an email with a `verificationCode`
+    which must be passed to this operation in order to verify their email address. If the `verificationCode` is valid,
+    the account's email address verification status will be set to verified, and `true` will be returned. Otherwise,
+    `false` will be returned.
+
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
+    with an account).
+    """
+    verifyEmailAddress(emailAddress: String!, verificationCode: Int!): Boolean!
+
+    """
+    Updates the password of the account associated with the `emailAddress` to the `newPassword` if the
+    `passwordResetCode` is correct, and returns `true`. Otherwise, `false` is returned.
+
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
+    with an account).
+    """
+    resetPassword(emailAddress: String!, passwordResetCode: Int!, newPassword: Password!): Boolean!
 
     """
     Stars the `messageId`. You can star your own messages. Starring an already starred message will do nothing.
@@ -252,7 +275,9 @@ type Mutation {
     Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
     `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
     `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
-    one of the fields were invalid.
+    one of the fields were invalid. If the user updates their email address to something other than their current
+    address, you must log them out because the current access token will be invalid until they verify their new email
+    address.
 
     If the user updates their email address, they'll be required to verify it before their next login via an email which
     is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
@@ -284,16 +309,17 @@ type Mutation {
 
     Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
     """
-    sendEmailAddressVerification(emailAddress: String!): Placeholder!
+    emailEmailAddressVerification(emailAddress: String!): Placeholder!
 
     """
-    Sends a password reset email to the supplied `address`. Use `Query.isEmailAddressTaken` to check whether the
-    supplied `address` address exists. If the user is logged in (i.e., you have an access token), and wants to update
-    their password, you should use `Mutation.updateAccount` instead.
+    Sends a password reset email to the supplied `emailAddress`. The email will contain a password reset code which must
+    then be passed to `Mutation.resetPassword`. Use `Query.isEmailAddressTaken` to check whether the supplied
+    `emailAddress` exists. If the user is logged in (i.e., you have an access token), and wants to update their
+    password, you should use `Mutation.updateAccount` instead.
 
     Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
     """
-    resetPassword(emailAddress: String!): Placeholder!
+    emailPasswordResetCode(emailAddress: String!): Placeholder!
 
     """
     Only an admin can perform this operation.
@@ -642,9 +668,9 @@ type UpdatedAccount {
     userId: Int!
     username: Username!
     emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
+    firstName: Name!
+    lastName: Name!
+    bio: Bio!
 }
 
 """Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before."""
@@ -744,27 +770,27 @@ interface AccountData {
     id: Int!
     username: Username!
     emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
+    firstName: Name!
+    lastName: Name!
+    bio: Bio!
 }
 
 type Account implements AccountData {
     id: Int!
     username: Username!
     emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
+    firstName: Name!
+    lastName: Name!
+    bio: Bio!
 }
 
 type NewContact implements AccountData {
     id: Int!
     username: Username!
     emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
+    firstName: Name!
+    lastName: Name!
+    bio: Bio!
 }
 
 """
@@ -776,13 +802,12 @@ type DeletedContact {
 }
 
 input AccountInput {
-    """Must be lowercase."""
     username: Username!
     password: Password!
     emailAddress: String!
-    firstName: String
-    lastName: String
-    bio: Bio
+    firstName: Name! = ""
+    lastName: Name! = ""
+    bio: Bio! = ""
 }
 
 type ChatMessages {
@@ -1282,8 +1307,8 @@ input AccountUpdate {
     username: Username
     password: Password
     emailAddress: String
-    firstName: String
-    lastName: String
+    firstName: Name
+    lastName: Name
     bio: Bio
 }
 

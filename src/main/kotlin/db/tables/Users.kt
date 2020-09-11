@@ -1,72 +1,135 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.createUser
 import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.deleteUser
-import com.neelkamath.omniChat.graphql.routing.AccountEdge
-import com.neelkamath.omniChat.graphql.routing.AccountsConnection
-import com.neelkamath.omniChat.graphql.routing.Bio
-import com.neelkamath.omniChat.graphql.routing.UpdatedOnlineStatus
-import com.neelkamath.omniChat.searchUsers
+import com.neelkamath.omniChat.graphql.routing.*
+import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
-import java.util.*
 
 data class User(
     val id: Int,
-    val uuid: UUID,
+    val username: Username,
+    val passwordResetCode: Int,
+    val emailAddress: String,
+    val hasVerifiedEmailAddress: Boolean,
+    val emailAddressVerificationCode: Int,
+    val firstName: Name,
+    val lastName: Name,
     val isOnline: Boolean,
-    /** Ignore if [isOnline]. `null` if the user's never been online. */
     val lastOnline: LocalDateTime?,
-    val bio: Bio?,
+    val bio: Bio,
     val pic: Pic?
-)
+) {
+    fun toAccount(): Account = Account(id, username, emailAddress, firstName, lastName, bio)
+}
 
-/** Replacement for Keycloak's cumbersome custom user attributes. Pics cannot exceed [Pic.MAX_BYTES]. */
+/** Neither usernames not email addresses may be used more than once. Pics cannot exceed [Pic.MAX_BYTES]. */
 object Users : IntIdTable() {
-    /** The ID given to the user by Keycloak. */
-    private val uuid: Column<UUID> = uuid("uuid")
+    /** Names and usernames cannot exceed 30 characters. */
+    const val MAX_NAME_LENGTH = 30
+    private val username: Column<String> = varchar("username", MAX_NAME_LENGTH).uniqueIndex()
 
-    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
-    private val bio: Column<String?> = varchar("bio", Bio.MAX_LENGTH).nullable()
+    // Password digests are 64 characters regardless of whether the password is longer or shorter than 64 characters.
+    private val passwordDigest: Column<String> = varchar("password_digest", 64)
+    private val passwordResetCode: Column<Int> =
+        integer("password_reset_code").clientDefault { (100_000..999_999).random() }
+    private val emailAddress: Column<String> = varchar("email_address", 254).uniqueIndex()
+    private val hasVerifiedEmailAddress: Column<Boolean> = bool("has_verified_email_address").clientDefault { false }
+    private val emailAddressVerificationCode: Column<Int> =
+        integer("email_address_verification_code").clientDefault { (100_000..999_999).random() }
+    private val firstName: Column<String> = varchar("first_name", MAX_NAME_LENGTH)
+    private val lastName: Column<String> = varchar("last_name", MAX_NAME_LENGTH)
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
     private val lastOnline: Column<LocalDateTime?> = datetime("last_online").nullable()
+    private val bio: Column<String> = varchar("bio", Bio.MAX_LENGTH)
+    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
 
     /**
-     * @see [createUser]
+     * Check if [isUsernameTaken] because the [AccountInput.username] mustn't exist.
+     *
      * @see [setOnlineStatus]
      * @see [updatePic]
      */
-    fun create(uuid: String, bio: Bio?): Unit = transaction {
+    fun create(account: AccountInput): Unit = transaction {
         insert {
-            it[this.uuid] = UUID.fromString(uuid)
-            it[this.bio] = bio?.value
+            it[username] = account.username.value
+            it[passwordDigest] = StrongPasswordEncryptor().encryptPassword(account.password.value)
+            it[emailAddress] = account.emailAddress
+            it[firstName] = account.firstName.value
+            it[lastName] = account.lastName.value
+            it[bio] = account.bio.value
         }
     }
 
-    fun exists(id: Int): Boolean = transaction {
-        select { Users.id eq id }.empty().not()
+    /**
+     * If the [emailAddressVerificationCode] was correct, the account's [emailAddress] is set to verified. Returns
+     * whether the [emailAddress] was verified using the [emailAddressVerificationCode].
+     */
+    fun verifyEmailAddress(emailAddress: String, emailAddressVerificationCode: Int): Boolean = transaction {
+        val row = select { Users.emailAddress eq emailAddress }.first()
+        if (row[Users.emailAddressVerificationCode] == emailAddressVerificationCode) {
+            update({ Users.emailAddress eq emailAddress }) { it[hasVerifiedEmailAddress] = true }
+            true
+        } else false
     }
 
-    fun read(id: Int): User = transaction {
-        select { Users.id eq id }.first()
-    }.let(::buildUser)
+    /** Returns `false` if the [Login.username] doesn't exist, or the [Login.password] is incorrect. */
+    fun isValidLogin(login: Login): Boolean = transaction {
+        val row = select { username eq login.username.value }
+        if (row.empty()) return@transaction false
+        StrongPasswordEncryptor().checkPassword(login.password.value, row.first()[passwordDigest])
+    }
 
-    fun read(uuid: String): User = transaction {
-        select { Users.uuid eq UUID.fromString(uuid) }.first()
-    }.let(::buildUser)
+    fun isUsernameTaken(username: Username): Boolean = transaction {
+        select { Users.username eq username.value }.empty().not()
+    }
 
-    private fun buildUser(row: ResultRow): User = User(
-        row[id].value,
-        row[uuid],
-        row[isOnline],
-        row[lastOnline],
-        row[bio]?.let(::Bio),
-        row[picId]?.let(Pics::read)
+    fun isEmailAddressTaken(emailAddress: String): Boolean = transaction {
+        select { Users.emailAddress eq emailAddress }.empty().not()
+    }
+
+    fun exists(userId: Int): Boolean = transaction {
+        select { Users.id eq userId }.empty().not()
+    }
+
+    fun read(userId: Int): User = transaction {
+        select { Users.id eq userId }.first()
+    }.toUser()
+
+    fun read(username: Username): User = transaction {
+        select { Users.username eq username.value }.first()
+    }.toUser()
+
+    fun read(emailAddress: String): User = transaction {
+        select { Users.emailAddress eq emailAddress }.first()
+    }.toUser()
+
+    private fun ResultRow.toUser(): User = User(
+        this[id].value,
+        Username(this[username]),
+        this[passwordResetCode],
+        this[emailAddress],
+        this[hasVerifiedEmailAddress],
+        this[emailAddressVerificationCode],
+        Name(this[firstName]),
+        Name(this[lastName]),
+        this[isOnline],
+        this[lastOnline],
+        Bio(this[bio]),
+        this[picId]?.let(Pics::read)
+    )
+
+    private fun ResultRow.toAccount(): Account = Account(
+        this[id].value,
+        Username(this[username]),
+        this[emailAddress],
+        Name(this[firstName]),
+        Name(this[lastName]),
+        Bio(this[bio])
     )
 
     /**
@@ -82,12 +145,49 @@ object Users : IntIdTable() {
         onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline), subscribers)
     }
 
-    /** Calls [negotiateUserUpdate]. */
-    fun updateBio(userId: Int, bio: Bio?) {
+    /**
+     * Updates the password of the account associated with the [emailAddress] to the [newPassword] if the
+     * [passwordResetCode] is correct, and returns `true`. Otherwise, `false` is returned.
+     */
+    fun resetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): Boolean = transaction {
+        val row = select { Users.emailAddress eq emailAddress }.first()
+        if (row[Users.passwordResetCode] == passwordResetCode) {
+            update({ Users.emailAddress eq emailAddress }) {
+                it[passwordDigest] = StrongPasswordEncryptor().encryptPassword(newPassword.value)
+            }
+            true
+        } else false
+    }
+
+    /**
+     * Calls [negotiateUserUpdate]. If the [AccountUpdate.emailAddress] isn't `null`, and differs from the current one,
+     * then the email address is marked as unverified.
+     */
+    fun update(userId: Int, update: AccountUpdate) {
+        update.emailAddress?.let { updateEmailAddress(userId, it) }
         transaction {
-            update({ Users.id eq userId }) { it[Users.bio] = bio?.value }
+            update({ Users.id eq userId }) { statement ->
+                update.username?.let { statement[username] = it.value }
+                update.password?.let {
+                    statement[passwordDigest] =
+                        StrongPasswordEncryptor().encryptPassword(update.password.value)
+                }
+                update.firstName?.let { statement[firstName] = it.value }
+                update.lastName?.let { statement[lastName] = it.value }
+                update.bio?.let { statement[bio] = it.value }
+            }
         }
         negotiateUserUpdate(userId)
+    }
+
+    /** If the [emailAddress] differs from the [userId]'s current one, it'll be marked as unverified. */
+    private fun updateEmailAddress(userId: Int, emailAddress: String): Unit = transaction {
+        val address = select { Users.id eq userId }.first()[Users.emailAddress]
+        if (emailAddress != address)
+            update({ Users.id eq userId }) {
+                it[Users.emailAddress] = emailAddress
+                it[hasVerifiedEmailAddress] = false
+            }
     }
 
     /** Deletes the [pic] if it's `null`. Calls [negotiateUserUpdate]. */
@@ -101,22 +201,23 @@ object Users : IntIdTable() {
         negotiateUserUpdate(userId)
     }
 
-    private fun readPrimaryKey(userId: Int): Int = transaction {
-        select { Users.id eq userId }.first()[Users.id].value
-    }
-
-    /**
-     * Case-insensitively [query]s every user's username, first name, last name, and email address.
-     *
-     * @see [searchUsers]
-     */
+    /** Case-insensitively [query]s every user's username, first name, last name, and email address. */
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
-        val users = searchUsers(query).map { AccountEdge(it, readPrimaryKey(it.id)) }
+        val users = transaction {
+            selectAll()
+                .filter {
+                    it[username].contains(query, ignoreCase = true) ||
+                            it[firstName].contains(query, ignoreCase = true) ||
+                            it[lastName].contains(query, ignoreCase = true) ||
+                            it[emailAddress].contains(query, ignoreCase = true)
+                }
+                .map { AccountEdge(it.toAccount(), it[Users.id].value) }
+        }
         return AccountsConnection.build(users, pagination)
     }
 
     /**
-     * Deletes the specified user from this table, if they exist.
+     * Deletes the specified user if they exist.
      *
      * @see [deleteUser]
      */

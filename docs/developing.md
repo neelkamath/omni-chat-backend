@@ -36,10 +36,7 @@
         down
     ```
 
-If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing databases:
-```
-docker volume rm omni-chat_auth-db omni-chat_chat-db
-```
+If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing databases: `docker volume rm omni-chat_db`
 
 ### Development
 
@@ -62,7 +59,7 @@ docker volume rm omni-chat_auth-db omni-chat_chat-db
 
 ### Production
 
-Here's how to test the production build:
+Here's how to run the production build so that you can verify it works as expected:
 1. Start the server on http://localhost:80:
     ```
     docker-compose \

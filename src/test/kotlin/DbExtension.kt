@@ -11,8 +11,6 @@ import org.junit.jupiter.api.extension.ExtensionContext
 class DbExtension : BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
     override fun beforeAll(context: ExtensionContext) {
         if (!isSetUp) {
-            setUpAuth()
-            mockEmails()
             setUpDb()
             isSetUp = true
         }
@@ -26,8 +24,7 @@ class DbExtension : BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
     override fun afterEach(context: ExtensionContext) {
         val userIdList = Users.read()
         wipeDb()
-        userIdList.forEach(::deleteUserFromDb)
-        wipeAuth()
+        userIdList.forEach(::deleteUser)
     }
 
     private companion object {

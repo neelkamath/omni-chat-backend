@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.ActionableMessage
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.TriggeredAction
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.deleteWhere
@@ -48,7 +47,8 @@ object ActionMessages : IntIdTable() {
      */
     fun trigger(userId: Int, messageId: Int, action: MessageText) {
         val creatorId = Messages.readTypedMessage(messageId).message.sender.id
-        messagesNotifier.publish(MessagesAsset(creatorId) to TriggeredAction(messageId, action, readUserById(userId)))
+        val account = Users.read(userId).toAccount()
+        messagesNotifier.publish(MessagesAsset(creatorId) to TriggeredAction(messageId, action, account))
     }
 
     fun read(messageId: Int): ActionableMessage {

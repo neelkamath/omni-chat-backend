@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -387,7 +386,7 @@ object Messages : IntIdTable() {
         }
         val message = object : BareMessage {
             override val messageId: Int = messageId
-            override val sender: Account = readUserById(row[senderId])
+            override val sender: Account = Users.read(row[senderId]).toAccount()
             override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
             override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
             override val isForwarded: Boolean = row[this@Messages.isForwarded]

@@ -2,13 +2,15 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.buildOnetimeToken
+import com.neelkamath.omniChat.buildTokenSet
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.userId
 import graphql.schema.DataFetchingEnvironment
 import java.util.*
 
@@ -131,16 +133,16 @@ fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
 }
 
 fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean =
-    emailAddressExists(env.getArgument("emailAddress"))
+    Users.isEmailAddressTaken(env.getArgument("emailAddress"))
 
 fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
     val username = env.parseArgument<Username>("username")
-    return isUsernameTaken(username)
+    return Users.isUsernameTaken(username)
 }
 
 fun readAccount(env: DataFetchingEnvironment): Account {
     env.verifyAuth()
-    return readUserById(env.userId!!)
+    return Users.read(env.userId!!).toAccount()
 }
 
 fun readChat(env: DataFetchingEnvironment): ChatDto {
@@ -172,10 +174,10 @@ fun requestOnetimeToken(env: DataFetchingEnvironment): String = buildOnetimeToke
 
 private fun validateLogin(env: DataFetchingEnvironment): Int {
     val login = env.parseArgument<Login>("login")
-    if (!isUsernameTaken(login.username)) throw NonexistentUserException
-    val userId = readUserByUsername(login.username).id
-    if (!isEmailVerified(userId)) throw UnverifiedEmailAddressException
-    if (!isValidLogin(login)) throw IncorrectPasswordException
+    if (!Users.isUsernameTaken(login.username)) throw NonexistentUserException
+    val userId = Users.read(login.username).id
+    if (!Users.read(userId).hasVerifiedEmailAddress) throw UnverifiedEmailAddressException
+    if (!Users.isValidLogin(login)) throw IncorrectPasswordException
     return userId
 }
 

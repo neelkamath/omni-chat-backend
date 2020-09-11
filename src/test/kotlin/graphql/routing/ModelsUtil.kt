@@ -1,10 +1,10 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.readUserByUsername
+import com.neelkamath.omniChat.db.tables.Users
 
 fun AccountInput.toAccount(): Account =
-    Account(readUserByUsername(username).id, username, emailAddress, firstName, lastName, bio)
+    Account(Users.read(username).id, username, emailAddress, firstName, lastName, bio)
 
 fun NewMessage.Companion.build(message: Message): NewMessage = object : NewMessage {
     override val chatId: Int = Messages.readChatFromMessage(message.messageId)

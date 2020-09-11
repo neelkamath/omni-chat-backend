@@ -8,7 +8,6 @@ import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.DeletedContact
 import com.neelkamath.omniChat.graphql.routing.NewContact
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -52,7 +51,10 @@ object Contacts : IntIdTable() {
 
     /** The [ownerId]'s contacts. */
     private fun readRows(ownerId: Int): List<AccountEdge> = transaction {
-        select { contactOwnerId eq ownerId }.map { AccountEdge(readUserById(it[contactId]), it[Contacts.id].value) }
+        select { contactOwnerId eq ownerId }.map {
+            val account = Users.read(it[contactId]).toAccount()
+            AccountEdge(account, it[Contacts.id].value)
+        }
     }
 
     /** @see [readIdList] */

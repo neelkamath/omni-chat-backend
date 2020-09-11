@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.db.Notifier
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
 import com.neelkamath.omniChat.graphql.routing.PrivateChat
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -92,7 +91,7 @@ object PrivateChats : Table() {
         val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
         return PrivateChat(
             row[id],
-            readUserById(otherUserId),
+            Users.read(otherUserId).toAccount(),
             Messages.readPrivateChatConnection(row[id], userId, pagination)
         )
     }
@@ -144,7 +143,7 @@ object PrivateChats : Table() {
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
     fun search(userId: Int, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChats(userId, pagination).filter { readUserById(it.user.id).matches(query) }
+        readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }
 
     /** [delete]s every chat which the [userId] is in. Nothing will happen if the [userId] doesn't exist. */
     fun deleteUserChats(userId: Int): Unit = readIdList(userId).forEach(::delete)

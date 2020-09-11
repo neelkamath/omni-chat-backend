@@ -3,11 +3,13 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.DbExtension
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.http.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -15,6 +17,49 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
+
+const val RESET_PASSWORD_QUERY = """
+    mutation ResetPassword(${"$"}emailAddress: String!, ${"$"}passwordResetCode: Int!, ${"$"}newPassword: Password!) {
+        resetPassword(
+            emailAddress: ${"$"}emailAddress
+            passwordResetCode: ${"$"}passwordResetCode
+            newPassword: ${"$"}newPassword
+        )
+    }
+"""
+
+private fun operateResetPassword(
+    emailAddress: String,
+    passwordResetCode: Int,
+    newPassword: Password
+): GraphQlResponse = executeGraphQlViaEngine(
+    RESET_PASSWORD_QUERY,
+    mapOf("emailAddress" to emailAddress, "passwordResetCode" to passwordResetCode, "newPassword" to newPassword.value)
+)
+
+fun resetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): Boolean =
+    operateResetPassword(emailAddress, passwordResetCode, newPassword).data!!["resetPassword"] as Boolean
+
+fun errResetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): String =
+    operateResetPassword(emailAddress, passwordResetCode, newPassword).errors!![0].message
+
+const val VERIFY_EMAIL_ADDRESS_QUERY = """
+    mutation VerifyEmailAddress(${"$"}emailAddress: String!, ${"$"}verificationCode: Int!) {
+        verifyEmailAddress(emailAddress: ${"$"}emailAddress, verificationCode: ${"$"}verificationCode)
+    }
+"""
+
+private fun operateVerifyEmailAddress(emailAddress: String, verificationCode: Int): GraphQlResponse =
+    executeGraphQlViaEngine(
+        VERIFY_EMAIL_ADDRESS_QUERY,
+        mapOf("emailAddress" to emailAddress, "verificationCode" to verificationCode)
+    )
+
+fun verifyEmailAddress(emailAddress: String, verificationCode: Int): Boolean =
+    operateVerifyEmailAddress(emailAddress, verificationCode).data!!["verifyEmailAddress"] as Boolean
+
+fun errVerifyEmailAddress(emailAddress: String, verificationCode: Int): String =
+    operateVerifyEmailAddress(emailAddress, verificationCode).errors!![0].message
 
 const val TRIGGER_ACTION_QUERY = """
     mutation TriggerAction(${"$"}messageId: Int!, ${"$"}action: MessageText!) {
@@ -572,38 +617,39 @@ fun deletePrivateChat(userId: Int, chatId: Int): Placeholder {
 fun errDeletePrivateChat(userId: Int, chatId: Int): String =
     operateDeletePrivateChat(userId, chatId).errors!![0].message
 
-const val RESET_PASSWORD_QUERY = """
-    mutation ResetPassword(${"$"}emailAddress: String!) {
-        resetPassword(emailAddress: ${"$"}emailAddress)
+const val EMAIL_PASSWORD_RESET_CODE_QUERY = """
+    mutation EmailPasswordResetCode(${"$"}emailAddress: String!) {
+        emailPasswordResetCode(emailAddress: ${"$"}emailAddress)
     }
 """
 
-private fun operateResetPassword(emailAddress: String): GraphQlResponse =
-    executeGraphQlViaEngine(RESET_PASSWORD_QUERY, mapOf("emailAddress" to emailAddress))
+private fun operateEmailPasswordResetCode(emailAddress: String): GraphQlResponse =
+    executeGraphQlViaEngine(EMAIL_PASSWORD_RESET_CODE_QUERY, mapOf("emailAddress" to emailAddress))
 
-fun resetPassword(emailAddress: String): Placeholder {
-    val data = operateResetPassword(emailAddress).data!!["resetPassword"] as String
+fun emailPasswordResetCode(emailAddress: String): Placeholder {
+    val data = operateEmailPasswordResetCode(emailAddress).data!!["emailPasswordResetCode"] as String
     return testingObjectMapper.convertValue(data)
 }
 
-fun errResetPassword(emailAddress: String): String = operateResetPassword(emailAddress).errors!![0].message
+fun errEmailPasswordResetCode(emailAddress: String): String =
+    operateEmailPasswordResetCode(emailAddress).errors!![0].message
 
-const val SEND_EMAIL_ADDRESS_VERIFICATION_QUERY = """
-    mutation SendEmailAddressVerification(${"$"}emailAddress: String!) {
-        sendEmailAddressVerification(emailAddress: ${"$"}emailAddress)
+const val EMAIL_EMAIL_ADDRESS_VERIFICATION_QUERY = """
+    mutation EmailEmailAddressVerification(${"$"}emailAddress: String!) {
+        emailEmailAddressVerification(emailAddress: ${"$"}emailAddress)
     }
 """
 
-private fun operateSendEmailAddressVerification(emailAddress: String): GraphQlResponse =
-    executeGraphQlViaEngine(SEND_EMAIL_ADDRESS_VERIFICATION_QUERY, mapOf("emailAddress" to emailAddress))
+private fun operateEmailEmailAddressVerification(emailAddress: String): GraphQlResponse =
+    executeGraphQlViaEngine(EMAIL_EMAIL_ADDRESS_VERIFICATION_QUERY, mapOf("emailAddress" to emailAddress))
 
-fun sendEmailAddressVerification(emailAddress: String): Placeholder {
-    val data = operateSendEmailAddressVerification(emailAddress).data!!["sendEmailAddressVerification"] as String
+fun emailEmailAddressVerification(emailAddress: String): Placeholder {
+    val data = operateEmailEmailAddressVerification(emailAddress).data!!["emailEmailAddressVerification"] as String
     return testingObjectMapper.convertValue(data)
 }
 
-fun errSendEmailVerification(emailAddress: String): String =
-    operateSendEmailAddressVerification(emailAddress).errors!![0].message
+fun errEmailEmailAddressVerification(emailAddress: String): String =
+    operateEmailEmailAddressVerification(emailAddress).errors!![0].message
 
 const val UPDATE_ACCOUNT_QUERY = """
     mutation UpdateAccount(${"$"}update: AccountUpdate!) {
@@ -624,6 +670,61 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
 
 @ExtendWith(DbExtension::class)
 class MutationsTest {
+    @Nested
+    inner class ResetPassword {
+        @Test
+        fun `The password should be reset`() {
+            val account = AccountInput(Username("username"), Password("p"), "john@example.com")
+            Users.create(account)
+            val user = Users.read(account.username)
+            val password = Password("new")
+            assertTrue(resetPassword(user.emailAddress, user.passwordResetCode, password))
+            val login = Login(account.username, password)
+            assertTrue(Users.isValidLogin(login))
+        }
+
+        @Test
+        fun `Using an invalid code shouldn't reset the password`() {
+            val account = AccountInput(Username("username"), Password("p"), "john@example.com")
+            Users.create(account)
+            val password = Password("new")
+            assertFalse(resetPassword(account.emailAddress, 123, password))
+            val login = Login(account.username, password)
+            assertFalse(Users.isValidLogin(login))
+        }
+
+        @Test
+        fun `Resetting the password for an unregistered email address should fail`(): Unit = assertEquals(
+            UnregisteredEmailAddressException.message,
+            errResetPassword("john@example.com", 123, Password("new"))
+        )
+    }
+
+    @Nested
+    inner class VerifyEmailAddress {
+        @Test
+        fun `The email address should get verified`() {
+            val account = AccountInput(Username("username"), Password("p"), "john.doe@example.com")
+            Users.create(account)
+            val user = Users.read(account.username)
+            assertTrue(verifyEmailAddress(user.emailAddress, user.emailAddressVerificationCode))
+            assertTrue(Users.read(account.username).hasVerifiedEmailAddress)
+        }
+
+        @Test
+        fun `Using an invalid code shouldn't verify the email address`() {
+            val account = AccountInput(Username("username"), Password("p"), "john.doe@example.com")
+            Users.create(account)
+            assertFalse(verifyEmailAddress(account.emailAddress, 123))
+            assertFalse(Users.read(account.username).hasVerifiedEmailAddress)
+        }
+
+        @Test
+        fun `Attempting to verify an email address which isn't associated with an account should fail`() {
+            assertEquals(UnregisteredEmailAddressException.message, errVerifyEmailAddress("john.doe@example.com", 123))
+        }
+    }
+
     @Nested
     inner class TriggerAction {
         @Test
@@ -1280,9 +1381,9 @@ class MutationsTest {
     inner class CreateAccount {
         @Test
         fun `Creating an account should save it to the auth system, and the DB`() {
-            val account = AccountInput(Username("username"), Password("password"), "username@example.com")
+            val account = AccountInput(Username("u"), Password("p"), "username@example.com")
             createAccount(account)
-            with(readUserByUsername(account.username)) {
+            with(Users.read(account.username)) {
                 assertEquals(account.username, username)
                 assertEquals(account.emailAddress, emailAddress)
             }
@@ -1291,7 +1392,7 @@ class MutationsTest {
 
         @Test
         fun `An account with a taken username shouldn't be created`() {
-            val account = AccountInput(Username("username"), Password("password"), "username@example.com")
+            val account = AccountInput(Username("u"), Password("p"), "username@example.com")
             createAccount(account)
             assertEquals(UsernameTakenException.message, errCreateAccount(account))
         }
@@ -1644,32 +1745,35 @@ class MutationsTest {
     }
 
     @Nested
-    inner class ResetPassword {
+    inner class EmailPasswordResetCode {
         @Test
         fun `A password reset request should be sent`() {
             val address = createVerifiedUsers(1)[0].info.emailAddress
-            resetPassword(address)
+            emailPasswordResetCode(address)
         }
 
         @Test
         fun `Requesting a password reset for an unregistered address should throw an exception`() {
-            assertEquals(UnregisteredEmailAddressException.message, errResetPassword("username@example.com"))
+            assertEquals(UnregisteredEmailAddressException.message, errEmailPasswordResetCode("username@example.com"))
         }
     }
 
     @Nested
-    inner class SendEmailAddressVerification {
+    inner class EmailEmailAddressVerification {
         @Test
         fun `A verification email should be sent`() {
             val address = "username@example.com"
-            val account = AccountInput(Username("username"), Password("password"), address)
-            createUser(account)
-            sendEmailAddressVerification(address)
+            val account = AccountInput(Username("u"), Password("p"), address)
+            Users.create(account)
+            emailEmailAddressVerification(address)
         }
 
         @Test
         fun `Sending a verification email to an unregistered address should throw an exception`() {
-            assertEquals(UnregisteredEmailAddressException.message, errSendEmailVerification("username@example.com"))
+            assertEquals(
+                UnregisteredEmailAddressException.message,
+                errEmailEmailAddressVerification("username@example.com")
+            )
         }
     }
 
@@ -1677,10 +1781,10 @@ class MutationsTest {
     inner class UpdateAccount {
         private fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
             assertFalse(isUsernameTaken(accountBeforeUpdate.username))
-            with(readUserByUsername(accountAfterUpdate.username!!)) {
+            with(Users.read(accountAfterUpdate.username!!)) {
                 assertEquals(accountAfterUpdate.username, username)
                 assertEquals(accountAfterUpdate.emailAddress, emailAddress)
-                assertFalse(isEmailVerified(id))
+                assertFalse(Users.read(id).hasVerifiedEmailAddress)
                 assertEquals(accountBeforeUpdate.firstName, firstName)
                 assertEquals(accountAfterUpdate.lastName, lastName)
                 assertEquals(accountBeforeUpdate.bio, bio)
@@ -1691,7 +1795,7 @@ class MutationsTest {
         fun `Only the specified fields should be updated`() {
             val user = createVerifiedUsers(1)[0].info
             val update =
-                AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = "Roger")
+                AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = Name("Roger"))
             updateAccount(user.id, update)
             testAccount(user, update)
         }

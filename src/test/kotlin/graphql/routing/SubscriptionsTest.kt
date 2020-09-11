@@ -4,10 +4,12 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.buildOnetimeToken
+import com.neelkamath.omniChat.buildTokenSet
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.OnetimeTokens
+import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.db.tables.read
 import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
@@ -21,15 +23,19 @@ import kotlin.test.assertNull
 
 @ExtendWith(DbExtension::class)
 class SubscriptionsTest {
+    private val subscribeToMessagesQuery = """
+        subscription SubscribeToMessages {
+            subscribeToMessages {
+                $CREATED_SUBSCRIPTION_FRAGMENT
+            }
+        }
+    """
+
     @Nested
     inner class RouteSubscription {
         private fun testOperationName(shouldSupplyOperationName: Boolean) {
             val query = """
-                subscription SubscribeToMessages {
-                    subscribeToMessages {
-                        $CREATED_SUBSCRIPTION_FRAGMENT
-                    }
-                }
+                $subscribeToMessagesQuery
                 
                 subscription SubscribeToAccounts {
                     subscribeToAccounts {
@@ -60,18 +66,11 @@ class SubscriptionsTest {
         }
 
         private fun testOnetimeToken(shouldUseValidToken: Boolean) {
-            val query = """
-                subscription SubscribeToMessages {
-                    subscribeToMessages {
-                        $CREATED_SUBSCRIPTION_FRAGMENT
-                    }
-                }
-            """
             val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
             repeat(if (shouldUseValidToken) 1 else 2) { repetition ->
                 executeGraphQlSubscriptionViaWebSocket(
                     path = "messages-subscription",
-                    GraphQlRequest(query),
+                    GraphQlRequest(subscribeToMessagesQuery),
                     token
                 ) { incoming ->
                     if (repetition == 0) parseFrameData<CreatedSubscription>(incoming)
@@ -93,19 +92,24 @@ class SubscriptionsTest {
 
         @Test
         fun `Using a non-onetime token should work`() {
-            val query = """
-                subscription SubscribeToMessages {
-                    subscribeToMessages {
-                        $CREATED_SUBSCRIPTION_FRAGMENT
-                    }
-                }
-            """
             val userId = createVerifiedUsers(1)[0].info.id
             executeGraphQlSubscriptionViaWebSocket(
                 path = "messages-subscription",
-                GraphQlRequest(query),
+                GraphQlRequest(subscribeToMessagesQuery),
                 buildOnetimeToken(userId)
             ) { incoming -> parseFrameData<CreatedSubscription>(incoming) }
+        }
+
+        @Test
+        fun `A token from an account with an unverified email address shouldn't work`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val token = buildTokenSet(userId).accessToken
+            Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
+            executeGraphQlSubscriptionViaWebSocket(
+                path = "messages-subscription",
+                GraphQlRequest(subscribeToMessagesQuery),
+                token
+            ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
 
