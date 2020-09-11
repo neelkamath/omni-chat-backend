@@ -26,17 +26,19 @@ jobs:
       - run: cp docs/.env .
       - run: cp docs/Caddyfile .
       - name: Spin up services
-        run: docker-compose \
-          -f docker/docker-compose.yml \
-          -f docker/docker-compose.override.yml \
-          --project-directory . \
-          up -d --scale chat=0
+        run: |
+          docker-compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.override.yml \
+            --project-directory . \
+            up -d --scale chat=0
       - name: Test
-        run: docker-compose \
-          -f docker/docker-compose.yml \
-          -f docker/docker-compose.override.yml \
-          --project-directory . \
-          run chat gradle test
+        run: |
+          docker-compose \
+            -f docker/docker-compose.yml \
+            -f docker/docker-compose.override.yml \
+            --project-directory . \
+            run chat gradle test
       - if: always()
         uses: actions/upload-artifact@v1
         with:
