@@ -62,16 +62,16 @@ object GroupChatUsers : IntIdTable() {
         select { (GroupChatUsers.chatId eq chatId) and (isAdmin eq true) }.map { it[userId] }
     }
 
-    private fun readUserCursors(chatId: Int): List<AccountEdge> = transaction {
+    private fun readAccountEdges(chatId: Int): List<AccountEdge> = transaction {
         select { GroupChatUsers.chatId eq chatId }.map {
             val account = Users.read(it[userId]).toAccount()
-            AccountEdge(account, it[GroupChatUsers.id].value)
+            AccountEdge(account, cursor = it[GroupChatUsers.id].value)
         }
     }
 
     /** @see [readUserIdList] */
     fun readUsers(chatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        AccountsConnection.build(readUserCursors(chatId), pagination)
+        AccountsConnection.build(readAccountEdges(chatId), pagination)
 
     /**
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via

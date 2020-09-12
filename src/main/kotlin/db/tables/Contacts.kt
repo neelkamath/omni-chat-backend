@@ -53,7 +53,7 @@ object Contacts : IntIdTable() {
     private fun readRows(ownerId: Int): List<AccountEdge> = transaction {
         select { contactOwnerId eq ownerId }.map {
             val account = Users.read(it[contactId]).toAccount()
-            AccountEdge(account, it[Contacts.id].value)
+            AccountEdge(account, cursor = it[Contacts.id].value)
         }
     }
 
