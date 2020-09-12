@@ -68,12 +68,9 @@ Checkboxes indicate which features have been implemented.
 - [x] Forward messages.
 - [x] Omni Chat can be deployed for private use as well. For example, a company may only want to use it as an internal platform, in which case they can specify that only certain email address domains can create accounts. This way, even if an intruder gets into the company's network, they won't be able to create an account since they won't have a company issued email address. This feature also prevents employees from creating an account with their personal email address.
 - [x] Bots can have buttons so that integrations can easily execute code. For example, if a Travis CI build fails, a bot could message the specifics on the group with a button, which when clicked, automatically reruns the CI/CD pipeline.
-- [ ] Builtin text translation.
-- [ ] Auto-reply suggestions. For example, if the other user asks "Did you buy the new bed?", auto-reply suggestions could be "Yes", "No", and "Not yet.". Another example is if the user asks about going to Pizza Hut, an auto-reply suggestion could be the Google Maps entry for the restaurant showing its location, rating, and business hours.
-- [ ] Allow companies like BookMyShow and Uber to set up business accounts through which bots and customer service humans operate. Users will be able to search for business accounts. This way businesses can have easier customer support systems, and increase revenue.
 - [ ] Group audio calls.
-- [ ] Spatial audio calls (important for gamers).
 - [ ] Group video calls.
 - [ ] Screen sharing.
 - [ ] Background noise cancellation for both audio and video calls.
+- [ ] Spatial audio calls (important for gamers).
 - [ ] E2E encryption.
