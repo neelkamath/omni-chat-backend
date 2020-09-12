@@ -112,7 +112,7 @@ class PrivateChatsTest {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
                 AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                AccountInput(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
+                AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
                 AccountInput(
                     Username("vader"),
                     Password("p"),
