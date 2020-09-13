@@ -61,6 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+
       # TODO: Delete.
       - name: Set $VERSION
         run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion)
