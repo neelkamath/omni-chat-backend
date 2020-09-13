@@ -28,11 +28,9 @@ To view a previous version's docs, go to `https://github.com/neelkamath/omni-cha
 
 ### Running the Application
 
-1. Log in to GitHub Package Registry:
-    1. Create a GitHub [personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with the `read:packages` scope.
-    1. Run `echo <TOKEN> | docker login docker.pkg.github.com -u <USERNAME> --password-stdin`, where `<TOKEN>` is your personal access token, and `<USERNAME>` is your GitHub username. 
-1. Start the server on http://localhost:80 (it'll take a few seconds to start): `docker-compose up -d`
-1. To shut down: `docker-compose down`
+Start the server on http://localhost:80 (it'll take a few seconds to start): `docker-compose up -d`
+
+To shut down: `docker-compose down`
 
 ### Migrating to a Newer Version
 
