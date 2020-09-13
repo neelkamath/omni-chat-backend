@@ -61,7 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Log in to registry
-        run: echo ${{ DOCKER_HUB_PASSWORD }} | docker login -u neelkamath --password-stdin https://index.docker.io/v1/
+        env:
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        run: echo "$DOCKER_HUB_PASSWORD" | docker login -u neelkamath --password-stdin https://index.docker.io/v1/
       - run: docker build -t omni-chat -f docker/Dockerfile .
       - name: Set $VERSION
         run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
