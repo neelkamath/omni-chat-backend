@@ -3,24 +3,35 @@ package com.neelkamath.omniChat.graphql.routing
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.MessageType
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.readUserById
-import org.keycloak.representations.idm.UserRepresentation
 import java.time.LocalDateTime
 import java.util.*
 
 typealias Cursor = Int
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't lowercase, isn't shorter than 256 characters, or
- * doesn't contain non-whitespace characters.
+ * An [IllegalArgumentException] will be thrown if it contains whitespace, isn't lowercase, or exceeds
+ * [Users.MAX_NAME_LENGTH] characters.
  */
 data class Username(val value: String) {
     init {
-        if (value.trim().isEmpty()) throw IllegalArgumentException("""The username ("$value") mustn't be empty.""")
-        // The auth system disallows usernames longer than 255 characters.
-        if (value.length > 255) throw IllegalArgumentException("The username($value) must be less than 256 characters.")
-        // The auth system silently saves uppercase characters in usernames as lowercase.
         if (value != value.toLowerCase()) throw IllegalArgumentException("The username ($value) must be lowercase.")
+        if (value.contains(Regex("""\s""")))
+            throw IllegalArgumentException("""The username ("$value") cannot contain whitespace.""")
+        if (value.length !in 1..Users.MAX_NAME_LENGTH)
+            throw IllegalArgumentException("The username ($value) must be 1-${Users.MAX_NAME_LENGTH} characters long.")
+    }
+}
+
+/**
+ * An [IllegalArgumentException] will be thrown if it contains whitespace, or exceeds [Users.MAX_NAME_LENGTH]
+ * characters.
+ */
+data class Name(val value: String) {
+    init {
+        if (value.contains(Regex("""\s""")))
+            throw IllegalArgumentException("""The name ("$value") cannot contain whitespace.""")
+        if (value.length > Users.MAX_NAME_LENGTH)
+            throw IllegalArgumentException("The name ($value) mustn't exceed ${Users.MAX_NAME_LENGTH} characters.")
     }
 }
 
@@ -64,34 +75,33 @@ data class AccountInput(
     val username: Username,
     val password: Password,
     val emailAddress: String,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val bio: Bio? = null
+    val firstName: Name = Name(""),
+    val lastName: Name = Name(""),
+    val bio: Bio = Bio("")
 )
 
 interface AccountData {
     val id: Int
     val username: Username
     val emailAddress: String
-    val firstName: String?
-    val lastName: String?
-    val bio: Bio?
+    val firstName: Name
+    val lastName: Name
+    val bio: Bio
 }
 
 data class Account(
     override val id: Int,
     override val username: Username,
     override val emailAddress: String,
-    override val firstName: String? = null,
-    override val lastName: String? = null,
-    override val bio: Bio? = null
+    override val firstName: Name,
+    override val lastName: Name,
+    override val bio: Bio
 ) : AccountData {
     /**
-     * Case-insensitively searches for the [query] in the [UserRepresentation.username], [UserRepresentation.firstName],
-     * [UserRepresentation.lastName], and [UserRepresentation.email].
+     * Case-insensitively [query]s the [username], [firstName], [lastName], and [emailAddress].
      */
-    fun matches(query: String): Boolean =
-        listOfNotNull(username.value, firstName, lastName, emailAddress).any { it.contains(query, ignoreCase = true) }
+    fun matches(query: String): Boolean = listOfNotNull(username.value, firstName.value, lastName.value, emailAddress)
+        .any { it.contains(query, ignoreCase = true) }
 }
 
 data class MessageContext(val hasContext: Boolean, val id: Int?)
@@ -174,13 +184,13 @@ data class NewContact(
     override val id: Int,
     override val username: Username,
     override val emailAddress: String,
-    override val firstName: String? = null,
-    override val lastName: String? = null,
-    override val bio: Bio? = null
+    override val firstName: Name,
+    override val lastName: Name,
+    override val bio: Bio
 ) : AccountData, AccountsSubscription {
     companion object {
         fun build(userId: Int): NewContact =
-            with(readUserById(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
+            with(Users.read(userId)) { NewContact(id, username, emailAddress, firstName, lastName, bio) }
     }
 }
 
@@ -196,8 +206,8 @@ data class AccountUpdate(
     val username: Username? = null,
     val password: Password? = null,
     val emailAddress: String? = null,
-    val firstName: String? = null,
-    val lastName: String? = null,
+    val firstName: Name? = null,
+    val lastName: Name? = null,
     val bio: Bio? = null
 )
 
@@ -306,13 +316,13 @@ data class UpdatedAccount(
     val userId: Int,
     val username: Username,
     val emailAddress: String,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val bio: Bio? = null
+    val firstName: Name,
+    val lastName: Name,
+    val bio: Bio
 ) : AccountsSubscription {
     companion object {
         fun build(userId: Int): UpdatedAccount =
-            with(readUserById(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
+            with(Users.read(userId)) { UpdatedAccount(userId, username, emailAddress, firstName, lastName, bio) }
     }
 }
 

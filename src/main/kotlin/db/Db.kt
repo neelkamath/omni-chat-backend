@@ -2,13 +2,12 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.db.Pic.Companion.MAX_BYTES
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.deleteUser
 import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.postgresql.util.PGobject
-import javax.annotation.Generated
+import javax.annotation.processing.Generated
 
 data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
 
@@ -207,10 +206,8 @@ fun readChatSharers(userId: Int): List<Int> =
  *
  * - Deletes [TypingStatuses] the [userId] created.
  * - The [userId] will be [Notifier.unsubscribe]d via [typingStatusesNotifier].
- *
- * @see [deleteUser]
  */
-fun deleteUserFromDb(userId: Int) {
+fun deleteUser(userId: Int) {
     if (!GroupChatUsers.canUserLeave(userId))
         throw IllegalArgumentException(
             """

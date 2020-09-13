@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.db.GroupChatsAsset
 import com.neelkamath.omniChat.db.groupChatsNotifier
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.readUserById
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -63,14 +62,16 @@ object GroupChatUsers : IntIdTable() {
         select { (GroupChatUsers.chatId eq chatId) and (isAdmin eq true) }.map { it[userId] }
     }
 
-    private fun readUserCursors(chatId: Int): List<AccountEdge> = transaction {
-        select { GroupChatUsers.chatId eq chatId }
-            .map { AccountEdge(readUserById(it[userId]), it[GroupChatUsers.id].value) }
+    private fun readAccountEdges(chatId: Int): List<AccountEdge> = transaction {
+        select { GroupChatUsers.chatId eq chatId }.map {
+            val account = Users.read(it[userId]).toAccount()
+            AccountEdge(account, cursor = it[GroupChatUsers.id].value)
+        }
     }
 
     /** @see [readUserIdList] */
     fun readUsers(chatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        AccountsConnection.build(readUserCursors(chatId), pagination)
+        AccountsConnection.build(readAccountEdges(chatId), pagination)
 
     /**
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
@@ -86,7 +87,7 @@ object GroupChatUsers : IntIdTable() {
             }
         }
         groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::GroupChatsAsset))
-        val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map(::readUserById))
+        val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map { Users.read(it).toAccount() })
         groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::GroupChatsAsset))
     }
 

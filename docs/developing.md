@@ -36,17 +36,7 @@
         down
     ```
 
-If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database:
-1. Ensure the application isn't running:
-    ```
-    docker-compose \
-        -f docker/docker-compose.yml \
-        -f docker/docker-compose.override.yml \
-        --project-directory . \
-        down
-    ```
-1. If you've changed the auth system's setup: `docker volume rm omni-chat_auth-db`
-1. If you've removed a column from the chat DB's schema: `docker volume rm omni-chat_chat-db`
+If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing databases: `docker volume rm omni-chat_db`
 
 ### Development
 
@@ -69,7 +59,7 @@ If you've changed the auth system's setup, or removed a column from the chat DB'
 
 ### Production
 
-Here's how to test the production build:
+Here's how to run the production build so that you can verify it works as expected:
 1. Start the server on http://localhost:80:
     ```
     docker-compose \

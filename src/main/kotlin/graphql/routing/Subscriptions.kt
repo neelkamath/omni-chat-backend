@@ -4,6 +4,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.db.tables.OnetimeTokens
+import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl
@@ -51,9 +52,9 @@ fun routeGraphQlSubscriptions(context: Routing) {
  *
  * If the client sends an invalid [GraphQlRequest.query], the [GraphQlResponse.errors] will be sent back, and then the
  * connection will be closed with the [CloseReason.Codes.VIOLATED_POLICY]. If an access token was received but it
- * couldn't be verified, or it's an already used onetime token, the connection will be closed with the
- * [CloseReason.Codes.VIOLATED_POLICY]. If the subscription completes due to a server-side error, the connection will be
- * closed with the [CloseReason.Codes.INTERNAL_ERROR].
+ * couldn't be verified, the account it belongs to has an unverified email address, or it's an already used onetime
+ * token, the connection will be closed with the [CloseReason.Codes.VIOLATED_POLICY]. If the subscription completes due
+ * to a server-side error, the connection will be closed with the [CloseReason.Codes.INTERNAL_ERROR].
  */
 private fun routeSubscription(context: Routing, path: String, subscription: GraphQlSubscription): Unit = with(context) {
     webSocket(path) {
@@ -89,7 +90,11 @@ private suspend fun buildExecutionResult(
         val jwt = jwtVerifier.verify(token)
         if (isInvalidOnetimeToken(jwt)) throw JWTVerificationException("This onetime token has already been used.")
         jwt.id?.let { OnetimeTokens.delete(it.toInt()) }
-        jwt.subject.toInt()
+        val userId = jwt.subject.toInt()
+        // It's possible the user updated their email address just after the token was created.
+        if (!Users.read(userId).hasVerifiedEmailAddress)
+            throw JWTVerificationException("The email address is unverified.")
+        userId
     }
     val builder = buildExecutionInput(request, userId)
     return graphQl.execute(builder)

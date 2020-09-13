@@ -1,12 +1,9 @@
 package com.neelkamath.omniChat
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.TextMessages
-import com.neelkamath.omniChat.db.tables.create
-import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.operations.READ_CHATS_QUERY
+import com.neelkamath.omniChat.graphql.operations.READ_CHAT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createTextMessage
 import com.neelkamath.omniChat.graphql.routing.*
@@ -51,6 +48,17 @@ class Application_MainTest {
             executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )
     }
+
+    @Test
+    fun `A token from an account with an unverified email address shouldn't work for queries and mutation`() {
+        val userId = createVerifiedUsers(1)[0].info.id
+        val token = buildTokenSet(userId).accessToken
+        Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
+        assertEquals(
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+        )
+    }
 }
 
 /**
@@ -89,7 +97,7 @@ class EncodingTest {
 class SpecComplianceTest {
     @Test
     fun `The "data" key shouldn't be returned if there was no data to be received`() {
-        val login = Login(Username("username"), Password("password"))
+        val login = Login(Username("u"), Password("p"))
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("data" !in keys)
     }
@@ -103,12 +111,27 @@ class SpecComplianceTest {
 
     @Test
     fun `null fields in the "data" key should be returned`() {
-        val account = AccountInput(Username("username"), Password("password"), "username@example.com")
-        createUser(account)
-        val userId = readUserByUsername(account.username).id
-        val accessToken = buildTokenSet(userId).accessToken
-        val response = readGraphQlHttpResponse(READ_ACCOUNT_QUERY, accessToken = accessToken)["data"] as Map<*, *>
-        val data = objectMapper.convertValue<Map<String, Any?>>(response["readAccount"]!!).toList()
-        assertTrue(Pair("firstName", null) in data)
+        val admin = createVerifiedUsers(1)[0]
+        val chatId = GroupChats.create(listOf(admin.info.id))
+        Messages.message(admin.info.id, chatId, MessageText("t"))
+        val response = readGraphQlHttpResponse(
+            READ_CHAT_QUERY,
+            mapOf(
+                "id" to chatId,
+                "privateChat_messages_last" to null,
+                "privateChat_messages_before" to null,
+                "groupChat_users_first" to null,
+                "groupChat_users_after" to null,
+                "groupChat_messages_last" to null,
+                "groupChat_messages_before" to null
+            ),
+            admin.accessToken
+        )["data"] as Map<*, *>
+        val data = objectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
+        val messages = objectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)
+        val edge = objectMapper.convertValue<List<Map<String, Any?>>>(messages.getValue("edges")!!)[0]
+        val node = objectMapper.convertValue<Map<String, Any?>>(edge.getValue("node")!!)
+        val context = objectMapper.convertValue<Map<String, Any?>>(node.getValue("context")!!)
+        assertTrue(null in context.values)
     }
 }

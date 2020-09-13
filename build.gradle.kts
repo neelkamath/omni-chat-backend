@@ -2,12 +2,12 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     application
-    kotlin("jvm") version "1.4.0"
+    kotlin("jvm") version "1.4.10"
     id("com.github.johnrengelman.shadow") version "6.0.0"
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.6.1"
+version = "0.7.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -19,7 +19,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.11.0")
-    testImplementation("io.mockk:mockk:1.10.0")
+    implementation("org.jasypt:jasypt:1.9.3")
+    implementation("com.sun.mail:javax.mail:1.6.2")
     testImplementation(kotlin("test-junit5"))
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
 
@@ -36,10 +37,6 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
-
-    val keycloakVersion = "11.0.0"
-    implementation("org.keycloak:keycloak-admin-client:$keycloakVersion")
-    implementation("org.keycloak:keycloak-authz-client:$keycloakVersion")
 }
 
 tasks {

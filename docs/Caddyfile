@@ -1,3 +1,2 @@
 :80
-reverse_proxy /auth* auth:8080
 reverse_proxy /* chat:80

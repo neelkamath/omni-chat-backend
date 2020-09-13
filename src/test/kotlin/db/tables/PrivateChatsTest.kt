@@ -3,12 +3,10 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createUser
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ChatEdges
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.readUserByUsername
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
@@ -114,13 +112,23 @@ class PrivateChatsTest {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
                 AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                AccountInput(Username("iron man fan"), Password("p"), emailAddress = "tom@example.com"),
-                AccountInput(Username("vader"), Password("p"), emailAddress = "vader@example.com", firstName = "Tommy"),
-                AccountInput(Username("leia"), Password("p"), emailAddress = "leia@example.com", lastName = "Tomas"),
+                AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
+                AccountInput(
+                    Username("vader"),
+                    Password("p"),
+                    emailAddress = "vader@example.com",
+                    firstName = Name("Tommy")
+                ),
+                AccountInput(
+                    Username("leia"),
+                    Password("p"),
+                    emailAddress = "leia@example.com",
+                    lastName = Name("Tomas")
+                ),
                 AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {
-                createUser(it)
-                val otherUserId = readUserByUsername(it.username).id
+                Users.create(it)
+                val otherUserId = Users.read(it.username).id
                 PrivateChats.create(userId, otherUserId)
                 otherUserId
             }

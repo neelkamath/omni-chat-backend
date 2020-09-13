@@ -10,12 +10,19 @@ import com.neelkamath.omniChat.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
 import java.util.*
 
+fun verifyEmailAddress(env: DataFetchingEnvironment): Boolean {
+    val address = env.getArgument<String>("emailAddress")
+    if (!Users.isEmailAddressTaken(address)) throw UnregisteredEmailAddressException
+    return Users.verifyEmailAddress(address, env.getArgument("verificationCode"))
+}
+
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
-    if (isUsernameTaken(account.username)) throw UsernameTakenException
-    if (emailAddressExists(account.emailAddress)) throw EmailAddressTakenException
+    if (Users.isUsernameTaken(account.username)) throw UsernameTakenException
+    if (Users.isEmailAddressTaken(account.emailAddress)) throw EmailAddressTakenException
     if (!hasAllowedDomain(account.emailAddress)) throw InvalidDomainException
-    createUser(account)
+    Users.create(account)
+    emailEmailAddressVerification(account.emailAddress)
     return Placeholder
 }
 
@@ -127,7 +134,7 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
 fun deleteAccount(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     if (!GroupChatUsers.canUserLeave(env.userId!!)) throw CannotDeleteAccountException
-    deleteUser(env.userId!!)
+    Users.delete(env.userId!!)
     return Placeholder
 }
 
@@ -161,10 +168,10 @@ fun deletePrivateChat(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun resetPassword(env: DataFetchingEnvironment): Placeholder {
+fun emailPasswordResetCode(env: DataFetchingEnvironment): Placeholder {
     val address = env.getArgument<String>("emailAddress")
-    if (!emailAddressExists(address)) throw UnregisteredEmailAddressException
-    resetPassword(address)
+    if (!Users.isEmailAddressTaken(address)) throw UnregisteredEmailAddressException
+    emailResetPassword(address)
     return Placeholder
 }
 
@@ -173,7 +180,12 @@ fun updateAccount(env: DataFetchingEnvironment): Placeholder {
     val update = env.parseArgument<AccountUpdate>("update")
     if (wantsTakenUsername(env.userId!!, update.username)) throw UsernameTakenException
     if (wantsTakenEmail(env.userId!!, update.emailAddress)) throw EmailAddressTakenException
-    updateUser(env.userId!!, update)
+    val emailAddress = Users.read(env.userId!!).emailAddress
+    if (update.emailAddress != null && update.emailAddress != emailAddress) {
+        val code = Users.read(emailAddress).emailAddressVerificationCode
+        emailNewEmailAddressVerification(update.emailAddress, code)
+    }
+    Users.update(env.userId!!, update)
     return Placeholder
 }
 
@@ -192,16 +204,22 @@ fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
 }
 
 private fun wantsTakenUsername(userId: Int, wantedUsername: Username?): Boolean =
-    wantedUsername != null && readUserById(userId).username != wantedUsername && isUsernameTaken(wantedUsername)
+    wantedUsername != null && Users.read(userId).username != wantedUsername && Users.isUsernameTaken(wantedUsername)
 
 private fun wantsTakenEmail(userId: Int, wantedEmail: String?): Boolean =
-    wantedEmail != null && readUserById(userId).emailAddress != wantedEmail && emailAddressExists(wantedEmail)
+    wantedEmail != null && Users.read(userId).emailAddress != wantedEmail && Users.isEmailAddressTaken(wantedEmail)
 
-fun sendEmailAddressVerification(env: DataFetchingEnvironment): Placeholder {
+fun emailEmailAddressVerification(env: DataFetchingEnvironment): Placeholder {
     val address = env.getArgument<String>("emailAddress")
-    if (!emailAddressExists(address)) throw UnregisteredEmailAddressException
-    sendEmailAddressVerification(address)
+    if (!Users.isEmailAddressTaken(address)) throw UnregisteredEmailAddressException
+    emailEmailAddressVerification(address)
     return Placeholder
+}
+
+fun resetPassword(env: DataFetchingEnvironment): Boolean {
+    val emailAddress = env.getArgument<String>("emailAddress")
+    if (!Users.isEmailAddressTaken(emailAddress)) throw UnregisteredEmailAddressException
+    return Users.resetPassword(emailAddress, env.getArgument("passwordResetCode"), env.getArgument("newPassword"))
 }
 
 fun updateGroupChatTitle(env: DataFetchingEnvironment): Placeholder {

@@ -5,7 +5,6 @@ package com.neelkamath.omniChat.db
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.deleteUser
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
@@ -28,12 +27,12 @@ class PicTest {
 @ExtendWith(DbExtension::class)
 class DbTest {
     @Nested
-    inner class DeleteUserFromDb {
+    inner class DeleteUser {
         @Test
         fun `An exception should be thrown when the admin of a nonempty group chat deletes their data`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             GroupChats.create(listOf(adminId), listOf(userId))
-            assertFailsWith<IllegalArgumentException> { deleteUserFromDb(adminId) }
+            assertFailsWith<IllegalArgumentException> { deleteUser(adminId) }
         }
 
         @Test
@@ -42,7 +41,7 @@ class DbTest {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
                     groupChatsNotifier.safelySubscribe(GroupChatsAsset(userId)).subscribeWith(TestSubscriber())
-                deleteUserFromDb(userId)
+                deleteUser(userId)
                 subscriber.assertComplete()
             }
         }
@@ -52,7 +51,7 @@ class DbTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            deleteUserFromDb(user1Id)
+            deleteUser(user1Id)
             assertEquals(0, PrivateChats.count())
         }
 
@@ -62,7 +61,7 @@ class DbTest {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
                     accountsNotifier.safelySubscribe(AccountsAsset(userId)).subscribeWith(TestSubscriber())
-                deleteUserFromDb(userId)
+                deleteUser(userId)
                 subscriber.assertComplete()
             }
         }
@@ -74,7 +73,7 @@ class DbTest {
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
                     .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
-                deleteUserFromDb(userId)
+                deleteUser(userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))
                 userSubscriber.assertComplete()
@@ -86,7 +85,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber())
-                deleteUserFromDb(userId)
+                deleteUser(userId)
                 subscriber.assertComplete()
             }
         }
@@ -110,7 +109,7 @@ class DbTest {
             val edges = createAccountEdges(10)
             val index = 5
             val deletedUser = edges[index]
-            deleteUser(deletedUser.node.id)
+            Users.delete(deletedUser.node.id)
             val first = 3
             assertEquals(
                 edges.subList(index + 1, index + 1 + first),

@@ -35,7 +35,6 @@ val ApplicationCall.userId: Int? get() = authentication.principal<JWTPrincipal>(
 val DataFetchingEnvironment.userId: Int? get() = getContext()
 
 fun Application.main() {
-    setUpAuth()
     setUpDb()
     subscribeToMessageBroker()
     install(CORS) {
@@ -52,7 +51,10 @@ fun Application.main() {
             validate { credential ->
                 if (isInvalidOnetimeToken(credential)) return@validate null
                 credential.payload.id?.let { OnetimeTokens.delete(it.toInt()) }
-                if (Users.exists(credential.payload.subject.toInt())) JWTPrincipal(credential.payload) else null
+                val userId = credential.payload.subject.toInt()
+                // It's possible the user updated their email address just after the token was created.
+                if (Users.exists(userId) && Users.read(userId).hasVerifiedEmailAddress) JWTPrincipal(credential.payload)
+                else null
             }
         }
     }

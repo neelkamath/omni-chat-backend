@@ -55,6 +55,14 @@ private object UsernameCoercing : Coercing<Username, String> {
     override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as Username).value }
 }
 
+private object NameCoercing : Coercing<Name, String> {
+    override fun parseValue(input: Any): Name = dissectValue { Name(input as String) }
+
+    override fun parseLiteral(input: Any): Name = dissectLiteral { Name((input as StringValue).value) }
+
+    override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as Name).value }
+}
+
 private object PasswordCoercing : Coercing<Password, String> {
     override fun parseValue(input: Any): Password = dissectValue { Password(input as String) }
 
@@ -137,6 +145,7 @@ fun wireGraphQlScalars(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = 
     .scalar(build("Cursor", CursorCoercing))
     .scalar(build("Placeholder", PlaceholderCoercing))
     .scalar(build("Username", UsernameCoercing))
+    .scalar(build("Name", NameCoercing))
     .scalar(build("Password", PasswordCoercing))
     .scalar(build("GroupChatTitle", GroupChatTitleCoercing))
     .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
