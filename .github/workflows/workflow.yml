@@ -4,7 +4,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion) # TODO: Delete.
+      - run: echo ::set-env name=VERSION::$(./gradlew -q printVersion) # TODO: Delete.
       - name: Validate
         working-directory: docs
         run: docker-compose config -q
