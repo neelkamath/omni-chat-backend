@@ -5,5 +5,5 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Every user's cursor (ID) in their order of creation. */
 fun Users.read(): List<Int> = transaction {
-    selectAll().map { it[Users.id].value }
+    selectAll().orderBy(Users.id).map { it[Users.id].value }
 }

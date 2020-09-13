@@ -5,5 +5,5 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Every JWT ID in order of creation. */
 fun OnetimeTokens.read(): List<Int> = transaction {
-    selectAll().map { it[OnetimeTokens.id].value }
+    selectAll().orderBy(OnetimeTokens.id).map { it[OnetimeTokens.id].value }
 }
