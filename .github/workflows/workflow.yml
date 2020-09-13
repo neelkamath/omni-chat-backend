@@ -60,6 +60,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      # TODO: Delete.
+      - name: Set $VERSION
+        run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion)
+      - run: echo $VERSION
+
       - name: Log in to registry
         env:
           DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
@@ -67,7 +73,6 @@ jobs:
       - run: docker build -t omni-chat -f docker/Dockerfile .
       - name: Set $VERSION
         run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion)
-      - run: echo $VERSION # TODO: Delete.
       - run: docker tag omni-chat neelkamath/omni-chat:$VERSION
       - run: docker push neelkamath/omni-chat:$VERSION
       - run: docker tag omni-chat neelkamath/omni-chat:latest
