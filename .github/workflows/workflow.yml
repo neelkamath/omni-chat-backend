@@ -55,25 +55,18 @@ jobs:
       - name: Release
         run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
   docker-hub:
-    # TODO: Uncomment: if: github.ref == 'refs/heads/master'
-    # TODO: Uncomment: needs: [ validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server ]
+    if: github.ref == 'refs/heads/master'
+    needs: [ validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-
-      # TODO: Delete.
-      - name: Set $VERSION
-        run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
-      - run: echo $VERSION
-
       - name: Log in to registry
         env:
           DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
         run: echo "$DOCKER_HUB_PASSWORD" | docker login -u neelkamath --password-stdin https://index.docker.io/v1/
       - run: docker build -t omni-chat -f docker/Dockerfile .
       - name: Set $VERSION
-        run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion)
+        run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
       - run: docker tag omni-chat neelkamath/omni-chat:$VERSION
       - run: docker push neelkamath/omni-chat:$VERSION
       - run: docker tag omni-chat neelkamath/omni-chat:latest
