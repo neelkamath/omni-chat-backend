@@ -205,6 +205,7 @@ object Users : IntIdTable() {
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val users = transaction {
             selectAll()
+                .orderBy(Users.id)
                 .filter {
                     it[username].contains(query, ignoreCase = true) ||
                             it[firstName].contains(query, ignoreCase = true) ||

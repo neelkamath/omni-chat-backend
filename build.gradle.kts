@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.7.0"
+version = "0.7.1"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -33,7 +33,7 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    val exposedVersion = "0.26.2"
+    val exposedVersion = "0.27.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")

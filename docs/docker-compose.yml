@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   chat:
-    image: docker.pkg.github.com/neelkamath/omni-chat/omni-chat:0.7.0
+    image: neelkamath/omni-chat:0.7.1
     entrypoint: /dockerize -wait tcp://db:5432 -wait tcp://message-broker:6379
     command: java -server -jar omni-chat-all.jar
     networks: [ broker, db, proxy ]

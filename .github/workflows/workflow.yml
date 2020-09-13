@@ -46,7 +46,7 @@ jobs:
           path: build/reports/tests/test/
   create-github-release:
     if: github.ref == 'refs/heads/master'
-    needs: [validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server]
+    needs: [ validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -54,20 +54,20 @@ jobs:
         run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
       - name: Release
         run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-  docker-registry-upload:
+  docker-hub:
     if: github.ref == 'refs/heads/master'
-    needs: [validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server]
+    needs: [ validate-example-docker-compose, validate-example-caddyfile, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Log in to registry
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u neelkamath --password-stdin
+        env:
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        run: echo "$DOCKER_HUB_PASSWORD" | docker login -u neelkamath --password-stdin https://index.docker.io/v1/
       - run: docker build -t omni-chat -f docker/Dockerfile .
-      - name: Set $TAG
-        run: echo ::set-env name=TAG::docker.pkg.github.com/neelkamath/omni-chat/omni-chat
       - name: Set $VERSION
-        run: echo ::set-env name=VERSION::$(./gradlew -q printVersion)
-      - run: docker tag omni-chat $TAG:$VERSION
-      - run: docker push $TAG:$VERSION
-      - run: docker tag omni-chat $TAG:latest
-      - run: docker push $TAG:latest
+        run: echo ::set-env name=VERSION::$(./gradlew --offline -q printVersion)
+      - run: docker tag omni-chat neelkamath/omni-chat:$VERSION
+      - run: docker push neelkamath/omni-chat:$VERSION
+      - run: docker tag omni-chat neelkamath/omni-chat:latest
+      - run: docker push neelkamath/omni-chat:latest
