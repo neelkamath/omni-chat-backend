@@ -1773,6 +1773,12 @@ class MutationsTest {
                 errEmailEmailAddressVerification("username@example.com")
             )
         }
+
+        @Test
+        fun `Sending a verification email to a verified address should fail`() {
+            val address = createVerifiedUsers(1)[0].info.emailAddress
+            assertEquals(EmailAddressVerifiedException.message, errEmailEmailAddressVerification(address))
+        }
     }
 
     @Nested

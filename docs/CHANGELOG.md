@@ -8,6 +8,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 
 - Updated:
     - Docker `message-broker` service's `image`
+    
+### GraphQL
+
+- Bug fixes:
+    - `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
 
 ### REST API
 

@@ -303,11 +303,13 @@ type Mutation {
     createAccount(account: AccountInput!): Placeholder!
 
     """
-    Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
-    resent because the one which was automatically sent when their account was created timed out. Use
-    `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
+    Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
+    created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
+    and therefore requires it to be resent. Use `Query.isEmailAddressTaken` to check whether the supplied `emailAddress`
+    exists.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`, or `"EMAIL_ADDRESS_VERIFIED"` (i.e., the
+    `emailAddress` is already verified).
     """
     emailEmailAddressVerification(emailAddress: String!): Placeholder!
 

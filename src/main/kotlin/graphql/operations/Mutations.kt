@@ -212,6 +212,7 @@ private fun wantsTakenEmail(userId: Int, wantedEmail: String?): Boolean =
 fun emailEmailAddressVerification(env: DataFetchingEnvironment): Placeholder {
     val address = env.getArgument<String>("emailAddress")
     if (!Users.isEmailAddressTaken(address)) throw UnregisteredEmailAddressException
+    if (Users.read(address).hasVerifiedEmailAddress) throw EmailAddressVerifiedException
     emailEmailAddressVerification(address)
     return Placeholder
 }

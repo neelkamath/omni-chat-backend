@@ -10,6 +10,8 @@ object NonexistentUserException : GraphQlDocDataException("NONEXISTENT_USER")
 
 object UnverifiedEmailAddressException : GraphQlDocDataException("UNVERIFIED_EMAIL_ADDRESS")
 
+object EmailAddressVerifiedException : GraphQlDocDataException("EMAIL_ADDRESS_VERIFIED")
+
 object UsernameTakenException : GraphQlDocDataException("USERNAME_TAKEN")
 
 object IncorrectPasswordException : GraphQlDocDataException("INCORRECT_PASSWORD")
