@@ -1,10 +1,9 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.testingObjectMapper
@@ -40,7 +39,7 @@ class MediaHandlerTest {
         fun `A message should be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            val audio = Mp3(ByteArray(1))
+            val audio = Audio(ByteArray(1), Audio.Type.MP3)
             val messageId = Messages.message(admin.info.id, chatId, audio)
             with(getAudioMessage(admin.accessToken, messageId)) {
                 assertEquals(HttpStatusCode.OK, status())
@@ -109,7 +108,7 @@ class MediaHandlerTest {
 
         @Test
         fun `Uploading an excessively large audio file should fail`() {
-            testBadRequest(DummyFile("audio.mp3", Mp3.MAX_BYTES + 1))
+            testBadRequest(DummyFile("audio.mp3", Audio.MAX_BYTES + 1))
         }
 
         @Test

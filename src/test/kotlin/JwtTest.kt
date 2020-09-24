@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat
 
 import com.auth0.jwt.JWT

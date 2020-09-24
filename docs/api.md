@@ -4,7 +4,7 @@
 
 Here's the usual flow for using the API if you're building a frontend UI:
 1. Have the user sign up for an account. Pass the info they give you to `Mutatation.createAccount`.
-1. Have the user verify their email using `Mutation.verifyEmailAddress`.
+1. Have the user verify their email address using `Mutation.verifyEmailAddress`.
 1. Have the user log in. Pass the credentials they give you to `Query.requestTokenSet`. This will give you an access token to authenticate their future actions.
 1. Use the access token to authorize requests on behalf of the user (e.g., `Query.readChats`).
 

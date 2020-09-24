@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue

@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
@@ -164,7 +162,7 @@ class MessagesTest {
         fun `Messages which don't contain text shouldn't be returned`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            Messages.message(adminId, chatId, Mp3(ByteArray(1)))
+            Messages.message(adminId, chatId, Audio(ByteArray(1), Audio.Type.MP3))
             assertTrue(Messages.searchGroupChat(chatId, "query", userId = adminId).isEmpty())
         }
     }

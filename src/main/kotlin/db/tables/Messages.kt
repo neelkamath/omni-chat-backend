@@ -129,7 +129,7 @@ object Messages : IntIdTable() {
     fun createAudioMessage(
         userId: Int,
         chatId: Int,
-        message: Mp3,
+        message: Audio,
         contextMessageId: Int?,
         isForwarded: Boolean = false
     ): Unit =
@@ -539,7 +539,7 @@ object Messages : IntIdTable() {
         }
         filter?.let { op = op and it }
         return transaction {
-            !select { (Messages.chatId eq chatId) and op }.empty()
+            select { (Messages.chatId eq chatId) and op }.empty().not()
         }
     }
 

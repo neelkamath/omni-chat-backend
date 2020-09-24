@@ -1,6 +1,20 @@
 # Changelog
 
-The entire project (i.e., the GraphQL API, REST API, and server) use the same version number, and follow [semver](https://semver.org/). Backwards compatibility gets based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then the major version doesn't get bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+The entire project (i.e., the GraphQL API, REST API, and server) use the same version number, and follows [semver](https://semver.org/). Backwards compatibility gets based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then the major version doesn't get bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+
+## v0.7.2
+
+### Server
+
+- Updated:
+    - Docker `message-broker` service's `image`
+
+### REST API
+
+- Updated:
+    - The `/audio-message` endpoint now handles MP4 files as well.
+- Bug fixes:
+    - Uploading files with capital letters in the file extension works now.
 
 ## v0.7.1
 
@@ -27,7 +41,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 - New:
     - `Name` `scalar`
     - `Mutation.verifyEmailAddress`
-    - `Mutation.resetPassword`
     - `Mutation.emailPasswordResetCode`
 - Updated:
     - `Mutation.updateAccount`
@@ -38,8 +51,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
     - `NewContact` `type`
     - `AccountInput` `input`
     - `AccountUpdate` `input`
-- Removed:
-    - `Mutation.resetPassword`
 
 ## v0.6.1
 
@@ -184,6 +195,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 ## v0.3.1
 
 ### GraphQL API
+
 - Bug fixes:
     - `Subscription`
 

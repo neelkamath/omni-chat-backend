@@ -36,7 +36,7 @@
         down
     ```
 
-If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing databases: `docker volume rm omni-chat_db`
+If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database: `docker volume rm omni-chat_db`
 
 ### Development
 
@@ -119,7 +119,7 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 - Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
 - The test source set should mirror the main source set. Files containing tests should be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files containing extra functionality should be named using the format `<FILE>Util.kt` (e.g., [`GroupChatsUtil.kt`](../src/test/kotlin/db/tables/GroupChatsUtil.kt) for [`GroupChats.kt`](../src/main/kotlin/db/tables/GroupChats.kt)).
 - Test cases should be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
-- Each function tested should have its test cases placed in an `@Nested inner class` with the first letter capitalized, and replacing `.`s with `_`s (e.g., `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`, `Companion_build` for `fun build()` in a `companion object`, `MyNestedClass_myFun` for `fun myFun()` in `class MyNestedClass`). Test cases should be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
+- Each function tested should have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`, `Person_Companion_build` for `fun build()` in a `companion object` where the `companion object` is inside a `class Person`, `MyNestedClass_myFun` for `fun myFun()` in `class MyNestedClass`). Test cases should be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
 
 ## Releasing
 

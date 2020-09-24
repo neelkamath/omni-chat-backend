@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.DbExtension
@@ -20,6 +18,15 @@ class PicTest {
         @Test
         fun `Passing an excessively large image should cause an exception to be thrown`() {
             assertFailsWith<IllegalArgumentException> { Pic(ByteArray(Pic.MAX_BYTES + 1), Pic.Type.PNG) }
+        }
+    }
+
+    @Nested
+    @Suppress("ClassName")
+    inner class Type_Companion_build {
+        @Test
+        fun `Using a valid capitalized file extension shouldn't fail`() {
+            Pic.Type.build("PNG")
         }
     }
 }

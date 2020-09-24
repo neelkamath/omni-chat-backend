@@ -15,6 +15,57 @@ data class ForwardPagination(val first: Int? = null, val after: Int? = null)
 
 data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 
+/** Throws an [IllegalArgumentException] if the [bytes] exceeds [Audio.MAX_BYTES]. */
+data class Audio(
+    /** At most [Audio.MAX_BYTES]. */
+    val bytes: ByteArray,
+    val type: Type
+) {
+    init {
+        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The audio mustn't exceed $MAX_BYTES bytes.")
+    }
+
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Audio
+
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+
+    enum class Type {
+        MP3 {
+            override fun toString() = "mp3"
+        },
+        MP4 {
+            override fun toString() = "mp4"
+        };
+
+        companion object {
+            /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"m4a"`) isn't one of the [Type]s. */
+            fun build(extension: String): Type = when (extension.toLowerCase()) {
+                "mp3" -> MP3
+                "mp4", "m4a", "m4p", "m4b", "m4r", "m4v" -> MP4
+                else ->
+                    throw IllegalArgumentException("The audio ($extension) must be one of ${values().joinToString()}.")
+            }
+        }
+    }
+
+    companion object {
+        const val MAX_BYTES = 25 * 1024 * 1024
+    }
+}
+
 /** Throws an [IllegalArgumentException] if the [bytes] exceeds [Pic.MAX_BYTES]. */
 data class Pic(
     /** At most [MAX_BYTES]. */
@@ -36,7 +87,7 @@ data class Pic(
 
         companion object {
             /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-            fun build(extension: String): Type = when (extension) {
+            fun build(extension: String): Type = when (extension.toLowerCase()) {
                 "png" -> PNG
                 "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> JPEG
                 else ->
@@ -83,19 +134,21 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
     }
 }
 
-private val db = Database.connect(
-    "jdbc:postgresql://${System.getenv("POSTGRES_URL")}/${System.getenv("POSTGRES_DB")}?reWriteBatchedInserts=true",
-    "org.postgresql.Driver",
-    System.getenv("POSTGRES_USER"),
-    System.getenv("POSTGRES_PASSWORD")
-)
+private fun connectToDb() {
+    Database.connect(
+        "jdbc:postgresql://${System.getenv("POSTGRES_URL")}/${System.getenv("POSTGRES_DB")}?reWriteBatchedInserts=true",
+        "org.postgresql.Driver",
+        System.getenv("POSTGRES_USER"),
+        System.getenv("POSTGRES_PASSWORD")
+    )
+}
 
 /**
  * Opens the DB connection, and creates the required types and tables. This must be run before any DB-related activities
  * are performed. This takes a small, but noticeable amount of time, and is safe to run more than once.
  */
 fun setUpDb() {
-    db
+    connectToDb()
     createTypes()
     transaction {
         exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
@@ -133,8 +186,9 @@ private fun createTypes(): Unit = transaction {
     mapOf(
         "message_status" to MessageStatus.values(),
         "pic_type" to Pic.Type.values(),
+        "audio_type" to Audio.Type.values(),
         "message_type" to MessageType.values(),
-        "group_chat_publicity" to GroupChatPublicity.values()
+        "group_chat_publicity" to GroupChatPublicity.values(),
     ).forEach { (name, enum) ->
         val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
         if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")

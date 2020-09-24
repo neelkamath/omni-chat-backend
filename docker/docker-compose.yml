@@ -35,7 +35,7 @@ services:
         source: db
         target: /var/lib/postgresql/data
   message-broker:
-    image: redis:6.0.6
+    image: redis:6.0.8
     restart: unless-stopped
     expose: [ 6379 ]
     networks: [ broker ]
