@@ -12,13 +12,8 @@ import io.ktor.auth.jwt.*
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
-/** Technically a JWT can be longer but we want it to fit in a URL. Therefore, a JWT cannot exceed 1000 characters. */
-const val MAX_JWT_LENGTH = 1000
 private val algorithm: Algorithm = Algorithm.HMAC256(System.getenv("JWT_SECRET"))
 val jwtVerifier: JWTVerifier = JWT.require(algorithm).build()
-
-private object InvalidJwtLengthException :
-    Exception("A JWT cannot exceed $MAX_JWT_LENGTH characters. Technically it can but we want it to fit in a URL.")
 
 /**
  * The [TokenSet.accessToken]'s subject will be the [userId]. The [TokenSet.accessToken]'s expiry and
@@ -44,8 +39,7 @@ private fun getAccessTokenExpiry(): LocalDateTime = LocalDateTime.now().plusHour
  * If the token is only meant to be used once, set [onetime] to `true` so that a `"onetime"` claim will be present, the
  * `"jti"` claim will be a unique integer, and the token will be [OnetimeTokens.create]d for future reference.
  */
-private fun build(userId: Int, expiry: LocalDateTime, onetime: Boolean = false): String {
-    val token = JWT
+private fun build(userId: Int, expiry: LocalDateTime, onetime: Boolean = false): String = JWT
         .create()
         .withExpiresAt(Timestamp.valueOf(expiry))
         .withSubject(userId.toString())
@@ -57,9 +51,6 @@ private fun build(userId: Int, expiry: LocalDateTime, onetime: Boolean = false):
             }
         }
         .sign(algorithm)
-    if (token.length > MAX_JWT_LENGTH) throw InvalidJwtLengthException
-    return token
-}
 
 /**
  * Returns:
