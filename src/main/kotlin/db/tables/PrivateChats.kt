@@ -121,12 +121,8 @@ object PrivateChats : Table() {
      *
      * @see [readOtherUserIdList]
      */
-    fun areInChat(user1Id: Int, user2Id: Int): Boolean {
-        val hasChatWith = { firstUserId: Int, secondUserId: Int ->
-            readUserChats(firstUserId, BackwardPagination(last = 0)).any { it.user.id == secondUserId }
-        }
-        return hasChatWith(user1Id, user2Id) && hasChatWith(user2Id, user1Id)
-    }
+    fun areInChat(user1Id: Int, user2Id: Int): Boolean =
+            user2Id in readOtherUserIdList(user1Id) && user1Id in readOtherUserIdList(user2Id)
 
     /**
      * Whether there exists a chat between [user1Id] and [user2Id].

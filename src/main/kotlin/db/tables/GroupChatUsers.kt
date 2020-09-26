@@ -41,11 +41,11 @@ object GroupChatUsers : IntIdTable() {
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
     fun readFellowParticipants(userId: Int): Set<Int> =
-        readChatIdList(userId).flatMap { readUserIdList(it) }.toSet() - userId
+        readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
-        select { GroupChatUsers.chatId eq chatId }.any { it[GroupChatUsers.userId] == userId && it[isAdmin] }
+        select { (GroupChatUsers.chatId eq chatId) and (GroupChatUsers.userId eq userId) }.first()[isAdmin]
     }
 
     /**
