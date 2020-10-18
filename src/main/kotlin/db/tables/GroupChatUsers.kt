@@ -45,7 +45,9 @@ object GroupChatUsers : IntIdTable() {
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
-        select { (GroupChatUsers.chatId eq chatId) and (GroupChatUsers.userId eq userId) }.first()[isAdmin]
+        select { (GroupChatUsers.chatId eq chatId) and (GroupChatUsers.userId eq userId) }
+                .firstOrNull()
+                ?.get(isAdmin) ?: false
     }
 
     /**
