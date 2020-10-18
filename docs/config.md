@@ -8,7 +8,7 @@ Create a file named `.env`. Copy-paste the key-value pairs from the [example `.e
 |`DB_PASSWORD`|The password for the chat system's DB.|
 |`JWT_SECRET`|The password used internally to create JWTs.|
 |`ALLOWED_EMAIL_DOMAINS`|Since Omni Chat can be deployed by anyone, a company might want to use it for internal communications, and hence disallow non-employees from using their instance. This can be achieved by specifying which email address domains (i.e., the part of the email address after the `@`) are allowed during sign-ups. If you don't have this use case, simply leaving the value blank for this key will allow every email address domain to be used. Otherwise, set the value to a comma-separated list of email address domains (e.g., `private.company.com,gmail.com`).|
-|`SMTP_HOST`|The hostname of your email service provider (e.g., `smtp.gmail.com` for Gmail).
+|`SMTP_HOST`|The hostname of your email service provider (e.g., `smtp.gmail.com` for Gmail).|
 |`SMTP_TLS_PORT`|The TLS port your email service provider runs on (e.g., `587` for Gmail).|
 |`SMTP_FROM`|You email address which will be used in the _from_ header of emails sent to users.|
 |`SMTP_USERNAME`|Your email account's username.|

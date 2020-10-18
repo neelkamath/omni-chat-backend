@@ -26,6 +26,12 @@ jobs:
             --project-directory . \
             up -d --scale chat=0
       - name: Test
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_TLS_PORT: ${{ secrets.SMTP_TLS_PORT }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           docker-compose \
             -f docker/docker-compose.yml \
@@ -47,7 +53,7 @@ jobs:
         run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
       - name: Release
         run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-  docker-hub:
+  docker-hub-push:
     if: github.ref == 'refs/heads/master'
     needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
