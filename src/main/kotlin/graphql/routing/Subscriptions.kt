@@ -3,12 +3,10 @@ package com.neelkamath.omniChat.graphql.routing
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.db.tables.OnetimeTokens
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChat.graphql.engine.buildSpecification
 import com.neelkamath.omniChat.graphql.engine.graphQl
-import com.neelkamath.omniChat.isInvalidOnetimeToken
 import com.neelkamath.omniChat.jwtVerifier
 import com.neelkamath.omniChat.objectMapper
 import graphql.ExecutionResult
@@ -52,14 +50,15 @@ fun routeGraphQlSubscriptions(context: Routing) {
  *
  * If the client sends an invalid [GraphQlRequest.query], the [GraphQlResponse.errors] will be sent back, and then the
  * connection will be closed with the [CloseReason.Codes.VIOLATED_POLICY]. If an access token was received but it
- * couldn't be verified, the account it belongs to has an unverified email address, or it's an already used onetime
- * token, the connection will be closed with the [CloseReason.Codes.VIOLATED_POLICY]. If the subscription completes due
- * to a server-side error, the connection will be closed with the [CloseReason.Codes.INTERNAL_ERROR].
+ * couldn't be verified, or the account it belongs to has an unverified email address, the connection will be closed
+ * with the [CloseReason.Codes.VIOLATED_POLICY]. If the subscription completes due to a server-side error, the
+ * connection will be closed with the [CloseReason.Codes.INTERNAL_ERROR].
  */
 private fun routeSubscription(context: Routing, path: String, subscription: GraphQlSubscription): Unit = with(context) {
     webSocket(path) {
+        val token = incoming.receive() as Frame.Text
         try {
-            val result = buildExecutionResult(this, call.parameters["access_token"])
+            val result = buildExecutionResult(this, token.readText())
             if (result.errors.isEmpty()) subscribe(this, subscription, result) else closeWithError(this, result)
         } catch (_: UnknownOperationException) {
             val reason = CloseReason(
@@ -78,24 +77,21 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  * Parses the [DefaultWebSocketServerSession.incoming] [Frame.Text] as a [GraphQlRequest], and executes it.
  *
  * @throws [UnknownOperationException]
- * @throws [JWTVerificationException] if the [accessToken] couldn't be verified, or it's an already used onetime token.
+ * @throws [JWTVerificationException] if the [accessToken] couldn't be verified.
  */
 private suspend fun buildExecutionResult(
     session: DefaultWebSocketServerSession,
     accessToken: String?
 ): ExecutionResult = with(session) {
-    val frame = incoming.receive() as Frame.Text
-    val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val userId = accessToken?.let { token ->
-        val jwt = jwtVerifier.verify(token)
-        if (isInvalidOnetimeToken(jwt)) throw JWTVerificationException("This onetime token has already been used.")
-        jwt.id?.let { OnetimeTokens.delete(it.toInt()) }
-        val userId = jwt.subject.toInt()
+        val userId = jwtVerifier.verify(token).subject.toInt()
         // It's possible the user updated their email address just after the token was created.
         if (!Users.read(userId).hasVerifiedEmailAddress)
             throw JWTVerificationException("The email address is unverified.")
         userId
     }
+    val frame = incoming.receive() as Frame.Text
+    val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val builder = buildExecutionInput(request, userId)
     return graphQl.execute(builder)
 }

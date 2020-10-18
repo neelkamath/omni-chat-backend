@@ -174,7 +174,6 @@ fun setUpDb() {
             MessageStatuses,
             Users,
             TypingStatuses,
-            OnetimeTokens,
             ActionMessages,
             ActionMessageActions
         )

@@ -85,7 +85,7 @@ Send the GraphQL query in an HTTP POST request to the `/query-or-mutation` endpo
 Here's an example request for `Query.updateAccount`:
 
 ```http request
-POST http://localhost:80/query-or-mutation HTTP/1.1
+POST http://localhost/query-or-mutation HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM
 
@@ -107,28 +107,20 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of one minute, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
-`Subscription`s may require access tokens but browsers can't pass HTTP headers when using WebSockets. Therefore, we pass the token in the URL as the parameter `access_token`. Since this is insecure, you must only ever use the token from `Query.requestOnetimeToken` instead of the access token from `Query.requestTokenSet`.
-
 It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
 
-The server only accepts the first event you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
+The server only accepts the first two events you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
 
 Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
-1. Open the WebSocket connection. Note that if you supply an invalid access token, the connection will be closed with a status code of 1008. Here's an example WebSocket handshake request (you won't need to manually perform the handshake if you're using a library which deals with WebSocket implementation details for you):
-    ```http request
-    GET http://localhost:80/messages-subscription?access_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YjNhNzRhZi03Y2M4LTRjZTMtYTg2ZC05YzI4ZmNlZTAzODciLCJleHAiOjE1ODg3NTE0MjR9.JuVC92_Zz6Cnb5p2ZQ_lMKU_9lfIfAP7PcLkVVKnMkU HTTP/1.1
-    Upgrade: websocket
-    Connection: Upgrade
-    
-    ```
+1. Open a WebSocket connection on http://localhost/messages-subscription.
+1. Pass the access token you get from `Query.requestTokenSet` as a text event (e.g., `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM`). If the user is unauthorized, the connection will be closed with a status code of 1008.
 1. Send the GraphQL document in JSON serialized as text. Here's an example JSON string:
     ```json
     {
       "query": "subscription SubscribeToMessages { subscribeToMessages { ... on CreatedSubscription { placeholder } ... on NewTextMessage { chatId, message } } }"
     }
     ```
-1. If the user is unauthorized, the connection will be closed with a status code of 1008.
-1. If the user's authorized, but the GraphQL document you sent was invalid, the error will be returned, and then the connection will be closed. Here's an example of such a GraphQL document (a JSON string):
+1. If the GraphQL document you sent was invalid, the error will be returned, and then the connection will be closed. Here's an example of such a GraphQL document (a JSON string):
     ```json
     {
       "errors": [
@@ -138,7 +130,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
       ]
     }
     ```
-1. If the user's authorized, and the GraphQL document you sent was valid, you will receive events (GraphQL documents in JSON serialized as text). Here's an example of such an event (a JSON string):
+1. If the GraphQL document you sent was valid, you will receive events (GraphQL documents in JSON serialized as text). Here's an example of such an event (a JSON string):
     ```json
     {
       "data": {

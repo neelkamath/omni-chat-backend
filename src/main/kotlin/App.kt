@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.db.subscribeToMessageBroker
-import com.neelkamath.omniChat.db.tables.OnetimeTokens
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
 import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
@@ -49,8 +48,6 @@ fun Application.main() {
         jwt {
             verifier(jwtVerifier)
             validate { credential ->
-                if (isInvalidOnetimeToken(credential)) return@validate null
-                credential.payload.id?.let { OnetimeTokens.delete(it.toInt()) }
                 val userId = credential.payload.subject.toInt()
                 // It's possible the user updated their email address just after the token was created.
                 if (Users.exists(userId) && Users.read(userId).hasVerifiedEmailAddress) JWTPrincipal(credential.payload)

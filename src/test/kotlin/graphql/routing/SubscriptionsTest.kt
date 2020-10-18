@@ -1,14 +1,11 @@
 package com.neelkamath.omniChat.graphql.routing
 
 import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.buildOnetimeToken
 import com.neelkamath.omniChat.buildTokenSet
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.db.tables.OnetimeTokens
 import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.db.tables.read
 import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import io.ktor.http.cio.websocket.*
@@ -61,41 +58,6 @@ class SubscriptionsTest {
         @Test
         fun `An error should be returned when supplying multiple operations but not which to execute`() {
             testOperationName(shouldSupplyOperationName = false)
-        }
-
-        private fun testOnetimeToken(shouldUseValidToken: Boolean) {
-            val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
-            repeat(if (shouldUseValidToken) 1 else 2) { repetition ->
-                executeGraphQlSubscriptionViaWebSocket(
-                    path = "messages-subscription",
-                    GraphQlRequest(subscribeToMessagesQuery),
-                    token
-                ) { incoming ->
-                    if (repetition == 0) parseFrameData<CreatedSubscription>(incoming)
-                    else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
-                }
-            }
-            assertEquals(0, OnetimeTokens.read().size)
-        }
-
-        @Test
-        fun `The connection shouldn't be closed if an unused onetime token was supplied`() {
-            testOnetimeToken(shouldUseValidToken = true)
-        }
-
-        @Test
-        fun `The connection should be closed if a used onetime token was supplied`() {
-            testOnetimeToken(shouldUseValidToken = false)
-        }
-
-        @Test
-        fun `Using a non-onetime token should work`() {
-            val userId = createVerifiedUsers(1)[0].info.id
-            executeGraphQlSubscriptionViaWebSocket(
-                path = "messages-subscription",
-                GraphQlRequest(subscribeToMessagesQuery),
-                buildOnetimeToken(userId)
-            ) { incoming -> parseFrameData<CreatedSubscription>(incoming) }
         }
 
         @Test
