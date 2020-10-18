@@ -341,7 +341,10 @@ object Messages : IntIdTable() {
             select(op)
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
-        }.reversed().map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
+                .orderBy(Messages.id, SortOrder.DESC)
+                .reversed()
+                .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
+        }
     }
 
     /** The message IDs in the [chatId] in order of creation. */
