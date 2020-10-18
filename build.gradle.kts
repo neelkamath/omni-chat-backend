@@ -49,10 +49,7 @@ tasks {
     withType<Jar> {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
-    withType<ShadowJar> {
-        archiveVersion.set("")
-        mergeServiceFiles()
-    }
+    withType<ShadowJar> { mergeServiceFiles() }
     register("printVersion") { println(project.version) }
     val jvmTarget = "13"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
