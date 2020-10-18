@@ -341,7 +341,6 @@ object Messages : IntIdTable() {
             select(op)
                 .orderBy(Messages.id, SortOrder.DESC)
                 .let { if (last == null) it else it.limit(last) }
-                .orderBy(Messages.id, SortOrder.DESC)
                 .reversed()
                 .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
         }
