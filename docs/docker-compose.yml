@@ -4,8 +4,9 @@ services:
     image: neelkamath/omni-chat:0.7.2
     entrypoint: /dockerize -wait tcp://db:5432 -wait tcp://message-broker:6379
     command: java -server -jar omni-chat-all.jar
-    networks: [ broker, db, proxy ]
+    networks: [ broker, db ]
     expose: [ 80 ]
+    ports: [ 80:80 ]
     restart: unless-stopped
     environment:
       APP_NAME: ${APP_NAME}
@@ -44,28 +45,8 @@ services:
     networks: [broker]
     sysctls:
       net.core.somaxconn: 511
-  proxy:
-    image: caddy:2.1.1
-    networks: [proxy]
-    expose: [80, 443, 2019]
-    ports: [80:80, 443:443]
-    restart: unless-stopped
-    volumes:
-      - type: bind
-        source: ./Caddyfile
-        target: /etc/caddy/Caddyfile
-        read_only: true
-      - type: volume
-        source: caddy-config
-        target: /config
-      - type: volume
-        source: caddy-data
-        target: /data
 volumes:
-  caddy-config:
-  caddy-data:
   db:
 networks:
   broker:
   db:
-  proxy:
