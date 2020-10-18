@@ -1,25 +1,19 @@
 package com.neelkamath.omniChat.restApi
 
+import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.Doc
 import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.Mp3
 import com.neelkamath.omniChat.db.tables.Mp4
 import com.neelkamath.omniChat.userId
-import io.ktor.application.ApplicationCall
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
-import io.ktor.request.receiveMultipart
-import io.ktor.response.respond
-import io.ktor.response.respondBytes
-import io.ktor.routing.Route
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.util.pipeline.PipelineContext
+import io.ktor.application.*
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.request.*
+import io.ktor.response.*
+import io.ktor.routing.*
+import io.ktor.util.pipeline.*
 import java.io.File
 import javax.annotation.processing.Generated
 
@@ -93,7 +87,7 @@ fun <T> postMediaMessage(
  */
 suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartMp4(): Mp4? {
     val (extension, bytes) = readMultipartFile()
-    return if (extension != "mp4" || bytes.size > Mp4.MAX_BYTES) null else Mp4(bytes)
+    return if (extension.toLowerCase() != "mp4" || bytes.size > Mp4.MAX_BYTES) null else Mp4(bytes)
 }
 
 /**
@@ -107,11 +101,15 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartDoc(): Doc? {
 
 /**
  * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
- * the [Mp3] is invalid.
+ * the [Audio] is invalid.
  */
-suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartMp3(): Mp3? {
+suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? {
     val (extension, bytes) = readMultipartFile()
-    return if (extension != "mp3" || bytes.size > Mp3.MAX_BYTES) null else Mp3(bytes)
+    return try {
+        Audio(bytes, Audio.Type.build(extension))
+    } catch (_: IllegalArgumentException) {
+        null
+    }
 }
 
 /**

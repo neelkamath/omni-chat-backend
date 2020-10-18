@@ -2,8 +2,9 @@ version: '3.8'
 services:
   chat:
     entrypoint: /dockerize -wait tcp://db:5432 -wait tcp://message-broker:6379
-    networks: [ broker, db, proxy ]
+    networks: [ broker, db ]
     expose: [ 80 ]
+    ports: [ 80:80 ]
     restart: unless-stopped
     volumes:
       - type: bind
@@ -35,34 +36,14 @@ services:
         source: db
         target: /var/lib/postgresql/data
   message-broker:
-    image: redis:6.0.6
+    image: redis:6.0.8
     restart: unless-stopped
     expose: [ 6379 ]
     networks: [ broker ]
     sysctls:
       net.core.somaxconn: 511
-  proxy:
-    image: caddy:2.1.1
-    networks: [ proxy ]
-    expose: [ 80, 443, 2019 ]
-    ports: [ 80:80, 443:443 ]
-    restart: unless-stopped
-    volumes:
-      - type: bind
-        source: ./Caddyfile
-        target: /etc/caddy/Caddyfile
-        read_only: true
-      - type: volume
-        source: caddy-config
-        target: /config
-      - type: volume
-        source: caddy-data
-        target: /data
 volumes:
-  caddy-config:
-  caddy-data:
   db:
 networks:
   broker:
   db:
-  proxy:

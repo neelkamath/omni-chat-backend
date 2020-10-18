@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension

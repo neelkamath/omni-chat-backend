@@ -146,25 +146,12 @@ type Query {
     """
     Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
     authenticate the user by passing their `Login` to this operation. Once the access token has expired, you can pass
-    the `TokenSet.refreshToken` to `Query.refreshTokenSet`. The returned access token is meant for secure contexts such
-    as HTTPS headers. When passing access tokens in insecure contexts such as a URL, always use
-    `Query.requestOnetimeToken` instead.
+    the `TokenSet.refreshToken` to `Query.refreshTokenSet`.
 
     Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
     `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
     """
     requestTokenSet(login: Login!): TokenSet!
-
-    """
-    Operations such as `Subscription.subscribeToMessages` require authentication via an access token. You can acquire
-    one to authenticate the user by passing their `Login` to this operation. This access token can only be used once,
-    and is meant for use in insecure contexts such as URLs. For secure contexts such as HTTPS headers, using
-    `Query.requestTokenSet` is easier.
-
-    Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
-    `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
-    """
-    requestOnetimeToken(login: Login!): ID!
 
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
@@ -303,11 +290,13 @@ type Mutation {
     createAccount(account: AccountInput!): Placeholder!
 
     """
-    Sends the user an email to verify their email `address`. For example, the user may want the email verification to be
-    resent because the one which was automatically sent when their account was created timed out. Use
-    `Query.isEmailAddressTaken` to check whether the supplied `email` address exists.
+    Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
+    created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
+    and therefore requires it to be resent. Use `Query.isEmailAddressTaken` to check whether the supplied `emailAddress`
+    exists.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`, or `"EMAIL_ADDRESS_VERIFIED"` (i.e., the
+    `emailAddress` is already verified).
     """
     emailEmailAddressVerification(emailAddress: String!): Placeholder!
 

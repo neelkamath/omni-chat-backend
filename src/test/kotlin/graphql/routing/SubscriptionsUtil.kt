@@ -24,8 +24,8 @@ fun executeGraphQlSubscriptionViaWebSocket(
     accessToken: String? = null,
     callback: SubscriptionCallback
 ): Unit = withTestApplication(Application::test) {
-    val uri = if (accessToken == null) path else "$path?access_token=$accessToken"
-    handleWebSocketConversation(uri) { incoming, outgoing ->
+    handleWebSocketConversation(path) { incoming, outgoing ->
+        if (accessToken != null) outgoing.send(Frame.Text(accessToken))
         launch(Dispatchers.IO) {
             val json = testingObjectMapper.writeValueAsString(request)
             outgoing.send(Frame.Text(json))

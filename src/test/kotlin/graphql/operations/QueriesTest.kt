@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
@@ -17,12 +15,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
-
-const val REQUEST_ONETIME_TOKEN_QUERY = """
-    query RequestOnetimeToken(${"$"}login: Login!) {
-        requestOnetimeToken(login: ${"$"}login)
-    }
-"""
 
 const val SEARCH_PUBLIC_CHATS_QUERY = """
     query SearchPublicChats(
@@ -343,13 +335,7 @@ fun requestTokenSet(login: Login): TokenSet {
     return testingObjectMapper.convertValue(data)
 }
 
-private fun operateRequestOnetimeToken(login: Login): GraphQlResponse =
-    executeGraphQlViaEngine(REQUEST_ONETIME_TOKEN_QUERY, mapOf("login" to login))
-
-fun requestOnetimeToken(login: Login): String =
-    operateRequestOnetimeToken(login).data!!["requestOnetimeToken"] as String
-
-fun errRequestOnetimeToken(login: Login): String = operateRequestOnetimeToken(login).errors!![0].message
+fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
 
 const val SEARCH_CHAT_MESSAGES_QUERY = """
     query SearchChatMessages(${"$"}chatId: Int!, ${"$"}query: String!, ${"$"}last: Int, ${"$"}before: Cursor) {
@@ -809,40 +795,6 @@ class QueriesTest {
     }
 
     @Nested
-    inner class ValidateLogin {
-        @Test
-        fun `A nonexistent user should cause an exception to be thrown`() {
-            val login = Login(Username("u"), Password("p"))
-            assertEquals(NonexistentUserException.message, errRequestOnetimeToken(login))
-        }
-
-        @Test
-        fun `A user who hasn't verified their email should cause an exception to be thrown`() {
-            val login = Login(Username("u"), Password("p"))
-            Users.create(AccountInput(login.username, login.password, "username@example.com"))
-            assertEquals(UnverifiedEmailAddressException.message, errRequestOnetimeToken(login))
-        }
-
-        @Test
-        fun `An incorrect password should cause an exception to be thrown`() {
-            val login = createVerifiedUsers(1)[0].login
-            val invalidLogin = login.copy(password = Password("incorrect password"))
-            assertEquals(IncorrectPasswordException.message, errRequestOnetimeToken(invalidLogin))
-        }
-    }
-
-    @Nested
-    inner class RequestOnetimeToken {
-        @Test
-        fun `The token should work`() {
-            val login = createVerifiedUsers(1)[0].login
-            val token = requestOnetimeToken(login)
-            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = token)
-            assertNotEquals(HttpStatusCode.Unauthorized, response.status())
-        }
-    }
-
-    @Nested
     inner class RequestTokenSet {
         @Test
         fun `The access token should work`() {
@@ -850,6 +802,26 @@ class QueriesTest {
             val token = requestTokenSet(login).accessToken
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = token)
             assertNotEquals(HttpStatusCode.Unauthorized, response.status())
+        }
+
+        @Test
+        fun `A nonexistent user should cause an exception to be thrown`() {
+            val login = Login(Username("u"), Password("p"))
+            assertEquals(NonexistentUserException.message, errRequestTokenSet(login))
+        }
+
+        @Test
+        fun `A user who hasn't verified their email should cause an exception to be thrown`() {
+            val login = Login(Username("u"), Password("p"))
+            Users.create(AccountInput(login.username, login.password, "username@example.com"))
+            assertEquals(UnverifiedEmailAddressException.message, errRequestTokenSet(login))
+        }
+
+        @Test
+        fun `An incorrect password should cause an exception to be thrown`() {
+            val login = createVerifiedUsers(1)[0].login
+            val invalidLogin = login.copy(password = Password("incorrect password"))
+            assertEquals(IncorrectPasswordException.message, errRequestTokenSet(invalidLogin))
         }
     }
 

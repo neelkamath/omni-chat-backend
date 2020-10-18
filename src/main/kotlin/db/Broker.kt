@@ -11,6 +11,7 @@ import org.redisson.Redisson
 import org.redisson.api.RedissonClient
 import org.redisson.codec.JsonJacksonCodec
 import org.redisson.config.Config
+import java.util.concurrent.atomic.AtomicInteger
 
 val redisson: RedissonClient = Redisson.create(
     Config().apply {
@@ -97,7 +98,7 @@ class Notifier<A, U>(private val topic: Topic) {
 
     private data class Client<A, U>(val asset: A, val subject: PublishSubject<U>) {
         /** Guaranteed to be unique for every [Client]. */
-        val id: Int = clientId++
+        val id: Int = clientId.incrementAndGet()
     }
 
     /** The [asset] is used to filter which clients will get [notify]d. */
@@ -145,7 +146,7 @@ class Notifier<A, U>(private val topic: Topic) {
 
     private companion object {
         /** Used to create [Client.id]s. Increment every usage to get a unique ID. */
-        private var clientId = 0
+        private val clientId = AtomicInteger()
     }
 }
 

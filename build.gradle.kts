@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.7.1"
+version = "0.8.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -49,12 +49,9 @@ tasks {
     withType<Jar> {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
-    withType<ShadowJar> {
-        archiveVersion.set("")
-        mergeServiceFiles()
-    }
+    withType<ShadowJar> { mergeServiceFiles() }
     register("printVersion") { println(project.version) }
-    val jvmTarget = "13"
+    val jvmTarget = "14"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }

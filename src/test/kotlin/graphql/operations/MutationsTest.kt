@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
@@ -1774,6 +1772,12 @@ class MutationsTest {
                 UnregisteredEmailAddressException.message,
                 errEmailEmailAddressVerification("username@example.com")
             )
+        }
+
+        @Test
+        fun `Sending a verification email to a verified address should fail`() {
+            val address = createVerifiedUsers(1)[0].info.emailAddress
+            assertEquals(EmailAddressVerifiedException.message, errEmailEmailAddressVerification(address))
         }
     }
 

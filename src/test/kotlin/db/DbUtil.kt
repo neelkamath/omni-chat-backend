@@ -32,7 +32,6 @@ private val tables: List<Table> = listOf(
     Chats,
     Users,
     Pics,
-    OnetimeTokens
 )
 
 /** Deletes every row from every table created. */

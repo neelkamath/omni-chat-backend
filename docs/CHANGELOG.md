@@ -1,6 +1,31 @@
 # Changelog
 
-The entire project (i.e., the GraphQL API, REST API, and server) use the same version number, and follow [semver](https://semver.org/). Backwards compatibility gets based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then the major version doesn't get bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+The entire project (i.e., the GraphQL API, REST API, and server) use the same version number, and follows [semver](https://semver.org/). Backwards compatibility gets based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then the major version doesn't get bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+
+## v0.8.0
+
+### Server
+
+- Updated:
+    - Docker `message-broker` service's `image`
+    - Renamed the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
+- Removed:
+    - Docker `proxy` service
+
+### GraphQL
+
+- Removed:
+    - `Query.requestOnetimeToken`
+- Bug fixes:
+    - `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
+    - `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the connection opens as a text event.
+
+### REST API
+
+- Updated:
+    - The `/audio-message` endpoint now handles MP4 audio as well.
+- Bug fixes:
+    - Uploading files with capital letters in the file extension works now.
 
 ## v0.7.1
 
@@ -27,7 +52,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 - New:
     - `Name` `scalar`
     - `Mutation.verifyEmailAddress`
-    - `Mutation.resetPassword`
     - `Mutation.emailPasswordResetCode`
 - Updated:
     - `Mutation.updateAccount`
@@ -38,8 +62,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
     - `NewContact` `type`
     - `AccountInput` `input`
     - `AccountUpdate` `input`
-- Removed:
-    - `Mutation.resetPassword`
 
 ## v0.6.1
 
@@ -77,7 +99,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
     - Docker `auth-db` service's `image`
     - Docker `chat-db` service's `image`
 - Bug fixes:
-    - `ALLOWED_DOMAINS` environment variable
+    - `ALLOWED_EMAIL_DOMAINS` environment variable
     - Access tokens are now to be sent in the URL instead of an HTTP header for WebSockets.
 
 ## v0.5.0
@@ -184,6 +206,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 ## v0.3.1
 
 ### GraphQL API
+
 - Bug fixes:
     - `Subscription`
 

@@ -1,5 +1,3 @@
-@file:Suppress("RedundantInnerClassModifier")
-
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
@@ -164,7 +162,7 @@ class MessagesTest {
         fun `Messages which don't contain text shouldn't be returned`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
-            Messages.message(adminId, chatId, Mp3(ByteArray(1)))
+            Messages.message(adminId, chatId, Audio(ByteArray(1), Audio.Type.MP3))
             assertTrue(Messages.searchGroupChat(chatId, "query", userId = adminId).isEmpty())
         }
     }
@@ -511,36 +509,36 @@ class MessagesTest {
         fun `There shouldn't be messages before the first message`() {
             val (adminId, chatId, firstMessageId) = createChat()
             Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
-                .pageInfo
-                .hasPreviousPage
-                .let { assertFalse(it) }
+                    .pageInfo
+                    .hasPreviousPage
+                    .let(::assertFalse)
         }
 
         @Test
         fun `There shouldn't be messages after the last message`() {
             val (adminId, chatId, _, lastMessageId) = createChat()
             Messages.readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId), adminId)
-                .pageInfo
-                .hasNextPage
-                .let { assertFalse(it) }
+                    .pageInfo
+                    .hasNextPage
+                    .let(::assertFalse)
         }
 
         @Test
         fun `There should be messages before the last message`() {
             val (adminId, chatId, _, lastMessageId) = createChat()
             Messages.readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId), adminId)
-                .pageInfo
-                .hasPreviousPage
-                .let { assertTrue(it) }
+                    .pageInfo
+                    .hasPreviousPage
+                    .let(::assertTrue)
         }
 
         @Test
         fun `There should be messages after the first message`() {
             val (adminId, chatId, firstMessageId) = createChat()
             Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
-                .pageInfo
-                .hasNextPage
-                .let { assertTrue(it) }
+                    .pageInfo
+                    .hasNextPage
+                    .let(::assertTrue)
         }
     }
 

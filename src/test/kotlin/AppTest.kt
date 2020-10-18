@@ -18,32 +18,10 @@ import kotlin.test.assertTrue
 @Suppress("ClassName")
 class Application_MainTest {
     @Test
-    fun `A non-onetime access token should work for queries and mutations`() {
+    fun `An access token should work for queries and mutations`() {
         val userId = createVerifiedUsers(1)[0].info.id
         val token = buildTokenSet(userId).accessToken
         assertNotEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
-        )
-    }
-
-    @Test
-    fun `A unused onetime access token should work for queries and mutations`() {
-        val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
-        assertNotEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
-        )
-    }
-
-    @Test
-    fun `A used onetime access token shouldn't work for queries and mutations`() {
-        val token = createVerifiedUsers(1)[0].info.id.let(::buildOnetimeToken)
-        assertNotEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
-        )
-        assertEquals(
             HttpStatusCode.Unauthorized,
             executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )

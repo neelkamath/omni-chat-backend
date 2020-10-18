@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
-import com.neelkamath.omniChat.buildOnetimeToken
 import com.neelkamath.omniChat.buildTokenSet
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
@@ -168,17 +167,13 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
     return Contacts.read(env.userId!!, pagination)
 }
 
-fun requestTokenSet(env: DataFetchingEnvironment): TokenSet = buildTokenSet(validateLogin(env))
-
-fun requestOnetimeToken(env: DataFetchingEnvironment): String = buildOnetimeToken(validateLogin(env))
-
-private fun validateLogin(env: DataFetchingEnvironment): Int {
+fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
     val login = env.parseArgument<Login>("login")
     if (!Users.isUsernameTaken(login.username)) throw NonexistentUserException
     val userId = Users.read(login.username).id
     if (!Users.read(userId).hasVerifiedEmailAddress) throw UnverifiedEmailAddressException
     if (!Users.isValidLogin(login)) throw IncorrectPasswordException
-    return userId
+    return buildTokenSet(userId)
 }
 
 fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {

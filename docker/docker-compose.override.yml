@@ -5,9 +5,9 @@ services:
     command: sh -c 'gradle --stacktrace -t installDist & gradle run'
     # The directory must be named "omni-chat" because ktor's autoreload watches a directory by that name.
     working_dir: /home/gradle/omni-chat
-    ports: [5005:5005] # The debugger attaches to port 5005.
+    ports: [ 5005:5005 ] # The debugger attaches to port 5005.
     environment:
-      ALLOWED_DOMAINS: example.com,gmail.com
+      ALLOWED_EMAIL_DOMAINS: example.com,gmail.com
     volumes:
       - type: bind
         source: .

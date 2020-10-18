@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.7.1
+  version: 0.8.0
   title: Omni Chat
   description: Functionality supplementary to the GraphQL API such as uploading and downloading image and audio files.
   contact:
@@ -11,7 +11,7 @@ info:
     name: MIT
     url: https://github.com/neelkamath/omni-chat/blob/master/LICENSE
 servers:
-  - url: http://localhost:80
+  - url: http://localhost
     description: You'll have to run the server yourself.
 tags:
   - name: profilePic
@@ -269,9 +269,9 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidPicMessage'
     Audio:
-      description: An MP3 audio not exceeding 25 MiB.
+      description: An MP3/MP4 audio not exceeding 25 MiB.
       content:
-        audio/mp3:
+        audio/mp3, audio/mp4:
           schema:
             type: string
             format: binary
@@ -309,12 +309,12 @@ components:
             required: [audio]
             properties:
               audio:
-                description: An MP3 audio not exceeding 25 MiB.
+                description: An MP3/MP4 audio not exceeding 25 MiB.
                 type: string
                 format: binary
           encoding:
             pic:
-              contentType: audio/mp3
+              contentType: audio/mp3, audio/mp4
     VideoMessage:
       content:
         multipart/form-data:

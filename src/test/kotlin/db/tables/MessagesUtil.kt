@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollInput
@@ -27,7 +28,7 @@ fun Messages.message(
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: Mp3,
+    message: Audio,
     contextMessageId: Int? = null,
     isForwarded: Boolean = false
 ): Int {
