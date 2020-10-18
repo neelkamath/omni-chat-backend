@@ -68,7 +68,7 @@ private fun email(to: String, subject: String, body: String) {
 
 /** Whether the [emailAddress]'s domain (e.g., `"example.com"`) is allowed by this Omni Chat instance. */
 fun hasAllowedDomain(emailAddress: String): Boolean {
-    val domains = System.getenv("ALLOWED_DOMAINS")
+    val domains = System.getenv("ALLOWED_EMAIL_DOMAINS")
     if (domains.isEmpty()) return true
     return emailAddress.substringAfter("@") in domains.split(",")
 }

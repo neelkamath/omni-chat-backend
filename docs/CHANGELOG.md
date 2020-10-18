@@ -8,6 +8,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 
 - Updated:
     - Docker `message-broker` service's `image`
+    - Renamed the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
 - Removed:
     - Docker `proxy` service
 
@@ -98,7 +99,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
     - Docker `auth-db` service's `image`
     - Docker `chat-db` service's `image`
 - Bug fixes:
-    - `ALLOWED_DOMAINS` environment variable
+    - `ALLOWED_EMAIL_DOMAINS` environment variable
     - Access tokens are now to be sent in the URL instead of an HTTP header for WebSockets.
 
 ## v0.5.0
