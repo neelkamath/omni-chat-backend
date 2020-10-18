@@ -51,7 +51,7 @@ tasks {
     }
     withType<ShadowJar> { mergeServiceFiles() }
     register("printVersion") { println(project.version) }
-    val jvmTarget = "13"
+    val jvmTarget = "14"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }
