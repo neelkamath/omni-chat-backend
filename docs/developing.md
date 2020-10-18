@@ -4,6 +4,7 @@
 
 ### Testing
 
+1. If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database: `docker volume rm omni-chat_db`
 1. Spin up the services:
     ```
     docker-compose \
@@ -35,8 +36,6 @@
         --project-directory . \
         down
     ```
-
-If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database: `docker volume rm omni-chat_db`
 
 ### Development
 

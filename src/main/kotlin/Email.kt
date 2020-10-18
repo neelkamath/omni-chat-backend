@@ -6,6 +6,20 @@ import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 
+private val session: Session = run {
+    val properties = Properties()
+    properties["mail.smtp.host"] = System.getenv("SMTP_HOST")
+    properties["mail.smtp.port"] = System.getenv("SMTP_TLS_PORT")
+    properties["mail.smtp.starttls.enable"] = true
+    properties["mail.smtp.auth"] = true
+    Session.getInstance(properties, EmailAuthenticator)
+}
+
+private object EmailAuthenticator : Authenticator() {
+    override fun getPasswordAuthentication(): PasswordAuthentication =
+            PasswordAuthentication(System.getenv("SMTP_USERNAME"), System.getenv("SMTP_PASSWORD"))
+}
+
 /**
  * Sends an email to the [emailAddress] with a verification [code] which is to be passed to the GraphQL mutation
  * `verifyEmailAddress`. Use [emailEmailAddressVerification] if the [emailAddress] is registered.
@@ -44,18 +58,6 @@ fun emailResetPassword(emailAddress: String) {
 
 /** Sends an email [to] the specified address having the [subject] and [body]. */
 private fun email(to: String, subject: String, body: String) {
-    val properties = Properties()
-    properties["mail.smtp.host"] = System.getenv("SMTP_HOST")
-    properties["mail.smtp.port"] = System.getenv("SMTP_TLS_PORT")
-    properties["mail.smtp.starttls.enable"] = true
-    properties["mail.smtp.auth"] = true
-    val session = Session.getInstance(
-        properties,
-        object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication =
-                PasswordAuthentication(System.getenv("SMTP_USERNAME"), System.getenv("SMTP_PASSWORD"))
-        }
-    )
     val message = MimeMessage(session)
     message.setFrom(InternetAddress(System.getenv("SMTP_FROM")))
     message.setRecipients(Message.RecipientType.TO, to)

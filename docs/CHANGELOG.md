@@ -8,7 +8,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 
 - Updated:
     - Docker `message-broker` service's `image`
-    
+- Removed:
+    - Docker `proxy` service
+
 ### GraphQL
 
 - Bug fixes:
@@ -17,7 +19,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) use the same ve
 ### REST API
 
 - Updated:
-    - The `/audio-message` endpoint now handles MP4 files as well.
+    - The `/audio-message` endpoint now handles MP4 audio as well.
 - Bug fixes:
     - Uploading files with capital letters in the file extension works now.
 
