@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     application
     kotlin("jvm") version "1.4.10"
@@ -49,7 +47,6 @@ tasks {
     withType<Jar> {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
-    withType<ShadowJar> { mergeServiceFiles() }
     register("printVersion") { println(project.version) }
     val jvmTarget = "14"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
