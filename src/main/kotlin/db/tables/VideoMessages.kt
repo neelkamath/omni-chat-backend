@@ -6,8 +6,8 @@ import javax.annotation.processing.Generated
 
 /** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
 data class Mp4(
-    /** At most [Mp4.MAX_BYTES]. */
-    val bytes: ByteArray
+        /** At most [Mp4.MAX_BYTES]. */
+        val bytes: ByteArray
 ) {
     init {
         if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
@@ -39,7 +39,7 @@ data class Mp4(
 object VideoMessages : Table() {
     override val tableName = "video_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val video: Column<ByteArray> = binary("audio", Mp4.MAX_BYTES)
+    private val video: Column<ByteArray> = binary("video", Mp4.MAX_BYTES)
 
     /** @see [Messages.createVideoMessage] */
     fun create(id: Int, video: Mp4): Unit = transaction {

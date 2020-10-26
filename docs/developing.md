@@ -4,7 +4,6 @@
 
 ### Testing
 
-1. If you've changed the auth system's setup, or removed a column from the chat DB's schema, you must delete the existing database: `docker volume rm omni-chat_db`
 1. Spin up the services:
     ```
     docker-compose \
@@ -19,7 +18,7 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        run --rm --service-ports chat bash
+        run --rm --service-ports chat sh -c 'flyway migrate && bash'
     ```
 1. Reports save to `build/reports/tests/test/`. Update the code and run tests any number of times: 
     1. `gradle test`
@@ -58,7 +57,7 @@
 
 ### Production
 
-Here's how to run the production build so that you can verify it works as expected:
+To test the production build:
 1. Start the server on http://localhost:80:
     ```
     docker-compose \
@@ -122,6 +121,8 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 
 ## Releasing
 
-1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in the [example `docker-compose.yml`](docker-compose.yml).
+1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in [`docker-compose.yml`](docker-compose.yml).
 1. Add a [changelog](CHANGELOG.md) entry.
+1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
+1. Update [`cloud.md`](cloud.md).
 1. Only commit to the `master` branch when releasing a new version.

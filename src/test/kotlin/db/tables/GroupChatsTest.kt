@@ -20,7 +20,7 @@ class GroupChatsTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 val isBroadcast = true
                 GroupChats.setBroadcastStatus(chatId, isBroadcast)
                 awaitBrokering()
@@ -55,7 +55,7 @@ class GroupChatsTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 val title = GroupChatTitle("New Title")
                 GroupChats.updateTitle(chatId, title)
                 awaitBrokering()
@@ -73,7 +73,7 @@ class GroupChatsTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 val description = GroupChatDescription("New description.")
                 GroupChats.updateDescription(chatId, description)
                 awaitBrokering()
@@ -91,7 +91,7 @@ class GroupChatsTest {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 val pic = Pic(ByteArray(1), Pic.Type.PNG)
                 GroupChats.updatePic(chatId, pic)
                 awaitBrokering()
@@ -120,7 +120,7 @@ class GroupChatsTest {
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
             listOf(Chats, GroupChats, GroupChatUsers, Messages, MessageStatuses, Stargazers, TypingStatuses)
-                .forEach { assertEquals(0, it.count()) }
+                    .forEach { assertEquals(0, it.count()) }
         }
     }
 
@@ -169,7 +169,7 @@ class GroupChatsTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.subscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 GroupChats.setInvitability(chatId, isInvitable = true)
                 awaitBrokering()
                 adminSubscriber.assertValue(UpdatedGroupChat(chatId, publicity = GroupChatPublicity.INVITABLE))

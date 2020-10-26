@@ -40,9 +40,9 @@ fun emailEmailAddressVerification(emailAddress: String) {
 private fun emailEmailAddressVerification(emailAddress: String, code: Int) {
     val name = System.getenv("APP_NAME")
     email(
-        emailAddress,
-        subject = "Verify your $name account's email address",
-        body = "Please enter your verification code, $code, in $name to verify your email address."
+            emailAddress,
+            subject = "Verify your $name account's email address",
+            body = "Please enter your verification code, $code, in $name to verify your email address."
     )
 }
 
@@ -50,9 +50,9 @@ fun emailResetPassword(emailAddress: String) {
     val code = Users.read(emailAddress).passwordResetCode
     val name = System.getenv("APP_NAME")
     email(
-        emailAddress,
-        subject = "Reset your $name account's password",
-        body = "Please enter your verification code, $code, in $name to reset your password."
+            emailAddress,
+            subject = "Reset your $name account's password",
+            body = "Please enter your verification code, $code, in $name to reset your password."
     )
 }
 

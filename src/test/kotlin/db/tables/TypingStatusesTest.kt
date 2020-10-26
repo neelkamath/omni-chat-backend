@@ -22,9 +22,9 @@ class TypingStatusesTest {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                    .map {
-                        typingStatusesNotifier.safelySubscribe(TypingStatusesAsset(it)).subscribeWith(TestSubscriber())
-                    }
+                        .map {
+                            typingStatusesNotifier.safelySubscribe(TypingStatusesAsset(it)).subscribeWith(TestSubscriber())
+                        }
                 val isTyping = true
                 TypingStatuses.set(chatId, user1Id, isTyping)
                 awaitBrokering()

@@ -76,12 +76,12 @@ fun createGroupChat(env: DataFetchingEnvironment): Int {
     @Suppress("UNCHECKED_CAST") val adminIdList = args["adminIdList"] as List<Int>
     if (!userIdList.containsAll(adminIdList)) throw InvalidAdminIdException
     val chat = GroupChatInput(
-        args["title"] as GroupChatTitle,
-        args["description"] as GroupChatDescription,
-        userIdList + env.userId!!,
-        adminIdList + env.userId!!,
-        args["isBroadcast"] as Boolean,
-        objectMapper.convertValue(args["publicity"] as String)
+            args["title"] as GroupChatTitle,
+            args["description"] as GroupChatDescription,
+            userIdList + env.userId!!,
+            adminIdList + env.userId!!,
+            args["isBroadcast"] as Boolean,
+            objectMapper.convertValue(args["publicity"] as String)
     )
     return GroupChats.create(chat)
 }
@@ -151,8 +151,8 @@ fun deleteMessage(env: DataFetchingEnvironment): Placeholder {
     if (!Messages.exists(messageId)) throw InvalidMessageIdException
     val chatId = Messages.readChatFromMessage(messageId)
     if (!isUserInChat(env.userId!!, chatId) ||
-        Messages.readMessage(env.userId!!, messageId).sender.id != env.userId!! ||
-        !Messages.isVisible(env.userId!!, messageId)
+            Messages.readMessage(env.userId!!, messageId).sender.id != env.userId!! ||
+            !Messages.isVisible(env.userId!!, messageId)
     ) {
         throw InvalidMessageIdException
     }
@@ -204,10 +204,10 @@ fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
 }
 
 private fun wantsTakenUsername(userId: Int, wantedUsername: Username?): Boolean =
-    wantedUsername != null && Users.read(userId).username != wantedUsername && Users.isUsernameTaken(wantedUsername)
+        wantedUsername != null && Users.read(userId).username != wantedUsername && Users.isUsernameTaken(wantedUsername)
 
 private fun wantsTakenEmail(userId: Int, wantedEmail: String?): Boolean =
-    wantedEmail != null && Users.read(userId).emailAddress != wantedEmail && Users.isEmailAddressTaken(wantedEmail)
+        wantedEmail != null && Users.read(userId).emailAddress != wantedEmail && Users.isEmailAddressTaken(wantedEmail)
 
 fun emailEmailAddressVerification(env: DataFetchingEnvironment): Placeholder {
     val address = env.getArgument<String>("emailAddress")

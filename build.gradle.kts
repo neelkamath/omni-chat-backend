@@ -7,7 +7,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.8.0"
+version = "0.8.1"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }

@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 private fun getHealthCheck(): TestApplicationResponse =
-    withTestApplication(Application::test) { handleRequest(HttpMethod.Get, "health-check") }.response
+        withTestApplication(Application::test) { handleRequest(HttpMethod.Get, "health-check") }.response
 
 class HealthCheckTest {
     @Nested

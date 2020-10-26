@@ -49,7 +49,7 @@ object PrivateChats : Table() {
      * can check if the [PrivateChats.exists].
      */
     fun readChatId(participantId: Int, userId: Int): Int =
-        readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
+            readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
@@ -59,7 +59,7 @@ object PrivateChats : Table() {
      * @see [readUserChatIdList]
      */
     fun readUserChats(userId: Int, messagesPagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }
+            readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
@@ -76,7 +76,7 @@ object PrivateChats : Table() {
      */
     private fun readUserChatsRows(userId: Int): List<ResultRow> = transaction {
         select { (user1Id eq userId) or (user2Id eq userId) }
-            .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
+                .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
     }
 
     fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat = transaction {
@@ -84,15 +84,15 @@ object PrivateChats : Table() {
     }.let { buildPrivateChat(it, userId, pagination) }
 
     private fun buildPrivateChat(
-        row: ResultRow,
-        userId: Int,
-        pagination: BackwardPagination? = null
+            row: ResultRow,
+            userId: Int,
+            pagination: BackwardPagination? = null
     ): PrivateChat {
         val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
         return PrivateChat(
-            row[id],
-            Users.read(otherUserId).toAccount(),
-            Messages.readPrivateChatConnection(row[id], userId, pagination)
+                row[id],
+                Users.read(otherUserId).toAccount(),
+                Messages.readPrivateChatConnection(row[id], userId, pagination)
         )
     }
 
@@ -111,9 +111,9 @@ object PrivateChats : Table() {
      * be returned.
      */
     fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = readUserChatIdList(userId)
-        .associateWith { Messages.searchPrivateChat(it, userId, query) }
-        .filter { (_, edges) -> edges.isNotEmpty() }
-        .map { (chatId, edges) -> ChatEdges(chatId, edges) }
+            .associateWith { Messages.searchPrivateChat(it, userId, query) }
+            .filter { (_, edges) -> edges.isNotEmpty() }
+            .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 
     /**
      * Whether [user1Id] and [user2Id] are in a chat with each other (i.e., a chat [PrivateChats.exists] between them,
@@ -139,7 +139,7 @@ object PrivateChats : Table() {
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
     fun search(userId: Int, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }
+            readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }
 
     /** [delete]s every chat which the [userId] is in. Nothing will happen if the [userId] doesn't exist. */
     fun deleteUserChats(userId: Int): Unit = readIdList(userId).forEach(::delete)
@@ -188,5 +188,5 @@ object PrivateChats : Table() {
      * @see [areInChat]
      */
     fun readOtherUserIdList(userId: Int): List<Int> =
-        readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }
+            readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }
 }

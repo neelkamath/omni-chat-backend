@@ -12,14 +12,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.assertEquals
 
 private fun postAudioMessage(
-    accessToken: String,
-    dummy: DummyFile,
-    chatId: Int,
-    contextMessageId: Int? = null
+        accessToken: String,
+        dummy: DummyFile,
+        chatId: Int,
+        contextMessageId: Int? = null
 ): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
-        .filter { it.second != null }
-        .formUrlEncode()
+            .filter { it.second != null }
+            .formUrlEncode()
     return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
 }
 

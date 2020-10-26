@@ -59,7 +59,7 @@ object Contacts : IntIdTable() {
 
     /** @see [readIdList] */
     fun read(ownerId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        AccountsConnection.build(readRows(ownerId), pagination)
+            AccountsConnection.build(readRows(ownerId), pagination)
 
     /**
      * Case-insensitively [query]s the [ownerId]'s contacts' usernames, first names, last names, and email addresses.

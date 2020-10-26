@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.MessagesAsset
+import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.operations.triggerAction
@@ -27,9 +28,9 @@ class ActionMessagesTest {
             val chatId = GroupChats.create(listOf(adminId))
             val action = MessageText("Yes")
             val messageId = Messages.message(
-                adminId,
-                chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                    adminId,
+                    chatId,
+                    ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
             assertTrue(ActionMessages.hasAction(messageId, action))
             assertFalse(ActionMessages.hasAction(messageId, MessageText("nonexistent action")))
@@ -44,13 +45,14 @@ class ActionMessagesTest {
             val chatId = GroupChats.create(listOf(admin.id), listOf(user.id))
             val action = MessageText("Yes")
             val messageId = Messages.message(
-                admin.id,
-                chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                    admin.id,
+                    chatId,
+                    ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
             val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             triggerAction(user.id, messageId, action)
+            awaitBrokering()
             adminSubscriber.assertValue(TriggeredAction(messageId, action, user))
             userSubscriber.assertNoValues()
         }

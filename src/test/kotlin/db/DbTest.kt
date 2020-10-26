@@ -47,7 +47,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                    groupChatsNotifier.safelySubscribe(GroupChatsAsset(userId)).subscribeWith(TestSubscriber())
+                        groupChatsNotifier.safelySubscribe(GroupChatsAsset(userId)).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -67,7 +67,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                    accountsNotifier.safelySubscribe(AccountsAsset(userId)).subscribeWith(TestSubscriber())
+                        accountsNotifier.safelySubscribe(AccountsAsset(userId)).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -79,7 +79,7 @@ class DbTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))
@@ -103,7 +103,7 @@ class DbTest {
     inner class AccountsConnection_build {
         /** Creates [count] users. */
         private fun createAccountEdges(count: Int = 3): List<AccountEdge> =
-            createVerifiedUsers(count).zip(Users.read()).map { (user, cursor) -> AccountEdge(user.info, cursor) }
+                createVerifiedUsers(count).zip(Users.read()).map { (user, cursor) -> AccountEdge(user.info, cursor) }
 
         @Test
         fun `Every user should be retrieved if neither cursor nor limit get supplied`() {
@@ -119,8 +119,8 @@ class DbTest {
             Users.delete(deletedUser.node.id)
             val first = 3
             assertEquals(
-                edges.subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges
+                    edges.subList(index + 1, index + 1 + first),
+                    AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges
             )
         }
 
@@ -169,8 +169,8 @@ class DbTest {
             val first = 3
             val index = 5
             assertEquals(
-                edges.subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, edges[index].cursor)).edges
+                    edges.subList(index + 1, index + 1 + first),
+                    AccountsConnection.build(edges, ForwardPagination(first, edges[index].cursor)).edges
             )
         }
 
@@ -186,21 +186,21 @@ class DbTest {
             val edges = createAccountEdges(10)
             val index = 5
             assertEquals(
-                edges.drop(index + 1),
-                AccountsConnection.build(edges, ForwardPagination(after = edges[index].cursor)).edges
+                    edges.drop(index + 1),
+                    AccountsConnection.build(edges, ForwardPagination(after = edges[index].cursor)).edges
             )
         }
 
         @Test
         fun `Supplying unsorted rows shouldn't affect pagination`() {
             val edges = createVerifiedUsers(10)
-                .zip(Users.read())
-                .map { (user, cursor) -> AccountEdge(user.info, cursor) }
+                    .zip(Users.read())
+                    .map { (user, cursor) -> AccountEdge(user.info, cursor) }
             val first = 3
             val index = 5
             assertEquals(
-                edges.subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges.shuffled(), ForwardPagination(first, edges[index].cursor)).edges
+                    edges.subList(index + 1, index + 1 + first),
+                    AccountsConnection.build(edges.shuffled(), ForwardPagination(first, edges[index].cursor)).edges
             )
         }
     }

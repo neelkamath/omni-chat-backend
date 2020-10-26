@@ -72,9 +72,9 @@ class QueriesAndMutationsTest {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
-                UPDATE_GROUP_CHAT_TITLE_QUERY,
-                mapOf("chatId" to chatId, "title" to "T"),
-                user.accessToken
+                    UPDATE_GROUP_CHAT_TITLE_QUERY,
+                    mapOf("chatId" to chatId, "title" to "T"),
+                    user.accessToken
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }

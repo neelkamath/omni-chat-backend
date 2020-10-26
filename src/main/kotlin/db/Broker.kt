@@ -14,10 +14,10 @@ import org.redisson.config.Config
 import java.util.concurrent.atomic.AtomicInteger
 
 val redisson: RedissonClient = Redisson.create(
-    Config().apply {
-        useSingleServer().address = System.getenv("REDIS_URL")
-        codec = JsonJacksonCodec(objectMapper)
-    }
+        Config().apply {
+            useSingleServer().address = System.getenv("REDIS_URL")
+            codec = JsonJacksonCodec(objectMapper)
+        }
 )
 
 /** [Notifier.notify]s all [Notifier.publish]ed notifications. */
@@ -107,10 +107,10 @@ class Notifier<A, U>(private val topic: Topic) {
         val client = Client(asset, subject)
         clients.add(client)
         return subject
-            .doFinally {
-                clients.removeIf { it.id == client.id }
-            }
-            .toFlowable(BackpressureStrategy.BUFFER)
+                .doFinally {
+                    clients.removeIf { it.id == client.id }
+                }
+                .toFlowable(BackpressureStrategy.BUFFER)
     }
 
     /** Publishes [notifications] to the message broker which in turn [notify]s every server. */
@@ -121,7 +121,7 @@ class Notifier<A, U>(private val topic: Topic) {
     fun publish(notifications: Map<A, U>): Unit = publish(notifications.map { Notification(it.key, it.value) })
 
     fun publish(vararg notifications: Pair<A, U>): Unit =
-        publish(notifications.map { Notification(it.first, it.second) })
+            publish(notifications.map { Notification(it.first, it.second) })
 
     fun publish(update: U, subscribers: List<A>): Unit = publish(subscribers.map { Notification(it, update) })
 
@@ -137,12 +137,12 @@ class Notifier<A, U>(private val topic: Topic) {
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */
     fun unsubscribe(filter: (A) -> Boolean): Unit =
-        /*
-        <subscribe()> removes the notifier from the list once it completes. This means we can't write
-        <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException>
-        would get thrown.
-         */
-        clients.filter { filter(it.asset) }.forEach { it.subject.onComplete() }
+            /*
+            <subscribe()> removes the notifier from the list once it completes. This means we can't write
+            <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException>
+            would get thrown.
+             */
+            clients.filter { filter(it.asset) }.forEach { it.subject.onComplete() }
 
     private companion object {
         /** Used to create [Client.id]s. Increment every usage to get a unique ID. */

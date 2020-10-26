@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.8.0
+  version: 0.8.1
   title: Omni Chat
   description: Functionality supplementary to the GraphQL API such as uploading and downloading image and audio files.
   contact:
@@ -25,11 +25,11 @@ paths:
   /pic-message:
     description: Create and read pic chat messages.
     get:
-      tags: [picMessage]
+      tags: [ picMessage ]
       description: Reads the pic from a message. To get the caption, use the GraphQL API.
       operationId: getPicMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
       responses:
@@ -40,11 +40,11 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [picMessage]
+      tags: [ picMessage ]
       description: Creates a pic message. If the chat is a broadcast group, the user must be an admin.
       operationId: postPicMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/ContextMessageId'
@@ -61,11 +61,11 @@ paths:
   /audio-message:
     description: Create and read audio chat messages.
     get:
-      tags: [audioMessage]
+      tags: [ audioMessage ]
       description: Reads an audio message.
       operationId: getAudioMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
       responses:
@@ -76,11 +76,11 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [audioMessage]
+      tags: [ audioMessage ]
       description: Creates an audio message. If the chat is a broadcast group, the user must be an admin.
       operationId: postAudioMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/ContextMessageId'
@@ -96,11 +96,11 @@ paths:
   /video-message:
     description: Create and read video chat messages.
     get:
-      tags: [videoMessage]
+      tags: [ videoMessage ]
       description: Reads a video message.
       operationId: getVideoMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
       responses:
@@ -111,11 +111,11 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [videoMessage]
+      tags: [ videoMessage ]
       description: Creates a video message. If the chat is a broadcast group, the user must be an admin.
       operationId: postVideoMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/ContextMessageId'
@@ -132,11 +132,11 @@ paths:
     description: Create and read document chat messages. Doc messages are file messages of any type. Prefer pic, audio,
       and video messages when possible.
     get:
-      tags: [docMessage]
+      tags: [ docMessage ]
       description: Reads a doc message.
       operationId: getDocMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
       responses:
@@ -147,11 +147,11 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [docMessage]
+      tags: [ docMessage ]
       description: Creates a doc message. If the chat is a broadcast group, the user must be an admin.
       operationId: postDocMessage
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/ContextMessageId'
@@ -167,7 +167,7 @@ paths:
   /profile-pic:
     description: A user's profile pic which doesn't exceed 25 MiB.
     get:
-      tags: [profilePic]
+      tags: [ profilePic ]
       description: Get the user's profile pic.
       operationId: getProfilePic
       parameters:
@@ -180,11 +180,11 @@ paths:
         '400':
           description: The user doesn't exist.
     patch:
-      tags: [profilePic]
+      tags: [ profilePic ]
       description: Update the user's profile pic.
       operationId: patchProfilePic
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         $ref: '#/components/requestBodies/Pic'
       responses:
@@ -196,7 +196,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /group-chat-pic:
     get:
-      tags: [groupChatPic]
+      tags: [ groupChatPic ]
       description: Retrieves the group chat's pic.
       operationId: getGroupChatPic
       parameters:
@@ -209,11 +209,11 @@ paths:
         '400':
           description: The chat doesn't exist.
     patch:
-      tags: [groupChatPic]
+      tags: [ groupChatPic ]
       description: Update the group chat's pic. The user must be an admin of the chat.
       operationId: patchGroupChatPic
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
       requestBody:
@@ -227,7 +227,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /health-check:
     get:
-      tags: [status]
+      tags: [ status ]
       description: Check if all systems are operational. For example, a backend developer building atop Omni Chat can
         program the server to automatically restart when it becomes "unhealthy".
       operationId: getHealthCheck
@@ -242,14 +242,14 @@ components:
         reason:
           description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
           type: string
-          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE]
+          enum: [ USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE ]
     InvalidPicMessage:
       type: object
       properties:
         reason:
           description: An `"INVALID_FILE"` indicates that the file's type or size was unacceptable.
           type: string
-          enum: [USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE, INVALID_CAPTION]
+          enum: [ USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE, INVALID_CAPTION ]
   securitySchemes:
     bearerAuth:
       type: http
@@ -306,7 +306,7 @@ components:
         multipart/form-data:
           schema:
             type: object
-            required: [audio]
+            required: [ audio ]
             properties:
               audio:
                 description: An MP3/MP4 audio not exceeding 25 MiB.
@@ -320,7 +320,7 @@ components:
         multipart/form-data:
           schema:
             type: object
-            required: [video]
+            required: [ video ]
             properties:
               video:
                 description: An MP4 video not exceeding 25 MiB.
@@ -334,7 +334,7 @@ components:
         multipart/form-data:
           schema:
             type: object
-            required: [doc]
+            required: [ doc ]
             properties:
               doc:
                 description: A document not exceeding 25 MiB.
@@ -345,7 +345,7 @@ components:
         multipart/form-data:
           schema:
             type: object
-            required: [pic]
+            required: [ pic ]
             properties:
               pic:
                 description: A PNG or JPEG image not exceeding 25 MiB.

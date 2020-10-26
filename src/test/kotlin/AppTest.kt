@@ -22,8 +22,8 @@ class Application_MainTest {
         val userId = createVerifiedUsers(1)[0].info.id
         val token = buildTokenSet(userId).accessToken
         assertNotEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+                HttpStatusCode.Unauthorized,
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )
     }
 
@@ -33,8 +33,8 @@ class Application_MainTest {
         val token = buildTokenSet(userId).accessToken
         Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
         assertEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+                HttpStatusCode.Unauthorized,
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )
     }
 }
@@ -55,8 +55,8 @@ class EncodingTest {
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createTextMessage(adminId, chatId, message)
         assertEquals(
-            message,
-            Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read)
+                message,
+                Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read)
         )
     }
 }
@@ -93,17 +93,17 @@ class SpecComplianceTest {
         val chatId = GroupChats.create(listOf(admin.info.id))
         Messages.message(admin.info.id, chatId, MessageText("t"))
         val response = readGraphQlHttpResponse(
-            READ_CHAT_QUERY,
-            mapOf(
-                "id" to chatId,
-                "privateChat_messages_last" to null,
-                "privateChat_messages_before" to null,
-                "groupChat_users_first" to null,
-                "groupChat_users_after" to null,
-                "groupChat_messages_last" to null,
-                "groupChat_messages_before" to null
-            ),
-            admin.accessToken
+                READ_CHAT_QUERY,
+                mapOf(
+                        "id" to chatId,
+                        "privateChat_messages_last" to null,
+                        "privateChat_messages_before" to null,
+                        "groupChat_users_first" to null,
+                        "groupChat_users_after" to null,
+                        "groupChat_messages_last" to null,
+                        "groupChat_messages_before" to null
+                ),
+                admin.accessToken
         )["data"] as Map<*, *>
         val data = objectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
         val messages = objectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)

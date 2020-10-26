@@ -16,7 +16,7 @@ Here's the usual flow for using the API if you're building a bot:
 
 ## Notes
 
-- If you're running Omni Chat yourself, the base URL is http://localhost:80. Otherwise, it's the URL the server admin is running it on (e.g., `https://example.com`).
+- If you're running Omni Chat locally, the base URL is http://localhost:80. Otherwise, it's the URL the server admin is running it on (e.g., `https://example.com`).
 - The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
 - When the docs refer to CommonMark, they're referring to the [Markdown spec](https://commonmark.org/).
 - Unless explicitly stated, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).

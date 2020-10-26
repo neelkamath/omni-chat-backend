@@ -41,9 +41,9 @@ class SubscriptionsTest {
             val operationName = "SubscribeToAccounts".takeIf { shouldSupplyOperationName }
             val token = createVerifiedUsers(1)[0].accessToken
             executeGraphQlSubscriptionViaWebSocket(
-                path = "accounts-subscription",
-                GraphQlRequest(query, operationName = operationName),
-                token
+                    path = "accounts-subscription",
+                    GraphQlRequest(query, operationName = operationName),
+                    token
             ) { incoming ->
                 if (shouldSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
                 else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
@@ -66,9 +66,9 @@ class SubscriptionsTest {
             val token = buildTokenSet(userId).accessToken
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             executeGraphQlSubscriptionViaWebSocket(
-                path = "messages-subscription",
-                GraphQlRequest(subscribeToMessagesQuery),
-                token
+                    path = "messages-subscription",
+                    GraphQlRequest(subscribeToMessagesQuery),
+                    token
             ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
@@ -82,10 +82,10 @@ class SubscriptionsTest {
             }
         """
         executeGraphQlSubscriptionViaWebSocket(
-            path = "accounts-subscription",
-            request = GraphQlRequest(subscribeToAccountsQuery),
-            accessToken = accessToken,
-            callback = callback
+                path = "accounts-subscription",
+                request = GraphQlRequest(subscribeToAccountsQuery),
+                accessToken = accessToken,
+                callback = callback
         )
     }
 
