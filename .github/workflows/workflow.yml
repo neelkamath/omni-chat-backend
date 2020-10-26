@@ -37,7 +37,7 @@ jobs:
             -f docker/docker-compose.yml \
             -f docker/docker-compose.override.yml \
             --project-directory . \
-            run chat gradle test
+            run chat sh -c 'flyway migrate && gradle test'
       - if: always()
         uses: actions/upload-artifact@v1
         with:

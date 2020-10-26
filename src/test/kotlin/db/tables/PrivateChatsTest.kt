@@ -35,7 +35,7 @@ class PrivateChatsTest {
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChats.delete(chatId)
             listOf(Chats, Messages, MessageStatuses, PrivateChatDeletions, PrivateChats, Stargazers, TypingStatuses)
-                .forEach { assertEquals(0, it.count()) }
+                    .forEach { assertEquals(0, it.count()) }
         }
     }
 
@@ -109,21 +109,21 @@ class PrivateChatsTest {
         fun `Chats should be searched by case-insensitively querying usernames, email addresses, and names`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
-                AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
-                AccountInput(
-                    Username("vader"),
-                    Password("p"),
-                    emailAddress = "vader@example.com",
-                    firstName = Name("Tommy")
-                ),
-                AccountInput(
-                    Username("leia"),
-                    Password("p"),
-                    emailAddress = "leia@example.com",
-                    lastName = Name("Tomas")
-                ),
-                AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
+                    AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
+                    AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
+                    AccountInput(
+                            Username("vader"),
+                            Password("p"),
+                            emailAddress = "vader@example.com",
+                            firstName = Name("Tommy")
+                    ),
+                    AccountInput(
+                            Username("leia"),
+                            Password("p"),
+                            emailAddress = "leia@example.com",
+                            lastName = Name("Tomas")
+                    ),
+                    AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {
                 Users.create(it)
                 val otherUserId = Users.read(it.username).id

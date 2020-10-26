@@ -1,9 +1,9 @@
 version: '3.8'
 services:
   chat:
-    image: neelkamath/omni-chat:0.8.0
+    image: neelkamath/omni-chat:0.8.1
     entrypoint: /dockerize -wait tcp://db:5432 -wait tcp://message-broker:6379
-    command: java -server -jar omni-chat-all.jar
+    command: sh -c 'flyway migrate && java -server -jar omni-chat.jar'
     networks: [ broker, db ]
     expose: [ 80 ]
     ports: [ 80:80 ]
@@ -11,9 +11,12 @@ services:
     environment:
       APP_NAME: ${APP_NAME}
       JWT_SECRET: ${JWT_SECRET}
+      FLYWAY_URL: jdbc:postgresql://db:5432/postgres
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_URL: db:5432
       REDIS_URL: redis://message-broker:6379
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
@@ -33,7 +36,7 @@ services:
     expose: [ 5432 ]
     networks: [ db ]
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - type: volume
         source: db
@@ -41,8 +44,8 @@ services:
   message-broker:
     image: redis:6.0.8
     restart: unless-stopped
-    expose: [6379]
-    networks: [broker]
+    expose: [ 6379 ]
+    networks: [ broker ]
     sysctls:
       net.core.somaxconn: 511
 volumes:

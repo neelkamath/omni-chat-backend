@@ -16,19 +16,19 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 private fun getPicMessage(accessToken: String, messageId: Int): TestApplicationResponse =
-    getFileMessage(accessToken, messageId, path = "pic-message")
+        getFileMessage(accessToken, messageId, path = "pic-message")
 
 private fun postPicMessage(
-    accessToken: String,
-    dummy: DummyFile,
-    chatId: Int,
-    caption: String? = null,
-    contextMessageId: Int? = null
+        accessToken: String,
+        dummy: DummyFile,
+        chatId: Int,
+        caption: String? = null,
+        contextMessageId: Int? = null
 ): TestApplicationResponse {
     val parameters = listOf(
-        "chat-id" to chatId.toString(),
-        "context-message-id" to contextMessageId?.toString(),
-        "caption" to caption
+            "chat-id" to chatId.toString(),
+            "context-message-id" to contextMessageId?.toString(),
+            "caption" to caption
     ).filter { it.second != null }.formUrlEncode()
     return uploadFile(accessToken, dummy, HttpMethod.Post, "pic-message", parameters)
 }
@@ -65,8 +65,8 @@ class PicMessageTest {
             val messageId = Messages.message(admin.info.id, chatId)
             val dummy = DummyFile("pic.png", bytes = 1)
             assertEquals(
-                HttpStatusCode.NoContent,
-                postPicMessage(admin.accessToken, dummy, chatId, "caption", contextMessageId = messageId).status()
+                    HttpStatusCode.NoContent,
+                    postPicMessage(admin.accessToken, dummy, chatId, "caption", contextMessageId = messageId).status()
             )
             assertEquals(messageId, Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id)
             assertEquals(1, PicMessages.count())

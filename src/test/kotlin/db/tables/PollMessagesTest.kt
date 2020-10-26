@@ -28,7 +28,7 @@ class PollMessagesTest {
                 val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
                 val messageId = Messages.message(adminId, chatId, poll)
                 val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                    .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
                 PollMessages.setVote(adminId, messageId, option1, vote = true)
                 awaitBrokering()
                 adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedPollMessage())

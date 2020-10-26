@@ -34,18 +34,18 @@ private fun postPicMessage(route: Route): Unit = with(route) {
         val pic = readMultipartPic()
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT)
+                    HttpStatusCode.BadRequest,
+                    InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT)
             )
 
             pic == null -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE)
+                    HttpStatusCode.BadRequest,
+                    InvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE)
             )
 
             contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                    HttpStatusCode.BadRequest,
+                    InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE)
             )
 
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)

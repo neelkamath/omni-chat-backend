@@ -9,6 +9,6 @@ fun GroupChatUsers.read(): List<Int> = transaction {
 }
 
 fun GroupChatUsers.canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean =
-    canUsersLeave(chatId, userIdList.toList())
+        canUsersLeave(chatId, userIdList.toList())
 
 fun GroupChatUsers.makeAdmins(chatId: Int, vararg userIdList: Int): Unit = makeAdmins(chatId, userIdList.toList())

@@ -22,7 +22,7 @@ class UsersTest {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
                 val subscriber = onlineStatusesNotifier
-                    .safelySubscribe(OnlineStatusesAsset(contactOwnerId)).subscribeWith(TestSubscriber())
+                        .safelySubscribe(OnlineStatusesAsset(contactOwnerId)).subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -31,21 +31,21 @@ class UsersTest {
 
         @Test
         fun `Updating the user's status should only notify users who have them in their contacts or chats`(): Unit =
-            runBlocking {
-                val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.create(contactOwnerId, setOf(updaterId))
-                PrivateChats.create(privateChatSharerId, updaterId)
-                val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
-                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
-                        onlineStatusesNotifier.safelySubscribe(OnlineStatusesAsset(it)).subscribeWith(TestSubscriber())
-                    }
-                val status = Users.read(updaterId).isOnline.not()
-                Users.setOnlineStatus(updaterId, status)
-                awaitBrokering()
-                listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
-                    .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
-            }
+                runBlocking {
+                    val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
+                    Contacts.create(contactOwnerId, setOf(updaterId))
+                    PrivateChats.create(privateChatSharerId, updaterId)
+                    val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
+                            listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
+                                onlineStatusesNotifier.safelySubscribe(OnlineStatusesAsset(it)).subscribeWith(TestSubscriber())
+                            }
+                    val status = Users.read(updaterId).isOnline.not()
+                    Users.setOnlineStatus(updaterId, status)
+                    awaitBrokering()
+                    listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
+                    listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
+                            .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
+                }
     }
 
     @Nested
@@ -70,10 +70,10 @@ class UsersTest {
     inner class Search {
         /** Creates users, and returns their IDs. */
         private fun createUsers(): List<Int> = listOf(
-            AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
-            AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
-            AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
+                AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
+                AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
+                AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
+                AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
         ).map {
             Users.create(it)
             Users.read(it.username).id
@@ -93,8 +93,8 @@ class UsersTest {
         @Test
         fun `Searching users shouldn't include duplicate results`() {
             val userIdList = listOf(
-                AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
+                    AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
+                    AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
             ).map {
                 Users.create(it)
                 Users.read(it.username).id

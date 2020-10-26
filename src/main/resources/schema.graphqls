@@ -34,568 +34,568 @@ and types don't have relevant data. This type, which is an empty `String`, indic
 scalar Placeholder
 
 schema {
-    query: Query
-    mutation: Mutation
-    subscription: Subscription
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
 }
 
 type Query {
-    """
-    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
-    the only admin of a group chat containing users other than themselves. In this case, they must first appoint a
-    different user as the admin.
+  """
+  Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
+  the only admin of a group chat containing users other than themselves. In this case, they must first appoint a
+  different user as the admin.
 
-    You must send an access token with this request.
-    """
-    canDeleteAccount: Boolean!
+  You must send an access token with this request.
+  """
+  canDeleteAccount: Boolean!
 
-    """
-    Returns the user's starred messages.
+  """
+  Returns the user's starred messages.
 
-    You must send an access token with this request.
-    """
-    readStars: [StarredMessage!]!
+  You must send an access token with this request.
+  """
+  readStars: [StarredMessage!]!
 
-    """
-    The online statuses of users the user has in their contacts, or has a chat with.
+  """
+  The online statuses of users the user has in their contacts, or has a chat with.
 
-    You must send an access token with this request.
-    """
-    readOnlineStatuses: [OnlineStatus!]!
+  You must send an access token with this request.
+  """
+  readOnlineStatuses: [OnlineStatus!]!
 
-    """
-    Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
-    message captions in the `chatId`.
+  """
+  Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
+  message captions in the `chatId`.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
-    chat).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
+  chat).
 
-    You must send an access token with this request if the `chatId` isn't a public chat.
-    """
-    searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
+  You must send an access token with this request if the `chatId` isn't a public chat.
+  """
+  searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): [MessageEdge!]!
 
-    """
-    Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
-    and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
-    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results.
+  """
+  Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
+  and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
+  particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results.
 
-    You must send an access token with this request.
-    """
-    searchMessages(query: String!): [ChatMessages!]!
+  You must send an access token with this request.
+  """
+  searchMessages(query: String!): [ChatMessages!]!
 
-    """
-    Returns the user's account info.
+  """
+  Returns the user's account info.
 
-    You must send an access token with this request.
-    """
-    readAccount: Account!
+  You must send an access token with this request.
+  """
+  readAccount: Account!
 
-    """Returns whether the `username` has been taken."""
-    isUsernameTaken(username: Username!): Boolean!
+  """Returns whether the `username` has been taken."""
+  isUsernameTaken(username: Username!): Boolean!
 
-    """Returns whether the `emailAddress` has been taken."""
-    isEmailAddressTaken(emailAddress: String!): Boolean!
+  """Returns whether the `emailAddress` has been taken."""
+  isEmailAddressTaken(emailAddress: String!): Boolean!
 
-    """
-    Returns the chats the user is in.
+  """
+  Returns the chats the user is in.
 
-    You must send an access token with this request.
-    """
-    readChats: [Chat!]!
+  You must send an access token with this request.
+  """
+  readChats: [Chat!]!
 
-    """
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
+  """
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.
 
-    You must send an access token with this request if the chat being read isn't a public chat.
-    """
-    readChat(id: Int!): Chat!
+  You must send an access token with this request if the chat being read isn't a public chat.
+  """
+  readChat(id: Int!): Chat!
 
-    """
-    Returns the `GroupChatInfo` the `inviteCode` is for.
+  """
+  Returns the `GroupChatInfo` the `inviteCode` is for.
 
-    Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
-    """
-    readGroupChat(inviteCode: Uuid!): GroupChatInfo!
+  Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
+  """
+  readGroupChat(inviteCode: Uuid!): GroupChatInfo!
 
-    """
-    Case-insensitively searches group chats and private chats the user is in. Private chats are searched by matching the
-    `query` with the username, first name, and last name of users the user has chats with. Group chats are searched by
-    matching the `query` with the title of group chats the user is in.
+  """
+  Case-insensitively searches group chats and private chats the user is in. Private chats are searched by matching the
+  `query` with the username, first name, and last name of users the user has chats with. Group chats are searched by
+  matching the `query` with the title of group chats the user is in.
 
-    You must send an access token with this request.
-    """
-    searchChats(query: String!): [Chat!]!
+  You must send an access token with this request.
+  """
+  searchChats(query: String!): [Chat!]!
 
-    """Case-insensitively searches chats by case-insensitively `query`ing their titles."""
-    searchPublicChats(query: String!): [GroupChat!]!
+  """Case-insensitively searches chats by case-insensitively `query`ing their titles."""
+  searchPublicChats(query: String!): [GroupChat!]!
 
-    """
-    Retrieves saved contacts.
+  """
+  Retrieves saved contacts.
 
-    You must send an access token with this request.
-    """
-    readContacts(first: Int, after: Cursor): AccountsConnection!
+  You must send an access token with this request.
+  """
+  readContacts(first: Int, after: Cursor): AccountsConnection!
 
-    """
-    Case-insensitively searches contacts using the `query`.
+  """
+  Case-insensitively searches contacts using the `query`.
 
-    You must send an access token with this request.
-    """
-    searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
+  You must send an access token with this request.
+  """
+  searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
 
-    """
-    Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
-    authenticate the user by passing their `Login` to this operation. Once the access token has expired, you can pass
-    the `TokenSet.refreshToken` to `Query.refreshTokenSet`.
+  """
+  Operations such as `Query.updateAccount` require authentication via an access token. You can acquire one to
+  authenticate the user by passing their `Login` to this operation. Once the access token has expired, you can pass
+  the `TokenSet.refreshToken` to `Query.refreshTokenSet`.
 
-    Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
-    `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
-    """
-    requestTokenSet(login: Login!): TokenSet!
+  Returned `errors[0].message`s could be `"NONEXISTENT_USER"` (i.e., the username doesn't exist),
+  `"UNVERIFIED_EMAIL_ADDRESS"`, or `"INCORRECT_PASSWORD"`.
+  """
+  requestTokenSet(login: Login!): TokenSet!
 
-    """
-    The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
-    passing the `TokenSet.refreshToken` from `Query.requestTokenSet` as the `refreshToken` to request a new `TokenSet`.
-    """
-    refreshTokenSet(refreshToken: ID!): TokenSet!
+  """
+  The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
+  passing the `TokenSet.refreshToken` from `Query.requestTokenSet` as the `refreshToken` to request a new `TokenSet`.
+  """
+  refreshTokenSet(refreshToken: ID!): TokenSet!
 
-    """
-    Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names,
-    and last names. Returns the users found.
-    """
-    searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
+  """
+  Searches users. The `query` is case-insensitively matched against users' usernames, email addresses, first names,
+  and last names. Returns the users found.
+  """
+  searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
 }
 
 type Mutation {
-    """
-    Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
-    chats with the user will have their chats deleted, etc.
+  """
+  Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
+  chats with the user will have their chats deleted, etc.
 
-    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if not `Query.canDeleteAccount`).
+  Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if not `Query.canDeleteAccount`).
 
-    You must send an access token with this request.
-    """
-    deleteAccount: Placeholder!
+  You must send an access token with this request.
+  """
+  deleteAccount: Placeholder!
 
-    """
-    When a user creates an account, or updates their email address, they'll receive an email with a `verificationCode`
-    which must be passed to this operation in order to verify their email address. If the `verificationCode` is valid,
-    the account's email address verification status will be set to verified, and `true` will be returned. Otherwise,
-    `false` will be returned.
+  """
+  When a user creates an account, or updates their email address, they'll receive an email with a `verificationCode`
+  which must be passed to this operation in order to verify their email address. If the `verificationCode` is valid,
+  the account's email address verification status will be set to verified, and `true` will be returned. Otherwise,
+  `false` will be returned.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
-    with an account).
-    """
-    verifyEmailAddress(emailAddress: String!, verificationCode: Int!): Boolean!
+  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
+  with an account).
+  """
+  verifyEmailAddress(emailAddress: String!, verificationCode: Int!): Boolean!
 
-    """
-    Updates the password of the account associated with the `emailAddress` to the `newPassword` if the
-    `passwordResetCode` is correct, and returns `true`. Otherwise, `false` is returned.
+  """
+  Updates the password of the account associated with the `emailAddress` to the `newPassword` if the
+  `passwordResetCode` is correct, and returns `true`. Otherwise, `false` is returned.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
-    with an account).
-    """
-    resetPassword(emailAddress: String!, passwordResetCode: Int!, newPassword: Password!): Boolean!
-
-    """
-    Stars the `messageId`. You can star your own messages. Starring an already starred message will do nothing.
-
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the `messageId` doesn't exist for the user).
-
-    You must send an access token with this request.
-    """
-    star(messageId: Int!): Placeholder!
-
-    """
-    Unstars the `messageId`. Does nothing if the message wasn't starred.
-
-    You must send an access token with this request.
-    """
-    deleteStar(messageId: Int!): Placeholder!
-
-    """
-    Sets the current user's status to `isOnline`.
-
-    You must send an access token with this request.
-    """
-    setOnlineStatus(isOnline: Boolean!): Placeholder!
-
-    """
-    Sets whether the user `isTyping` in the `chatId`.
-
-    Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing
-    status on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
-
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
+  with an account).
+  """
+  resetPassword(emailAddress: String!, passwordResetCode: Int!, newPassword: Password!): Boolean!
+
+  """
+  Stars the `messageId`. You can star your own messages. Starring an already starred message will do nothing.
+
+  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the `messageId` doesn't exist for the user).
+
+  You must send an access token with this request.
+  """
+  star(messageId: Int!): Placeholder!
+
+  """
+  Unstars the `messageId`. Does nothing if the message wasn't starred.
+
+  You must send an access token with this request.
+  """
+  deleteStar(messageId: Int!): Placeholder!
+
+  """
+  Sets the current user's status to `isOnline`.
+
+  You must send an access token with this request.
+  """
+  setOnlineStatus(isOnline: Boolean!): Placeholder!
+
+  """
+  Sets whether the user `isTyping` in the `chatId`.
+
+  Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing
+  status on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
+
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-    You must send an access token with this request.
-    """
-    setTyping(chatId: Int!, isTyping: Boolean!): Placeholder!
+  You must send an access token with this request.
+  """
+  setTyping(chatId: Int!, isTyping: Boolean!): Placeholder!
 
-    """
-    Deletes the user's profile pic.
+  """
+  Deletes the user's profile pic.
 
-    You must send an access token with this request.
-    """
-    deleteProfilePic: Placeholder!
+  You must send an access token with this request.
+  """
+  deleteProfilePic: Placeholder!
 
-    """
-    Deletes the group chat's profile pic. The user must be the admin.
+  """
+  Deletes the group chat's profile pic. The user must be the admin.
 
-    You must send an access token with this request.
-    """
-    deleteGroupChatPic(chatId: Int!): Placeholder!
+  You must send an access token with this request.
+  """
+  deleteGroupChatPic(chatId: Int!): Placeholder!
 
-    """
-    Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
-    `MessageStatus.DELIVERED` record, the delivery status will be created.
+  """
+  Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
+  `MessageStatus.DELIVERED` record, the delivery status will be created.
 
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
-    in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
-    had the message delivered to them).
+  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
+  in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., you have already told the server that the user
+  had the message delivered to them).
 
-    You must send an access token with this request.
-    """
-    createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
+  You must send an access token with this request.
+  """
+  createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
 
-    """
-    Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
-    `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
-    `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
-    one of the fields were invalid. If the user updates their email address to something other than their current
-    address, you must log them out because the current access token will be invalid until they verify their new email
-    address.
+  """
+  Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
+  `Query.isEmailAddressTaken` to see whether you can update the `AccountUpdate.username` and
+  `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
+  one of the fields were invalid. If the user updates their email address to something other than their current
+  address, you must log them out because the current access token will be invalid until they verify their new email
+  address.
 
-    If the user updates their email address, they'll be required to verify it before their next login via an email which
-    is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
-    to contact the service's admin to correctly update their address. You could prevent this mistake by asking them to
-    confirm their address. For example, a UI could require the user to enter their email address twice if they're
-    updating it, and only allow the update to take place if both the entered addresses match.
+  If the user updates their email address, they'll be required to verify it before their next login via an email which
+  is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
+  to contact the service's admin to correctly update their address. You could prevent this mistake by asking them to
+  confirm their address. For example, a UI could require the user to enter their email address twice if they're
+  updating it, and only allow the update to take place if both the entered addresses match.
 
-    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
+  Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, or `"EMAIL_ADDRESS_TAKEN"`.
 
-    You must send an access token with this request.
-    """
-    updateAccount(update: AccountUpdate!): Placeholder!
+  You must send an access token with this request.
+  """
+  updateAccount(update: AccountUpdate!): Placeholder!
 
-    """
-    Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
-    verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
-    the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
+  """
+  Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
+  verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
+  the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
 
-    Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
-    this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
-    `"johndoe@private.company.com"` may be allowed, but not `"johndoe@gmail.com"`).
-    """
-    createAccount(account: AccountInput!): Placeholder!
+  Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
+  this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
+  `"johndoe@private.company.com"` may be allowed, but not `"johndoe@gmail.com"`).
+  """
+  createAccount(account: AccountInput!): Placeholder!
 
-    """
-    Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
-    created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
-    and therefore requires it to be resent. Use `Query.isEmailAddressTaken` to check whether the supplied `emailAddress`
-    exists.
+  """
+  Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
+  created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
+  and therefore requires it to be resent. Use `Query.isEmailAddressTaken` to check whether the supplied `emailAddress`
+  exists.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`, or `"EMAIL_ADDRESS_VERIFIED"` (i.e., the
-    `emailAddress` is already verified).
-    """
-    emailEmailAddressVerification(emailAddress: String!): Placeholder!
+  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`, or `"EMAIL_ADDRESS_VERIFIED"` (i.e., the
+  `emailAddress` is already verified).
+  """
+  emailEmailAddressVerification(emailAddress: String!): Placeholder!
 
-    """
-    Sends a password reset email to the supplied `emailAddress`. The email will contain a password reset code which must
-    then be passed to `Mutation.resetPassword`. Use `Query.isEmailAddressTaken` to check whether the supplied
-    `emailAddress` exists. If the user is logged in (i.e., you have an access token), and wants to update their
-    password, you should use `Mutation.updateAccount` instead.
+  """
+  Sends a password reset email to the supplied `emailAddress`. The email will contain a password reset code which must
+  then be passed to `Mutation.resetPassword`. Use `Query.isEmailAddressTaken` to check whether the supplied
+  `emailAddress` exists. If the user is logged in (i.e., you have an access token), and wants to update their
+  password, you should use `Mutation.updateAccount` instead.
 
-    Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
-    """
-    emailPasswordResetCode(emailAddress: String!): Placeholder!
+  Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
+  """
+  emailPasswordResetCode(emailAddress: String!): Placeholder!
 
-    """
-    Only an admin can perform this operation.
+  """
+  Only an admin can perform this operation.
 
-    You must send an access token with this request.
-    """
-    updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
+  You must send an access token with this request.
+  """
+  updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
 
-    """
-    Only an admin can perform this operation.
+  """
+  Only an admin can perform this operation.
 
-    You must send an access token with this request.
-    """
-    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
+  You must send an access token with this request.
+  """
+  updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
 
-    """
-    Users already in the chat will be ignored. Only an admin can perform this operation.
+  """
+  Users already in the chat will be ignored. Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
+  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
 
-    You must send an access token with this request.
-    """
-    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+  You must send an access token with this request.
+  """
+  addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
-    """
-    Only an admin can perform this operation. Messages sent by, and polls voted on, by removed users will remain.
+  """
+  Only an admin can perform this operation. Messages sent by, and polls voted on, by removed users will remain.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat,
-    or the user must first appoint another user as an admin because they're the last admin but there are other users).
+  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat,
+  or the user must first appoint another user as an admin because they're the last admin but there are other users).
 
-    You must send an access token with this request.
-    """
-    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+  You must send an access token with this request.
+  """
+  removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
-    """
-    Makes every user in the `userIdList` an admin of the `chatId`. If the `userId`'s already an admin, nothing will
-    happen. Only an admin can perform this operation.
+  """
+  Makes every user in the `userIdList` an admin of the `chatId`. If the `userId`'s already an admin, nothing will
+  happen. Only an admin can perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users in the `userIdList` isn't in the
-    chat).
+  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users in the `userIdList` isn't in the
+  chat).
 
-    You must send an access token with this request.
-    """
-    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+  You must send an access token with this request.
+  """
+  makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
-    """
-    Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
+  """
+  Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
+  contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
-    `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
-    `GroupChatInput.userIdList`).
+  Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
+  `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
+  `GroupChatInput.userIdList`).
 
-    You must send an access token with this request.
-    """
-    createGroupChat(chat: GroupChatInput!): Int!
+  You must send an access token with this request.
+  """
+  createGroupChat(chat: GroupChatInput!): Int!
 
-    """
-    Sets whether the `chatId` `isBroadcast`. The user must be an admin to perform this operation.
+  """
+  Sets whether the `chatId` `isBroadcast`. The user must be an admin to perform this operation.
 
-    You must send an access token with this request.
-    """
-    setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
+  You must send an access token with this request.
+  """
+  setBroadcastStatus(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
-    """
-    The user must be an admin to perform this operation.
+  """
+  The user must be an admin to perform this operation.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
-    public chat).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't a group chat chat, or the chat is a
+  public chat).
 
-    You must send an access token with this request.
-    """
-    setInvitability(chatId: Int!, isInvitable: Boolean!): Placeholder!
+  You must send an access token with this request.
+  """
+  setInvitability(chatId: Int!, isInvitable: Boolean!): Placeholder!
 
-    """
-    Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat.
+  """
+  Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat.
 
-    Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
+  Returned `errors[0].message`s could be `"INVALID_INVITE_CODE"` (i.e., the invite code doesn't exist).
 
-    You must send an access token with this request.
-    """
-    joinGroupChat(inviteCode: Uuid!): Placeholder!
+  You must send an access token with this request.
+  """
+  joinGroupChat(inviteCode: Uuid!): Placeholder!
 
-    """
-    Deletes a private chat.
+  """
+  Deletes a private chat.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat).
 
-    You must send an access token with this request.
-    """
-    deletePrivateChat(chatId: Int!): Placeholder!
+  You must send an access token with this request.
+  """
+  deletePrivateChat(chatId: Int!): Placeholder!
 
-    """
-    Creates a private chat with the `userId`. Returns the chat's ID.
+  """
+  Creates a private chat with the `userId`. Returns the chat's ID.
 
-    Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
-    exist).
+  Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
+  exist).
 
-    You must send an access token with this request.
-    """
-    createPrivateChat(userId: Int!): Int!
+  You must send an access token with this request.
+  """
+  createPrivateChat(userId: Int!): Int!
 
-    """
-    Sends the `text` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
-    user might want to give their message a context, such as when replying to a message sent several messages ago. In
-    this case, the `contextMessageId` is to be the ID of the message being replied to.
+  """
+  Sends the `text` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
+  user might want to give their message a context, such as when replying to a message sent several messages ago. In
+  this case, the `contextMessageId` is to be the ID of the message being replied to.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+  `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist).
 
-    You must send an access token with this request.
-    """
-    createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
+  You must send an access token with this request.
+  """
+  createTextMessage(chatId: Int!, text: MessageText!, contextMessageId: Int): Placeholder!
 
-    """
-    Sends the `text` in the `chatId`. For example, a restaurant's bot asks if the user wants a burger or a pizza in the
-    `text`, and the `actions` are `"burger"` and `"pizza"`. If the `chatId` is a broadcast chat, the user must be an
-    admin to message. The user might want to give their message a context, such as when replying to a message sent
-    several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
+  """
+  Sends the `text` in the `chatId`. For example, a restaurant's bot asks if the user wants a burger or a pizza in the
+  `text`, and the `actions` are `"burger"` and `"pizza"`. If the `chatId` is a broadcast chat, the user must be an
+  admin to message. The user might want to give their message a context, such as when replying to a message sent
+  several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
 
-    A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
-    meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be notifed
-    when `Mutation.triggerAction` is called.
+  A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
+  meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be notifed
+  when `Mutation.triggerAction` is called.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_ACTION"`
-    (i.e., either there were zero `actions` or the `actions` weren't unique), or `"INVALID_MESSAGE_ID"` (i.e., the
-    `contextMessageId` didn't exist).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), `"INVALID_ACTION"`
+  (i.e., either there were zero `actions` or the `actions` weren't unique), or `"INVALID_MESSAGE_ID"` (i.e., the
+  `contextMessageId` didn't exist).
 
-    You must send an access token with this request.
-    """
-    createActionMessage(chatId: Int!, message: ActionMessageInput!, contextMessageId: Int): Placeholder!
+  You must send an access token with this request.
+  """
+  createActionMessage(chatId: Int!, message: ActionMessageInput!, contextMessageId: Int): Placeholder!
 
-    """
-    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
-    broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
-    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
-    message being replied to. A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead
-    display the `GroupChatInfo`.
+  """
+  Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
+  broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
+  when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
+  message being replied to. A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead
+  display the `GroupChatInfo`.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`),
-    `"INVALID_INVITED_CHAT"` (i.e., the `invitedChatId` isn't a group chat, or the chat has invitations switched off),
-    or `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` doesn't exist).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the `chatId`),
+  `"INVALID_INVITED_CHAT"` (i.e., the `invitedChatId` isn't a group chat, or the chat has invitations switched off),
+  or `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` doesn't exist).
 
-    You must send an access token with this request.
-    """
-    createGroupChatInviteMessage(chatId: Int!, invitedChatId: Int!, contextMessageId: Int): Placeholder!
+  You must send an access token with this request.
+  """
+  createGroupChatInviteMessage(chatId: Int!, invitedChatId: Int!, contextMessageId: Int): Placeholder!
 
-    """
-    Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
-    user might want to give their message a context, such as when replying to a message sent several messages ago. In
-    this case, the `contextMessageId` is to be the ID of the message being replied to.
+  """
+  Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
+  user might want to give their message a context, such as when replying to a message sent several messages ago. In
+  this case, the `contextMessageId` is to be the ID of the message being replied to.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat),
-    `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist), or `"INVALID_POLL"` (i.e., there were less than
-    two options, or an option was duplicated).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat),
+  `"INVALID_MESSAGE_ID"` (i.e., the `contextMessageId` didn't exist), or `"INVALID_POLL"` (i.e., there were less than
+  two options, or an option was duplicated).
 
-    You must send an access token with this request.
-    """
-    createPollMessage(chatId: Int!, poll: PollInput!, contextMessageId: Int): Placeholder!
+  You must send an access token with this request.
+  """
+  createPollMessage(chatId: Int!, poll: PollInput!, contextMessageId: Int): Placeholder!
 
-    """
-    Forwards the `messageId` to the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message.
-    The user might want to give their message a context, such as when replying to a message sent several messages ago.
-    In this case, the `contextMessageId` is to be the ID of the message being replied to.
+  """
+  Forwards the `messageId` to the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message.
+  The user might want to give their message a context, such as when replying to a message sent several messages ago.
+  In this case, the `contextMessageId` is to be the ID of the message being replied to.
 
-    Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
-    `"INVALID_MESSAGE_ID"` (i.e., `messageId` or `contextMessageId` didn't exist).
+  Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the user isn't in the chat), or
+  `"INVALID_MESSAGE_ID"` (i.e., `messageId` or `contextMessageId` didn't exist).
 
-    You must send an access token with this request.
-    """
-    forwardMessage(chatId: Int!, messageId: Int!, contextMessageId: Int): Placeholder!
+  You must send an access token with this request.
+  """
+  forwardMessage(chatId: Int!, messageId: Int!, contextMessageId: Int): Placeholder!
 
-    """
-    Triggers the `action` on the `messageId`'s action message.
+  """
+  Triggers the `action` on the `messageId`'s action message.
 
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such action message), or
-    `"NONEXISTENT_ACTION"` (i.e., the `action` doesn't exist).
+  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such action message), or
+  `"NONEXISTENT_ACTION"` (i.e., the `action` doesn't exist).
 
-    You must send an access token with this request.
-    """
-    triggerAction(messageId: Int!, action: MessageText!): Placeholder!
+  You must send an access token with this request.
+  """
+  triggerAction(messageId: Int!, action: MessageText!): Placeholder!
 
-    """
-    Updates the user's vote for the `option` on the `messageId`'s poll. If `vote` is `true`, the user's vote will be
-    added if it hasn't already. If `vote` is `false`, the user's vote will be removed if there is one.
+  """
+  Updates the user's vote for the `option` on the `messageId`'s poll. If `vote` is `true`, the user's vote will be
+  added if it hasn't already. If `vote` is `false`, the user's vote will be removed if there is one.
 
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such poll message), or
-    `"NONEXISTENT_OPTION"` (i.e., the `option` isn't in the poll).
+  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., there's no such poll message), or
+  `"NONEXISTENT_OPTION"` (i.e., the `option` isn't in the poll).
 
-    You must send an access token with this request.
-    """
-    setPollVote(messageId: Int!, option: MessageText!, vote: Boolean!): Placeholder!
+  You must send an access token with this request.
+  """
+  setPollVote(messageId: Int!, option: MessageText!, vote: Boolean!): Placeholder!
 
-    """
-    Deletes the message `id` from the chat it's from. The user can only delete their own messages.
+  """
+  Deletes the message `id` from the chat it's from. The user can only delete their own messages.
 
-    Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message isn't in a chat the user is in, the
-    message isn't visible to the user because they deleted the private chat, or the message isn't the user's own).
+  Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message isn't in a chat the user is in, the
+  message isn't visible to the user because they deleted the private chat, or the message isn't the user's own).
 
-    You must send an access token with this request.
-    """
-    deleteMessage(id: Int!): Placeholder!
+  You must send an access token with this request.
+  """
+  deleteMessage(id: Int!): Placeholder!
 
-    """
-    Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
+  """
+  Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
 
-    You must send an access token with this request.
-    """
-    deleteContacts(userIdList: [Int!]!): Placeholder!
+  You must send an access token with this request.
+  """
+  deleteContacts(userIdList: [Int!]!): Placeholder!
 
-    """
-    Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-    Existing contacts will be ignored.
+  """
+  Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
+  Existing contacts will be ignored.
 
-    Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
+  Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
 
-    You must send an access token with this request.
-    """
-    createContacts(userIdList: [Int!]!): Placeholder!
+  You must send an access token with this request.
+  """
+  createContacts(userIdList: [Int!]!): Placeholder!
 }
 
 type Subscription {
-    """
-    Yields created, updated, and deleted messages (including your own) in every chat the user is in. A message from a
-    chat the user wasn't previously in can be sent as well (e.g., when the other user in a private chat the user deleted
-    sends a message in it). The subscription will be stopped if the user deletes their account.
+  """
+  Yields created, updated, and deleted messages (including your own) in every chat the user is in. A message from a
+  chat the user wasn't previously in can be sent as well (e.g., when the other user in a private chat the user deleted
+  sends a message in it). The subscription will be stopped if the user deletes their account.
 
-    You must send an access token with this request.
-    """
-    subscribeToMessages: MessagesSubscription!
+  You must send an access token with this request.
+  """
+  subscribeToMessages: MessagesSubscription!
 
-    """
-    Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
-    stopped if the user deletes their account.
+  """
+  Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
+  stopped if the user deletes their account.
 
-    You must send an access token with this request.
-    """
-    subscribeToOnlineStatuses: OnlineStatusesSubscription!
+  You must send an access token with this request.
+  """
+  subscribeToOnlineStatuses: OnlineStatusesSubscription!
 
-    """
-    Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
-    will be stopped if the user deletes their account.
+  """
+  Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
+  will be stopped if the user deletes their account.
 
-    You must send an access token with this request.
-    """
-    subscribeToTypingStatuses: TypingStatusesSubscription!
+  You must send an access token with this request.
+  """
+  subscribeToTypingStatuses: TypingStatusesSubscription!
 
-    """
-    Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
-    with. The subscription will be stopped if the user deletes their account. The subscription will be stopped if the
-    user deletes their account.
+  """
+  Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
+  with. The subscription will be stopped if the user deletes their account. The subscription will be stopped if the
+  user deletes their account.
 
-    You must send an access token with this request.
-    """
-    subscribeToAccounts: AccountsSubscription!
+  You must send an access token with this request.
+  """
+  subscribeToAccounts: AccountsSubscription!
 
-    """
-    Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
-    subscription will be stopped if the user deletes their account.
+  """
+  Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
+  subscription will be stopped if the user deletes their account.
 
-    You must send an access token with this request.
-    """
-    subscribeToGroupChats: GroupChatsSubscription!
+  You must send an access token with this request.
+  """
+  subscribeToGroupChats: GroupChatsSubscription!
 }
 
 union MessagesSubscription = CreatedSubscription
-    | NewTextMessage
-    | NewActionMessage
-    | NewPicMessage
-    | NewAudioMessage
-    | NewGroupChatInviteMessage
-    | NewDocMessage
-    | NewVideoMessage
-    | NewPollMessage
-    | UpdatedTextMessage
-    | UpdatedActionMessage
-    | UpdatedPicMessage
-    | UpdatedAudioMessage
-    | UpdatedGroupChatInviteMessage
-    | UpdatedDocMessage
-    | UpdatedVideoMessage
-    | UpdatedPollMessage
-    | TriggeredAction
-    | DeletedMessage
-    | MessageDeletionPoint
-    | DeletionOfEveryMessage
-    | UserChatMessagesRemoval
+  | NewTextMessage
+  | NewActionMessage
+  | NewPicMessage
+  | NewAudioMessage
+  | NewGroupChatInviteMessage
+  | NewDocMessage
+  | NewVideoMessage
+  | NewPollMessage
+  | UpdatedTextMessage
+  | UpdatedActionMessage
+  | UpdatedPicMessage
+  | UpdatedAudioMessage
+  | UpdatedGroupChatInviteMessage
+  | UpdatedDocMessage
+  | UpdatedVideoMessage
+  | UpdatedPollMessage
+  | TriggeredAction
+  | DeletedMessage
+  | MessageDeletionPoint
+  | DeletionOfEveryMessage
+  | UserChatMessagesRemoval
 
 union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
@@ -618,60 +618,60 @@ The `action` on the action `messageId` which was `triggeredBy` the user. This wi
 the action message.
 """
 type TriggeredAction {
-    messageId: Int!
-    action: MessageText!
-    triggeredBy: Account!
+  messageId: Int!
+  action: MessageText!
+  triggeredBy: Account!
 }
 
 type UpdatedOnlineStatus {
-    userId: Int!
-    isOnline: Boolean!
+  userId: Int!
+  isOnline: Boolean!
 }
 
 type OnlineStatus {
-    userId: Int!
-    isOnline: Boolean!
-    """`null` if the `userId` has never set an online status."""
-    lastOnline: DateTime
+  userId: Int!
+  isOnline: Boolean!
+  """`null` if the `userId` has never set an online status."""
+  lastOnline: DateTime
 }
 
 """Whether the `userId` `isTyping` in the `chatId`."""
 type TypingStatus {
-    chatId: Int!
-    userId: Int!
-    isTyping: Boolean!
+  chatId: Int!
+  userId: Int!
+  isTyping: Boolean!
 }
 
 type GroupChatId {
-    id: Int!
+  id: Int!
 }
 
 """The user who left the group chat."""
 type ExitedUser {
-    chatId: Int!
-    userId: Int!
+  chatId: Int!
+  userId: Int!
 }
 
 """null fields correspond to the field not existing."""
 type UpdatedAccount {
-    userId: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: Name!
-    lastName: Name!
-    bio: Bio!
+  userId: Int!
+  username: Username!
+  emailAddress: String!
+  firstName: Name!
+  lastName: Name!
+  bio: Bio!
 }
 
 """Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before."""
 type UpdatedGroupChat {
-    chatId: Int!
-    title: GroupChatTitle
-    description: GroupChatDescription
-    newUsers: [Account!]
-    removedUsers: [Account!]
-    adminIdList: [Int!]
-    isBroadcast: Boolean
-    publicity: GroupChatPublicity
+  chatId: Int!
+  title: GroupChatTitle
+  description: GroupChatDescription
+  newUsers: [Account!]
+  removedUsers: [Account!]
+  adminIdList: [Int!]
+  isBroadcast: Boolean
+  publicity: GroupChatPublicity
 }
 
 """
@@ -681,7 +681,7 @@ This happens in private chats when the user deleted it, or the other user delete
 chats when the last user left the chat.
 """
 type DeletionOfEveryMessage {
-    chatId: Int!
+  chatId: Int!
 }
 
 """
@@ -689,97 +689,97 @@ Every message the `userId` sent in the `chatId` has been deleted. This happens w
 account.
 """
 type UserChatMessagesRemoval {
-    chatId: Int!
-    userId: Int!
+  chatId: Int!
+  userId: Int!
 }
 
 """
 Indicates that the `Subscription` has been created. This will only be sent only once, and will be the first event sent.
 """
 type CreatedSubscription {
-    placeholder: Placeholder!
+  placeholder: Placeholder!
 }
 
 """Indicates that the every message `until` the `DateTime` has been deleted in the `chatId`."""
 type MessageDeletionPoint {
-    chatId: Int!
-    until: DateTime!
+  chatId: Int!
+  until: DateTime!
 }
 
 """The `messageId` has been deleted from the `chatId`."""
 type DeletedMessage {
-    chatId: Int!
-    messageId: Int!
+  chatId: Int!
+  messageId: Int!
 }
 
 input PollInput {
-    """For example, `"Where should we meet?"`."""
-    title: MessageText!
-    """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
-    options: [MessageText!]!
+  """For example, `"Where should we meet?"`."""
+  title: MessageText!
+  """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
+  options: [MessageText!]!
 }
 
 type PollOption {
-    option: MessageText!
-    """The ID of every user who voted for this."""
-    votes: [Int!]!
+  option: MessageText!
+  """The ID of every user who voted for this."""
+  votes: [Int!]!
 }
 
 """A user can vote for each option at most once, but can vote for multiple options."""
 type Poll {
-    title: MessageText!
-    """There are at least two options, each of which are unique."""
-    options: [PollOption!]!
+  title: MessageText!
+  """There are at least two options, each of which are unique."""
+  options: [PollOption!]!
 }
 
 input ActionMessageInput {
-    """For example, `"What would you like to order?"`."""
-    text: MessageText!
-    """There must be at least one action. Each action must be unique. For example, `["Pizza", "Burger"]`."""
-    actions: [MessageText!]!
+  """For example, `"What would you like to order?"`."""
+  text: MessageText!
+  """There must be at least one action. Each action must be unique. For example, `["Pizza", "Burger"]`."""
+  actions: [MessageText!]!
 }
 
 type ActionableMessage {
-    text: MessageText!
-    """There's at least one action. Each action is unique."""
-    actions: [MessageText!]!
+  text: MessageText!
+  """There's at least one action. Each action is unique."""
+  actions: [MessageText!]!
 }
 
 type AccountsConnection {
-    edges: [AccountEdge!]!
-    pageInfo: PageInfo!
+  edges: [AccountEdge!]!
+  pageInfo: PageInfo!
 }
 
 type AccountEdge {
-    node: Account!
-    cursor: Cursor!
+  node: Account!
+  cursor: Cursor!
 }
 
 interface AccountData {
-    id: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: Name!
-    lastName: Name!
-    bio: Bio!
+  id: Int!
+  username: Username!
+  emailAddress: String!
+  firstName: Name!
+  lastName: Name!
+  bio: Bio!
 }
 
 type Account implements AccountData {
-    id: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: Name!
-    lastName: Name!
-    bio: Bio!
+  id: Int!
+  username: Username!
+  emailAddress: String!
+  firstName: Name!
+  lastName: Name!
+  bio: Bio!
 }
 
 type NewContact implements AccountData {
-    id: Int!
-    username: Username!
-    emailAddress: String!
-    firstName: Name!
-    lastName: Name!
-    bio: Bio!
+  id: Int!
+  username: Username!
+  emailAddress: String!
+  firstName: Name!
+  lastName: Name!
+  bio: Bio!
 }
 
 """
@@ -787,525 +787,525 @@ The `id` of the contact which has been deleted for the user. This happens when t
 contact's account gets deleted.
 """
 type DeletedContact {
-    id: Int!
+  id: Int!
 }
 
 input AccountInput {
-    username: Username!
-    password: Password!
-    emailAddress: String!
-    firstName: Name! = ""
-    lastName: Name! = ""
-    bio: Bio! = ""
+  username: Username!
+  password: Password!
+  emailAddress: String!
+  firstName: Name! = ""
+  lastName: Name! = ""
+  bio: Bio! = ""
 }
 
 type ChatMessages {
-    chat: Chat!
-    messages(last: Int, before: Cursor): [MessageEdge!]!
+  chat: Chat!
+  messages(last: Int, before: Cursor): [MessageEdge!]!
 }
 
 interface Chat {
-    id: Int!
-    messages(last: Int, before: Cursor): MessagesConnection!
+  id: Int!
+  messages(last: Int, before: Cursor): MessagesConnection!
 }
 
 type MessagesConnection {
-    edges: [MessageEdge!]!
-    pageInfo: PageInfo!
+  edges: [MessageEdge!]!
+  pageInfo: PageInfo!
 }
 
 type MessageEdge {
-    node: Message!
-    cursor: Cursor!
+  node: Message!
+  cursor: Cursor!
 }
 
 type PageInfo {
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: Cursor
-    endCursor: Cursor
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+  endCursor: Cursor
 }
 
 interface BareGroupChat {
-    title: GroupChatTitle!
-    description: GroupChatDescription!
-    """The ID of the `users` who are the admins. There will be at least one admin."""
-    adminIdList: [Int!]!
-    users(first: Int, after: Cursor): AccountsConnection!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
+  title: GroupChatTitle!
+  description: GroupChatDescription!
+  """The ID of the `users` who are the admins. There will be at least one admin."""
+  adminIdList: [Int!]!
+  users(first: Int, after: Cursor): AccountsConnection!
+  isBroadcast: Boolean!
+  publicity: GroupChatPublicity!
 }
 
 type GroupChatInfo implements BareGroupChat {
-    title: GroupChatTitle!
-    description: GroupChatDescription!
-    adminIdList: [Int!]!
-    users(first: Int, after: Cursor): AccountsConnection!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
+  title: GroupChatTitle!
+  description: GroupChatDescription!
+  adminIdList: [Int!]!
+  users(first: Int, after: Cursor): AccountsConnection!
+  isBroadcast: Boolean!
+  publicity: GroupChatPublicity!
 }
 
 type GroupChat implements Chat, BareGroupChat {
-    id: Int!
-    title: GroupChatTitle!
-    description: GroupChatDescription!
-    adminIdList: [Int!]!
-    users(first: Int, after: Cursor): AccountsConnection!
-    messages(last: Int, before: Cursor): MessagesConnection!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
-    """null if invite codes are switched off."""
-    inviteCode: Uuid
+  id: Int!
+  title: GroupChatTitle!
+  description: GroupChatDescription!
+  adminIdList: [Int!]!
+  users(first: Int, after: Cursor): AccountsConnection!
+  messages(last: Int, before: Cursor): MessagesConnection!
+  isBroadcast: Boolean!
+  publicity: GroupChatPublicity!
+  """null if invite codes are switched off."""
+  inviteCode: Uuid
 }
 
 type PrivateChat implements Chat {
-    id: Int!
-    messages(last: Int, before: Cursor): MessagesConnection!
-    """The user being chatted with."""
-    user: Account!
+  id: Int!
+  messages(last: Int, before: Cursor): MessagesConnection!
+  """The user being chatted with."""
+  user: Account!
 }
 
 type MessageContext {
-    """Whether this message was in reply to a particular message."""
-    hasContext: Boolean!
-    """
-    The ID of the context message.
+  """Whether this message was in reply to a particular message."""
+  hasContext: Boolean!
+  """
+  The ID of the context message.
 
-    If this message doesn't `hasContext`, this will be null. If this message `hasContext`, this will be null only if the
-    context message was deleted. Since this message might not make any sense without the context, if this message
-    `hasContext`, but the context message was deleted, a frontend could replace what should've been the context message
-    with something similar to "Message deleted".
-    """
-    id: Int
+  If this message doesn't `hasContext`, this will be null. If this message `hasContext`, this will be null only if the
+  context message was deleted. Since this message might not make any sense without the context, if this message
+  `hasContext`, but the context message was deleted, a frontend could replace what should've been the context message
+  with something similar to "Message deleted".
+  """
+  id: Int
 }
 
 interface BareMessage {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 interface Message implements BareMessage {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type TextMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: MessageText!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  message: MessageText!
 }
 
 type ActionMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: ActionMessage!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  message: ActionMessage!
 }
 
 type PicMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    caption: MessageText
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  caption: MessageText
 }
 
 type PollMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    poll: Poll!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  poll: Poll!
 }
 
 type AudioMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type GroupChatInviteMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    inviteCode: Uuid!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  inviteCode: Uuid!
 }
 
 type DocMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type VideoMessage implements BareMessage, Message {
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 interface BareChatMessage implements BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 interface StarredMessage implements BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    message: MessageText!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  message: MessageText!
 }
 
 type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    message: ActionMessage!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  message: ActionMessage!
 }
 
 type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    caption: MessageText
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  caption: MessageText
 }
 
 type StarredPollMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    poll: Poll!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  poll: Poll!
 }
 
 type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type StarredGroupChatInviteMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    inviteCode: Uuid!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  inviteCode: Uuid!
 }
 
 type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 interface NewMessage implements BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    message: MessageText!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  message: MessageText!
 }
 
 type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    message: ActionMessage!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  message: ActionMessage!
 }
 
 type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    caption: MessageText
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  caption: MessageText
 }
 
 type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    poll: Poll!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  poll: Poll!
 }
 
 type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type NewGroupChatInviteMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    inviteCode: Uuid!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  inviteCode: Uuid!
 }
 
 type NewDocMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
 }
 
 """An existing `messageId` in the `chatId` which was updated."""
 interface UpdatedMessage implements BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type UpdatedTextMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: MessageText!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  message: MessageText!
 }
 
 type UpdatedActionMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: ActionMessage!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  message: ActionMessage!
 }
 
 type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    caption: MessageText
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  caption: MessageText
 }
 
 type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    poll: Poll!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  poll: Poll!
 }
 
 type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type UpdatedGroupChatInviteMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    inviteCode: Uuid!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
+  inviteCode: Uuid!
 }
 
 type UpdatedDocMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type UpdatedVideoMessage implements UpdatedMessage, BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+  chatId: Int!
+  messageId: Int!
+  sender: Account!
+  dateTimes: MessageDateTimes!
+  context: MessageContext!
+  isForwarded: Boolean!
+  hasStar: Boolean!
 }
 
 type MessageDateTimes {
-    sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+  sent: DateTime!
+  statuses: [MessageDateTimeStatus!]!
 }
 
 """The `dateTime` the `user` created the `status`."""
 type MessageDateTimeStatus {
-    user: Account!
-    dateTime: DateTime!
-    status: MessageStatus!
+  user: Account!
+  dateTime: DateTime!
+  status: MessageStatus!
 }
 
 enum MessageStatus {
-    DELIVERED
-    READ
+  DELIVERED
+  READ
 }
 
 enum GroupChatPublicity {
-    """Users cannot join the chat via an invite code."""
-    NOT_INVITABLE
-    """Users can join the chat via an invite code."""
-    INVITABLE
-    """
-    People can search for, and view public chats without an account. Invite codes are permanently switched on. Anyone
-    with an account can join a public chat. A frontend UI may allow for a search engine to index the chat should the
-    administrator allow for it. A chat must be made public when it's being created because chats can't switch between
-    being public after they've been created.
-    """
-    PUBLIC
+  """Users cannot join the chat via an invite code."""
+  NOT_INVITABLE
+  """Users can join the chat via an invite code."""
+  INVITABLE
+  """
+  People can search for, and view public chats without an account. Invite codes are permanently switched on. Anyone
+  with an account can join a public chat. A frontend UI may allow for a search engine to index the chat should the
+  administrator allow for it. A chat must be made public when it's being created because chats can't switch between
+  being public after they've been created.
+  """
+  PUBLIC
 }
 
 type TokenSet {
-    accessToken: ID!
-    refreshToken: ID!
+  accessToken: ID!
+  refreshToken: ID!
 }
 
 input Login {
-    username: Username!
-    password: Password!
+  username: Username!
+  password: Password!
 }
 
 """Only non-null fields will be updated."""
 input AccountUpdate {
-    username: Username
-    password: Password
-    emailAddress: String
-    firstName: Name
-    lastName: Name
-    bio: Bio
+  username: Username
+  password: Password
+  emailAddress: String
+  firstName: Name
+  lastName: Name
+  bio: Bio
 }
 
 input GroupChatInput {
-    title: GroupChatTitle!
-    description: GroupChatDescription!
-    userIdList: [Int!]!
-    adminIdList: [Int!]!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
+  title: GroupChatTitle!
+  description: GroupChatDescription!
+  userIdList: [Int!]!
+  adminIdList: [Int!]!
+  isBroadcast: Boolean!
+  publicity: GroupChatPublicity!
 }

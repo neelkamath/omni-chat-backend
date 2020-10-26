@@ -2,10 +2,15 @@ package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.db.Pic.Companion.MAX_BYTES
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.*
-import org.jetbrains.exposed.sql.*
+import com.neelkamath.omniChat.graphql.routing.DeletedContact
+import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
+import com.neelkamath.omniChat.graphql.routing.MessageEdge
+import com.neelkamath.omniChat.graphql.routing.UserChatMessagesRemoval
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.Expression
+import org.jetbrains.exposed.sql.LikeOp
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.lowerCase
 import org.postgresql.util.PGobject
 import javax.annotation.processing.Generated
 
@@ -17,9 +22,9 @@ data class BackwardPagination(val last: Int? = null, val before: Int? = null)
 
 /** Throws an [IllegalArgumentException] if the [bytes] exceeds [Audio.MAX_BYTES]. */
 data class Audio(
-    /** At most [Audio.MAX_BYTES]. */
-    val bytes: ByteArray,
-    val type: Type
+        /** At most [Audio.MAX_BYTES]. */
+        val bytes: ByteArray,
+        val type: Type
 ) {
     init {
         if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The audio mustn't exceed $MAX_BYTES bytes.")
@@ -68,22 +73,16 @@ data class Audio(
 
 /** Throws an [IllegalArgumentException] if the [bytes] exceeds [Pic.MAX_BYTES]. */
 data class Pic(
-    /** At most [MAX_BYTES]. */
-    val bytes: ByteArray,
-    val type: Type
+        /** At most [MAX_BYTES]. */
+        val bytes: ByteArray,
+        val type: Type
 ) {
     init {
-        if (bytes.size > MAX_BYTES)
-            throw IllegalArgumentException("The pic mustn't exceed $MAX_BYTES bytes.")
+        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The pic mustn't exceed $MAX_BYTES bytes.")
     }
 
     enum class Type {
-        PNG {
-            override fun toString() = "png"
-        },
-        JPEG {
-            override fun toString() = "jpg"
-        };
+        PNG, JPEG;
 
         companion object {
             /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
@@ -134,73 +133,19 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
     }
 }
 
-private fun connectToDb() {
-    Database.connect(
-        "jdbc:postgresql://${System.getenv("POSTGRES_URL")}/${System.getenv("POSTGRES_DB")}?reWriteBatchedInserts=true",
-        "org.postgresql.Driver",
-        System.getenv("POSTGRES_USER"),
-        System.getenv("POSTGRES_PASSWORD")
-    )
-}
-
 /**
  * Opens the DB connection, and creates the required types and tables. This must be run before any DB-related activities
  * are performed. This takes a small, but noticeable amount of time, and is safe to run more than once.
  */
 fun setUpDb() {
-    connectToDb()
-    createTypes()
-    transaction {
-        exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;")
-        SchemaUtils.create(
-            TextMessages,
-            PicMessages,
-            AudioMessages,
-            VideoMessages,
-            DocMessages,
-            GroupChatInviteMessages,
-            PollMessages,
-            PollOptions,
-            PollVotes,
-            Pics,
-            Contacts,
-            Chats,
-            GroupChats,
-            GroupChatUsers,
-            PrivateChats,
-            PrivateChatDeletions,
-            Stargazers,
-            Messages,
-            MessageStatuses,
-            Users,
-            TypingStatuses,
-            ActionMessages,
-            ActionMessageActions
-        )
-    }
-}
-
-/** Creates custom types. */
-private fun createTypes(): Unit = transaction {
-    mapOf(
-        "message_status" to MessageStatus.values(),
-        "pic_type" to Pic.Type.values(),
-        "audio_type" to Audio.Type.values(),
-        "message_type" to MessageType.values(),
-        "group_chat_publicity" to GroupChatPublicity.values(),
-    ).forEach { (name, enum) ->
-        val values = enum.joinToString { "'${it.name.toLowerCase()}'" }
-        if (!exists(name)) exec("CREATE TYPE $name AS ENUM ($values);")
-    }
-}
-
-/** Whether the [type] has been created. */
-private fun exists(type: String): Boolean = transaction {
-    exec("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = '$type');") { resultSet ->
-        resultSet.next()
-        val column = "exists"
-        resultSet.getBoolean(column)
-    }!!
+    val url = System.getenv("POSTGRES_URL")
+    val db = System.getenv("POSTGRES_DB")
+    Database.connect(
+            "jdbc:postgresql://$url/$db?reWriteBatchedInserts=true",
+            "org.postgresql.Driver",
+            System.getenv("POSTGRES_USER"),
+            System.getenv("POSTGRES_PASSWORD")
+    )
 }
 
 /** Case-insensitively checks if [this] contains the [pattern]. */
@@ -211,14 +156,14 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
  * [userId] deleted are included.
  */
 fun isUserInChat(userId: Int, chatId: Int): Boolean =
-    chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
+        chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 fun readUserIdList(chatId: Int): List<Int> =
-    if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
+        if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
 
 /** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
 fun readChatSharers(userId: Int): List<Int> =
-    PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
+        PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
 
 /**
  * Deletes the [userId]'s data from the DB, and [Notifier.unsubscribe]s them from all notifiers. An
@@ -263,10 +208,10 @@ fun readChatSharers(userId: Int): List<Int> =
 fun deleteUser(userId: Int) {
     if (!GroupChatUsers.canUserLeave(userId))
         throw IllegalArgumentException(
-            """
-            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
-            users.
-            """
+                """
+                The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
+                users.
+                """
         )
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)

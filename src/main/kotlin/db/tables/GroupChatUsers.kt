@@ -13,12 +13,12 @@ import java.util.*
 /** The users in [GroupChats]. */
 object GroupChatUsers : IntIdTable() {
     override val tableName get() = "group_chat_users"
-    private val chatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)
+    private val groupChatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val isAdmin: Column<Boolean> = bool("is_admin")
 
     private fun isUserInChat(userId: Int, chatId: Int): Boolean = transaction {
-        !select { (GroupChatUsers.chatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty()
+        !select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty()
     }
 
     /**
@@ -31,7 +31,7 @@ object GroupChatUsers : IntIdTable() {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
         if (invalidUsers.isNotEmpty()) throw IllegalArgumentException("$invalidUsers aren't in the chat (ID: $chatId).")
         transaction {
-            update({ (GroupChatUsers.chatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
+            update({ (groupChatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
@@ -41,11 +41,11 @@ object GroupChatUsers : IntIdTable() {
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
     fun readFellowParticipants(userId: Int): Set<Int> =
-        readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
+            readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
-        select { (GroupChatUsers.chatId eq chatId) and (GroupChatUsers.userId eq userId) }
+        select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }
                 .firstOrNull()
                 ?.get(isAdmin) ?: false
     }
@@ -57,15 +57,15 @@ object GroupChatUsers : IntIdTable() {
      * @see [readAdminIdList]
      */
     fun readUserIdList(chatId: Int): List<Int> = transaction {
-        select { GroupChatUsers.chatId eq chatId }.map { it[userId] }
+        select { groupChatId eq chatId }.map { it[userId] }
     }
 
     fun readAdminIdList(chatId: Int): List<Int> = transaction {
-        select { (GroupChatUsers.chatId eq chatId) and (isAdmin eq true) }.map { it[userId] }
+        select { (groupChatId eq chatId) and (isAdmin eq true) }.map { it[userId] }
     }
 
     private fun readAccountEdges(chatId: Int): List<AccountEdge> = transaction {
-        select { GroupChatUsers.chatId eq chatId }.map {
+        select { groupChatId eq chatId }.map {
             val account = Users.read(it[userId]).toAccount()
             AccountEdge(account, cursor = it[GroupChatUsers.id].value)
         }
@@ -73,7 +73,7 @@ object GroupChatUsers : IntIdTable() {
 
     /** @see [readUserIdList] */
     fun readUsers(chatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        AccountsConnection.build(readAccountEdges(chatId), pagination)
+            AccountsConnection.build(readAccountEdges(chatId), pagination)
 
     /**
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
@@ -83,7 +83,7 @@ object GroupChatUsers : IntIdTable() {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
         transaction {
             batchInsert(newUserIdList) {
-                this[GroupChatUsers.chatId] = chatId
+                this[groupChatId] = chatId
                 this[userId] = it
                 this[isAdmin] = false
             }
@@ -127,7 +127,7 @@ object GroupChatUsers : IntIdTable() {
         if (!canUsersLeave(chatId, userIdList))
             throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
         transaction {
-            deleteWhere { (GroupChatUsers.chatId eq chatId) and (userId inList userIdList) }
+            deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         for (userId in userIdList.toSet())
             groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId).map(::GroupChatsAsset))
@@ -151,6 +151,6 @@ object GroupChatUsers : IntIdTable() {
 
     /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
     fun readChatIdList(userId: Int): List<Int> = transaction {
-        select { GroupChatUsers.userId eq userId }.map { it[chatId] }
+        select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }
     }
 }

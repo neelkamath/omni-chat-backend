@@ -12,25 +12,25 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * @see [PicMessages]
  */
 object Pics : IntIdTable() {
-    private val bytes: Column<ByteArray> = binary("bytes", Pic.MAX_BYTES)
+    private val pic: Column<ByteArray> = binary("pic", Pic.MAX_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(
-        name = "type",
-        sql = "pic_type",
-        fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("pic_type", it) }
+            name = "type",
+            sql = "pic_type",
+            fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
+            toDb = { PostgresEnum("pic_type", it) }
     )
 
     /** Returns the ID of the pic. */
     fun create(pic: Pic): Int = transaction {
         insertAndGetId {
-            it[bytes] = pic.bytes
+            it[this.pic] = pic.bytes
             it[type] = pic.type
         }.value
     }
 
     fun read(id: Int): Pic = transaction {
         select { Pics.id eq id }.first()
-    }.let { Pic(it[bytes], it[type]) }
+    }.let { Pic(it[pic], it[type]) }
 
     /**
      * Returns the [pic]'s [id] after updating it.
@@ -44,7 +44,7 @@ object Pics : IntIdTable() {
         id != null && pic != null -> {
             transaction {
                 update({ Pics.id eq id }) {
-                    it[bytes] = pic.bytes
+                    it[this.pic] = pic.bytes
                     it[type] = pic.type
                 }
             }

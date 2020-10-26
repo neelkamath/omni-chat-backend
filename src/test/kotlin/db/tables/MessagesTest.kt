@@ -140,19 +140,19 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val message1Id = Messages.message(
-                adminId,
-                chatId,
-                ActionMessageInput(MessageText("Order food."), listOf(MessageText("Pizza"), MessageText("Burger")))
+                    adminId,
+                    chatId,
+                    ActionMessageInput(MessageText("Order food."), listOf(MessageText("Pizza"), MessageText("Burger")))
             )
             val message2Id = Messages.message(
-                adminId,
-                chatId,
-                ActionMessageInput(MessageText("Pizza toppings?"), listOf(MessageText("Yes"), MessageText("No")))
+                    adminId,
+                    chatId,
+                    ActionMessageInput(MessageText("Pizza toppings?"), listOf(MessageText("Yes"), MessageText("No")))
             )
             Messages.message(
-                adminId,
-                chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+                    adminId,
+                    chatId,
+                    ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
             )
             val messages = Messages.searchGroupChat(chatId, "pIzZa").map { it.node.messageId }
             assertEquals(listOf(message1Id, message2Id), messages)
@@ -174,14 +174,14 @@ class MessagesTest {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
             repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
-                .forEach { (userId, subscriber) ->
-                    val updates = Messages.readGroupChat(chatId, userId = userId).map { it.node.toNewTextMessage() }
-                    subscriber.assertValueSequence(updates)
-                }
+                    .forEach { (userId, subscriber) ->
+                        val updates = Messages.readGroupChat(chatId, userId = userId).map { it.node.toNewTextMessage() }
+                        subscriber.assertValueSequence(updates)
+                    }
         }
 
         @Test
@@ -191,7 +191,7 @@ class MessagesTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 PrivateChatDeletions.create(chatId, user1Id)
                 val subscriber =
-                    messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+                        messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
                 val messageId = Messages.message(user2Id, chatId)
                 awaitBrokering()
                 Messages.readMessage(user1Id, messageId).toNewTextMessage().let(subscriber::assertValue)
@@ -226,10 +226,10 @@ class MessagesTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val createdMessages = listOf(
-                CreatedMessage(user1Id, "Hey"),
-                CreatedMessage(user2Id, "Hi!"),
-                CreatedMessage(user1Id, "I have a question"),
-                CreatedMessage(user1Id, "Is tomorrow a holiday?")
+                    CreatedMessage(user1Id, "Hey"),
+                    CreatedMessage(user2Id, "Hi!"),
+                    CreatedMessage(user1Id, "I have a question"),
+                    CreatedMessage(user1Id, "Is tomorrow a holiday?")
             )
             createdMessages.forEach { Messages.create(it.creatorId, chatId, MessageText(it.message)) }
             Messages.readPrivateChat(user1Id, chatId).forEachIndexed { index, message ->
@@ -281,7 +281,7 @@ class MessagesTest {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val subscriber =
-                    messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+                        messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
                 Messages.deleteChat(chatId)
                 awaitBrokering()
                 subscriber.assertValue(DeletionOfEveryMessage(chatId))
@@ -308,7 +308,7 @@ class MessagesTest {
                 val adminId = createVerifiedUsers(1)[0].info.id
                 val chatId = GroupChats.create(listOf(adminId))
                 val subscriber =
-                    messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
+                        messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
                 val until = LocalDateTime.now()
                 Messages.deleteChatUntil(chatId, until)
                 awaitBrokering()
@@ -325,7 +325,7 @@ class MessagesTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val subscriber =
-                    messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
+                        messagesNotifier.safelySubscribe(MessagesAsset(adminId)).subscribeWith(TestSubscriber())
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
                 subscriber.assertValue(UserChatMessagesRemoval(chatId, userId))
@@ -344,7 +344,7 @@ class MessagesTest {
                 chatId
             }
             val (chat1Subscriber, chat2Subscriber) = (1..2)
-                .map { messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             listOf(chat1Subscriber, chat2Subscriber).forEach {
@@ -362,7 +362,7 @@ class MessagesTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val messageId = Messages.message(user1Id, chatId)
                 val subscriber =
-                    messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
+                        messagesNotifier.safelySubscribe(MessagesAsset(user1Id)).subscribeWith(TestSubscriber())
                 Messages.delete(messageId)
                 awaitBrokering()
                 subscriber.assertValue(DeletedMessage(chatId, messageId))
@@ -433,8 +433,8 @@ class MessagesTest {
             val last = 3
             val cursorIndex = 7
             val cursors = Messages
-                .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]), adminId)
-                .map { it.cursor }
+                    .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]), adminId)
+                    .map { it.cursor }
             assertEquals(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last), cursors)
         }
 
@@ -471,8 +471,8 @@ class MessagesTest {
             Messages.delete(deletedMessageId)
             val last = 3
             val cursors = Messages
-                .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId), adminId)
-                .map { it.cursor }
+                    .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId), adminId)
+                    .map { it.cursor }
             assertEquals(messageIdList.subList(index - last, index), cursors)
         }
     }

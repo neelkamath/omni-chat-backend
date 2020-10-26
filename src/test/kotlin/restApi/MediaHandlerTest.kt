@@ -16,20 +16,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 private fun postAudioMessage(
-    accessToken: String,
-    dummy: DummyFile,
-    chatId: Int,
-    contextMessageId: Int? = null
+        accessToken: String,
+        dummy: DummyFile,
+        chatId: Int,
+        contextMessageId: Int? = null
 ): TestApplicationResponse {
     val parameters = listOf(
-        "chat-id" to chatId.toString(),
-        "context-message-id" to contextMessageId?.toString()
+            "chat-id" to chatId.toString(),
+            "context-message-id" to contextMessageId?.toString()
     ).filter { it.second != null }.formUrlEncode()
     return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
 }
 
 private fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
-    getFileMessage(accessToken, messageId, path = "audio-message")
+        getFileMessage(accessToken, messageId, path = "audio-message")
 
 @ExtendWith(DbExtension::class)
 class MediaHandlerTest {

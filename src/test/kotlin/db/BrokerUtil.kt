@@ -21,4 +21,4 @@ suspend fun <A, U> Notifier<A, U>.safelySubscribe(asset: A): Flowable<U> {
 
 /** Removes every listener added in [subscribeToMessageBroker]. */
 fun unsubscribeFromMessageBroker(): Unit =
-    Topic.values().forEach { redisson.getTopic(it.toString()).removeAllListeners() }
+        Topic.values().forEach { redisson.getTopic(it.toString()).removeAllListeners() }

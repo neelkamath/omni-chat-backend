@@ -49,9 +49,9 @@ inline fun getMediaMessage(route: Route, crossinline bytesReader: (messageId: In
 }
 
 fun <T> postMediaMessage(
-    route: Route,
-    messageReader: suspend PipelineContext<Unit, ApplicationCall>.() -> T?,
-    creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit
+        route: Route,
+        messageReader: suspend PipelineContext<Unit, ApplicationCall>.() -> T?,
+        creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit
 ): Unit = with(route) {
     post {
         val chatId = call.parameters["chat-id"]!!.toInt()
@@ -59,16 +59,16 @@ fun <T> postMediaMessage(
         val message = messageReader(this)
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
+                    HttpStatusCode.BadRequest,
+                    InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
             )
 
             message == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE))
 
             contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
-                HttpStatusCode.BadRequest,
-                InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                    HttpStatusCode.BadRequest,
+                    InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
             )
 
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)

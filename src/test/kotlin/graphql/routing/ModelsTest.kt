@@ -13,12 +13,12 @@ class GroupChatInputTest {
         fun `Having zero admins should fail`() {
             assertFailsWith<IllegalArgumentException> {
                 GroupChatInput(
-                    GroupChatTitle("T"),
-                    GroupChatDescription(""),
-                    userIdList = listOf(1),
-                    adminIdList = listOf(),
-                    isBroadcast = false,
-                    publicity = GroupChatPublicity.NOT_INVITABLE
+                        GroupChatTitle("T"),
+                        GroupChatDescription(""),
+                        userIdList = listOf(1),
+                        adminIdList = listOf(),
+                        isBroadcast = false,
+                        publicity = GroupChatPublicity.NOT_INVITABLE
                 )
             }
         }
@@ -27,12 +27,12 @@ class GroupChatInputTest {
         fun `An exception should be thrown if the admin ID list isn't a subset of the user ID list`() {
             assertFailsWith<IllegalArgumentException> {
                 GroupChatInput(
-                    GroupChatTitle("T"),
-                    GroupChatDescription(""),
-                    userIdList = listOf(1),
-                    adminIdList = listOf(1, 2),
-                    isBroadcast = false,
-                    publicity = GroupChatPublicity.NOT_INVITABLE
+                        GroupChatTitle("T"),
+                        GroupChatDescription(""),
+                        userIdList = listOf(1),
+                        adminIdList = listOf(1, 2),
+                        isBroadcast = false,
+                        publicity = GroupChatPublicity.NOT_INVITABLE
                 )
             }
         }

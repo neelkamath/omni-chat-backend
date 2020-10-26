@@ -2,11 +2,10 @@ package com.neelkamath.omniChat.restApi
 
 import com.neelkamath.omniChat.db.tables.Users
 import com.neelkamath.omniChat.userId
-import io.ktor.application.call
-import io.ktor.auth.authenticate
-import io.ktor.http.HttpStatusCode
-import io.ktor.response.respond
-import io.ktor.response.respondBytes
+import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.http.*
+import io.ktor.response.*
 import io.ktor.routing.*
 
 fun routeProfilePic(routing: Routing): Unit = with(routing) {

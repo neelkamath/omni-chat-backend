@@ -14,10 +14,10 @@ object PicMessages : Table() {
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val pic: Column<ByteArray> = binary("pic", Pic.MAX_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(
-        name = "type",
-        sql = "pic_type",
-        fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("pic_type", it) }
+            name = "type",
+            sql = "pic_type",
+            fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
+            toDb = { PostgresEnum("pic_type", it) }
     )
     private val caption: Column<String?> = varchar("caption", MessageText.MAX_LENGTH).nullable()
 
