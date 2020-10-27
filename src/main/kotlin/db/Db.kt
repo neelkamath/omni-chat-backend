@@ -48,12 +48,7 @@ data class Audio(
     }
 
     enum class Type {
-        MP3 {
-            override fun toString() = "mp3"
-        },
-        MP4 {
-            override fun toString() = "mp4"
-        };
+        MP3, MP4;
 
         companion object {
             /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"m4a"`) isn't one of the [Type]s. */
