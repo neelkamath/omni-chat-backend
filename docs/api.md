@@ -32,7 +32,7 @@ Here's the usual flow for using the API if you're building a bot:
 GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
 
 |Key|Explanation|Optional|
-|---|---|---|
+|:---:|---|:---:|
 |`"query"`|GraphQL query to execute.|No|
 |`"variables"`|The runtime values to use for any GraphQL query variables as a JSON object.|Yes|
 |`"operationName"`|If the provided query contains multiple named operations, this specifies which operation should be executed. If this isn't provided, and the query contains multiple named operations, an error will be returned. For `Query`s and `Mutation`s, an HTTP status code of 400 will be returned. For `Subscription`s, a status code of 1008 will be returned, and the connection will be closed.|Yes|
