@@ -8,7 +8,7 @@ import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.application.*
 import io.ktor.http.*
@@ -31,7 +31,7 @@ class QueriesAndMutationsTest {
         }
 
         private fun testOperationName(shouldSupplyOperationName: Boolean) {
-            val call = withTestApplication(Application::test) {
+            val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
                         query IsUsernameTaken {

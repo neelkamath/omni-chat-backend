@@ -2,7 +2,10 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.awaitBrokering
+import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.db.groupChatsNotifier
+import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
@@ -40,7 +43,7 @@ class GroupChatUsersTest {
                 val (admin, user) = createVerifiedUsers(2).map { it.info }
                 val chatId = GroupChats.create(listOf(admin.id))
                 val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.addUsers(chatId, user.id)
                 awaitBrokering()
                 adminSubscriber.assertValue(UpdatedGroupChat(chatId, newUsers = listOf(user)))
@@ -130,7 +133,7 @@ class GroupChatUsersTest {
                 val chatId = GroupChats.create(listOf(adminId), userIdList = listOf(toBeAdminId))
                 val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
                         listOf(adminId, toBeAdminId, nonParticipantId).map {
-                            groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber())
+                            groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
                         }
                 GroupChatUsers.makeAdmins(chatId, toBeAdminId)
                 awaitBrokering()
@@ -165,7 +168,7 @@ class GroupChatUsersTest {
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val (adminSubscriber, userSubscriber, nonParticipantSubscriber) =
                         listOf(adminId, userId, nonParticipantId).map {
-                            groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber())
+                            groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
                         }
                 GroupChatUsers.removeUsers(chatId, userId, userId)
                 awaitBrokering()

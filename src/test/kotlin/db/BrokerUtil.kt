@@ -14,11 +14,7 @@ import java.time.Duration
 suspend fun awaitBrokering(): Unit = delay(Duration.ofMillis(150))
 
 /** [Notifier.subscribe]s after [awaitBrokering]. */
-suspend fun <A, U> Notifier<A, U>.safelySubscribe(asset: A): Flowable<U> {
+suspend fun <T> Notifier<T>.safelySubscribe(userId: Int): Flowable<T> {
     awaitBrokering()
-    return subscribe(asset)
+    return subscribe(userId)
 }
-
-/** Removes every listener added in [subscribeToMessageBroker]. */
-fun unsubscribeFromMessageBroker(): Unit =
-        Topic.values().forEach { redisson.getTopic(it.toString()).removeAllListeners() }

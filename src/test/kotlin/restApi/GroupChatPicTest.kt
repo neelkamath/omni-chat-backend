@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -21,7 +21,7 @@ private fun patchGroupChatPic(accessToken: String, dummy: DummyFile, chatId: Int
     return uploadFile(accessToken, dummy, HttpMethod.Patch, "group-chat-pic", parameters)
 }
 
-private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestApplication(Application::test) {
+private fun getGroupChatPic(chatId: Int): TestApplicationResponse = withTestApplication(Application::main) {
     val parameters = listOf("chat-id" to chatId.toString()).formUrlEncode()
     handleRequest(HttpMethod.Get, "group-chat-pic?$parameters").response
 }

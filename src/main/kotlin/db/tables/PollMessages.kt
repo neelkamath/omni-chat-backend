@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
@@ -48,7 +47,7 @@ object PollMessages : IntIdTable() {
         val optionId = PollOptions.readId(readId(messageId), option)
         if (vote) PollVotes.create(userId, optionId) else PollVotes.deleteVote(userId, optionId)
         val updates = readUserIdList(Messages.readChatFromMessage(messageId))
-                .associate { MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription }
+                .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
         messagesNotifier.publish(updates)
     }
 

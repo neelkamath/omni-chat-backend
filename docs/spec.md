@@ -10,7 +10,7 @@ There are currently only two good chat apps, [Discord](http://discord.com) and [
 |:---:|:---:|:---:|:---:|
 |Discord|❌|✅|❌|
 |Signal|✅|❌|✅|
-|Omni Chat|✅|✅|✅|
+|Omni Chat|❌|✅|✅|
 
 ## Recommendations for Frontend UI Developers
 
@@ -73,4 +73,3 @@ Checkboxes indicate which features have been implemented.
 - [ ] Screen sharing.
 - [ ] Background noise cancellation for both audio and video calls.
 - [ ] Spatial audio calls (important for gamers).
-- [ ] E2E encryption.

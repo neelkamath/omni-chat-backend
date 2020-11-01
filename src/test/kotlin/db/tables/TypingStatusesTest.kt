@@ -2,7 +2,10 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.awaitBrokering
+import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.db.safelySubscribe
+import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -23,7 +26,7 @@ class TypingStatusesTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
                         .map {
-                            typingStatusesNotifier.safelySubscribe(TypingStatusesAsset(it)).subscribeWith(TestSubscriber())
+                            typingStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
                         }
                 val isTyping = true
                 TypingStatuses.set(chatId, user1Id, isTyping)

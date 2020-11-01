@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
@@ -25,7 +24,7 @@ object Stargazers : Table() {
             }
         }
         val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
-        messagesNotifier.publish(message, MessagesAsset(userId))
+        messagesNotifier.publish(message, userId)
     }
 
     /** Returns the ID of every message the [userId] has starred. */
@@ -55,8 +54,8 @@ object Stargazers : Table() {
             deleteWhere { Stargazers.messageId eq messageId }
         }
         stargazers.forEach {
-            val update = MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription
-            messagesNotifier.publish(update)
+            val notification = UpdatedMessage.build(it, messageId) as MessagesSubscription
+            messagesNotifier.publish(it to notification)
         }
     }
 
@@ -71,7 +70,7 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }
         }
-        messagesNotifier.publish(UpdatedMessage.build(userId, messageId) as MessagesSubscription, MessagesAsset(userId))
+        messagesNotifier.publish(UpdatedMessage.build(userId, messageId) as MessagesSubscription, userId)
     }
 
     /**

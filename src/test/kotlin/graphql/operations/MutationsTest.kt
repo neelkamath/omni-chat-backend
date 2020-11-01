@@ -735,7 +735,7 @@ class MutationsTest {
                     chatId,
                     ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
-            val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(admin.id)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(admin.id).subscribeWith(TestSubscriber())
             triggerAction(admin.id, messageId, action)
             awaitBrokering()
             subscriber.assertValue(TriggeredAction(messageId, action, admin))

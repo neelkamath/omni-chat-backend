@@ -14,6 +14,17 @@ import org.jetbrains.exposed.sql.lowerCase
 import org.postgresql.util.PGobject
 import javax.annotation.processing.Generated
 
+val db: Database by lazy {
+    val url = System.getenv("POSTGRES_URL")
+    val db = System.getenv("POSTGRES_DB")
+    Database.connect(
+            "jdbc:postgresql://$url/$db?reWriteBatchedInserts=true",
+            "org.postgresql.Driver",
+            System.getenv("POSTGRES_USER"),
+            System.getenv("POSTGRES_PASSWORD")
+    )
+}
+
 data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
 
 data class ForwardPagination(val first: Int? = null, val after: Int? = null)
@@ -128,19 +139,9 @@ class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject
     }
 }
 
-/**
- * Opens the DB connection, and creates the required types and tables. This must be run before any DB-related activities
- * are performed. This takes a small, but noticeable amount of time, and is safe to run more than once.
- */
+/** Connects to the DB. This is safe to call multiple times. */
 fun setUpDb() {
-    val url = System.getenv("POSTGRES_URL")
-    val db = System.getenv("POSTGRES_DB")
-    Database.connect(
-            "jdbc:postgresql://$url/$db?reWriteBatchedInserts=true",
-            "org.postgresql.Driver",
-            System.getenv("POSTGRES_USER"),
-            System.getenv("POSTGRES_PASSWORD")
-    )
+    db
 }
 
 /** Case-insensitively checks if [this] contains the [pattern]. */
@@ -191,7 +192,7 @@ fun readChatSharers(userId: Int): List<Int> =
  *
  * ## Messages
  *
- * - Clients who have [Notifier.subscribe]d to [MessagesAsset]s will be notified of the [UserChatMessagesRemoval].
+ * - Clients who have [Notifier.subscribe]d to [messagesNotifier]s will be notified of the [UserChatMessagesRemoval].
  * - Deletes all [Messages] and [MessageStatuses] the [userId] has sent.
  * - Clients will be [Notifier.unsubscribe]d via [messagesNotifier].
  *
@@ -214,9 +215,9 @@ fun deleteUser(userId: Int) {
     TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
     Users.delete(userId)
-    groupChatsNotifier.unsubscribe { it.userId == userId }
-    accountsNotifier.unsubscribe { it.userId == userId }
-    typingStatusesNotifier.unsubscribe { it.userId == userId }
-    messagesNotifier.unsubscribe { it.userId == userId }
-    onlineStatusesNotifier.unsubscribe { it.userId == userId }
+    groupChatsNotifier.unsubscribe { it == userId }
+    accountsNotifier.unsubscribe { it == userId }
+    typingStatusesNotifier.unsubscribe { it == userId }
+    messagesNotifier.unsubscribe { it == userId }
+    onlineStatusesNotifier.unsubscribe { it == userId }
 }

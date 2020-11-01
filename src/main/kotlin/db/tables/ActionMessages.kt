@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.ActionableMessage
@@ -48,7 +47,7 @@ object ActionMessages : IntIdTable() {
     fun trigger(userId: Int, messageId: Int, action: MessageText) {
         val creatorId = Messages.readTypedMessage(messageId).message.sender.id
         val account = Users.read(userId).toAccount()
-        messagesNotifier.publish(MessagesAsset(creatorId) to TriggeredAction(messageId, action, account))
+        messagesNotifier.publish(creatorId to TriggeredAction(messageId, action, account))
     }
 
     fun read(messageId: Int): ActionableMessage {

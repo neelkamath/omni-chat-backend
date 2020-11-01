@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.MessagesAsset
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.safelySubscribe
@@ -50,7 +49,7 @@ class ActionMessagesTest {
                     ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
             val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                    .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
             triggerAction(user.id, messageId, action)
             awaitBrokering()
             adminSubscriber.assertValue(TriggeredAction(messageId, action, user))

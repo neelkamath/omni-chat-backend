@@ -47,7 +47,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                        groupChatsNotifier.safelySubscribe(GroupChatsAsset(userId)).subscribeWith(TestSubscriber())
+                        groupChatsNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -67,7 +67,7 @@ class DbTest {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
                 val subscriber =
-                        accountsNotifier.safelySubscribe(AccountsAsset(userId)).subscribeWith(TestSubscriber())
+                        accountsNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -79,7 +79,7 @@ class DbTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                        .map { groupChatsNotifier.safelySubscribe(GroupChatsAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))
@@ -91,7 +91,7 @@ class DbTest {
         fun `The user should be unsubscribed from message updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
-                val subscriber = messagesNotifier.safelySubscribe(MessagesAsset(userId)).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }

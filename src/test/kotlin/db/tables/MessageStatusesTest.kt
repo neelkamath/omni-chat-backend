@@ -2,7 +2,10 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.awaitBrokering
+import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -71,7 +74,7 @@ class MessageStatusesTest {
                 PrivateChats.create(user2Id, user3Id)
                 val messageId = Messages.message(user1Id, chatId)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                        .map { messagesNotifier.safelySubscribe(MessagesAsset(it)).subscribeWith(TestSubscriber()) }
+                        .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
                 mapOf(user1Subscriber to user1Id, user2Subscriber to user2Id).forEach { (subscriber, userId) ->
