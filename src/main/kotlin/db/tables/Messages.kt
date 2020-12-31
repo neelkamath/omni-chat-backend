@@ -347,7 +347,7 @@ object Messages : IntIdTable() {
 
     /** The message IDs in the [chatId] in order of creation. */
     fun readIdList(chatId: Int): List<Int> = transaction {
-        select { Messages.chatId eq chatId }.map { it[Messages.id].value }
+        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }
     }
 
     /** Returns a concrete class for the [messageId] as seen by the [userId]. */

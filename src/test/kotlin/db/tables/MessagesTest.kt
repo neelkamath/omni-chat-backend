@@ -439,14 +439,13 @@ class MessagesTest {
         }
 
         @Test
-        fun `"limit"ed messages from the last message should be retrieved when there's no cursor`() {
+        fun `A limited number of messages from the last message should be retrieved when there's no cursor`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
             val last = 3
             val cursors = Messages.readGroupChat(chatId, BackwardPagination(last), adminId).map { it.cursor }
             assertEquals(messageIdList.takeLast(last), cursors)
-
         }
 
         @Test
