@@ -38,7 +38,7 @@
 
 ### Development
 
-1. Run the server on http://localhost:80 with autoreload enabled:
+1. Run the server on http://localhost with autoreload enabled:
     ```
     docker-compose \
         -f docker/docker-compose.yml \
@@ -58,7 +58,8 @@
 ### Production
 
 To test the production build:
-1. Start the server on http://localhost:80:
+
+1. Start the server on http://localhost:
     ```
     docker-compose \
         -f docker/docker-compose.yml \

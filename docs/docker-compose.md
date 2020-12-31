@@ -12,13 +12,13 @@ This is the recommended method to run the server locally. For example, you might
 
 ## Usage
 
-Start the server on http://localhost:80: `docker-compose up -d`
+Start the server on http://localhost: `docker-compose up -d`
 
 To shut down: `docker-compose down`
 
 ## Migrating
 
-Here's how to migrate from the previous version (v0.8.0) to this version (v0.8.1): 
+Here's how to migrate from the previous version (v0.8.1) to this version (v0.8.2):
+
 1. Ensure the application isn't running: `docker-compose down`
-1. Since DB migrations aren't provided for this version, you'll have to wipe the DB: `docker volume rm <DIR>_db` where `<DIR>` is the lowercase name of the present working directory
 1. Delete the server files (e.g., `.env`, `docker-compose.yml`), and follow the **Installation** and **Usage** instructions again because the server setup may have changed.

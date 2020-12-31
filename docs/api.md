@@ -16,16 +16,22 @@ Here's the usual flow for using the API if you're building a bot:
 
 ## Notes
 
-- If you're running Omni Chat locally, the base URL is http://localhost:80. Otherwise, it's the URL the server admin is running it on (e.g., `https://example.com`).
-- The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
+- If you're running Omni Chat locally, the base URL is http://localhost. Otherwise, it's the URL the server admin is
+  running it on (e.g., `https://example.com`).
+- The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols.
+  There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the
+  REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
 - When the docs refer to CommonMark, they're referring to the [Markdown spec](https://commonmark.org/).
-- Unless explicitly stated, whitespace is never removed (e.g., a user's first name will keep trailing whitespace intact).
 - IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
 - If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
 
 ## Security
 
-[JWT](https://jwt.io/) is used for auth. Access and refresh tokens expire in one hour and one week respectively. Any operation requiring auth (e.g., the `/messages-subscription` endpoint for `Subscription.subscribeToMessages`, the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g., the user isn't allowed to perform the requested action).
+[JWT](https://jwt.io/)s are used for auth. Access and refresh tokens expire in one hour and one week respectively. HTTP
+requests requiring auth (e.g., the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access token
+passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've
+failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g.,
+the user isn't allowed to perform the requested action).
 
 ## GraphQL API
 
@@ -112,8 +118,11 @@ It takes a small amount of time for the WebSocket connection to be created. Afte
 The server only accepts the first two events you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
 
 Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
-1. Open a WebSocket connection on http://localhost/messages-subscription.
-1. Pass the access token you get from `Query.requestTokenSet` as a text event (e.g., `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM`). If the user is unauthorized, the connection will be closed with a status code of 1008.
+
+1. Open a WebSocket connection on the path `/messages-subscription` (e.g., `http://localhost/messages-subscription`).
+1. Pass the access token you get from `Query.requestTokenSet` as a text event (
+   e.g., `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM`)
+   . If the user is unauthorized, the connection will be closed with a status code of 1008.
 1. Send the GraphQL document in JSON serialized as text. Here's an example JSON string:
     ```json
     {
