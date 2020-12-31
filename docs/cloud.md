@@ -13,7 +13,6 @@ This is the recommended method to run the server in the cloud. For example, you 
 
 ### Migrating
 
-Here's how to migrate from the previous version (v0.8.0) to this version (v0.8.1): 
-1. Stop the running servers.
-1. Since DB migrations aren't provided for this version, you'll have to wipe the Postgres DB.
-1. Start the server using the `neelkamath/omni-chat:0.8.1` Docker image.
+Here's how to migrate from the previous version (v0.8.1) to this version (v0.8.2). Start the server using
+the `neelkamath/omni-chat:0.8.2` Docker image. This version may run alongside the previous one since no backwards
+incompatible changes have been made.

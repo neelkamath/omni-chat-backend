@@ -81,15 +81,11 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  */
 private suspend fun buildExecutionResult(
         session: DefaultWebSocketServerSession,
-        accessToken: String?
+        accessToken: String
 ): ExecutionResult = with(session) {
-    val userId = accessToken?.let { token ->
-        val userId = jwtVerifier.verify(token).subject.toInt()
-        // It's possible the user updated their email address just after the token was created.
-        if (!Users.read(userId).hasVerifiedEmailAddress)
-            throw JWTVerificationException("The email address is unverified.")
-        userId
-    }
+    val userId = jwtVerifier.verify(accessToken).subject.toInt()
+    // It's possible the user updated their email address just after the token was created.
+    if (!Users.read(userId).hasVerifiedEmailAddress) throw JWTVerificationException("The email address is unverified.")
     val frame = incoming.receive() as Frame.Text
     val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val builder = buildExecutionInput(request, userId)

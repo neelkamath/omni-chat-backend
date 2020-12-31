@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.neelkamath.omniChat.db.unsubscribeFromMessageBroker
 import com.neelkamath.omniChat.graphql.routing.*
-import io.ktor.application.*
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -30,12 +28,6 @@ val testingObjectMapper: ObjectMapper = objectMapper
         .register(MessageTextDeserializer, MessageTextSerializer)
         .register(BioDeserializer, BioSerializer)
         .register(UuidDeserializer, UuidSerializer)
-
-/** Use in place of [Application.main]. */
-fun Application.test() {
-    unsubscribeFromMessageBroker()
-    main()
-}
 
 private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Placeholder =

@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.restApi
 
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.http.content.*
@@ -13,7 +13,7 @@ data class DummyFile(val name: String, val bytes: Int) {
 }
 
 fun getFileMessage(accessToken: String, messageId: Int, path: String): TestApplicationResponse =
-        withTestApplication(Application::test) {
+        withTestApplication(Application::main) {
             val parameters = listOf("message-id" to messageId.toString()).formUrlEncode()
             handleRequest(HttpMethod.Get, "$path?$parameters") {
                 addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
@@ -26,7 +26,7 @@ fun uploadFile(
         method: HttpMethod,
         path: String,
         parameters: String? = null
-): TestApplicationResponse = withTestApplication(Application::test) {
+): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
         addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         val boundary = "boundary"

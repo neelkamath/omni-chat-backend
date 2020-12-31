@@ -31,12 +31,16 @@ class BrokerTest {
                             privateChatSharerSubscriber,
                             groupChatSharerSubscriber
                     ) = listOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
-                            .map { accountsNotifier.safelySubscribe(AccountsAsset(it)).subscribeWith(TestSubscriber()) }
+                            .map { accountsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                     negotiateUserUpdate(userId)
                     awaitBrokering()
                     deletedPrivateChatSharerSubscriber.assertNoValues()
-                    listOf(userSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, groupChatSharerSubscriber)
-                            .forEach { it.assertValue(UpdatedAccount.build(userId)) }
+                    listOf(
+                            userSubscriber,
+                            contactOwnerSubscriber,
+                            privateChatSharerSubscriber,
+                            groupChatSharerSubscriber
+                    ).forEach { it.assertValue(UpdatedAccount.build(userId)) }
                 }
     }
 }
@@ -49,7 +53,7 @@ class NotifierTest {
         fun `Clients who have subscribed with a matching asset should be notified`() {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-                val notifier = Notifier<Int, String>(Topic.MESSAGES)
+                val notifier = Notifier<String>(Topic.MESSAGES)
                 val (subscriber1, subscriber2, subscriber3, subscriber4) = listOf(user1Id, user1Id, user2Id, user3Id)
                         .map { notifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 val update = "update"

@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.AccountsAsset
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.Notifier
 import com.neelkamath.omniChat.db.accountsNotifier
@@ -32,7 +31,7 @@ object Contacts : IntIdTable() {
                 this[contactId] = it
             }
         }
-        for (newContact in newContacts) accountsNotifier.publish(NewContact.build(newContact), AccountsAsset(ownerId))
+        for (newContact in newContacts) accountsNotifier.publish(NewContact.build(newContact), ownerId)
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
@@ -78,7 +77,7 @@ object Contacts : IntIdTable() {
         transaction {
             deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
         }
-        for (contact in contacts) accountsNotifier.publish(DeletedContact(contact), AccountsAsset(ownerId))
+        for (contact in contacts) accountsNotifier.publish(DeletedContact(contact), ownerId)
     }
 
     /**
@@ -87,7 +86,7 @@ object Contacts : IntIdTable() {
      * [DeletedContact] via [accountsNotifier].
      */
     fun deleteUserEntries(userId: Int) {
-        accountsNotifier.publish(DeletedContact(userId), readOwners(userId).map(::AccountsAsset))
+        accountsNotifier.publish(DeletedContact(userId), readOwners(userId))
         transaction {
             deleteWhere { (contactOwnerId eq userId) or (contactId eq userId) }
         }

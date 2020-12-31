@@ -1,7 +1,6 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.GroupChatsAsset
 import com.neelkamath.omniChat.db.groupChatsNotifier
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
@@ -35,7 +34,7 @@ object GroupChatUsers : IntIdTable() {
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
-            groupChatsNotifier.publish(update, readUserIdList(chatId).map(::GroupChatsAsset))
+            groupChatsNotifier.publish(update, readUserIdList(chatId))
         }
     }
 
@@ -88,9 +87,9 @@ object GroupChatUsers : IntIdTable() {
                 this[isAdmin] = false
             }
         }
-        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::GroupChatsAsset))
+        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList)
         val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map { Users.read(it).toAccount() })
-        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::GroupChatsAsset))
+        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList))
     }
 
     fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
@@ -130,7 +129,7 @@ object GroupChatUsers : IntIdTable() {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         for (userId in userIdList.toSet())
-            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId).map(::GroupChatsAsset))
+            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

@@ -1,6 +1,9 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.*
+import com.neelkamath.omniChat.db.Notifier
+import com.neelkamath.omniChat.db.PostgresEnum
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.MessageDateTimeStatus
 import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
@@ -73,7 +76,7 @@ object MessageStatuses : Table() {
             }
         }
         val updates = readUserIdList(Messages.readChatFromMessage(messageId))
-                .associate { MessagesAsset(it) to UpdatedMessage.build(it, messageId) as MessagesSubscription }
+                .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
         messagesNotifier.publish(updates)
     }
 

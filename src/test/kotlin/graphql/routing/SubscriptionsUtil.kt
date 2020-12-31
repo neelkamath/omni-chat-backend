@@ -2,7 +2,7 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.application.*
 import io.ktor.http.cio.websocket.*
@@ -23,7 +23,7 @@ fun executeGraphQlSubscriptionViaWebSocket(
         request: GraphQlRequest,
         accessToken: String? = null,
         callback: SubscriptionCallback
-): Unit = withTestApplication(Application::test) {
+): Unit = withTestApplication(Application::main) {
     handleWebSocketConversation(path) { incoming, outgoing ->
         if (accessToken != null) outgoing.send(Frame.Text(accessToken))
         launch(Dispatchers.IO) {

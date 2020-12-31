@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.AccountsAsset
 import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.safelySubscribe
@@ -34,7 +33,7 @@ class ContactsTest {
                 val (ownerId, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
                 Contacts.create(ownerId, setOf(user2Id, user3Id))
                 val subscriber =
-                        accountsNotifier.safelySubscribe(AccountsAsset(ownerId)).subscribeWith(TestSubscriber())
+                        accountsNotifier.safelySubscribe(ownerId).subscribeWith(TestSubscriber())
                 Contacts.create(ownerId, setOf(user3Id, user4Id))
                 awaitBrokering()
                 subscriber.assertValue(NewContact.build(user4Id))
@@ -62,7 +61,7 @@ class ContactsTest {
                 val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
                 Contacts.create(ownerId, setOf(contact1Id, contact2Id))
                 val subscriber =
-                        accountsNotifier.safelySubscribe(AccountsAsset(ownerId)).subscribeWith(TestSubscriber())
+                        accountsNotifier.safelySubscribe(ownerId).subscribeWith(TestSubscriber())
                 Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, -1))
                 awaitBrokering()
                 subscriber.assertValues(DeletedContact(contact1Id), DeletedContact(contact2Id))
@@ -77,7 +76,7 @@ class ContactsTest {
             val (ownerId, contactId, userId) = createVerifiedUsers(3).map { it.info.id }
             Contacts.create(ownerId, setOf(contactId))
             val (ownerSubscriber, contactSubscriber, userSubscriber) = listOf(ownerId, contactId, userId)
-                    .map { accountsNotifier.safelySubscribe(AccountsAsset(it)).subscribeWith(TestSubscriber()) }
+                    .map { accountsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
             Contacts.deleteUserEntries(contactId)
             awaitBrokering()
             ownerSubscriber.assertValue(DeletedContact(contactId))

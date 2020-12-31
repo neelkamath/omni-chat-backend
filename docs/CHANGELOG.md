@@ -1,15 +1,26 @@
 # Changelog
 
-The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number, and follows [semver](https://semver.org/). Backwards compatibility gets based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then the major version doesn't get bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number, and
+follows [semver](https://semver.org/). Major and minor versions get based off of the API (i.e., the GraphQL and REST
+APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't
+changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of
+the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+
+## v0.8.2
+
+### Server
+
+- Bug fixes:
+  - Fixed memory leaks.
 
 ## v0.8.1
 
 ### Server
 
 - Updated:
-    - Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
+  - Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
 - Bug fixes:
-    - The `docker-compose.yml` works.
+  - The `docker-compose.yml` works.
 
 ## v0.8.0
 

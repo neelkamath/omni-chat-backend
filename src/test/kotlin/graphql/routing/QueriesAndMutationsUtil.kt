@@ -2,7 +2,7 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.application.*
 import io.ktor.http.*
@@ -26,7 +26,7 @@ fun executeGraphQlViaHttp(
         query: String,
         variables: Map<String, Any?>? = null,
         accessToken: String? = null
-): TestApplicationResponse = withTestApplication(Application::test) {
+): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(HttpMethod.Post, "query-or-mutation") {
         accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }
         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())

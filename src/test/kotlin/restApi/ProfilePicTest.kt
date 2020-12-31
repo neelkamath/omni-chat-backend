@@ -4,7 +4,7 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.test
+import com.neelkamath.omniChat.main
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -14,7 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplication(Application::test) {
+private fun getProfilePic(userId: Int): TestApplicationResponse = withTestApplication(Application::main) {
     val parameters = listOf("user-id" to userId.toString()).formUrlEncode()
     handleRequest(HttpMethod.Get, "profile-pic?$parameters").response
 }

@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.db.TypingStatusesAsset
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
@@ -17,7 +16,7 @@ object TypingStatuses : Table() {
     /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier]. */
     fun set(chatId: Int, userId: Int, isTyping: Boolean) {
         if (exists(chatId, userId)) update(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
-        val subscribers = readUserIdList(chatId).minus(userId).map(::TypingStatusesAsset)
+        val subscribers = readUserIdList(chatId).minus(userId)
         typingStatusesNotifier.publish(TypingStatus(chatId, userId, isTyping), subscribers)
     }
 

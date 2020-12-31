@@ -203,8 +203,7 @@ object Messages : IntIdTable() {
             }.resultedValues!![0]
         }
         creator(row[id].value)
-        val subscribers = readUserIdList(chatId).map(::MessagesAsset)
-        messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, subscribers)
+        messagesNotifier.publish(NewMessage.build(row[id].value) as MessagesSubscription, readUserIdList(chatId))
     }
 
     /**
@@ -428,7 +427,7 @@ object Messages : IntIdTable() {
      */
     fun deleteChat(chatId: Int) {
         deleteChatMessages(readMessageIdList(chatId))
-        messagesNotifier.publish(DeletionOfEveryMessage(chatId), readUserIdList(chatId).map(::MessagesAsset))
+        messagesNotifier.publish(DeletionOfEveryMessage(chatId), readUserIdList(chatId))
     }
 
     /**
@@ -437,7 +436,7 @@ object Messages : IntIdTable() {
      */
     fun deleteChatUntil(chatId: Int, until: LocalDateTime) {
         deleteChatMessages(readMessageIdList(chatId, sent less until))
-        messagesNotifier.publish(MessageDeletionPoint(chatId, until), readUserIdList(chatId).map(::MessagesAsset))
+        messagesNotifier.publish(MessageDeletionPoint(chatId, until), readUserIdList(chatId))
     }
 
     /**
@@ -447,7 +446,7 @@ object Messages : IntIdTable() {
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
         deleteChatMessages(readMessageIdList(chatId, senderId eq userId))
-        messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), readUserIdList(chatId).map(::MessagesAsset))
+        messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), readUserIdList(chatId))
     }
 
     /**
@@ -459,8 +458,7 @@ object Messages : IntIdTable() {
         val chatMessages = readChatMessages(userId)
         deleteChatMessages(chatMessages.map { it.messageId })
         chatMessages.forEach { (chatId) ->
-            val subscribers = readUserIdList(chatId).map(::MessagesAsset)
-            messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), subscribers)
+            messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), readUserIdList(chatId))
         }
     }
 
@@ -471,7 +469,7 @@ object Messages : IntIdTable() {
     fun delete(id: Int) {
         val chatId = readChatFromMessage(id)
         deleteChatMessages(id)
-        messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId).map(::MessagesAsset))
+        messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId))
     }
 
     /**

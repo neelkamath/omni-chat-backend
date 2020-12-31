@@ -2,7 +2,6 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.OnlineStatusesAsset
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
 import com.neelkamath.omniChat.db.safelySubscribe
@@ -22,7 +21,7 @@ class UsersTest {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
                 val subscriber = onlineStatusesNotifier
-                        .safelySubscribe(OnlineStatusesAsset(contactOwnerId)).subscribeWith(TestSubscriber())
+                        .safelySubscribe(contactOwnerId).subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -37,7 +36,7 @@ class UsersTest {
                     PrivateChats.create(privateChatSharerId, updaterId)
                     val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                             listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
-                                onlineStatusesNotifier.safelySubscribe(OnlineStatusesAsset(it)).subscribeWith(TestSubscriber())
+                                onlineStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
                             }
                     val status = Users.read(updaterId).isOnline.not()
                     Users.setOnlineStatus(updaterId, status)
