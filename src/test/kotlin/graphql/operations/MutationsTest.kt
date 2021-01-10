@@ -1303,12 +1303,12 @@ class MutationsTest {
         }
 
         @Test
-        fun `The user's online status should be set to "true"`() {
+        fun `The user's online status should be set to true`() {
             assertOnlineStatus(true)
         }
 
         @Test
-        fun `The user's online status should be set to "false"`() {
+        fun `The user's online status should be set to false`() {
             assertOnlineStatus(false)
         }
     }
@@ -1323,12 +1323,12 @@ class MutationsTest {
         }
 
         @Test
-        fun `The user's typing status should be set to "true"`() {
+        fun `The user's typing status should be set to true`() {
             assertTypingStatus(isTyping = true)
         }
 
         @Test
-        fun `The user's typing status should be set to "false"`() {
+        fun `The user's typing status should be set to false`() {
             assertTypingStatus(isTyping = false)
         }
 

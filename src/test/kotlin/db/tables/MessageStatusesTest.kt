@@ -28,7 +28,7 @@ class MessageStatusesTest {
         }
 
         @Test
-        fun `Recording a "read" status shouldn't create a "delivered" status if one was already recorded`() {
+        fun `Recording a read status shouldn't create a delivered status if one was already recorded`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
@@ -38,7 +38,7 @@ class MessageStatusesTest {
         }
 
         @Test
-        fun `Recording a "read" status should automatically record a "delivered" status if there wasn't one`() {
+        fun `Recording a read status should automatically record a delivered status if there wasn't one`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)

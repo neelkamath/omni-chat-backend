@@ -74,31 +74,31 @@ class EncodingTest {
 @ExtendWith(DbExtension::class)
 class SpecComplianceTest {
     @Test
-    fun `The "data" key shouldn't be returned if there was no data to be received`() {
+    fun `The data key shouldn't be returned if there was no data to be received`() {
         val login = Login(Username("u"), Password("p"))
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("data" !in keys)
     }
 
     @Test
-    fun `The "errors" key shouldn't be returned if there were no errors`() {
+    fun `The errors key shouldn't be returned if there were no errors`() {
         val login = createVerifiedUsers(1)[0].login
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("errors" !in keys)
     }
 
     @Test
-    fun `null fields in the "data" key should be returned`() {
+    fun `null fields in the data key should be returned`() {
         val admin = createVerifiedUsers(1)[0]
         val chatId = GroupChats.create(listOf(admin.info.id))
         Messages.message(admin.info.id, chatId, MessageText("t"))
         val response = readGraphQlHttpResponse(
-                READ_CHAT_QUERY,
-                mapOf(
-                        "id" to chatId,
-                        "privateChat_messages_last" to null,
-                        "privateChat_messages_before" to null,
-                        "groupChat_users_first" to null,
+            READ_CHAT_QUERY,
+            mapOf(
+                "id" to chatId,
+                "privateChat_messages_last" to null,
+                "privateChat_messages_before" to null,
+                "groupChat_users_first" to null,
                         "groupChat_users_after" to null,
                         "groupChat_messages_last" to null,
                         "groupChat_messages_before" to null

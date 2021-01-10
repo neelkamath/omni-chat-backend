@@ -68,7 +68,7 @@ class TypingStatusesTest {
         }
 
         @Test
-        fun `"false" should be returned when reading a nonexistent status`() {
+        fun `false should be returned when reading a nonexistent status`() {
             assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
         }
     }
