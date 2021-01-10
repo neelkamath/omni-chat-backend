@@ -155,7 +155,7 @@ class PrivateChatsTest {
     @Nested
     inner class ReadChatId {
         @Test
-        fun `The chat's ID should be read if the "participant" is in the chat but the "user" isn't`() {
+        fun `The chat's ID should be read if the participant is in the chat but the user isn't`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, userId)
@@ -163,7 +163,7 @@ class PrivateChatsTest {
         }
 
         @Test
-        fun `Reading the ID of a chat the "participant" isn't in but the "user" is should fail`() {
+        fun `Reading the ID of a chat the participant isn't in but the user is should fail`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, participantId)

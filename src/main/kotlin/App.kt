@@ -38,6 +38,7 @@ fun Application.main() {
     subscribeToMessageBroker()
     install(CORS) {
         anyHost()
+        method(HttpMethod.Patch)
         header(HttpHeaders.Authorization)
         allowNonSimpleContentTypes = true
     }

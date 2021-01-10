@@ -175,7 +175,7 @@ class DbTest {
         }
 
         @Test
-        fun `The "limit" of users should be retrieved from the first user when there's no cursor`() {
+        fun `The specified number of users should be retrieved from the first user when there's no cursor`() {
             val edges = createAccountEdges(5)
             val first = 3
             assertEquals(edges.subList(0, first), AccountsConnection.build(edges, ForwardPagination(first)).edges)

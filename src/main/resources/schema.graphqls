@@ -181,7 +181,7 @@ type Mutation {
   When a user creates an account, or updates their email address, they'll receive an email with a `verificationCode`
   which must be passed to this operation in order to verify their email address. If the `verificationCode` is valid,
   the account's email address verification status will be set to verified, and `true` will be returned. Otherwise,
-  `false` will be returned.
+  `false` will be returned. Use `Mutation.emailEmailAddressVerification` if the user lost their verification code.
 
   Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"` (i.e., the `emailAddress` isn't associated
   with an account).
@@ -281,7 +281,8 @@ type Mutation {
   """
   Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
   verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether you can use
-  the requested `NewAccount.username` and `NewAccount.emailAddress` fields respectively.
+  the requested `AccountInput.username` and `AccountInput.emailAddress` fields respectively. Use
+  `Mutation.verifyEmailAddress` to verify the user's email address.
 
   Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
   this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
@@ -558,8 +559,7 @@ type Subscription {
 
   """
   Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
-  with. The subscription will be stopped if the user deletes their account. The subscription will be stopped if the
-  user deletes their account.
+  with. The subscription will be stopped if the user deletes their account.
 
   You must send an access token with this request.
   """

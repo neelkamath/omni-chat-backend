@@ -72,7 +72,7 @@ class GroupChatUsersTest {
     @Nested
     inner class CanUsersLeave {
         @Test
-        fun `Checking if users who aren't in the chat can leave should return "false"`() {
+        fun `Checking if users who aren't in the chat can leave should return false`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             assertFalse(GroupChatUsers.canUsersLeave(chatId, userId))
@@ -154,7 +154,7 @@ class GroupChatUsersTest {
         }
 
         @Test
-        fun `Users should be removed from the chat returning "false"`() {
+        fun `Users should be removed from the chat returning false`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             assertFalse(GroupChatUsers.removeUsers(chatId, userId))
@@ -178,7 +178,7 @@ class GroupChatUsersTest {
         }
 
         @Test
-        fun `Removing every user should delete the chat returning "true"`() {
+        fun `Removing every user should delete the chat returning true`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             assertTrue(GroupChatUsers.removeUsers(chatId, adminId, userId))

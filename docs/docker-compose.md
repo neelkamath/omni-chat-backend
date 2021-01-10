@@ -18,7 +18,7 @@ To shut down: `docker-compose down`
 
 ## Migrating
 
-Here's how to migrate from the previous version (v0.8.1) to this version (v0.8.2):
+Here's how to migrate from the previous version (v0.8.2) to this version (v0.8.3):
 
 1. Ensure the application isn't running: `docker-compose down`
-1. Delete the server files (e.g., `.env`, `docker-compose.yml`), and follow the **Installation** and **Usage** instructions again because the server setup may have changed.
+1. Re-download [`docker-compose.yml`](docker-compose.yml).
