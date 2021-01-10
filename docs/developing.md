@@ -44,7 +44,7 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        up -d
+        up --build -d
     ```
 1. To shut down:
     ```
@@ -112,7 +112,7 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 |`enum`|`enum class`|
 |`scalar`|A `data class`, `typealias`, predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
 
-## Testing
+## Writing Tests
 
 - These test cases must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
 - Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.

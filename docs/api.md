@@ -22,20 +22,29 @@ Here's the usual flow for using the API if you're building a bot:
   There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the
   REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
 - When the docs refer to CommonMark, they're referring to the [Markdown spec](https://commonmark.org/).
-- IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For example, if two messages get sent at the same nanosecond, order them by their ID.
-- If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
+- IDs (e.g., message IDs) are strictly increasing. Therefore, they must be used for ordering items (e.g., messages). For
+  example, if two messages get sent at the same nanosecond, order them by their ID.
+- If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read.
+  However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up
+  the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the
+  user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the
+  messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't
+  matter.
 
 ## Security
 
-[JWT](https://jwt.io/)s are used for auth. Access and refresh tokens expire in one hour and one week respectively. HTTP
-requests requiring auth (e.g., the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access token
-passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if they've
-failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (e.g.,
-the user isn't allowed to perform the requested action).
+[JWTs](https://jwt.io/) are used for auth. Access and refresh tokens expire in one hour and one week respectively.
+The `sub` and `exp` claims are present in each token's payload. The `sub` claim is the user's ID in a `string`.
+
+HTTP requests requiring auth (e.g., the `/query-or-mutation` endpoint for `Query.updateAccount`) must have the access
+token passed using the Bearer schema. The user is unauthorized when calling an operation requiring an access token if
+they've failed to provide one, provided an invalid one (e.g., an expired token), or lack the required permission level (
+e.g., the user isn't allowed to perform the requested action).
 
 ## GraphQL API
 
-GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
+GraphQL documents are in JSON. The query, variables, and operation name you send is a "GraphQL document". The data and
+errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
 
 |Key|Explanation|Optional|
 |:---:|---|:---:|
