@@ -4,7 +4,7 @@ scalar DateTime
 """A cursor for pagination."""
 scalar Cursor
 
-"""A username must contain whitespace, must be lowercase, and must be 1-30 characters long."""
+"""A username must not contain whitespace, must be lowercase, and must be 1-30 characters long."""
 scalar Username
 
 """A name must neither contain whitespace nor exceed 30 characters."""
@@ -558,7 +558,7 @@ type Subscription {
   subscribeToTypingStatuses: TypingStatusesSubscription!
 
   """
-  Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscruber has a chat
+  Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscriber has a chat
   with. The subscription will be stopped if the user deletes their account.
 
   You must send an access token with this request.

@@ -7,8 +7,8 @@ This is the recommended method to run the server in the cloud. For example, you 
 1. Set up [PostgreSQL 12.4](https://www.postgresql.org/) (e.g., GCP [Cloud SQL](https://cloud.google.com/sql/docs/postgres/)).
 1. Set up [Redis 6.0.8](https://redis.io) (e.g., GCP [Memorystore](https://cloud.google.com/memorystore/)). Since we only use the message brokering feature, you needn't persist data to the disk.
 1. Set up the server:
-    1. Run the `neelkamath/omni-chat:0.8.1` Docker image.
-    1. Set the [environment variables](env.md).
+   1. Run the `neelkamath/omni-chat:0.8.3` Docker image.
+   1. Set the [environment variables](env.md).
     1. Connect to PostgreSQL and Redis.
 
 ### Migrating

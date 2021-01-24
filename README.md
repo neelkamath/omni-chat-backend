@@ -4,7 +4,8 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-This repo is for the backend API. There's no frontend UI yet. Here are the features implemented so far:
+This repo is for the backend API. Here's a [web app](https://github.com/neelkamath/omni-chat-web) which utilizes the
+API. Here are the features implemented so far:
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that you
   have to constantly update, and no one takes seriously.

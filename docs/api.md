@@ -16,8 +16,9 @@ Here's the usual flow for using the API if you're building a bot:
 
 ## Notes
 
-- If you're running Omni Chat locally, the base URL is http://localhost. Otherwise, it's the URL the server admin is
-  running it on (e.g., `https://example.com`).
+- If Omni Chat is running using [Docker Compose](docker-compose.md), the base URL is http://localhost by default. If
+  Omni Chat is being run [in the cloud](cloud.md), the base URL is whatever the server admin is running it on (
+  e.g., `https://example.com`).
 - The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols.
   There's also a REST API for tasks which aren't well suited for GraphQL, such as uploading images. You can view the
   REST API docs by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
@@ -47,7 +48,7 @@ GraphQL documents are in JSON. The query, variables, and operation name you send
 errors the server responds with is a "GraphQL document". Use the following format when sending GraphQL documents.
 
 |Key|Explanation|Optional|
-|:---:|---|:---:|
+|---|---|---|
 |`"query"`|GraphQL query to execute.|No|
 |`"variables"`|The runtime values to use for any GraphQL query variables as a JSON object.|Yes|
 |`"operationName"`|If the provided query contains multiple named operations, this specifies which operation should be executed. If this isn't provided, and the query contains multiple named operations, an error will be returned. For `Query`s and `Mutation`s, an HTTP status code of 400 will be returned. For `Subscription`s, a status code of 1008 will be returned, and the connection will be closed.|Yes|
@@ -122,9 +123,16 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of one minute, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
-It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans, it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
+It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it
+takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans,
+it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if
+you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create
+a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost
+during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the
+WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
 
-The server only accepts the first two events you send it (i.e., the GraphQL document you send when you first open the connection). Any further events you send to the server will be ignored.
+The server only accepts the first two events you send it (i.e., the GraphQL document you send when you first open the
+connection, and an access token). Any further events you send to the server will be ignored.
 
 Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
 
@@ -152,7 +160,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
     ```json
     {
       "data": {
-        "subscribeToMessageUpdates": {
+        "subscribeToMessages": {
           "chatId": 3,
           "message": "Hi!"
         }
