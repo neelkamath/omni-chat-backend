@@ -21,25 +21,28 @@ private fun postPicMessage(
     filename: String,
     fileContent: ByteArray,
     chatId: Int,
-    caption: String? = null,
     contextMessageId: Int? = null,
-): TestApplicationResponse {
-    val parameters = listOf(
-        "chat-id" to chatId.toString(),
-        "context-message-id" to contextMessageId?.toString(),
-        "caption" to caption,
-    ).filter { it.second != null }.formUrlEncode()
-    return uploadFile(accessToken, filename, fileContent, HttpMethod.Post, "pic-message", parameters)
-}
+    caption: String? = null,
+): TestApplicationResponse = uploadMultipart(
+    accessToken,
+    HttpMethod.Post,
+    "pic-message",
+    listOfNotNull(
+        buildFileItem(filename, fileContent),
+        buildFormItem("chat-id", chatId.toString()),
+        buildFormItem("context-message-id", contextMessageId.toString()).takeIf { contextMessageId != null },
+        buildFormItem("caption", caption.toString()).takeIf { caption != null },
+    ),
+)
 
 private fun postPicMessage(
     accessToken: String,
     pic: Pic,
     chatId: Int,
-    caption: String? = null,
     contextMessageId: Int? = null,
+    caption: String? = null,
 ): TestApplicationResponse =
-    postPicMessage(accessToken, "img.${pic.type}", pic.original, chatId, caption, contextMessageId)
+    postPicMessage(accessToken, "pic.${pic.type}", pic.original, chatId, contextMessageId, caption)
 
 @ExtendWith(DbExtension::class)
 class PicMessageTest {
@@ -51,10 +54,9 @@ class PicMessageTest {
             val chatId = GroupChats.create(listOf(admin.info.id))
             val pic = readPic("76px×57px.jpg")
             val messageId = Messages.message(admin.info.id, chatId, CaptionedPic(pic, caption = null))
-            with(getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)) {
-                assertEquals(HttpStatusCode.OK, status())
-                assertTrue(pic.original.contentEquals(byteContent!!))
-            }
+            val response = getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(pic.original.contentEquals(response.byteContent!!))
         }
 
         @Test
@@ -97,8 +99,8 @@ class PicMessageTest {
                 admin.accessToken,
                 readPic("76px×57px.jpg"),
                 chatId,
-                "caption",
                 contextMessageId = messageId,
+                "caption",
             )
             assertEquals(HttpStatusCode.NoContent, response.status())
             assertEquals(messageId, Messages.readGroupChat(chatId, userId = admin.info.id).last().node.context.id)
@@ -108,47 +110,45 @@ class PicMessageTest {
         @Test
         fun `Messaging in a nonexistent chat must fail`() {
             val token = createVerifiedUsers(1)[0].accessToken
-            with(postPicMessage(token, readPic("76px×57px.jpg"), chatId = 1)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT), body)
-            }
+            val response = postPicMessage(token, readPic("76px×57px.jpg"), chatId = 1)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!)
+            assertEquals(InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT), body)
         }
 
         @Test
         fun `Using an invalid message context must fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(postPicMessage(admin.accessToken, readPic("76px×57px.jpg"), chatId, contextMessageId = 1)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE), body)
-            }
+            val response = postPicMessage(admin.accessToken, readPic("76px×57px.jpg"), chatId, contextMessageId = 1)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!)
+            assertEquals(InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE), body)
         }
 
-        private fun testBadRequest(filename: String, fileContent: ByteArray) {
+        private fun testBadRequest(filename: String) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(postPicMessage(admin.accessToken, filename, fileContent, chatId)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE), body)
-            }
+            val response = postPicMessage(admin.accessToken, filename, readBytes(filename), chatId)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!)
+            assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE), body)
         }
 
         @Test
-        fun `Uploading an invalid file type must fail`(): Unit =
-            "76px×57px.webp".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an invalid file type must fail`(): Unit = testBadRequest("76px×57px.webp")
 
         @Test
-        fun `Uploading an excessively large file must fail`(): Unit =
-            "5.6MB.jpg".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an excessively large file must fail`(): Unit = testBadRequest("5.6MB.jpg")
 
         @Test
         fun `Using an invalid caption must fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            postPicMessage(admin.accessToken, readPic("76px×57px.jpg"), chatId, caption = "")
+            val response = postPicMessage(admin.accessToken, readPic("76px×57px.jpg"), chatId, caption = "")
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!)
+            assertEquals(InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CAPTION), body)
         }
 
         @Test

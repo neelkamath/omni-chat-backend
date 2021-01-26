@@ -1,6 +1,5 @@
 package com.neelkamath.omniChat.restApi
 
-import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.main
 import io.ktor.application.*
 import io.ktor.http.*
@@ -27,12 +26,11 @@ fun getFileMessage(
     }.response
 }
 
-fun uploadFile(
+fun uploadMultipart(
     accessToken: String,
-    filename: String,
-    fileContent: ByteArray,
     method: HttpMethod,
     path: String,
+    parts: List<PartData>,
     parameters: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
@@ -42,32 +40,40 @@ fun uploadFile(
             HttpHeaders.ContentType,
             ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString(),
         )
-        setBody(
-            boundary,
-            listOf(
-                PartData.FileItem(
-                    { fileContent.inputStream().asInput() },
-                    {},
-                    headersOf(
-                        HttpHeaders.ContentDisposition,
-                        ContentDisposition.File
-                            .withParameter(ContentDisposition.Parameters.Name, "file")
-                            .withParameter(ContentDisposition.Parameters.FileName, filename)
-                            .toString(),
-                    ),
-                ),
-            ),
-        )
+        setBody(boundary, parts)
     }.response
 }
 
+fun buildFileItem(filename: String, fileContent: ByteArray): PartData.FileItem = PartData.FileItem(
+    { fileContent.inputStream().asInput() },
+    {},
+    headersOf(
+        HttpHeaders.ContentDisposition,
+        ContentDisposition.File
+            .withParameter(ContentDisposition.Parameters.Name, "file")
+            .withParameter(ContentDisposition.Parameters.FileName, filename)
+            .toString(),
+    ),
+)
+
+fun buildFormItem(name: String, value: String): PartData.FormItem = PartData.FormItem(
+    value,
+    {},
+    headersOf(
+        HttpHeaders.ContentDisposition,
+        ContentDisposition.Inline.withParameter(ContentDisposition.Parameters.Name, name).toString(),
+    ),
+)
+
 fun uploadFile(
     accessToken: String,
-    pic: Pic,
+    filename: String,
+    fileContent: ByteArray,
     method: HttpMethod,
     path: String,
     parameters: String? = null,
-): TestApplicationResponse = uploadFile(accessToken, "img.${pic.type}", pic.original, method, path, parameters)
+): TestApplicationResponse =
+    uploadMultipart(accessToken, method, path, listOf(buildFileItem(filename, fileContent)), parameters)
 
 fun uploadFile(
     accessToken: String,

@@ -22,7 +22,7 @@ private fun patchProfilePic(accessToken: String, filename: String, fileContent: 
     uploadFile(accessToken, filename, fileContent, HttpMethod.Patch, "profile-pic")
 
 private fun patchProfilePic(accessToken: String, pic: Pic): TestApplicationResponse =
-    patchProfilePic(accessToken, "img.${pic.type}", pic.original)
+    patchProfilePic(accessToken, "pic.${pic.type}", pic.original)
 
 @ExtendWith(DbExtension::class)
 class ProfilePicTest {
@@ -33,10 +33,9 @@ class ProfilePicTest {
             val userId = createVerifiedUsers(1)[0].info.id
             val pic = readPic("76px×57px.jpg")
             Users.updatePic(userId, pic)
-            with(getProfilePic(userId, PicType.ORIGINAL)) {
-                assertEquals(HttpStatusCode.OK, status())
-                assertTrue(pic.original.contentEquals(byteContent!!))
-            }
+            val response = getProfilePic(userId, PicType.ORIGINAL)
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(pic.original.contentEquals(response.byteContent!!))
         }
 
         @Test
@@ -77,17 +76,16 @@ class ProfilePicTest {
             assertEquals(pic, Users.read(user.info.id).pic)
         }
 
-        private fun testBadRequest(filename: String, fileContent: ByteArray) {
+        private fun testBadRequest(filename: String) {
             val token = createVerifiedUsers(1)[0].accessToken
-            assertEquals(HttpStatusCode.BadRequest, patchProfilePic(token, filename, fileContent).status())
+            val response = patchProfilePic(token, filename, readBytes(filename))
+            assertEquals(HttpStatusCode.BadRequest, response.status())
         }
 
         @Test
-        fun `Uploading an invalid file type must fail`(): Unit =
-            "76px×57px.webp".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an invalid file type must fail`(): Unit = testBadRequest("76px×57px.webp")
 
         @Test
-        fun `Uploading an excessively large file must fail`(): Unit =
-            "5.6MB.jpg".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an excessively large file must fail`(): Unit = testBadRequest("5.6MB.jpg")
     }
 }

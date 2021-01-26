@@ -10,6 +10,7 @@ import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
+
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*

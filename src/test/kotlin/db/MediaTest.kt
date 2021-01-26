@@ -56,10 +56,10 @@ class PicTest {
         fun `Passing an unsupported extension mustn't work`(): Unit = testUnsupportedPic("webp")
 
         @Test
-        fun `Passing a supported filename must work`(): Unit = testSupportedPic("img.jpg")
+        fun `Passing a supported filename must work`(): Unit = testSupportedPic("pic.jpg")
 
         @Test
-        fun `Passing an unsupported filename mustn't work`(): Unit = testUnsupportedPic("img.gif")
+        fun `Passing an unsupported filename mustn't work`(): Unit = testUnsupportedPic("pic.gif")
     }
 }
 

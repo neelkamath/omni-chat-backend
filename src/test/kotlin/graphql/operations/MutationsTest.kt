@@ -12,6 +12,7 @@ import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
 import com.neelkamath.omniChat.testingObjectMapper
+
 import io.ktor.http.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -781,10 +782,9 @@ class MutationsTest {
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
             val message = ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
             createActionMessage(adminId, chatId, message, contextMessageId)
-            with(Messages.readGroupChatConnection(chatId).edges.last().node) {
-                assertEquals(context.id, contextMessageId)
-                assertEquals(message.toActionableMessage(), ActionMessages.read(messageId))
-            }
+            val node = Messages.readGroupChatConnection(chatId).edges.last().node
+            assertEquals(node.context.id, contextMessageId)
+            assertEquals(message.toActionableMessage(), ActionMessages.read(node.messageId))
         }
 
         @Test
@@ -851,10 +851,9 @@ class MutationsTest {
             val messageId = Messages.message(adminId, chat1Id)
             val contextMessageId = Messages.message(adminId, chat2Id)
             forwardMessage(adminId, chat2Id, messageId, contextMessageId)
-            with(Messages.readGroupChat(chat2Id).last().node) {
-                assertEquals(contextMessageId, context.id)
-                assertTrue(isForwarded)
-            }
+            val node = Messages.readGroupChat(chat2Id).last().node
+            assertEquals(contextMessageId, node.context.id)
+            assertTrue(node.isForwarded)
         }
 
         @Test
@@ -1449,11 +1448,10 @@ class MutationsTest {
                 .data!!["createGroupChat"] as Int
             val chats = GroupChats.readUserChats(adminId)
             assertEquals(1, chats.size)
-            with(chats[0]) {
-                assertEquals(chatId, id)
-                assertEquals(setOf(adminId, user1Id, user2Id), users.edges.map { it.node.id }.toSet())
-                assertEquals(listOf(adminId), adminIdList)
-            }
+            assertEquals(chatId, chats[0].id)
+            val participants = chats[0].users.edges.map { it.node.id }.toSet()
+            assertEquals(setOf(adminId, user1Id, user2Id), participants)
+            assertEquals(listOf(adminId), chats[0].adminIdList)
         }
 
         @Test

@@ -55,12 +55,8 @@ paths:
       operationId: postPicMessage
       security:
         - bearerAuth: [ ]
-      parameters:
-        - $ref: '#/components/parameters/ChatId'
-        - $ref: '#/components/parameters/ContextMessageId'
-        - $ref: '#/components/parameters/Caption'
       requestBody:
-        $ref: '#/components/requestBodies/Pic'
+        $ref: '#/components/requestBodies/CaptionedPic'
       responses:
         '204':
           description: Message created.
@@ -359,6 +355,31 @@ components:
                 description: A document not exceeding 5 MiB.
                 type: string
                 format: binary
+    CaptionedPic:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [ pic, chat-id ]
+            properties:
+              pic:
+                description: A PNG or JPEG image not exceeding 5 MiB.
+                type: string
+                format: binary
+              chat-id:
+                type: integer
+                description: Chat to message in.
+              context-message-id:
+                description: The user might want to give their message a context, such as when replying to a message
+                  sent several messages ago. In this case, this is the ID of the message being replied to.
+                type: integer
+              caption:
+                type: string
+                description: The pic's caption. 1-10,000 characters, of which at least one isn't whitespace. Uses
+                  CommonMark.
+          encoding:
+            pic:
+              contentType: image/png, image/jpeg
     Pic:
       content:
         multipart/form-data:
@@ -410,9 +431,3 @@ components:
         messages ago. In this case, this is the ID of the message being replied to.
       schema:
         type: integer
-    Caption:
-      name: caption
-      in: query
-      description: The pic's caption. 1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark.
-      schema:
-        type: string

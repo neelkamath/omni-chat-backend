@@ -68,7 +68,7 @@ class EncodingTest {
  * data the client receives to be non-compliant with the spec:
  * 1. The GraphQL library returns `null` values for the `"data"` and `"errors"` keys. The spec mandates that these keys
  * keys either be non-`null` or not be returned at all.
- * 1. Data is serialized as JSON using the [objectMapper]. The [objectMapper] which may remove `null` fields if
+ * 1. Data is serialized as JSON using the [testingObjectMapper]. The [testingObjectMapper] which may remove `null` fields if
  * incorrectly configured. The spec mandates that requested fields be returned even if they're `null`.
  */
 @ExtendWith(DbExtension::class)
@@ -105,11 +105,11 @@ class SpecComplianceTest {
             ),
             admin.accessToken
         )["data"] as Map<*, *>
-        val data = objectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
-        val messages = objectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)
-        val edge = objectMapper.convertValue<List<Map<String, Any?>>>(messages.getValue("edges")!!)[0]
-        val node = objectMapper.convertValue<Map<String, Any?>>(edge.getValue("node")!!)
-        val context = objectMapper.convertValue<Map<String, Any?>>(node.getValue("context")!!)
+        val data = testingObjectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
+        val messages = testingObjectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)
+        val edge = testingObjectMapper.convertValue<List<Map<String, Any?>>>(messages.getValue("edges")!!)[0]
+        val node = testingObjectMapper.convertValue<Map<String, Any?>>(edge.getValue("node")!!)
+        val context = testingObjectMapper.convertValue<Map<String, Any?>>(node.getValue("context")!!)
         assertTrue(null in context.values)
     }
 }

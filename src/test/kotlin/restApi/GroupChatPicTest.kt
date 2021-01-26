@@ -31,7 +31,7 @@ private fun patchGroupChatPic(
 }
 
 private fun patchGroupChatPic(accessToken: String, pic: Pic, chatId: Int): TestApplicationResponse =
-    patchGroupChatPic(accessToken, "img.${pic.type}", pic.original, chatId)
+    patchGroupChatPic(accessToken, "pic.${pic.type}", pic.original, chatId)
 
 @ExtendWith(DbExtension::class)
 class GroupChatPicTest {
@@ -46,20 +46,18 @@ class GroupChatPicTest {
             assertEquals(pic, GroupChats.readPic(chatId))
         }
 
-        private fun testBadRequest(filename: String, fileContent: ByteArray) {
+        private fun testBadRequest(filename: String) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            val response = patchGroupChatPic(admin.accessToken, filename, fileContent, chatId)
+            val response = patchGroupChatPic(admin.accessToken, filename, readBytes(filename), chatId)
             assertEquals(HttpStatusCode.BadRequest, response.status())
         }
 
         @Test
-        fun `Uploading an invalid file type must fail`(): Unit =
-            "76px×57px.webp".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an invalid file type must fail`(): Unit = testBadRequest("76px×57px.webp")
 
         @Test
-        fun `Uploading an excessively large file must fail`(): Unit =
-            "5.6MB.jpg".let { testBadRequest(it, readBytes(it)) }
+        fun `Uploading an excessively large file must fail`(): Unit = testBadRequest("5.6MB.jpg")
 
         @Test
         fun `An HTTP status code of 401 must be received when a non-admin updates the pic`() {
@@ -81,10 +79,9 @@ class GroupChatPicTest {
             val chatId = GroupChats.create(listOf(adminId))
             val pic = readPic("76px×57px.jpg")
             GroupChats.updatePic(chatId, pic)
-            with(getGroupChatPic(chatId, PicType.ORIGINAL)) {
-                assertEquals(HttpStatusCode.OK, status())
-                assertTrue(pic.original.contentEquals(byteContent!!))
-            }
+            val response = getGroupChatPic(chatId, PicType.ORIGINAL)
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(pic.original.contentEquals(response.byteContent))
         }
 
         @Test

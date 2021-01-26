@@ -548,10 +548,9 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = if (hasMessage) Messages.message(adminId, chatId) else null
-            with(Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo) {
-                assertEquals(messageId, startCursor)
-                assertEquals(messageId, endCursor)
-            }
+            val pageInfo = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
+            assertEquals(messageId, pageInfo.startCursor)
+            assertEquals(messageId, pageInfo.endCursor)
         }
 
         @Test
@@ -569,10 +568,9 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
-            with(Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo) {
-                assertEquals(messageIdList.first(), startCursor)
-                assertEquals(messageIdList.last(), endCursor)
-            }
+            val pageInfo = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
+            assertEquals(messageIdList.first(), pageInfo.startCursor)
+            assertEquals(messageIdList.last(), pageInfo.endCursor)
         }
     }
 }
