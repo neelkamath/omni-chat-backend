@@ -28,7 +28,7 @@ class SubscriptionsTest {
 
     @Nested
     inner class RouteSubscription {
-        private fun testOperationName(shouldSupplyOperationName: Boolean) {
+        private fun testOperationName(mustSupplyOperationName: Boolean) {
             val query = """
                 $subscribeToMessagesQuery
                 
@@ -38,37 +38,37 @@ class SubscriptionsTest {
                     }
                 }
             """
-            val operationName = "SubscribeToAccounts".takeIf { shouldSupplyOperationName }
+            val operationName = "SubscribeToAccounts".takeIf { mustSupplyOperationName }
             val token = createVerifiedUsers(1)[0].accessToken
             executeGraphQlSubscriptionViaWebSocket(
-                    path = "accounts-subscription",
-                    GraphQlRequest(query, operationName = operationName),
-                    token
+                path = "accounts-subscription",
+                GraphQlRequest(query, operationName = operationName),
+                token
             ) { incoming ->
-                if (shouldSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
+                if (mustSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
                 else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
             }
         }
 
         @Test
-        fun `The specified operation should be executed when there are multiple`() {
-            testOperationName(shouldSupplyOperationName = true)
+        fun `The specified operation must be executed when there are multiple`() {
+            testOperationName(mustSupplyOperationName = true)
         }
 
         @Test
-        fun `An error should be returned when supplying multiple operations but not which to execute`() {
-            testOperationName(shouldSupplyOperationName = false)
+        fun `An error must be returned when supplying multiple operations but not which to execute`() {
+            testOperationName(mustSupplyOperationName = false)
         }
 
         @Test
-        fun `A token from an account with an unverified email address shouldn't work`() {
+        fun `A token from an account with an unverified email address mustn't work`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val token = buildTokenSet(userId).accessToken
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             executeGraphQlSubscriptionViaWebSocket(
-                    path = "messages-subscription",
-                    GraphQlRequest(subscribeToMessagesQuery),
-                    token
+                path = "messages-subscription",
+                GraphQlRequest(subscribeToMessagesQuery),
+                token
             ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
@@ -82,17 +82,17 @@ class SubscriptionsTest {
             }
         """
         executeGraphQlSubscriptionViaWebSocket(
-                path = "accounts-subscription",
-                request = GraphQlRequest(subscribeToAccountsQuery),
-                accessToken = accessToken,
-                callback = callback
+            path = "accounts-subscription",
+            request = GraphQlRequest(subscribeToAccountsQuery),
+            accessToken = accessToken,
+            callback = callback
         )
     }
 
     @Nested
     inner class Subscribe {
         @Test
-        fun `Recreating a subscription shouldn't cause duplicate notifications from the previous connection`() {
+        fun `Recreating a subscription mustn't cause duplicate notifications from the previous connection`() {
             val (owner, user) = createVerifiedUsers(2)
             subscribeToAccounts(owner.accessToken) {}
             subscribeToAccounts(owner.accessToken) { incoming ->
@@ -108,7 +108,7 @@ class SubscriptionsTest {
     @Nested
     inner class CloseWithError {
         @Test
-        fun `The connection should be closed when calling an operation with an invalid token`() {
+        fun `The connection must be closed when calling an operation with an invalid token`() {
             subscribeToAccounts { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }

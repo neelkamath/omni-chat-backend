@@ -7,24 +7,24 @@ import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
-        .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
-        .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
-        .type("GroupChatsSubscription") { wireType(it, ::readGroupChatsSubscription) }
-        .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
-        .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
-        .type("Chat") { wireType(it, ::readChat) }
-        .type("AccountData") { wireType(it, ::readAccountData) }
-        .type("BareMessage") { wireType(it, ::readBareMessage) }
-        .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
-        .type("Message") { wireType(it, ::readMessage) }
-        .type("BareChatMessage") { wireType(it, ::readBareChatMessage) }
-        .type("StarredMessage") { wireType(it, ::readStarredMessage) }
-        .type("NewMessage") { wireType(it, ::readNewMessage) }
-        .type("UpdatedMessage") { wireType(it, ::readUpdatedMessage) }
+    .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
+    .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
+    .type("GroupChatsSubscription") { wireType(it, ::readGroupChatsSubscription) }
+    .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
+    .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
+    .type("Chat") { wireType(it, ::readChat) }
+    .type("AccountData") { wireType(it, ::readAccountData) }
+    .type("BareMessage") { wireType(it, ::readBareMessage) }
+    .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
+    .type("Message") { wireType(it, ::readMessage) }
+    .type("BareChatMessage") { wireType(it, ::readBareChatMessage) }
+    .type("StarredMessage") { wireType(it, ::readStarredMessage) }
+    .type("NewMessage") { wireType(it, ::readNewMessage) }
+    .type("UpdatedMessage") { wireType(it, ::readUpdatedMessage) }
 
 private inline fun wireType(
-        builder: TypeRuntimeWiring.Builder,
-        crossinline reader: (Any) -> String
+    builder: TypeRuntimeWiring.Builder,
+    crossinline reader: (Any) -> String
 ): TypeRuntimeWiring.Builder = builder.typeResolver {
     val type = reader(it.getObject())
     it.schema.getObjectType(type)

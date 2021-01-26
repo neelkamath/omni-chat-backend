@@ -15,8 +15,17 @@ import io.ktor.routing.*
 fun routePicMessage(routing: Routing): Unit = with(routing) {
     authenticate {
         route("pic-message") {
-            getMediaMessage(this) { messageId -> PicMessages.read(messageId).pic.bytes }
+            getPicMessage(this)
             postPicMessage(this)
+        }
+    }
+}
+
+private fun getPicMessage(route: Route): Unit = with(route) {
+    getMediaMessage(this) { messageId, picType ->
+        when (picType!!) {
+            PicType.ORIGINAL -> PicMessages.read(messageId).pic.original
+            PicType.THUMBNAIL -> PicMessages.read(messageId).pic.thumbnail
         }
     }
 }
@@ -34,18 +43,18 @@ private fun postPicMessage(route: Route): Unit = with(route) {
         val pic = readMultipartPic()
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT)
+                HttpStatusCode.BadRequest,
+                InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT)
             )
 
             pic == null -> call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE)
+                HttpStatusCode.BadRequest,
+                InvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE)
             )
 
             contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                HttpStatusCode.BadRequest,
+                InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE)
             )
 
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)

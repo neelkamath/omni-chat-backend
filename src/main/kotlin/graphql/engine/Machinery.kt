@@ -29,7 +29,7 @@ val graphQl: GraphQL = run {
  * classes, etc.
  */
 inline fun <reified T> DataFetchingEnvironment.parseArgument(arg: String): T =
-        objectMapper.convertValue(getArgument(arg))
+    objectMapper.convertValue(getArgument(arg))
 
 /**
  * Throws an [UnauthorizedException] if the user isn't authenticated.
@@ -44,10 +44,10 @@ fun DataFetchingEnvironment.verifyAuth() {
 
 /** The [userId] will be saved as the [ExecutionInput.Builder.context]. */
 fun buildExecutionInput(request: GraphQlRequest, userId: Int?): ExecutionInput.Builder = ExecutionInput.Builder()
-        .query(request.query)
-        .variables(request.variables ?: mapOf())
-        .operationName(request.operationName)
-        .context(userId)
+    .query(request.query)
+    .variables(request.variables ?: mapOf())
+    .operationName(request.operationName)
+    .context(userId)
 
 /**
  * Returns the [ExecutionResult.toSpecification] after masking errors, dealing with `null` `"data"`, and dealing with
@@ -56,8 +56,8 @@ fun buildExecutionInput(request: GraphQlRequest, userId: Int?): ExecutionInput.B
  * An [UnauthorizedException] will be thrown if an [UnauthorizedException] is present.
  */
 fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpecification()
-        .mapValues { if (it.key == "errors") result.errors.map(::maskError) else it.value }
-        .filterNot { (it.key == "data" && it.value == null) || (it.key == "errors" && (it.value as List<*>).isEmpty()) }
+    .mapValues { if (it.key == "errors") result.errors.map(::maskError) else it.value }
+    .filterNot { (it.key == "data" && it.value == null) || (it.key == "errors" && (it.value as List<*>).isEmpty()) }
 
 /**
  * Masks the [error], and returns its [GraphQLError.toSpecification].

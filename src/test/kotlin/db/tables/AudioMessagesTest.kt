@@ -9,7 +9,7 @@ class AudioTest {
     @Nested
     inner class Init {
         @Test
-        fun `An excessively large audio file should cause an exception to be thrown`() {
+        fun `An excessively large audio file must cause an exception to be thrown`() {
             assertFailsWith<IllegalArgumentException> { Audio(ByteArray(Audio.MAX_BYTES + 1), Audio.Type.MP3) }
         }
     }

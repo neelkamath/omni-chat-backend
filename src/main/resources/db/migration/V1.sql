@@ -1,4 +1,5 @@
-CREATE EXTENSION pgcrypto;
+CREATE
+EXTENSION pgcrypto;
 CREATE TYPE message_status AS ENUM ('delivered', 'read');
 CREATE TYPE pic_type AS ENUM ('png', 'jpeg');
 CREATE TYPE audio_type AS ENUM ('mp3', 'mp4');
@@ -10,9 +11,10 @@ CREATE TABLE chats
 );
 CREATE TABLE pics
 (
-    id   SERIAL PRIMARY KEY,
-    pic  BYTEA    NOT NULL,
-    type pic_type NOT NULL
+    id        SERIAL PRIMARY KEY,
+    original  BYTEA    NOT NULL,
+    thumbnail BYTEA    NOT NULL,
+    type      pic_type NOT NULL
 );
 CREATE TABLE users
 (
@@ -59,7 +61,8 @@ CREATE TABLE text_messages
 CREATE TABLE pic_messages
 (
     message_id INTEGER  NOT NULL UNIQUE REFERENCES messages (id),
-    pic        BYTEA    NOT NULL,
+    original   BYTEA    NOT NULL,
+    thumbnail  BYTEA    NOT NULL,
     type       pic_type NOT NULL,
     caption    VARCHAR(10000)
 );

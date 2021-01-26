@@ -18,23 +18,23 @@ import kotlin.test.assertTrue
 @Suppress("ClassName")
 class Application_MainTest {
     @Test
-    fun `An access token should work for queries and mutations`() {
+    fun `An access token must work for queries and mutations`() {
         val userId = createVerifiedUsers(1)[0].info.id
         val token = buildTokenSet(userId).accessToken
         assertNotEquals(
-                HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )
     }
 
     @Test
-    fun `A token from an account with an unverified email address shouldn't work for queries and mutation`() {
+    fun `A token from an account with an unverified email address mustn't work for queries and mutation`() {
         val userId = createVerifiedUsers(1)[0].info.id
         val token = buildTokenSet(userId).accessToken
         Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
         assertEquals(
-                HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+            HttpStatusCode.Unauthorized,
+            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
         )
     }
 }
@@ -49,14 +49,14 @@ class Application_MainTest {
 @ExtendWith(DbExtension::class)
 class EncodingTest {
     @Test
-    fun `A message should allow using emoji and multiple languages`() {
+    fun `A message must allow using emoji and multiple languages`() {
         val adminId = createVerifiedUsers(1)[0].info.id
         val chatId = GroupChats.create(listOf(adminId))
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createTextMessage(adminId, chatId, message)
         assertEquals(
-                message,
-                Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read)
+            message,
+            Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read)
         )
     }
 }
@@ -74,21 +74,21 @@ class EncodingTest {
 @ExtendWith(DbExtension::class)
 class SpecComplianceTest {
     @Test
-    fun `The data key shouldn't be returned if there was no data to be received`() {
+    fun `The data key mustn't be returned if there was no data to be received`() {
         val login = Login(Username("u"), Password("p"))
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("data" !in keys)
     }
 
     @Test
-    fun `The errors key shouldn't be returned if there were no errors`() {
+    fun `The errors key mustn't be returned if there were no errors`() {
         val login = createVerifiedUsers(1)[0].login
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("errors" !in keys)
     }
 
     @Test
-    fun `null fields in the data key should be returned`() {
+    fun `null fields in the data key must be returned`() {
         val admin = createVerifiedUsers(1)[0]
         val chatId = GroupChats.create(listOf(admin.info.id))
         Messages.message(admin.info.id, chatId, MessageText("t"))
@@ -99,11 +99,11 @@ class SpecComplianceTest {
                 "privateChat_messages_last" to null,
                 "privateChat_messages_before" to null,
                 "groupChat_users_first" to null,
-                        "groupChat_users_after" to null,
-                        "groupChat_messages_last" to null,
-                        "groupChat_messages_before" to null
-                ),
-                admin.accessToken
+                "groupChat_users_after" to null,
+                "groupChat_messages_last" to null,
+                "groupChat_messages_before" to null
+            ),
+            admin.accessToken
         )["data"] as Map<*, *>
         val data = objectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
         val messages = objectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)

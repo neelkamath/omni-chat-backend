@@ -22,14 +22,14 @@ class ActionMessagesTest {
     @Nested
     inner class HasAction {
         @Test
-        fun `Only the existent action should be said to exist`() {
+        fun `Only the existent action must be said to exist`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val action = MessageText("Yes")
             val messageId = Messages.message(
-                    adminId,
-                    chatId,
-                    ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                adminId,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
             assertTrue(ActionMessages.hasAction(messageId, action))
             assertFalse(ActionMessages.hasAction(messageId, MessageText("nonexistent action")))
@@ -39,17 +39,17 @@ class ActionMessagesTest {
     @Nested
     inner class Trigger {
         @Test
-        fun `Only the message's creator should be notified of the triggered action`(): Unit = runBlocking {
+        fun `Only the message's creator must be notified of the triggered action`(): Unit = runBlocking {
             val (admin, user) = createVerifiedUsers(2).map { it.info }
             val chatId = GroupChats.create(listOf(admin.id), listOf(user.id))
             val action = MessageText("Yes")
             val messageId = Messages.message(
-                    admin.id,
-                    chatId,
-                    ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                admin.id,
+                chatId,
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
             val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                    .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
             triggerAction(user.id, messageId, action)
             awaitBrokering()
             adminSubscriber.assertValue(TriggeredAction(messageId, action, user))

@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readPic
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -15,12 +16,12 @@ class GroupChatsTest {
     @Nested
     inner class SetBroadcastStatus {
         @Test
-        fun `Only participants should be notified of the status update`() {
+        fun `Only participants must be notified of the status update`() {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 val isBroadcast = true
                 GroupChats.setBroadcastStatus(chatId, isBroadcast)
                 awaitBrokering()
@@ -33,7 +34,7 @@ class GroupChatsTest {
     @Nested
     inner class Create {
         @Test
-        fun `Creating a chat should only notify participants`() {
+        fun `Creating a chat must only notify participants`() {
             runBlocking {
                 val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
                 val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id).map {
@@ -50,12 +51,12 @@ class GroupChatsTest {
     @Nested
     inner class UpdateTitle {
         @Test
-        fun `Updating the title should only send a notification to participants`() {
+        fun `Updating the title must only send a notification to participants`() {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 val title = GroupChatTitle("New Title")
                 GroupChats.updateTitle(chatId, title)
                 awaitBrokering()
@@ -68,12 +69,12 @@ class GroupChatsTest {
     @Nested
     inner class UpdateDescription {
         @Test
-        fun `Updating the description should only notify participants`() {
+        fun `Updating the description must only notify participants`() {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
                 val description = GroupChatDescription("New description.")
                 GroupChats.updateDescription(chatId, description)
                 awaitBrokering()
@@ -86,14 +87,13 @@ class GroupChatsTest {
     @Nested
     inner class UpdatePic {
         @Test
-        fun `Updating the chat's pic should notify subscribers`() {
+        fun `Updating the chat's pic must notify subscribers`() {
             runBlocking {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                        .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
-                val pic = Pic(ByteArray(1), Pic.Type.PNG)
-                GroupChats.updatePic(chatId, pic)
+                    .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
                 awaitBrokering()
                 adminSubscriber.assertValue(UpdatedGroupChat(chatId))
                 nonParticipantSubscriber.assertNoValues()
@@ -104,14 +104,14 @@ class GroupChatsTest {
     @Nested
     inner class Delete {
         @Test
-        fun `Deleting a nonempty chat should throw an exception`() {
+        fun `Deleting a nonempty chat must throw an exception`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertFailsWith<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
 
         @Test
-        fun `Deleting a chat should wipe it from the DB`() {
+        fun `Deleting a chat must wipe it from the DB`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
@@ -120,14 +120,14 @@ class GroupChatsTest {
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
             listOf(Chats, GroupChats, GroupChatUsers, Messages, MessageStatuses, Stargazers, TypingStatuses)
-                    .forEach { assertEquals(0, it.count()) }
+                .forEach { assertEquals(0, it.count()) }
         }
     }
 
     @Nested
     inner class QueryUserChatEdges {
         @Test
-        fun `Chats should be queried`() {
+        fun `Chats must be queried`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(listOf(adminId)) }
             val queryText = "hi"
@@ -145,7 +145,7 @@ class GroupChatsTest {
     @Nested
     inner class Search {
         @Test
-        fun `Chats should be searched case-insensitively`() {
+        fun `Chats must be searched case-insensitively`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val titles = listOf("Title 1", "Title 2", "Iron Man Fan Club")
             titles.forEach { GroupChats.create(listOf(adminId), title = GroupChatTitle(it)) }
@@ -157,19 +157,19 @@ class GroupChatsTest {
     @Nested
     inner class SetInvitability {
         @Test
-        fun `An exception should be thrown if the chat is public`() {
+        fun `An exception must be thrown if the chat is public`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             assertFailsWith<IllegalArgumentException> { GroupChats.setInvitability(chatId, isInvitable = true) }
         }
 
         @Test
-        fun `Only participants should be notified of the updated status`() {
+        fun `Only participants must be notified of the updated status`() {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                        .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChats.setInvitability(chatId, isInvitable = true)
                 awaitBrokering()
                 adminSubscriber.assertValue(UpdatedGroupChat(chatId, publicity = GroupChatPublicity.INVITABLE))
@@ -181,19 +181,19 @@ class GroupChatsTest {
     @Nested
     inner class IsInvitable {
         @Test
-        fun `A nonexistent chat shouldn't be invitable`() {
+        fun `A nonexistent chat mustn't be invitable`() {
             assertFalse(GroupChats.isInvitable(chatId = 1))
         }
 
         @Test
-        fun `A chat disallowing invitations should be stated as such`() {
+        fun `A chat disallowing invitations must be stated as such`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertFalse(GroupChats.isInvitable(chatId))
         }
 
         @Test
-        fun `A chat allowing invites should state such`() {
+        fun `A chat allowing invites must state such`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             assertTrue(GroupChats.isInvitable(chatId))

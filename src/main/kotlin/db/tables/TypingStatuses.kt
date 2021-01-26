@@ -44,8 +44,8 @@ object TypingStatuses : Table() {
     /** Whether the [userId] is typing in the [chatId]. */
     fun read(chatId: Int, userId: Int): Boolean = transaction {
         select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }
-                .firstOrNull()
-                ?.get(isTyping) ?: false
+            .firstOrNull()
+            ?.get(isTyping) ?: false
     }
 
     /** Deletes every status created on the [chatId]. */

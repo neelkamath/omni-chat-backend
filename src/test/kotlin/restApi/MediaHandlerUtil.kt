@@ -1,5 +1,6 @@
 package com.neelkamath.omniChat.restApi
 
+import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.main
 import io.ktor.application.*
 import io.ktor.http.*
@@ -12,43 +13,66 @@ data class DummyFile(val name: String, val bytes: Int) {
     val file = ByteArray(bytes)
 }
 
-fun getFileMessage(accessToken: String, messageId: Int, path: String): TestApplicationResponse =
-        withTestApplication(Application::main) {
-            val parameters = listOf("message-id" to messageId.toString()).formUrlEncode()
-            handleRequest(HttpMethod.Get, "$path?$parameters") {
-                addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-            }.response
-        }
+fun getFileMessage(
+    accessToken: String,
+    path: String,
+    messageId: Int,
+    picType: PicType? = null,
+): TestApplicationResponse = withTestApplication(Application::main) {
+    val parameters = listOf("message-id" to messageId.toString(), "pic-type" to picType?.toString())
+        .filter { it.second != null }
+        .formUrlEncode()
+    handleRequest(HttpMethod.Get, "$path?$parameters") {
+        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+    }.response
+}
 
 fun uploadFile(
-        accessToken: String,
-        dummy: DummyFile,
-        method: HttpMethod,
-        path: String,
-        parameters: String? = null
+    accessToken: String,
+    filename: String,
+    fileContent: ByteArray,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
         addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         val boundary = "boundary"
         addHeader(
-                HttpHeaders.ContentType,
-                ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString()
+            HttpHeaders.ContentType,
+            ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString(),
         )
         setBody(
-                boundary,
-                listOf(
-                        PartData.FileItem(
-                                { dummy.file.inputStream().asInput() },
-                                {},
-                                headersOf(
-                                        HttpHeaders.ContentDisposition,
-                                        ContentDisposition.File
-                                                .withParameter(ContentDisposition.Parameters.Name, "file")
-                                                .withParameter(ContentDisposition.Parameters.FileName, dummy.name)
-                                                .toString()
-                                )
-                        )
-                )
+            boundary,
+            listOf(
+                PartData.FileItem(
+                    { fileContent.inputStream().asInput() },
+                    {},
+                    headersOf(
+                        HttpHeaders.ContentDisposition,
+                        ContentDisposition.File
+                            .withParameter(ContentDisposition.Parameters.Name, "file")
+                            .withParameter(ContentDisposition.Parameters.FileName, filename)
+                            .toString(),
+                    ),
+                ),
+            ),
         )
     }.response
 }
+
+fun uploadFile(
+    accessToken: String,
+    pic: Pic,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null,
+): TestApplicationResponse = uploadFile(accessToken, "img.${pic.type}", pic.original, method, path, parameters)
+
+fun uploadFile(
+    accessToken: String,
+    dummy: DummyFile,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null,
+): TestApplicationResponse = uploadFile(accessToken, dummy.name, dummy.file, method, path, parameters)

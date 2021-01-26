@@ -2,7 +2,15 @@ openapi: 3.0.3
 info:
   version: 0.8.3
   title: Omni Chat
-  description: Functionality supplementary to the GraphQL API such as uploading and downloading image and audio files.
+  description: |
+    Functionality supplementary to the GraphQL API such as uploading and downloading images.
+
+    In this documentation, a _thumbnail_ refers to an image no bigger than 100px by 100px. These images are at most a
+    few KiB. If the original image itself is within 100px by 100px, then the thumbnail will happen to be a copy of the
+    same image. When displaying a small scaled image (e.g., a profile pic) you should only render the thumbnail, and not
+    load the original, since the difference in quality is negligible. When showing a picture in a container larger than
+    100px (e.g., a pic message, an enlarged profile pic), you should first load the thumbnail to use as a placeholder
+    while the original is downloading.
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat
@@ -12,7 +20,8 @@ info:
     url: https://github.com/neelkamath/omni-chat/blob/master/LICENSE
 servers:
   - url: http://localhost
-    description: You'll have to run the server yourself.
+    description: This is the URL if you're running it locally. Otherwise, it's the URL you or someone else is running it
+      on.
 tags:
   - name: profilePic
   - name: groupChatPic
@@ -32,6 +41,7 @@ paths:
         - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
+        - $ref: '#/components/parameters/PicType'
       responses:
         '200':
           $ref: '#/components/responses/Pic'
@@ -165,13 +175,14 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
-    description: A user's profile pic which doesn't exceed 25 MiB.
+    description: A user's profile pic which doesn't exceed 5 MiB.
     get:
       tags: [ profilePic ]
       description: Get the user's profile pic.
       operationId: getProfilePic
       parameters:
         - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/PicType'
       responses:
         '200':
           $ref: '#/components/responses/Pic'
@@ -201,6 +212,7 @@ paths:
       operationId: getGroupChatPic
       parameters:
         - $ref: '#/components/parameters/ChatId'
+        - $ref: '#/components/parameters/PicType'
       responses:
         '200':
           $ref: '#/components/responses/Pic'
@@ -269,35 +281,42 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidPicMessage'
     Audio:
-      description: An MP3/MP4 audio not exceeding 25 MiB.
+      description: An MP3/MP4 audio not exceeding 5 MiB.
       content:
         audio/mp3, audio/mp4:
           schema:
             type: string
             format: binary
     Video:
-      description: An MP4 audio not exceeding 25 MiB.
+      description: An MP4 audio not exceeding 5 MiB.
       content:
         video/mp4:
           schema:
             type: string
             format: binary
     Doc:
-      description: A document not exceeding 25 MiB.
+      description: A document not exceeding 5 MiB.
       content:
         '*/*':
           schema:
             type: string
             format: binary
     Pic:
-      description: A PNG or JPEG image not exceeding 25 MiB.
+      description: A PNG or JPEG image not exceeding 5 MiB.
+      content:
+        image/png, image/jpeg:
+          schema:
+            type: string
+            format: binary
+    Thumbnail:
+      description: A PNG or JPEG image.
       content:
         image/png, image/jpeg:
           schema:
             type: string
             format: binary
     InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 25 MiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 5 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
@@ -309,7 +328,7 @@ components:
             required: [ audio ]
             properties:
               audio:
-                description: An MP3/MP4 audio not exceeding 25 MiB.
+                description: An MP3/MP4 audio not exceeding 5 MiB.
                 type: string
                 format: binary
           encoding:
@@ -323,7 +342,7 @@ components:
             required: [ video ]
             properties:
               video:
-                description: An MP4 video not exceeding 25 MiB.
+                description: An MP4 video not exceeding 5 MiB.
                 type: string
                 format: binary
           encoding:
@@ -337,7 +356,7 @@ components:
             required: [ doc ]
             properties:
               doc:
-                description: A document not exceeding 25 MiB.
+                description: A document not exceeding 5 MiB.
                 type: string
                 format: binary
     Pic:
@@ -348,7 +367,7 @@ components:
             required: [ pic ]
             properties:
               pic:
-                description: A PNG or JPEG image not exceeding 25 MiB.
+                description: A PNG or JPEG image not exceeding 5 MiB.
                 type: string
                 format: binary
           encoding:
@@ -362,6 +381,14 @@ components:
       required: true
       schema:
         type: integer
+    PicType:
+      name: pic-type
+      in: query
+      description: Whether to retrieve the original or the thumbnail.
+      required: true
+      schema:
+        type: string
+        enum: [ ORIGINAL, THUMBNAIL ]
     ChatId:
       name: chat-id
       in: query

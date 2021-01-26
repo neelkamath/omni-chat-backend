@@ -14,7 +14,7 @@ class PrivateChatsTest {
     @Nested
     inner class Create {
         @Test
-        fun `Creating an existing chat should throw an exception`() {
+        fun `Creating an existing chat must throw an exception`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val create = { PrivateChats.create(user1Id, user2Id) }
             create()
@@ -25,7 +25,7 @@ class PrivateChatsTest {
     @Nested
     inner class Delete {
         @Test
-        fun `Deleting the chat should wipe it from the DB`() {
+        fun `Deleting the chat must wipe it from the DB`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             TypingStatuses.set(chatId, user1Id, isTyping = true)
@@ -35,14 +35,14 @@ class PrivateChatsTest {
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChats.delete(chatId)
             listOf(Chats, Messages, MessageStatuses, PrivateChatDeletions, PrivateChats, Stargazers, TypingStatuses)
-                    .forEach { assertEquals(0, it.count()) }
+                .forEach { assertEquals(0, it.count()) }
         }
     }
 
     @Nested
     inner class Read {
         @Test
-        fun `Reading a chat should give the ID of the user being chatted with, and not the user's own ID`() {
+        fun `Reading a chat must give the ID of the user being chatted with, and not the user's own ID`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             val test = { userId: Int, otherUserId: Int ->
@@ -53,7 +53,7 @@ class PrivateChatsTest {
         }
 
         @Test
-        fun `Chats which did not have any activity after their deletion shouldn't be read`() {
+        fun `Chats which did not have any activity after their deletion mustn't be read`() {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             val chat1Id = PrivateChats.create(user1Id, user2Id)
             val chat2Id = PrivateChats.create(user1Id, user3Id)
@@ -68,7 +68,7 @@ class PrivateChatsTest {
     @Nested
     inner class Exists {
         @Test
-        fun `A chat between two users should be said to exist`() {
+        fun `A chat between two users must be said to exist`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             assertTrue(PrivateChats.exists(user1Id, user2Id))
@@ -76,7 +76,7 @@ class PrivateChatsTest {
         }
 
         @Test
-        fun `If two users aren't in a chat with each other, it shouldn't be said that they are`() {
+        fun `If two users aren't in a chat with each other, it mustn't be said that they are`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             PrivateChats.create(user2Id, user3Id)
@@ -88,7 +88,7 @@ class PrivateChatsTest {
     @Nested
     inner class QueryUserChatEdges {
         @Test
-        fun `Chats should be queried`() {
+        fun `Chats must be queried`() {
             val (user1Id, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
             val (chat1Id, chat2Id, chat3Id) = listOf(user2Id, user3Id, user4Id).map { PrivateChats.create(user1Id, it) }
             val queryText = "hi"
@@ -106,24 +106,24 @@ class PrivateChatsTest {
     @Nested
     inner class Search {
         @Test
-        fun `Chats should be searched by case-insensitively querying usernames, email addresses, and names`() {
+        fun `Chats must be searched by case-insensitively querying usernames, email addresses, and names`() {
             val userId = createVerifiedUsers(1)[0].info.id
             val userIdList = listOf(
-                    AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
-                    AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
-                    AccountInput(
-                            Username("vader"),
-                            Password("p"),
-                            emailAddress = "vader@example.com",
-                            firstName = Name("Tommy")
-                    ),
-                    AccountInput(
-                            Username("leia"),
-                            Password("p"),
-                            emailAddress = "leia@example.com",
-                            lastName = Name("Tomas")
-                    ),
-                    AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
+                AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
+                AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
+                AccountInput(
+                    Username("vader"),
+                    Password("p"),
+                    emailAddress = "vader@example.com",
+                    firstName = Name("Tommy")
+                ),
+                AccountInput(
+                    Username("leia"),
+                    Password("p"),
+                    emailAddress = "leia@example.com",
+                    lastName = Name("Tomas")
+                ),
+                AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {
                 Users.create(it)
                 val otherUserId = Users.read(it.username).id
@@ -137,14 +137,14 @@ class PrivateChatsTest {
     @Nested
     inner class AreInChat {
         @Test
-        fun `Two users should be said to be in a chat`() {
+        fun `Two users must be said to be in a chat`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             assertTrue(PrivateChats.areInChat(user1Id, user2Id))
         }
 
         @Test
-        fun `Two users shouldn't be said to be in a chat if one of them deleted the chat`() {
+        fun `Two users mustn't be said to be in a chat if one of them deleted the chat`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -155,7 +155,7 @@ class PrivateChatsTest {
     @Nested
     inner class ReadChatId {
         @Test
-        fun `The chat's ID should be read if the participant is in the chat but the user isn't`() {
+        fun `The chat's ID must be read if the participant is in the chat but the user isn't`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, userId)
@@ -163,7 +163,7 @@ class PrivateChatsTest {
         }
 
         @Test
-        fun `Reading the ID of a chat the participant isn't in but the user is should fail`() {
+        fun `Reading the ID of a chat the participant isn't in but the user is must fail`() {
             val (participantId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(participantId, userId)
             PrivateChatDeletions.create(chatId, participantId)
@@ -174,7 +174,7 @@ class PrivateChatsTest {
     @Nested
     inner class ReadUserIdList {
         @Test
-        fun `Retrieving the user IDs of a chat should return them`() {
+        fun `Retrieving the user IDs of a chat must return them`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             assertEquals(listOf(user1Id, user2Id), PrivateChats.readUserIdList(chatId))
@@ -184,7 +184,7 @@ class PrivateChatsTest {
     @Nested
     inner class ReadOtherUserId {
         @Test
-        fun `The other user ID should be returned`() {
+        fun `The other user ID must be returned`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             assertEquals(user2Id, PrivateChats.readOtherUserId(chatId, user1Id))
@@ -195,7 +195,7 @@ class PrivateChatsTest {
     @Nested
     inner class ReadOtherUserIdList {
         @Test
-        fun `Reading the user ID list the user is chatting with should excluding those from deleted chats`() {
+        fun `Reading the user ID list the user is chatting with must excluding those from deleted chats`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             val chatId = PrivateChats.create(user1Id, user3Id)

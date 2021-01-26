@@ -11,15 +11,18 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.assertEquals
 
-private fun postAudioMessage(
-        accessToken: String,
-        dummy: DummyFile,
-        chatId: Int,
-        contextMessageId: Int? = null
+fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
+    getFileMessage(accessToken, path = "audio-message", messageId)
+
+fun postAudioMessage(
+    accessToken: String,
+    dummy: DummyFile,
+    chatId: Int,
+    contextMessageId: Int? = null
 ): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
-            .filter { it.second != null }
-            .formUrlEncode()
+        .filter { it.second != null }
+        .formUrlEncode()
     return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
 }
 
@@ -28,7 +31,7 @@ class AudioMessageTest {
     @Nested
     inner class RouteAudioMessage {
         @Test
-        fun `Using a capitalized file extensions shouldn't fail`() {
+        fun `Using a capitalized file extensions mustn't fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("audio.MP3", bytes = 1)

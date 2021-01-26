@@ -17,11 +17,11 @@ class UsersTest {
     @Nested
     inner class SetOnlineStatus {
         @Test
-        fun `Updating the user's online status to the current value shouldn't cause notifications to be sent`() {
+        fun `Updating the user's online status to the current value mustn't cause notifications to be sent`() {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
                 val subscriber = onlineStatusesNotifier
-                        .safelySubscribe(contactOwnerId).subscribeWith(TestSubscriber())
+                    .safelySubscribe(contactOwnerId).subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -29,35 +29,35 @@ class UsersTest {
         }
 
         @Test
-        fun `Updating the user's status should only notify users who have them in their contacts or chats`(): Unit =
-                runBlocking {
-                    val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
-                    Contacts.create(contactOwnerId, setOf(updaterId))
-                    PrivateChats.create(privateChatSharerId, updaterId)
-                    val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
-                            listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
-                                onlineStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
-                            }
-                    val status = Users.read(updaterId).isOnline.not()
-                    Users.setOnlineStatus(updaterId, status)
-                    awaitBrokering()
-                    listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                    listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
-                            .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
-                }
+        fun `Updating the user's status must only notify users who have them in their contacts or chats`(): Unit =
+            runBlocking {
+                val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
+                Contacts.create(contactOwnerId, setOf(updaterId))
+                PrivateChats.create(privateChatSharerId, updaterId)
+                val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
+                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
+                        onlineStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
+                    }
+                val status = Users.read(updaterId).isOnline.not()
+                Users.setOnlineStatus(updaterId, status)
+                awaitBrokering()
+                listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
+                listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
+                    .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
+            }
     }
 
     @Nested
     inner class VerifyEmailAddress {
         @Test
-        fun `Using an invalid code shouldn't set the account's email address verification status to verified`() {
+        fun `Using an invalid code mustn't set the account's email address verification status to verified`() {
             val account = AccountInput(Username("username"), Password("p"), "john.doe@example.com")
             Users.create(account)
             assertFalse(Users.verifyEmailAddress(account.emailAddress, 123))
         }
 
         @Test
-        fun `Using a valid email address verification code should cause the account's email address to get verified`() {
+        fun `Using a valid email address verification code must cause the account's email address to get verified`() {
             val account = AccountInput(Username("username"), Password("p"), "john.doe@example.com")
             Users.create(account)
             val user = Users.read(account.username)
@@ -69,17 +69,17 @@ class UsersTest {
     inner class Search {
         /** Creates users, and returns their IDs. */
         private fun createUsers(): List<Int> = listOf(
-                AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
-                AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
-                AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-                AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
+            AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
+            AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
+            AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
+            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
         ).map {
             Users.create(it)
             Users.read(it.username).id
         }
 
         @Test
-        fun `Users should be searched case-insensitively`() {
+        fun `Users must be searched case-insensitively`() {
             val infoList = createUsers()
             val search = { query: String, userIdList: List<Int> ->
                 assertEquals(userIdList, Users.search(query).edges.map { it.cursor })
@@ -90,10 +90,10 @@ class UsersTest {
         }
 
         @Test
-        fun `Searching users shouldn't include duplicate results`() {
+        fun `Searching users mustn't include duplicate results`() {
             val userIdList = listOf(
-                    AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                    AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
+                AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
+                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
             ).map {
                 Users.create(it)
                 Users.read(it.username).id
@@ -105,7 +105,7 @@ class UsersTest {
     @Nested
     inner class Update {
         @Test
-        fun `Updating an account should update only the specified fields`() {
+        fun `Updating an account must update only the specified fields`() {
             val user = createVerifiedUsers(1)[0]
             val update = AccountUpdate(Username("updated"), firstName = Name("updated"))
             Users.update(user.info.id, update)
@@ -121,7 +121,7 @@ class UsersTest {
     @Nested
     inner class ResetPassword {
         @Test
-        fun `The password should be reset if the password reset code is correct`() {
+        fun `The password must be reset if the password reset code is correct`() {
             val account = AccountInput(Username("username"), Password("p"), "john@example.com")
             Users.create(account)
             val user = Users.read(account.username)
@@ -132,7 +132,7 @@ class UsersTest {
         }
 
         @Test
-        fun `The password shouldn't be reset if the password reset code is incorrect`() {
+        fun `The password mustn't be reset if the password reset code is incorrect`() {
             val account = AccountInput(Username("username"), Password("p"), "john@example.com")
             Users.create(account)
             val password = Password("new")
@@ -152,12 +152,12 @@ class UsersTest {
         }
 
         @Test
-        fun `Updating an account's email address should cause it to become unverified`() {
+        fun `Updating an account's email address must cause it to become unverified`() {
             assertEmailAddressUpdate(changeAddress = true)
         }
 
         @Test
-        fun `Updating an account's email address to the same address shouldn't cause it to become unverified`() {
+        fun `Updating an account's email address to the same address mustn't cause it to become unverified`() {
             assertEmailAddressUpdate(changeAddress = false)
         }
     }
@@ -165,20 +165,20 @@ class UsersTest {
     @Nested
     inner class IsValidLogin {
         @Test
-        fun `A nonexistent username should be an invalid login`() {
+        fun `A nonexistent username must be an invalid login`() {
             val login = Login(Username("username"), Password("p"))
             assertFalse(Users.isValidLogin(login))
         }
 
         @Test
-        fun `An incorrect password shouldn't be a valid login`() {
+        fun `An incorrect password mustn't be a valid login`() {
             val username = createVerifiedUsers(1)[0].login.username
             val login = Login(username, Password("incorrect"))
             assertFalse(Users.isValidLogin(login))
         }
 
         @Test
-        fun `A valid login should be stated as such`() {
+        fun `A valid login must be stated as such`() {
             val login = createVerifiedUsers(1)[0].login
             assertTrue(Users.isValidLogin(login))
         }

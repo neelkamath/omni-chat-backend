@@ -20,14 +20,14 @@ class TypingStatusesTest {
     @Nested
     inner class Set {
         @Test
-        fun `Only subscribers in the chat should be notified of the status`() {
+        fun `Only subscribers in the chat must be notified of the status`() {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                        .map {
-                            typingStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
-                        }
+                    .map {
+                        typingStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
+                    }
                 val isTyping = true
                 TypingStatuses.set(chatId, user1Id, isTyping)
                 awaitBrokering()
@@ -46,12 +46,12 @@ class TypingStatusesTest {
         }
 
         @Test
-        fun `A new record should be created when setting a status for the first time`() {
+        fun `A new record must be created when setting a status for the first time`() {
             assertSet(repetitions = 1)
         }
 
         @Test
-        fun `The existing record should be updated when setting a status the second time`() {
+        fun `The existing record must be updated when setting a status the second time`() {
             assertSet(repetitions = 2)
         }
     }
@@ -59,7 +59,7 @@ class TypingStatusesTest {
     @Nested
     inner class Read {
         @Test
-        fun `The status should be read`() {
+        fun `The status must be read`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isTyping = true
@@ -68,7 +68,7 @@ class TypingStatusesTest {
         }
 
         @Test
-        fun `false should be returned when reading a nonexistent status`() {
+        fun `false must be returned when reading a nonexistent status`() {
             assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
         }
     }

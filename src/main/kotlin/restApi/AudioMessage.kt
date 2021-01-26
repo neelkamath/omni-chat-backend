@@ -8,7 +8,7 @@ import io.ktor.routing.*
 fun routeAudioMessage(routing: Routing): Unit = with(routing) {
     authenticate {
         route("audio-message") {
-            getMediaMessage(this) { messageId -> AudioMessages.read(messageId).bytes }
+            getMediaMessage(this) { messageId, _ -> AudioMessages.read(messageId).bytes }
             postMediaMessage(this, { readMultipartAudio() }) { userId, chatId, message, contextMessageId ->
                 Messages.createAudioMessage(userId, chatId, message, contextMessageId)
             }

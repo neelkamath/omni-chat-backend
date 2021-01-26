@@ -27,11 +27,11 @@ data class VerifiedUser(val info: Account, val password: Password) {
  */
 fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
     val account = AccountInput(
-            Username("username${++userCount}"),
-            Password("password$userCount"),
-            "username$userCount@example.com",
-            Name("firstName$userCount"),
-            Name("lastName$userCount")
+        Username("username${++userCount}"),
+        Password("password$userCount"),
+        "username$userCount@example.com",
+        Name("firstName$userCount"),
+        Name("lastName$userCount")
     )
     Users.create(account)
     verifyEmailAddress(account.username)

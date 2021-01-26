@@ -17,6 +17,8 @@ import io.ktor.util.pipeline.*
 import java.io.File
 import javax.annotation.processing.Generated
 
+enum class PicType { ORIGINAL, THUMBNAIL }
+
 /** The [bytes] are the file's contents. An example [extension] is `"mp4"`. */
 data class TypedFile(val extension: String, val bytes: ByteArray) {
     @Generated
@@ -40,18 +42,23 @@ data class TypedFile(val extension: String, val bytes: ByteArray) {
     }
 }
 
-inline fun getMediaMessage(route: Route, crossinline bytesReader: (messageId: Int) -> ByteArray): Unit = with(route) {
+/** The `picType` argument passed to the [bytesReader] will be `null` if no `pic-type` query parameter was passed. */
+inline fun getMediaMessage(
+    route: Route,
+    crossinline bytesReader: (messageId: Int, picType: PicType?) -> ByteArray,
+): Unit = with(route) {
     get {
         val messageId = call.parameters["message-id"]!!.toInt()
-        if (Messages.isVisible(call.userId!!, messageId)) call.respondBytes(bytesReader(messageId))
+        val picType = call.parameters["pic-type"]?.let(PicType::valueOf)
+        if (Messages.isVisible(call.userId!!, messageId)) call.respondBytes(bytesReader(messageId, picType))
         else call.respond(HttpStatusCode.BadRequest)
     }
 }
 
 fun <T> postMediaMessage(
-        route: Route,
-        messageReader: suspend PipelineContext<Unit, ApplicationCall>.() -> T?,
-        creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit
+    route: Route,
+    messageReader: suspend PipelineContext<Unit, ApplicationCall>.() -> T?,
+    creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit
 ): Unit = with(route) {
     post {
         val chatId = call.parameters["chat-id"]!!.toInt()
@@ -59,16 +66,16 @@ fun <T> postMediaMessage(
         val message = messageReader(this)
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
+                HttpStatusCode.BadRequest,
+                InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
             )
 
             message == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE))
 
             contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                HttpStatusCode.BadRequest,
+                InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
             )
 
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
@@ -119,7 +126,7 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? 
 suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartPic(): Pic? {
     val (extension, bytes) = readMultipartFile()
     return try {
-        Pic(bytes, Pic.Type.build(extension))
+        Pic.build(extension, bytes)
     } catch (_: IllegalArgumentException) {
         null
     }

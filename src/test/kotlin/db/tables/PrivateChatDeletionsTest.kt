@@ -12,14 +12,14 @@ class PrivateChatDeletionsTest {
     @Nested
     inner class IsDeleted {
         @Test
-        fun `The chat shouldn't be deleted if the user never deleted it`() {
+        fun `The chat mustn't be deleted if the user never deleted it`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             assertFalse(PrivateChatDeletions.isDeleted(user1Id, chatId))
         }
 
         @Test
-        fun `The chat should be deleted if the user deleted it, and the other user didn't send a message after that`() {
+        fun `The chat must be deleted if the user deleted it, and the other user didn't send a message after that`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -27,7 +27,7 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `The chat shouldn't be deleted if the other user sent a message after the user deleted it`() {
+        fun `The chat mustn't be deleted if the other user sent a message after the user deleted it`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -36,7 +36,7 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `The chat shouldn't be deleted if the user sent a message to the other user after deleting their chat`() {
+        fun `The chat mustn't be deleted if the user sent a message to the other user after deleting their chat`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -45,7 +45,7 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `A private chat deleted by one user shouldn't be deleted for the other`() {
+        fun `A private chat deleted by one user mustn't be deleted for the other`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user2Id)
@@ -56,13 +56,13 @@ class PrivateChatDeletionsTest {
     @Nested
     inner class Create {
         @Test
-        fun `Deleting a chat the user was never in should fail`() {
+        fun `Deleting a chat the user was never in must fail`() {
             val userId = createVerifiedUsers(1)[0].info.id
             assertFailsWith<IllegalArgumentException> { PrivateChatDeletions.create(chatId = 1, userId = userId) }
         }
 
         @Test
-        fun `Deleting a chat the user was in but just deleted shouldn't fail`() {
+        fun `Deleting a chat the user was in but just deleted mustn't fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             repeat(2) { PrivateChatDeletions.create(chatId, user1Id) }
@@ -72,7 +72,7 @@ class PrivateChatDeletionsTest {
     @Nested
     inner class ReadLastDeletion {
         @Test
-        fun `Only messages deleted by both users should be deleted`() {
+        fun `Only messages deleted by both users must be deleted`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(user1Id, chatId)
@@ -98,7 +98,7 @@ class PrivateChatDeletionsTest {
     @Nested
     inner class DeleteUnusedChatData {
         @Test
-        fun `Messages deleted by one user shouldn't be deleted for the other user`() {
+        fun `Messages deleted by one user mustn't be deleted for the other user`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             Messages.create(user1Id, chatId)
@@ -107,7 +107,7 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `The private chat's record should be deleted if there's no activity after the both users delete it`() {
+        fun `The private chat's record must be deleted if there's no activity after the both users delete it`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -116,7 +116,7 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `The private chat's record shouldn't be deleted if there's activity between both users deleting it`() {
+        fun `The private chat's record mustn't be deleted if there's activity between both users deleting it`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)

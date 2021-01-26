@@ -18,10 +18,16 @@ fun routeProfilePic(routing: Routing): Unit = with(routing) {
 private fun getProfilePic(route: Route): Unit = with(route) {
     get {
         val userId = call.parameters["user-id"]!!.toInt()
+        val type = PicType.valueOf(call.parameters["pic-type"]!!)
         if (!Users.exists(userId)) call.respond(HttpStatusCode.BadRequest)
         else {
             val pic = Users.read(userId).pic
-            if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic.bytes)
+            if (pic == null) call.respond(HttpStatusCode.NoContent)
+            else
+                when (type) {
+                    PicType.ORIGINAL -> call.respond(pic.original)
+                    PicType.THUMBNAIL -> call.respond(pic.thumbnail)
+                }
         }
     }
 }

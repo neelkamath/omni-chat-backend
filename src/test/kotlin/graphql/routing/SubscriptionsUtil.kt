@@ -19,10 +19,10 @@ typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Un
  * [request], and has the [callback] [ReceiveChannel] and [SendChannel].
  */
 fun executeGraphQlSubscriptionViaWebSocket(
-        path: String,
-        request: GraphQlRequest,
-        accessToken: String? = null,
-        callback: SubscriptionCallback
+    path: String,
+    request: GraphQlRequest,
+    accessToken: String? = null,
+    callback: SubscriptionCallback
 ): Unit = withTestApplication(Application::main) {
     handleWebSocketConversation(path) { incoming, outgoing ->
         if (accessToken != null) outgoing.send(Frame.Text(accessToken))

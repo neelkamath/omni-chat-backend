@@ -6,8 +6,8 @@ import javax.annotation.processing.Generated
 
 /** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
 data class Mp4(
-        /** At most [Mp4.MAX_BYTES]. */
-        val bytes: ByteArray
+    /** At most [Mp4.MAX_BYTES]. */
+    val bytes: ByteArray
 ) {
     init {
         if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
@@ -31,7 +31,7 @@ data class Mp4(
     }
 
     companion object {
-        const val MAX_BYTES = 25 * 1024 * 1024
+        const val MAX_BYTES = 5 * 1024 * 1024
     }
 }
 
