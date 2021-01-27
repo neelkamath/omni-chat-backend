@@ -11,23 +11,23 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 data class User(
-        val id: Int,
-        val username: Username,
-        val passwordResetCode: Int,
-        val emailAddress: String,
-        val hasVerifiedEmailAddress: Boolean,
-        val emailAddressVerificationCode: Int,
-        val firstName: Name,
-        val lastName: Name,
-        val isOnline: Boolean,
-        val lastOnline: LocalDateTime?,
-        val bio: Bio,
-        val pic: Pic?
+    val id: Int,
+    val username: Username,
+    val passwordResetCode: Int,
+    val emailAddress: String,
+    val hasVerifiedEmailAddress: Boolean,
+    val emailAddressVerificationCode: Int,
+    val firstName: Name,
+    val lastName: Name,
+    val isOnline: Boolean,
+    val lastOnline: LocalDateTime?,
+    val bio: Bio,
+    val pic: Pic?,
 ) {
     fun toAccount(): Account = Account(id, username, emailAddress, firstName, lastName, bio)
 }
 
-/** Neither usernames not email addresses may be used more than once. Pics cannot exceed [Pic.MAX_BYTES]. */
+/** Neither usernames not email addresses may be used more than once. Pics cannot exceed [Pic.ORIGINAL_MAX_BYTES]. */
 object Users : IntIdTable() {
     /** Names and usernames cannot exceed 30 characters. */
     const val MAX_NAME_LENGTH = 30
@@ -36,11 +36,11 @@ object Users : IntIdTable() {
     // Password digests are 64 characters regardless of whether the password is longer or shorter than 64 characters.
     private val passwordDigest: Column<String> = varchar("password_digest", 64)
     private val passwordResetCode: Column<Int> =
-            integer("password_reset_code").clientDefault { (100_000..999_999).random() }
+        integer("password_reset_code").clientDefault { (100_000..999_999).random() }
     private val emailAddress: Column<String> = varchar("email_address", 254).uniqueIndex()
     private val hasVerifiedEmailAddress: Column<Boolean> = bool("has_verified_email_address").clientDefault { false }
     private val emailAddressVerificationCode: Column<Int> =
-            integer("email_address_verification_code").clientDefault { (100_000..999_999).random() }
+        integer("email_address_verification_code").clientDefault { (100_000..999_999).random() }
     private val firstName: Column<String> = varchar("first_name", MAX_NAME_LENGTH)
     private val lastName: Column<String> = varchar("last_name", MAX_NAME_LENGTH)
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
@@ -109,27 +109,27 @@ object Users : IntIdTable() {
     }.toUser()
 
     private fun ResultRow.toUser(): User = User(
-            this[id].value,
-            Username(this[username]),
-            this[passwordResetCode],
-            this[emailAddress],
-            this[hasVerifiedEmailAddress],
-            this[emailAddressVerificationCode],
-            Name(this[firstName]),
-            Name(this[lastName]),
-            this[isOnline],
-            this[lastOnline],
-            Bio(this[bio]),
-            this[picId]?.let(Pics::read)
+        this[id].value,
+        Username(this[username]),
+        this[passwordResetCode],
+        this[emailAddress],
+        this[hasVerifiedEmailAddress],
+        this[emailAddressVerificationCode],
+        Name(this[firstName]),
+        Name(this[lastName]),
+        this[isOnline],
+        this[lastOnline],
+        Bio(this[bio]),
+        this[picId]?.let(Pics::read),
     )
 
     private fun ResultRow.toAccount(): Account = Account(
-            this[id].value,
-            Username(this[username]),
-            this[emailAddress],
-            Name(this[firstName]),
-            Name(this[lastName]),
-            Bio(this[bio])
+        this[id].value,
+        Username(this[username]),
+        this[emailAddress],
+        Name(this[firstName]),
+        Name(this[lastName]),
+        Bio(this[bio]),
     )
 
     /**
@@ -170,7 +170,7 @@ object Users : IntIdTable() {
                 update.username?.let { statement[username] = it.value }
                 update.password?.let {
                     statement[passwordDigest] =
-                            StrongPasswordEncryptor().encryptPassword(update.password.value)
+                        StrongPasswordEncryptor().encryptPassword(update.password.value)
                 }
                 update.firstName?.let { statement[firstName] = it.value }
                 update.lastName?.let { statement[lastName] = it.value }
@@ -205,14 +205,13 @@ object Users : IntIdTable() {
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val users = transaction {
             selectAll()
-                    .orderBy(Users.id)
-                    .filter {
-                        it[username].contains(query, ignoreCase = true) ||
-                                it[firstName].contains(query, ignoreCase = true) ||
-                                it[lastName].contains(query, ignoreCase = true) ||
-                                it[emailAddress].contains(query, ignoreCase = true)
-                    }
-                    .map { AccountEdge(it.toAccount(), it[Users.id].value) }
+                .filter {
+                    it[username].contains(query, ignoreCase = true) ||
+                            it[firstName].contains(query, ignoreCase = true) ||
+                            it[lastName].contains(query, ignoreCase = true) ||
+                            it[emailAddress].contains(query, ignoreCase = true)
+                }
+                .map { AccountEdge(it.toAccount(), it[Users.id].value) }
         }
         return AccountsConnection.build(users, pagination)
     }

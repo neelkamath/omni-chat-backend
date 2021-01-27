@@ -40,13 +40,13 @@ object GroupChatUsers : IntIdTable() {
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
     fun readFellowParticipants(userId: Int): Set<Int> =
-            readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
+        readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
         select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }
-                .firstOrNull()
-                ?.get(isAdmin) ?: false
+            .firstOrNull()
+            ?.get(isAdmin) ?: false
     }
 
     /**
@@ -72,7 +72,7 @@ object GroupChatUsers : IntIdTable() {
 
     /** @see [readUserIdList] */
     fun readUsers(chatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-            AccountsConnection.build(readAccountEdges(chatId), pagination)
+        AccountsConnection.build(readAccountEdges(chatId), pagination)
 
     /**
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via

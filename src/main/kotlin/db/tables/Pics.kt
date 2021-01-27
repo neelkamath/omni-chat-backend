@@ -12,25 +12,27 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * @see [PicMessages]
  */
 object Pics : IntIdTable() {
-    private val pic: Column<ByteArray> = binary("pic", Pic.MAX_BYTES)
+    private val original: Column<ByteArray> = binary("original", Pic.ORIGINAL_MAX_BYTES)
+    private val thumbnail: Column<ByteArray> = binary("thumbnail", Pic.THUMBNAIL_MAX_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(
-            name = "type",
-            sql = "pic_type",
-            fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
-            toDb = { PostgresEnum("pic_type", it) }
+        name = "type",
+        sql = "pic_type",
+        fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("pic_type", it) }
     )
 
     /** Returns the ID of the pic. */
     fun create(pic: Pic): Int = transaction {
         insertAndGetId {
-            it[this.pic] = pic.bytes
+            it[original] = pic.original
+            it[thumbnail] = pic.thumbnail
             it[type] = pic.type
         }.value
     }
 
     fun read(id: Int): Pic = transaction {
         select { Pics.id eq id }.first()
-    }.let { Pic(it[pic], it[type]) }
+    }.let { Pic(it[type], it[original], it[thumbnail]) }
 
     /**
      * Returns the [pic]'s [id] after updating it.
@@ -44,7 +46,8 @@ object Pics : IntIdTable() {
         id != null && pic != null -> {
             transaction {
                 update({ Pics.id eq id }) {
-                    it[this.pic] = pic.bytes
+                    it[original] = pic.original
+                    it[thumbnail] = pic.thumbnail
                     it[type] = pic.type
                 }
             }

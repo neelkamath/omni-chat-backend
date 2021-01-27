@@ -31,10 +31,10 @@ object Messages : IntIdTable() {
     private val sent: Column<LocalDateTime> = datetime("sent").clientDefault { LocalDateTime.now() }
     private val senderId: Column<Int> = integer("sender_id").references(Users.id)
     private val type: Column<MessageType> = customEnumeration(
-            name = "type",
-            sql = "message_type",
-            fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
-            toDb = { PostgresEnum("message_type", it) }
+        name = "type",
+        sql = "message_type",
+        fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("message_type", it) }
     )
 
     /** Whether this message was in reply to a particular message. */
@@ -72,10 +72,10 @@ object Messages : IntIdTable() {
     fun isInvalidBroadcast(userId: Int, chatId: Int): Boolean {
         if (chatId in PrivateChats.readIdList(userId)) return false
         val isBroadcast = GroupChats.readChat(
-                chatId,
-                usersPagination = ForwardPagination(first = 0),
-                messagesPagination = BackwardPagination(last = 0),
-                userId = userId
+            chatId,
+            usersPagination = ForwardPagination(first = 0),
+            messagesPagination = BackwardPagination(last = 0),
+            userId = userId
         ).isBroadcast
         return isBroadcast && !GroupChatUsers.isAdmin(userId, chatId)
     }
@@ -87,84 +87,81 @@ object Messages : IntIdTable() {
      * or the [contextMessageId] isn't in the [chatId].
      */
     fun createTextMessage(
-            userId: Int,
-            chatId: Int,
-            message: MessageText,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
+        userId: Int,
+        chatId: Int,
+        message: MessageText,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.TEXT, contextMessageId, isForwarded) { messageId ->
         TextMessages.create(messageId, message)
     }
 
     fun createActionMessage(
-            userId: Int,
-            chatId: Int,
-            message: ActionMessageInput,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
+        userId: Int,
+        chatId: Int,
+        message: ActionMessageInput,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.ACTION, contextMessageId, isForwarded) { messageId ->
         ActionMessages.create(messageId, message)
     }
 
     fun createPicMessage(
-            userId: Int,
-            chatId: Int,
-            message: CaptionedPic,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
+        userId: Int,
+        chatId: Int,
+        message: CaptionedPic,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
         PicMessages.create(messageId, message)
     }
 
     fun createGroupChatInviteMessage(
-            userId: Int,
-            chatId: Int,
-            invitedChatId: Int,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
+        userId: Int,
+        chatId: Int,
+        invitedChatId: Int,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId, isForwarded) { messageId ->
         GroupChatInviteMessages.create(messageId, invitedChatId)
     }
 
     fun createAudioMessage(
-            userId: Int,
-            chatId: Int,
-            message: Audio,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
-    ): Unit =
-            create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
-                AudioMessages.create(messageId, message)
-            }
+        userId: Int,
+        chatId: Int,
+        message: Audio,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
+        AudioMessages.create(messageId, message)
+    }
 
     fun createVideoMessage(
-            userId: Int,
-            chatId: Int,
-            message: Mp4,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
-    ): Unit =
-            create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
-                VideoMessages.create(messageId, message)
-            }
+        userId: Int,
+        chatId: Int,
+        message: Mp4,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
+        VideoMessages.create(messageId, message)
+    }
 
     fun createDocMessage(
-            userId: Int,
-            chatId: Int,
-            message: Doc,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
-    ): Unit =
-            create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
-                DocMessages.create(messageId, message)
-            }
+        userId: Int,
+        chatId: Int,
+        message: Doc,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
+        DocMessages.create(messageId, message)
+    }
 
     fun createPollMessage(
-            userId: Int,
-            chatId: Int,
-            message: PollInput,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false
+        userId: Int,
+        chatId: Int,
+        message: PollInput,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.POLL, contextMessageId, isForwarded) { messageId ->
         PollMessages.create(messageId, message)
     }
@@ -177,12 +174,12 @@ object Messages : IntIdTable() {
      * [chatId].
      */
     private fun create(
-            userId: Int,
-            chatId: Int,
-            type: MessageType,
-            contextMessageId: Int?,
-            isForwarded: Boolean = false,
-            creator: (messageId: Int) -> Unit
+        userId: Int,
+        chatId: Int,
+        type: MessageType,
+        contextMessageId: Int?,
+        isForwarded: Boolean = false,
+        creator: (messageId: Int) -> Unit,
     ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
@@ -190,7 +187,7 @@ object Messages : IntIdTable() {
             throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
         if (contextMessageId != null && contextMessageId !in readIdList(chatId))
             throw IllegalArgumentException(
-                    "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
             )
         val row = transaction {
             insert {
@@ -215,22 +212,22 @@ object Messages : IntIdTable() {
             createTextMessage(userId, chatId, TextMessages.read(messageId), contextMessageId, isForwarded = true)
 
         MessageType.ACTION -> createActionMessage(
-                userId,
-                chatId,
-                ActionMessages.read(messageId).toActionMessageInput(),
-                contextMessageId,
-                isForwarded = true
+            userId,
+            chatId,
+            ActionMessages.read(messageId).toActionMessageInput(),
+            contextMessageId,
+            isForwarded = true
         )
 
         MessageType.PIC ->
             createPicMessage(userId, chatId, PicMessages.read(messageId), contextMessageId, isForwarded = true)
 
         MessageType.GROUP_CHAT_INVITE -> createGroupChatInviteMessage(
-                userId,
-                chatId,
-                GroupChatInviteMessages.read(messageId),
-                contextMessageId,
-                isForwarded = true
+            userId,
+            chatId,
+            GroupChatInviteMessages.read(messageId),
+            contextMessageId,
+            isForwarded = true
         )
 
         MessageType.AUDIO ->
@@ -257,10 +254,10 @@ object Messages : IntIdTable() {
      * [userId].
      */
     fun searchGroupChat(
-            chatId: Int,
-            query: String,
-            pagination: BackwardPagination? = null,
-            userId: Int? = null
+        chatId: Int,
+        query: String,
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
     ): List<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
 
     /**
@@ -268,10 +265,10 @@ object Messages : IntIdTable() {
      * by the [userId].
      */
     fun searchPrivateChat(
-            chatId: Int,
-            userId: Int,
-            query: String,
-            pagination: BackwardPagination? = null
+        chatId: Int,
+        userId: Int,
+        query: String,
+        pagination: BackwardPagination? = null
     ): List<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
@@ -316,7 +313,7 @@ object Messages : IntIdTable() {
      * @see [readGroupChatConnection]
      */
     fun readGroupChat(chatId: Int, pagination: BackwardPagination? = null, userId: Int? = null): List<MessageEdge> =
-            readChat(chatId, pagination, userId = userId)
+        readChat(chatId, pagination, userId = userId)
 
     /**
      * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId]. The returned
@@ -327,10 +324,10 @@ object Messages : IntIdTable() {
      * @see [readGroupChat]
      */
     private fun readChat(
-            chatId: Int,
-            pagination: BackwardPagination? = null,
-            filter: Filter = null,
-            userId: Int? = null
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        filter: Filter = null,
+        userId: Int? = null
     ): List<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = this.chatId eq chatId
@@ -338,10 +335,10 @@ object Messages : IntIdTable() {
         filter?.let { op = op and it }
         return transaction {
             select(op)
-                    .orderBy(Messages.id, SortOrder.DESC)
-                    .let { if (last == null) it else it.limit(last) }
-                    .reversed()
-                    .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
+                .orderBy(Messages.id, SortOrder.DESC)
+                .let { if (last == null) it else it.limit(last) }
+                .reversed()
+                .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
         }
     }
 
@@ -498,21 +495,21 @@ object Messages : IntIdTable() {
 
     /** The [MessagesConnection] as seen by the [userId], or an anonymous user if there's no [userId]. */
     fun readGroupChatConnection(
-            chatId: Int,
-            pagination: BackwardPagination? = null,
-            userId: Int? = null
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        userId: Int? = null
     ): MessagesConnection =
-            MessagesConnection(readGroupChat(chatId, pagination, userId), buildPageInfo(chatId, pagination?.before))
+        MessagesConnection(readGroupChat(chatId, pagination, userId), buildPageInfo(chatId, pagination?.before))
 
     fun readPrivateChatConnection(
-            chatId: Int,
-            userId: Int,
-            pagination: BackwardPagination? = null
+        chatId: Int,
+        userId: Int,
+        pagination: BackwardPagination? = null
     ): MessagesConnection {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
         return MessagesConnection(
-                readPrivateChat(userId, chatId, pagination),
-                buildPageInfo(chatId, pagination?.before, op)
+            readPrivateChat(userId, chatId, pagination),
+            buildPageInfo(chatId, pagination?.before, op)
         )
     }
 
@@ -523,10 +520,10 @@ object Messages : IntIdTable() {
      * [PageInfo.hasPreviousPage].
      */
     private fun buildPageInfo(chatId: Int, cursor: Cursor?, filter: Filter = null): PageInfo = PageInfo(
-            hasNextPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.AFTER, filter),
-            hasPreviousPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.BEFORE, filter),
-            startCursor = readCursor(chatId, CursorType.START, filter),
-            endCursor = readCursor(chatId, CursorType.END, filter)
+        hasNextPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.AFTER, filter),
+        hasPreviousPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.BEFORE, filter),
+        startCursor = readCursor(chatId, CursorType.START, filter),
+        endCursor = readCursor(chatId, CursorType.END, filter)
     )
 
     /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.AFTER] the [messageId]. */

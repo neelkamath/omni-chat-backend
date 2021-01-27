@@ -23,9 +23,9 @@ import java.time.Duration
 
 /** Project-wide Jackson config. */
 val objectMapper: ObjectMapper = jacksonObjectMapper()
-        .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .findAndRegisterModules()
+    .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .findAndRegisterModules()
 
 /** The user's ID on authenticated calls, and `null` otherwise. */
 val ApplicationCall.userId: Int? get() = authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt()

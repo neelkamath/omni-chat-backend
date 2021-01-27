@@ -23,21 +23,21 @@ import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
 private data class GraphQlSubscription(
-        /** Operation name (e.g., `"subscribeToMessages"`). */
-        val operation: String,
-        /** The [CloseReason] to send the client when the subscription is successfully completed. */
-        val completionReason: CloseReason
+    /** Operation name (e.g., `"subscribeToMessages"`). */
+    val operation: String,
+    /** The [CloseReason] to send the client when the subscription is successfully completed. */
+    val completionReason: CloseReason
 )
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
 fun routeGraphQlSubscriptions(context: Routing) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     val subscriptions = mapOf(
-            "messages-subscription" to "subscribeToMessages",
-            "accounts-subscription" to "subscribeToAccounts",
-            "group-chats-subscription" to "subscribeToGroupChats",
-            "typing-statuses-subscription" to "subscribeToTypingStatuses",
-            "online-statuses-subscription" to "subscribeToOnlineStatuses"
+        "messages-subscription" to "subscribeToMessages",
+        "accounts-subscription" to "subscribeToAccounts",
+        "group-chats-subscription" to "subscribeToGroupChats",
+        "typing-statuses-subscription" to "subscribeToTypingStatuses",
+        "online-statuses-subscription" to "subscribeToOnlineStatuses"
     )
     for ((path, operation) in subscriptions)
         routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
@@ -62,8 +62,8 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
             if (result.errors.isEmpty()) subscribe(this, subscription, result) else closeWithError(this, result)
         } catch (_: UnknownOperationException) {
             val reason = CloseReason(
-                    CloseReason.Codes.VIOLATED_POLICY,
-                    "You've sent multiple GraphQL operations, but haven't specified which one to execute."
+                CloseReason.Codes.VIOLATED_POLICY,
+                "You've sent multiple GraphQL operations, but haven't specified which one to execute."
             )
             send(Frame.Close(reason))
         } catch (_: JWTVerificationException) {
@@ -80,8 +80,8 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  * @throws [JWTVerificationException] if the [accessToken] couldn't be verified.
  */
 private suspend fun buildExecutionResult(
-        session: DefaultWebSocketServerSession,
-        accessToken: String
+    session: DefaultWebSocketServerSession,
+    accessToken: String
 ): ExecutionResult = with(session) {
     val userId = jwtVerifier.verify(accessToken).subject.toInt()
     // It's possible the user updated their email address just after the token was created.
@@ -99,9 +99,9 @@ private suspend fun buildExecutionResult(
  * [CloseReason.Codes.INTERNAL_ERROR].
  */
 private suspend fun subscribe(
-        session: DefaultWebSocketServerSession,
-        subscription: GraphQlSubscription,
-        result: ExecutionResult
+    session: DefaultWebSocketServerSession,
+    subscription: GraphQlSubscription,
+    result: ExecutionResult
 ) = with(session) {
     val subscriber = Subscriber(this, subscription)
     result.getData<Publisher<ExecutionResult>>().subscribe(subscriber)
@@ -114,23 +114,23 @@ private suspend fun subscribe(
  * [CloseReason.Codes.VIOLATED_POLICY] and the first [GraphQlResponse.errors] [GraphQlResponseError.message].
  */
 private suspend fun closeWithError(session: DefaultWebSocketServerSession, result: ExecutionResult): Unit =
-        with(session) {
-            val spec = try {
-                buildSpecification(result)
-            } catch (_: UnauthorizedException) {
-                val reason = CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized")
-                session.send(Frame.Close(reason))
-                return
-            }
-            val response = objectMapper.convertValue<GraphQlResponse>(spec)
-            launch(Dispatchers.IO) {
-                val json = objectMapper.writeValueAsString(response)
-                send(Frame.Text(json))
-            }.join()
-            val message = response.errors!![0].message
-            val reason = CloseReason(CloseReason.Codes.VIOLATED_POLICY, message)
-            send(Frame.Close(reason))
+    with(session) {
+        val spec = try {
+            buildSpecification(result)
+        } catch (_: UnauthorizedException) {
+            val reason = CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized")
+            session.send(Frame.Close(reason))
+            return
         }
+        val response = objectMapper.convertValue<GraphQlResponse>(spec)
+        launch(Dispatchers.IO) {
+            val json = objectMapper.writeValueAsString(response)
+            send(Frame.Text(json))
+        }.join()
+        val message = response.errors!![0].message
+        val reason = CloseReason(CloseReason.Codes.VIOLATED_POLICY, message)
+        send(Frame.Close(reason))
+    }
 
 /**
  * [DefaultWebSocketServerSession.send]s the [graphQlSubscription]'s data to the client.
@@ -140,8 +140,8 @@ private suspend fun closeWithError(session: DefaultWebSocketServerSession, resul
  */
 @Suppress("ReactiveStreamsSubscriberImplementation")
 private class Subscriber(
-        private val session: DefaultWebSocketServerSession,
-        private val graphQlSubscription: GraphQlSubscription
+    private val session: DefaultWebSocketServerSession,
+    private val graphQlSubscription: GraphQlSubscription
 ) : Subscriber<ExecutionResult> {
 
     private lateinit var subscription: Subscription
@@ -156,11 +156,11 @@ private class Subscriber(
     /** [DefaultWebSocketServerSession.send]s a [CreatedSubscription]. */
     private fun sendCreatedSubscription() {
         val doc = mapOf(
-                "data" to mapOf(
-                        graphQlSubscription.operation to mapOf(
-                                "placeholder" to ""
-                        )
+            "data" to mapOf(
+                graphQlSubscription.operation to mapOf(
+                    "placeholder" to ""
                 )
+            )
         )
         val json = objectMapper.writeValueAsString(doc)
         withSession { send(Frame.Text(json)) }
@@ -191,7 +191,7 @@ private class Subscriber(
 
     /** Runs the [callback] in the [session]. */
     private inline fun withSession(
-            crossinline callback: suspend DefaultWebSocketServerSession.() -> Unit
+        crossinline callback: suspend DefaultWebSocketServerSession.() -> Unit
     ): Unit = with(session) {
         launch(Dispatchers.IO) { callback() }
     }

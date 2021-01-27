@@ -12,12 +12,13 @@ data class CaptionedPic(val pic: Pic, val caption: MessageText?)
 object PicMessages : Table() {
     override val tableName = "pic_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val pic: Column<ByteArray> = binary("pic", Pic.MAX_BYTES)
+    private val original: Column<ByteArray> = binary("original", Pic.ORIGINAL_MAX_BYTES)
+    private val thumbnail: Column<ByteArray> = binary("thumbnail", Pic.THUMBNAIL_MAX_BYTES)
     private val type: Column<Pic.Type> = customEnumeration(
-            name = "type",
-            sql = "pic_type",
-            fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
-            toDb = { PostgresEnum("pic_type", it) }
+        name = "type",
+        sql = "pic_type",
+        fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("pic_type", it) },
     )
     private val caption: Column<String?> = varchar("caption", MessageText.MAX_LENGTH).nullable()
 
@@ -25,7 +26,8 @@ object PicMessages : Table() {
     fun create(id: Int, message: CaptionedPic): Unit = transaction {
         insert {
             it[this.messageId] = id
-            it[pic] = message.pic.bytes
+            it[original] = message.pic.original
+            it[thumbnail] = message.pic.thumbnail
             it[type] = message.pic.type
             it[caption] = message.caption?.value
         }
@@ -33,7 +35,7 @@ object PicMessages : Table() {
 
     fun read(id: Int): CaptionedPic = transaction {
         select { messageId eq id }.first()
-    }.let { CaptionedPic(Pic(it[pic], it[type]), it[caption]?.let(::MessageText)) }
+    }.let { CaptionedPic(Pic(it[type], it[original], it[thumbnail]), it[caption]?.let(::MessageText)) }
 
     fun delete(idList: List<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }

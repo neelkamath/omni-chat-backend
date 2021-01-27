@@ -18,10 +18,10 @@ object MessageStatuses : Table() {
     override val tableName = "message_statuses"
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
     private val status: Column<MessageStatus> = customEnumeration(
-            name = "status",
-            sql = "message_status",
-            fromDb = { MessageStatus.valueOf((it as String).toUpperCase()) },
-            toDb = { PostgresEnum("message_status", it) }
+        name = "status",
+        sql = "message_status",
+        fromDb = { MessageStatus.valueOf((it as String).toUpperCase()) },
+        toDb = { PostgresEnum("message_status", it) }
     )
 
     /** The user recording the [status]. */
@@ -46,7 +46,7 @@ object MessageStatuses : Table() {
     fun create(userId: Int, messageId: Int, status: MessageStatus) {
         if (!Messages.isVisible(userId, messageId))
             throw IllegalArgumentException(
-                    """
+                """
                     The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they 
                     deleted the chat.
                     """.trimIndent()
@@ -56,7 +56,7 @@ object MessageStatuses : Table() {
         if (exists(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
             throw IllegalArgumentException(
-                    "The message (ID: $messageId) has already been $text the user (ID: $userId)."
+                "The message (ID: $messageId) has already been $text the user (ID: $userId)."
             )
         }
         if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERED))
@@ -76,7 +76,7 @@ object MessageStatuses : Table() {
             }
         }
         val updates = readUserIdList(Messages.readChatFromMessage(messageId))
-                .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
+            .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
         messagesNotifier.publish(updates)
     }
 
@@ -110,6 +110,6 @@ object MessageStatuses : Table() {
     /** [messageId]'s [MessageDateTimeStatus]es. */
     fun read(messageId: Int): List<MessageDateTimeStatus> = transaction {
         select { MessageStatuses.messageId eq messageId }
-                .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
+            .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
     }
 }

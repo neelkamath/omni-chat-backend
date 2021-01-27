@@ -10,6 +10,7 @@ import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
+
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -23,14 +24,14 @@ class QueriesAndMutationsTest {
     @Nested
     inner class RouteGraphQlQueriesAndMutations {
         @Test
-        fun `The GraphQL engine should be queried via the HTTP interface`() {
+        fun `The GraphQL engine must be queried via the HTTP interface`() {
             val user = createVerifiedUsers(1)[0]
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
             val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
             assertEquals(user.info, testingObjectMapper.convertValue(data))
         }
 
-        private fun testOperationName(shouldSupplyOperationName: Boolean) {
+        private fun testOperationName(mustSupplyOperationName: Boolean) {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
@@ -43,38 +44,38 @@ class QueriesAndMutationsTest {
                         }
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    val operationName = "IsEmailAddressTaken".takeIf { shouldSupplyOperationName }
+                    val operationName = "IsEmailAddressTaken".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }
             }
-            assertEquals(if (shouldSupplyOperationName) 200 else 400, call.response.status()!!.value)
+            assertEquals(if (mustSupplyOperationName) 200 else 400, call.response.status()!!.value)
         }
 
         @Test
-        fun `The specified operation should be executed when there are multiple`() {
-            testOperationName(shouldSupplyOperationName = true)
+        fun `The specified operation must be executed when there are multiple`() {
+            testOperationName(mustSupplyOperationName = true)
         }
 
         @Test
-        fun `An error should be returned when multiple operations are supplied without an operation name`() {
-            testOperationName(shouldSupplyOperationName = false)
+        fun `An error must be returned when multiple operations are supplied without an operation name`() {
+            testOperationName(mustSupplyOperationName = false)
         }
 
         @Test
-        fun `An HTTP status code of 401 should be received when supplying an invalid access token`() {
+        fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
-        fun `An HTTP status code of 401 should be received when supplying the token of a user who lacks permissions`() {
+        fun `An HTTP status code of 401 must be received when supplying the token of a user who lacks permissions`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
-                    UPDATE_GROUP_CHAT_TITLE_QUERY,
-                    mapOf("chatId" to chatId, "title" to "T"),
-                    user.accessToken
+                UPDATE_GROUP_CHAT_TITLE_QUERY,
+                mapOf("chatId" to chatId, "title" to "T"),
+                user.accessToken
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }

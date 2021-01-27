@@ -6,28 +6,51 @@ APIs). For example, if the server has a backward incompatible change such as a D
 changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of
 the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## v0.9.0
+
+### GraphQL
+
+- New:
+  - `Query.readBlockedUsers`
+  - `Mutation.blockUser`
+  - `Mutation.unblockUser`
+  - `BlockedAccount` `type`
+  - `UnblockedAccount` `type`
+- Updated:
+  - `AccountsSubscription` `union`
+
+### REST API
+
+- Updated:
+  - `/profile-pic`
+  - `/group-chat-pic`
+  - `/pic-message`
+  - `/audio-message`
+  - `/video-message`
+  - `/doc-message`
+
 ## v0.8.3
 
 ### Server
 
 - Bug fixes:
-  - HTTP PATCH requests now work.
+    - HTTP PATCH requests now work.
 
 ## v0.8.2
 
 ### Server
 
 - Bug fixes:
-  - Fixed memory leaks.
+    - Fixed memory leaks.
 
 ## v0.8.1
 
 ### Server
 
 - Updated:
-  - Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
+    - Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
 - Bug fixes:
-  - The `docker-compose.yml` works.
+    - The `docker-compose.yml` works.
 
 ## v0.8.0
 
@@ -45,7 +68,8 @@ the HTTP request used to send the GraphQL document has changed, then the major v
     - `Query.requestOnetimeToken`
 - Bug fixes:
     - `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
-    - `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the connection opens as a text event.
+    - `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the
+      connection opens as a text event.
 
 ### REST API
 
@@ -73,7 +97,7 @@ the HTTP request used to send the GraphQL document has changed, then the major v
     - Docker `auth` service
     - Docker `auth-db` service
     - Docker `chat-db` service
-    
+
 ### GraphQL API
 
 - New:

@@ -20,10 +20,10 @@ class JwtTest {
         }
 
         private fun readExpiry(token: String): LocalDateTime =
-                JWT.decode(token).expiresAt.run { Timestamp(time).toLocalDateTime() }
+            JWT.decode(token).expiresAt.run { Timestamp(time).toLocalDateTime() }
 
         @Test
-        fun `The access and refresh tokens should expire in one hour and one week respectively`() {
+        fun `The access and refresh tokens must expire in one hour and one week respectively`() {
             val (accessToken, refreshToken) = buildTokenSet(userId = 1)
             val now = LocalDateTime.now()
             testDateTime(actual = readExpiry(accessToken), expected = now.plusHours(1))

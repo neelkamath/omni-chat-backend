@@ -4,7 +4,8 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-This repo is for the backend API. There's no frontend UI yet. Here are the features implemented so far:
+This repo is for the backend API. Here's a [web app](https://github.com/neelkamath/omni-chat-web) which utilizes the
+API. Here are the features implemented so far:
 
 - [x] Automatic online status. You don't manually set whether you're "away", or some other error-prone status that you
   have to constantly update, and no one takes seriously.
@@ -21,15 +22,16 @@ This repo is for the backend API. There's no frontend UI yet. Here are the featu
 - [x] Star messages.
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
+- [x] Block and unblock users without them knowing.
 - Message types:
-  - [x] Text
-  - [x] Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
-  - [x] Audio
-  - [x] Pictures
-  - [x] Polls
-  - [x] Videos
-  - [x] Group chat invites
-  - [x] Doc (i.e., any file type)
+    - [x] Text
+    - [x] Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
+    - [x] Audio
+    - [x] Pictures
+    - [x] Polls
+    - [x] Videos
+    - [x] Group chat invites
+    - [x] Doc (i.e., any file type)
 - Group chats (e.g., a school class's chat):
   - [x] Multiple admins.
   - [x] If you are added to a chat, or are added back to a chat after leaving it, you'll be able to see the entire chat'

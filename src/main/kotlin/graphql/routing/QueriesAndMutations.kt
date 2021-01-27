@@ -26,8 +26,8 @@ fun routeGraphQlQueriesAndMutations(context: Routing): Unit = with(context) {
                 call.respond(HttpStatusCode.Unauthorized)
             } catch (_: UnknownOperationException) {
                 call.respond(
-                        HttpStatusCode.BadRequest,
-                        "You have supplied multiple GraphQL operations but haven't specified which one to execute."
+                    HttpStatusCode.BadRequest,
+                    "You have supplied multiple GraphQL operations but haven't specified which one to execute."
                 )
             }
         }

@@ -22,4 +22,4 @@ fun buildTokenSet(userId: Int): TokenSet {
 }
 
 private fun build(userId: Int, expiry: LocalDateTime): String =
-        JWT.create().withExpiresAt(Timestamp.valueOf(expiry)).withSubject(userId.toString()).sign(algorithm)
+    JWT.create().withExpiresAt(Timestamp.valueOf(expiry)).withSubject(userId.toString()).sign(algorithm)

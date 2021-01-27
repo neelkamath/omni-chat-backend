@@ -73,9 +73,9 @@ object PrivateChatDeletions : IntIdTable() {
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */
     private fun deletePreviousDeletionRecords(chatId: Int, userId: Int): Unit = transaction {
         val idList = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
-                .toList()
-                .dropLast(1)
-                .map { it[PrivateChatDeletions.id].value }
+            .toList()
+            .dropLast(1)
+            .map { it[PrivateChatDeletions.id].value }
         deleteWhere { PrivateChatDeletions.id inList idList }
     }
 
@@ -93,8 +93,8 @@ object PrivateChatDeletions : IntIdTable() {
     /** Returns the last time the [userId] deleted the [chatId], if they ever did. */
     fun readLastDeletion(chatId: Int, userId: Int): LocalDateTime? = transaction {
         select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
-                .lastOrNull()
-                ?.get(dateTime)
+            .lastOrNull()
+            ?.get(dateTime)
     }
 
     /** Whether the [userId] has deleted the [chatId] (and not recreated the chat after that). */

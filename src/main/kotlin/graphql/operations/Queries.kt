@@ -32,16 +32,18 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
     @Suppress("unused")
     val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
 
+    @Suppress("MemberVisibilityCanBePrivate")
+    val inviteCode: UUID?
+
     val isBroadcast: Boolean
     val publicity: GroupChatPublicity
-    val inviteCode: UUID?
 
     init {
         val chat = GroupChats.readChat(
-                id,
-                usersPagination = ForwardPagination(first = 0),
-                messagesPagination = BackwardPagination(last = 0),
-                userId = userId
+            id,
+            usersPagination = ForwardPagination(first = 0),
+            messagesPagination = BackwardPagination(last = 0),
+            userId = userId
         )
         title = chat.title
         description = chat.description
@@ -52,7 +54,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
 
     @Suppress("unused")
     fun getUsers(env: DataFetchingEnvironment): AccountsConnection =
-            GroupChatUsers.readUsers(id, ForwardPagination(env.getArgument("first"), env.getArgument("after")))
+        GroupChatUsers.readUsers(id, ForwardPagination(env.getArgument("first"), env.getArgument("after")))
 
     override fun getMessages(env: DataFetchingEnvironment): MessagesConnection {
         val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
@@ -65,7 +67,7 @@ class PrivateChatDto(chatId: Int) : ChatDto {
 
     @Suppress("unused")
     fun getUser(env: DataFetchingEnvironment): Account =
-            PrivateChats.read(id, env.userId!!, BackwardPagination(last = 0)).user
+        PrivateChats.read(id, env.userId!!, BackwardPagination(last = 0)).user
 
     override fun getMessages(env: DataFetchingEnvironment): MessagesConnection {
         val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
@@ -85,14 +87,14 @@ sealed class ChatMessagesDto(val chat: ChatDto, private val messageEdges: List<M
 
 /** The [userId] searching. */
 private class SearchGroupChatMessagesDto(
-        userId: Int,
-        chatId: Int,
-        messageEdges: List<MessageEdge>
+    userId: Int,
+    chatId: Int,
+    messageEdges: List<MessageEdge>
 ) : ChatMessagesDto(GroupChatDto(chatId, userId), messageEdges)
 
 private class SearchPrivateChatMessagesDto(
-        chatId: Int,
-        messageEdges: List<MessageEdge>
+    chatId: Int,
+    messageEdges: List<MessageEdge>
 ) : ChatMessagesDto(PrivateChatDto(chatId), messageEdges)
 
 class GroupChatInfoDto(private val inviteCode: UUID) {
@@ -113,7 +115,7 @@ class GroupChatInfoDto(private val inviteCode: UUID) {
 
     @Suppress("unused")
     fun getUsers(env: DataFetchingEnvironment): AccountsConnection =
-            GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
+        GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
 }
 
 fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
@@ -132,7 +134,7 @@ fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
 }
 
 fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean =
-        Users.isEmailAddressTaken(env.getArgument("emailAddress"))
+    Users.isEmailAddressTaken(env.getArgument("emailAddress"))
 
 fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
     val username = env.parseArgument<Username>("username")
@@ -205,15 +207,15 @@ fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
-            .search(
-                    env.userId!!,
-                    query,
-                    usersPagination = ForwardPagination(first = 0),
-                    messagesPagination = BackwardPagination(last = 0)
-            )
-            .map { GroupChatDto(it.id, env.userId!!) }
+        .search(
+            env.userId!!,
+            query,
+            usersPagination = ForwardPagination(first = 0),
+            messagesPagination = BackwardPagination(last = 0)
+        )
+        .map { GroupChatDto(it.id, env.userId!!) }
     val privateChats =
-            PrivateChats.search(env.userId!!, query, BackwardPagination(last = 0)).map { PrivateChatDto(it.id) }
+        PrivateChats.search(env.userId!!, query, BackwardPagination(last = 0)).map { PrivateChatDto(it.id) }
     return groupChats + privateChats
 }
 
@@ -232,11 +234,11 @@ fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
-            .queryUserChatEdges(env.userId!!, query)
-            .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges) }
+        .queryUserChatEdges(env.userId!!, query)
+        .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges) }
     val privateChats = PrivateChats
-            .queryUserChatEdges(env.userId!!, query)
-            .map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
+        .queryUserChatEdges(env.userId!!, query)
+        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
     return groupChats + privateChats
 }
 
@@ -244,6 +246,12 @@ fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     val query = env.getArgument<String>("query")
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
     return Users.search(query, pagination)
+}
+
+fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
+    env.verifyAuth()
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    return BlockedUsers.read(env.userId!!, pagination)
 }
 
 fun readGroupChat(env: DataFetchingEnvironment): GroupChatInfoDto {
@@ -255,8 +263,8 @@ fun readGroupChat(env: DataFetchingEnvironment): GroupChatInfoDto {
 fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
     val query = env.getArgument<String>("query")
     return GroupChats.searchPublicChats(
-            query,
-            usersPagination = ForwardPagination(first = 0),
-            messagesPagination = BackwardPagination(last = 0)
+        query,
+        usersPagination = ForwardPagination(first = 0),
+        messagesPagination = BackwardPagination(last = 0)
     ).map { GroupChatDto(it.id) }
 }

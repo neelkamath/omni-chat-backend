@@ -20,10 +20,16 @@ fun routeGroupChatPic(routing: Routing): Unit = with(routing) {
 private fun getGroupChatPic(route: Route): Unit = with(route) {
     get {
         val chatId = call.parameters["chat-id"]!!.toInt()
+        val type = PicType.valueOf(call.parameters["pic-type"]!!)
         if (!Chats.exists(chatId)) call.respond(HttpStatusCode.BadRequest)
         else {
             val pic = GroupChats.readPic(chatId)
-            if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic.bytes)
+            if (pic == null) call.respond(HttpStatusCode.NoContent)
+            else
+                when (type) {
+                    PicType.ORIGINAL -> call.respondBytes(pic.original)
+                    PicType.THUMBNAIL -> call.respondBytes(pic.thumbnail)
+                }
         }
     }
 }

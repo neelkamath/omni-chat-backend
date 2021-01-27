@@ -7,48 +7,31 @@ import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.testingObjectMapper
+
 import io.ktor.http.*
-import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private fun postAudioMessage(
-        accessToken: String,
-        dummy: DummyFile,
-        chatId: Int,
-        contextMessageId: Int? = null
-): TestApplicationResponse {
-    val parameters = listOf(
-            "chat-id" to chatId.toString(),
-            "context-message-id" to contextMessageId?.toString()
-    ).filter { it.second != null }.formUrlEncode()
-    return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
-}
-
-private fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
-        getFileMessage(accessToken, messageId, path = "audio-message")
-
 @ExtendWith(DbExtension::class)
 class MediaHandlerTest {
     @Nested
     inner class GetMediaMessage {
         @Test
-        fun `A message should be read with an HTTP status code of 200`() {
+        fun `A message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val audio = Audio(ByteArray(1), Audio.Type.MP3)
             val messageId = Messages.message(admin.info.id, chatId, audio)
-            with(getAudioMessage(admin.accessToken, messageId)) {
-                assertEquals(HttpStatusCode.OK, status())
-                assertTrue(audio.bytes.contentEquals(byteContent!!))
-            }
+            val response = getAudioMessage(admin.accessToken, messageId)
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(audio.bytes.contentEquals(response.byteContent))
         }
 
         @Test
-        fun `An HTTP status code of 400 should be returned when retrieving a nonexistent message`() {
+        fun `An HTTP status code of 400 must be returned when retrieving a nonexistent message`() {
             val token = createVerifiedUsers(1)[0].accessToken
             assertEquals(HttpStatusCode.BadRequest, getAudioMessage(token, messageId = 1).status())
         }
@@ -57,7 +40,7 @@ class MediaHandlerTest {
     @Nested
     inner class PostMediaMessage {
         @Test
-        fun `An HTTP status code of 204 should be returned when a message has been created with a context`() {
+        fun `An HTTP status code of 204 must be returned when a message has been created with a context`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val messageId = Messages.message(admin.info.id, chatId)
@@ -69,50 +52,47 @@ class MediaHandlerTest {
         }
 
         @Test
-        fun `Messaging in a nonexistent chat should fail`() {
+        fun `Messaging in a nonexistent chat must fail`() {
             val token = createVerifiedUsers(1)[0].accessToken
             val dummy = DummyFile("audio.mp3", bytes = 1)
-            with(postAudioMessage(token, dummy, chatId = 1)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT), body)
-            }
+            val response = postAudioMessage(token, dummy, chatId = 1)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!)
+            assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT), body)
         }
 
         @Test
-        fun `Using an invalid message context should fail`() {
+        fun `Using an invalid message context must fail`() {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("audio.mp3", bytes = 1)
-            with(postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE), body)
-            }
+            val response = postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!)
+            assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE), body)
         }
 
         private fun testBadRequest(dummy: DummyFile) {
             val admin = createVerifiedUsers(1)[0]
             val chatId = GroupChats.create(listOf(admin.info.id))
-            with(postAudioMessage(admin.accessToken, dummy, chatId)) {
-                assertEquals(HttpStatusCode.BadRequest, status())
-                val body = testingObjectMapper.readValue<InvalidMediaMessage>(content!!)
-                assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE), body)
-            }
+            val response = postAudioMessage(admin.accessToken, dummy, chatId)
+            assertEquals(HttpStatusCode.BadRequest, response.status())
+            val body = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!)
+            assertEquals(InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE), body)
         }
 
         @Test
-        fun `Uploading an invalid file type should fail`() {
+        fun `Uploading an invalid file type must fail`() {
             testBadRequest(DummyFile("audio.flac", bytes = 1))
         }
 
         @Test
-        fun `Uploading an excessively large audio file should fail`() {
+        fun `Uploading an excessively large audio file must fail`() {
             testBadRequest(DummyFile("audio.mp3", Audio.MAX_BYTES + 1))
         }
 
         @Test
-        fun `An HTTP status code of 401 should be returned when a non-admin creates a message in a broadcast chat`() {
+        fun `An HTTP status code of 401 must be returned when a non-admin creates a message in a broadcast chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id), isBroadcast = true)
             val response = postAudioMessage(user.accessToken, DummyFile("audio.mp3", bytes = 1), chatId)

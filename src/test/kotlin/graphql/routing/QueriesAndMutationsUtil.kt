@@ -4,15 +4,16 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.main
 import com.neelkamath.omniChat.testingObjectMapper
+
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 
 /** [executeGraphQlViaHttp] wrapper which parses the [TestApplicationResponse.content] as a [Map]. */
 fun readGraphQlHttpResponse(
-        query: String,
-        variables: Map<String, Any?>? = null,
-        accessToken: String? = null
+    query: String,
+    variables: Map<String, Any?>? = null,
+    accessToken: String? = null
 ): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(testingObjectMapper::readValue)
 
 /**
@@ -23,9 +24,9 @@ fun readGraphQlHttpResponse(
  * @see [executeGraphQlViaEngine]
  */
 fun executeGraphQlViaHttp(
-        query: String,
-        variables: Map<String, Any?>? = null,
-        accessToken: String? = null
+    query: String,
+    variables: Map<String, Any?>? = null,
+    accessToken: String? = null
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(HttpMethod.Post, "query-or-mutation") {
         accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }

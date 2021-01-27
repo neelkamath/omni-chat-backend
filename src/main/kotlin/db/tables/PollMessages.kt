@@ -47,7 +47,7 @@ object PollMessages : IntIdTable() {
         val optionId = PollOptions.readId(readId(messageId), option)
         if (vote) PollVotes.create(userId, optionId) else PollVotes.deleteVote(userId, optionId)
         val updates = readUserIdList(Messages.readChatFromMessage(messageId))
-                .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
+            .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
         messagesNotifier.publish(updates)
     }
 

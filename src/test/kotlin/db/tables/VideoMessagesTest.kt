@@ -8,7 +8,7 @@ class Mp4Test {
     @Nested
     inner class Init {
         @Test
-        fun `An exception should be thrown if the video is too big`() {
+        fun `An exception must be thrown if the video is too big`() {
             assertFailsWith<IllegalArgumentException> { Mp4(ByteArray(Mp4.MAX_BYTES + 1)) }
         }
     }

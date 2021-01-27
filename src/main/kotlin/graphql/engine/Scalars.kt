@@ -11,14 +11,14 @@ import java.util.*
 
 private object DateTimeCoercing : Coercing<LocalDateTime, String> {
     private fun parseDate(iso8601DateTime: String): LocalDateTime =
-            LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
+        LocalDateTime.ofInstant(Instant.parse(iso8601DateTime), ZoneOffset.UTC)
 
     override fun parseValue(input: Any): LocalDateTime = dissectValue { parseDate(input as String) }
 
     override fun parseLiteral(input: Any): LocalDateTime = dissectLiteral { parseDate((input as StringValue).value) }
 
     override fun serialize(dataFetcherResult: Any): String =
-            translate { (dataFetcherResult as LocalDateTime).toInstant(ZoneOffset.UTC).toString() }
+        translate { (dataFetcherResult as LocalDateTime).toInstant(ZoneOffset.UTC).toString() }
 }
 
 private object CursorCoercing : Coercing<Cursor, String> {
@@ -75,7 +75,7 @@ private object GroupChatTitleCoercing : Coercing<GroupChatTitle, String> {
     override fun parseValue(input: Any): GroupChatTitle = dissectValue { GroupChatTitle(input as String) }
 
     override fun parseLiteral(input: Any): GroupChatTitle =
-            dissectLiteral { GroupChatTitle((input as StringValue).value) }
+        dissectLiteral { GroupChatTitle((input as StringValue).value) }
 
     override fun serialize(dataFetcherResult: Any): String = translate { (dataFetcherResult as GroupChatTitle).value }
 }
@@ -84,10 +84,10 @@ private object GroupChatDescriptionCoercing : Coercing<GroupChatDescription, Str
     override fun parseValue(input: Any): GroupChatDescription = dissectValue { GroupChatDescription(input as String) }
 
     override fun parseLiteral(input: Any): GroupChatDescription =
-            dissectLiteral { GroupChatDescription((input as StringValue).value) }
+        dissectLiteral { GroupChatDescription((input as StringValue).value) }
 
     override fun serialize(dataFetcherResult: Any): String =
-            translate { (dataFetcherResult as GroupChatDescription).value }
+        translate { (dataFetcherResult as GroupChatDescription).value }
 }
 
 private object MessageTextCoercing : Coercing<MessageText, String> {
@@ -141,17 +141,17 @@ private inline fun <T> translate(serialize: () -> T): T = try {
 
 /** Wires GraphQL scalars to the [builder]. */
 fun wireGraphQlScalars(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
-        .scalar(build("DateTime", DateTimeCoercing))
-        .scalar(build("Cursor", CursorCoercing))
-        .scalar(build("Placeholder", PlaceholderCoercing))
-        .scalar(build("Username", UsernameCoercing))
-        .scalar(build("Name", NameCoercing))
-        .scalar(build("Password", PasswordCoercing))
-        .scalar(build("GroupChatTitle", GroupChatTitleCoercing))
-        .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
-        .scalar(build("MessageText", MessageTextCoercing))
-        .scalar(build("Bio", BioCoercing))
-        .scalar(build("Uuid", UuidCoercing))
+    .scalar(build("DateTime", DateTimeCoercing))
+    .scalar(build("Cursor", CursorCoercing))
+    .scalar(build("Placeholder", PlaceholderCoercing))
+    .scalar(build("Username", UsernameCoercing))
+    .scalar(build("Name", NameCoercing))
+    .scalar(build("Password", PasswordCoercing))
+    .scalar(build("GroupChatTitle", GroupChatTitleCoercing))
+    .scalar(build("GroupChatDescription", GroupChatDescriptionCoercing))
+    .scalar(build("MessageText", MessageTextCoercing))
+    .scalar(build("Bio", BioCoercing))
+    .scalar(build("Uuid", UuidCoercing))
 
 private fun build(name: String, coercing: Coercing<*, *>): GraphQLScalarType =
-        GraphQLScalarType.Builder().name(name).coercing(coercing).build()
+    GraphQLScalarType.Builder().name(name).coercing(coercing).build()

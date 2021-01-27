@@ -8,7 +8,7 @@ class DocMessagesTest {
     @Nested
     inner class Init {
         @Test
-        fun `An exception should be thrown if the doc is too big`() {
+        fun `An exception must be thrown if the doc is too big`() {
             assertFailsWith<IllegalArgumentException> { Doc(ByteArray(Doc.MAX_BYTES + 1)) }
         }
     }

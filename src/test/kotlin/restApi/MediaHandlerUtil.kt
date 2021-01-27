@@ -12,43 +12,73 @@ data class DummyFile(val name: String, val bytes: Int) {
     val file = ByteArray(bytes)
 }
 
-fun getFileMessage(accessToken: String, messageId: Int, path: String): TestApplicationResponse =
-        withTestApplication(Application::main) {
-            val parameters = listOf("message-id" to messageId.toString()).formUrlEncode()
-            handleRequest(HttpMethod.Get, "$path?$parameters") {
-                addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-            }.response
-        }
+fun getFileMessage(
+    accessToken: String,
+    path: String,
+    messageId: Int,
+    picType: PicType? = null,
+): TestApplicationResponse = withTestApplication(Application::main) {
+    val parameters = listOf("message-id" to messageId.toString(), "pic-type" to picType?.toString())
+        .filter { it.second != null }
+        .formUrlEncode()
+    handleRequest(HttpMethod.Get, "$path?$parameters") {
+        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+    }.response
+}
 
-fun uploadFile(
-        accessToken: String,
-        dummy: DummyFile,
-        method: HttpMethod,
-        path: String,
-        parameters: String? = null
+fun uploadMultipart(
+    accessToken: String,
+    method: HttpMethod,
+    path: String,
+    parts: List<PartData>,
+    parameters: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
         addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         val boundary = "boundary"
         addHeader(
-                HttpHeaders.ContentType,
-                ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString()
+            HttpHeaders.ContentType,
+            ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString(),
         )
-        setBody(
-                boundary,
-                listOf(
-                        PartData.FileItem(
-                                { dummy.file.inputStream().asInput() },
-                                {},
-                                headersOf(
-                                        HttpHeaders.ContentDisposition,
-                                        ContentDisposition.File
-                                                .withParameter(ContentDisposition.Parameters.Name, "file")
-                                                .withParameter(ContentDisposition.Parameters.FileName, dummy.name)
-                                                .toString()
-                                )
-                        )
-                )
-        )
+        setBody(boundary, parts)
     }.response
 }
+
+fun buildFileItem(filename: String, fileContent: ByteArray): PartData.FileItem = PartData.FileItem(
+    { fileContent.inputStream().asInput() },
+    {},
+    headersOf(
+        HttpHeaders.ContentDisposition,
+        ContentDisposition.File
+            .withParameter(ContentDisposition.Parameters.Name, "file")
+            .withParameter(ContentDisposition.Parameters.FileName, filename)
+            .toString(),
+    ),
+)
+
+fun buildFormItem(name: String, value: String): PartData.FormItem = PartData.FormItem(
+    value,
+    {},
+    headersOf(
+        HttpHeaders.ContentDisposition,
+        ContentDisposition.Inline.withParameter(ContentDisposition.Parameters.Name, name).toString(),
+    ),
+)
+
+fun uploadFile(
+    accessToken: String,
+    filename: String,
+    fileContent: ByteArray,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null,
+): TestApplicationResponse =
+    uploadMultipart(accessToken, method, path, listOf(buildFileItem(filename, fileContent)), parameters)
+
+fun uploadFile(
+    accessToken: String,
+    dummy: DummyFile,
+    method: HttpMethod,
+    path: String,
+    parameters: String? = null,
+): TestApplicationResponse = uploadFile(accessToken, dummy.name, dummy.file, method, path, parameters)

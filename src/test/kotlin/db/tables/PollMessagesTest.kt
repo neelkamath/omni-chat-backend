@@ -7,7 +7,6 @@ import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollInput
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -19,15 +18,15 @@ class PollMessagesTest {
     @Nested
     inner class SetVote {
         @Test
-        fun `Setting a vote should only notify users in the chat`() {
+        fun `Setting a vote must only notify users in the chat`() {
             runBlocking {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId))
                 val option1 = MessageText("option 1")
                 val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
                 val messageId = Messages.message(adminId, chatId, poll)
-                val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                        .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                val (adminSubscriber, nonParticipantSubscriber) =
+                    listOf(adminId, nonParticipantId).map { messagesNotifier.safelySubscribe(it) }
                 PollMessages.setVote(adminId, messageId, option1, vote = true)
                 awaitBrokering()
                 adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedPollMessage())
@@ -49,12 +48,12 @@ class PollMessagesTest {
         }
 
         @Test
-        fun `The option should be said to exist`() {
+        fun `The option must be said to exist`() {
             assertOptionExistence(exists = true)
         }
 
         @Test
-        fun `The option shouldn't be said to exist`() {
+        fun `The option mustn't be said to exist`() {
             assertOptionExistence(exists = false)
         }
     }
