@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,8 +26,7 @@ class DbTest {
         fun `The deleted user must be unsubscribed via the new group chats broker`() {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
-                val subscriber =
-                    groupChatsNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = groupChatsNotifier.safelySubscribe(userId)
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -47,8 +45,7 @@ class DbTest {
         fun `The deleted user must be unsubscribed from contact updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
-                val subscriber =
-                    accountsNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = accountsNotifier.safelySubscribe(userId)
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -59,8 +56,8 @@ class DbTest {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-                val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                val (adminSubscriber, userSubscriber) =
+                    listOf(adminId, userId).map { groupChatsNotifier.safelySubscribe(it) }
                 deleteUser(userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))
@@ -72,7 +69,7 @@ class DbTest {
         fun `The user must be unsubscribed from message updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1)[0].info.id
-                val subscriber = messagesNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(userId)
                 deleteUser(userId)
                 subscriber.assertComplete()
             }

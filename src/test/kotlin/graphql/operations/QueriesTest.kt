@@ -17,7 +17,27 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
 
-const val SEARCH_PUBLIC_CHATS_QUERY = """
+private const val READ_BLOCKED_USERS = """
+    query ReadBlockedUsers(${"$"}first: Int, ${"$"}after: Cursor) {
+        readBlockedUsers(first: ${"$"}first, after: ${"$"}after) {
+            $ACCOUNTS_CONNECTION_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadBlockedUsers(userId: Int, pagination: ForwardPagination? = null): GraphQlResponse =
+    executeGraphQlViaEngine(
+        READ_BLOCKED_USERS,
+        mapOf("first" to pagination?.first, "after" to pagination?.after.toString()),
+        userId,
+    )
+
+private fun readBlockedUsers(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
+    val data = operateReadBlockedUsers(userId, pagination).data!!["readBlockedUsers"] as Map<*, *>
+    return testingObjectMapper.convertValue(data)
+}
+
+private const val SEARCH_PUBLIC_CHATS_QUERY = """
     query SearchPublicChats(
         ${"$"}query: String!
         ${"$"}groupChat_users_first: Int
@@ -34,7 +54,7 @@ const val SEARCH_PUBLIC_CHATS_QUERY = """
 private fun operateSearchPublicChats(
     query: String,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    messagesPagination: BackwardPagination? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_PUBLIC_CHATS_QUERY,
     mapOf(
@@ -42,7 +62,7 @@ private fun operateSearchPublicChats(
         "groupChat_users_first" to usersPagination?.first,
         "groupChat_users_after" to usersPagination?.after?.toString(),
         "groupChat_messages_last" to messagesPagination?.last,
-        "groupChat_messages_before" to messagesPagination?.before?.toString()
+        "groupChat_messages_before" to messagesPagination?.before?.toString(),
     )
 )
 
@@ -56,7 +76,7 @@ fun searchPublicChats(
     return testingObjectMapper.convertValue(data)
 }
 
-const val READ_GROUP_CHAT_QUERY = """
+private const val READ_GROUP_CHAT_QUERY = """
     query ReadGroupChat(
         ${"$"}inviteCode: Uuid!
         ${"$"}groupChatInfo_users_first: Int
@@ -86,7 +106,7 @@ fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null):
 fun errReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): String =
     operateReadGroupChat(inviteCode, usersPagination).errors!![0].message
 
-const val READ_STARS_QUERY = """
+private const val READ_STARS_QUERY = """
     query ReadStars {
         readStars {
             $STARRED_MESSAGE_FRAGMENT
@@ -101,7 +121,7 @@ fun readStars(userId: Int): List<StarredMessage> {
     return testingObjectMapper.convertValue(data)
 }
 
-const val READ_ONLINE_STATUSES_QUERY = """
+private const val READ_ONLINE_STATUSES_QUERY = """
     query ReadOnlineStatuses {
         readOnlineStatuses {
             $ONLINE_STATUS_FRAGMENT
@@ -117,7 +137,7 @@ fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
     return testingObjectMapper.convertValue(data)
 }
 
-const val CAN_DELETE_ACCOUNT_QUERY = """
+private const val CAN_DELETE_ACCOUNT_QUERY = """
     query CanDeleteAccount {
         canDeleteAccount
     }
@@ -128,7 +148,7 @@ private fun operateCanDeleteAccount(userId: Int): GraphQlResponse =
 
 fun canDeleteAccount(userId: Int): Boolean = operateCanDeleteAccount(userId).data!!["canDeleteAccount"] as Boolean
 
-const val IS_EMAIL_ADDRESS_TAKEN_QUERY = """
+private const val IS_EMAIL_ADDRESS_TAKEN_QUERY = """
     query IsEmailAddressTaken(${"$"}emailAddress: String!) {
         isEmailAddressTaken(emailAddress: ${"$"}emailAddress)
     }
@@ -140,7 +160,7 @@ private fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
 fun isEmailAddressTaken(emailAddress: String): Boolean =
     operateIsEmailAddressTaken(emailAddress).data!!["isEmailAddressTaken"] as Boolean
 
-const val IS_USERNAME_TAKEN_QUERY = """
+private const val IS_USERNAME_TAKEN_QUERY = """
     query IsUsernameTaken(${"$"}username: Username!) {
         isUsernameTaken(username: ${"$"}username)
     }
@@ -284,7 +304,7 @@ fun errReadChat(
     userId
 ).errors!![0].message
 
-const val READ_CONTACTS_QUERY = """
+private const val READ_CONTACTS_QUERY = """
     query ReadContacts(${"$"}first: Int, ${"$"}after: Cursor) {
         readContacts(first: ${"$"}first, after: ${"$"}after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
@@ -304,7 +324,7 @@ fun readContacts(userId: Int, pagination: ForwardPagination? = null): AccountsCo
     return testingObjectMapper.convertValue(data)
 }
 
-const val REFRESH_TOKEN_SET_QUERY = """
+private const val REFRESH_TOKEN_SET_QUERY = """
     query RefreshTokenSet(${"$"}refreshToken: ID!) {
         refreshTokenSet(refreshToken: ${"$"}refreshToken) {
             $TOKEN_SET_FRAGMENT
@@ -338,7 +358,7 @@ fun requestTokenSet(login: Login): TokenSet {
 
 fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
 
-const val SEARCH_CHAT_MESSAGES_QUERY = """
+private const val SEARCH_CHAT_MESSAGES_QUERY = """
     query SearchChatMessages(${"$"}chatId: Int!, ${"$"}query: String!, ${"$"}last: Int, ${"$"}before: Cursor) {
         searchChatMessages(chatId: ${"$"}chatId, query: ${"$"}query, last: ${"$"}last, before: ${"$"}before) {
             $MESSAGE_EDGE_FRAGMENT
@@ -379,7 +399,7 @@ fun errSearchChatMessages(
     userId: Int? = null
 ): String = operateSearchChatMessages(chatId, query, pagination, userId).errors!![0].message
 
-const val SEARCH_CHATS_QUERY = """
+private const val SEARCH_CHATS_QUERY = """
     query SearchChats(
         ${"$"}query: String!
         ${"$"}privateChat_messages_last: Int
@@ -433,7 +453,7 @@ fun searchChats(
     return testingObjectMapper.convertValue(chats)
 }
 
-const val SEARCH_CONTACTS_QUERY = """
+private const val SEARCH_CONTACTS_QUERY = """
     query SearchContacts(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
         searchContacts(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
@@ -456,7 +476,7 @@ fun searchContacts(userId: Int, query: String, pagination: ForwardPagination? = 
     return testingObjectMapper.convertValue(data)
 }
 
-const val SEARCH_MESSAGES_QUERY = """
+private const val SEARCH_MESSAGES_QUERY = """
     query SearchMessages(
         ${"$"}query: String!
         ${"$"}chatMessages_messages_last: Int
@@ -516,7 +536,7 @@ fun searchMessages(
     return testingObjectMapper.convertValue(messages)
 }
 
-const val SEARCH_USERS_QUERY = """
+private const val SEARCH_USERS_QUERY = """
     query SearchUsers(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
         searchUsers(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
@@ -527,7 +547,7 @@ const val SEARCH_USERS_QUERY = """
 private fun operateSearchUsers(query: String, pagination: ForwardPagination? = null): GraphQlResponse =
     executeGraphQlViaEngine(
         SEARCH_USERS_QUERY,
-        mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString())
+        mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
     )
 
 fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsConnection {
@@ -607,6 +627,22 @@ class ChatMessagesDtoTest {
 
 @ExtendWith(DbExtension::class)
 class QueriesTest {
+    @Nested
+    inner class ReadBlockedUsers {
+        @Test
+        fun `Blocked users must be paginated`() {
+            val blockerId = createVerifiedUsers(1)[0].info.id
+            val userIdList = createVerifiedUsers(10).map { it.info.id }
+            userIdList.forEach { BlockedUsers.create(blockerId, it) }
+            val index = 5
+            val cursor = BlockedUsers.read(blockerId).edges[index].cursor
+            val first = 3
+            val expected = userIdList.subList(index + 1, index + 1 + first)
+            val actual = readBlockedUsers(blockerId, ForwardPagination(first, cursor)).edges.map { it.node.id }
+            assertEquals(expected, actual)
+        }
+    }
+
     @Nested
     inner class SearchPublicChats {
         @Test
@@ -998,31 +1034,7 @@ private enum class MessagesOperationName {
     READ_CHAT,
 
     /** Represents `Query.searchChats`. */
-    SEARCH_CHATS
-}
-
-/** The name of a GraphQL operation which is concerned with the pagination of contacts. */
-private enum class ContactsOperationName {
-    /** Represents `Query.readContacts`. */
-    READ_CONTACTS,
-
-    /** Represents `Query.searchContacts`. */
-    SEARCH_CONTACTS
-}
-
-/** The name of a GraphQL operation which is concerned with the pagination of accounts. */
-private enum class GroupChatUsersOperationName {
-    /** Represents `Query.readChat`. */
-    READ_CHAT,
-
-    /** Represents `Query.readChats`. */
-    READ_CHATS,
-
-    /** Represents `Query.searchChats`. */
     SEARCH_CHATS,
-
-    /** Represents `Query.searchMessages`. */
-    SEARCH_MESSAGES
 }
 
 /** Asserts that the [operation] paginates correctly. */
@@ -1050,19 +1062,44 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
     assertEquals(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last), messages.map { it.cursor })
 }
 
+/** The name of a GraphQL operation which is concerned with the pagination of contacts. */
+private enum class ContactsOperationName {
+    /** Represents `Query.readContacts`. */
+    READ_CONTACTS,
+
+    /** Represents `Query.searchContacts`. */
+    SEARCH_CONTACTS,
+}
+
 private fun testContactsPagination(operation: ContactsOperationName) {
     val ownerId = createVerifiedUsers(1)[0].info.id
-    val userIdList = createVerifiedUsers(10)
-    Contacts.create(ownerId, userIdList.map { it.info.id }.toSet())
+    val userList = createVerifiedUsers(10).map { it.info }
+    Contacts.create(ownerId, userList.map { it.id }.toSet())
     val index = 5
-    val cursor = readContacts(ownerId).edges[index].cursor
+    val cursor = Contacts.read(ownerId).edges[index].cursor
     val first = 3
     val contacts = when (operation) {
         ContactsOperationName.READ_CONTACTS -> readContacts(ownerId, ForwardPagination(first, cursor))
         ContactsOperationName.SEARCH_CONTACTS ->
-            searchContacts(ownerId, query = "username", pagination = ForwardPagination(first, cursor))
+            searchContacts(ownerId, query = "username", ForwardPagination(first, cursor))
     }.edges.map { it.node }
-    assertEquals(userIdList.subList(index + 1, index + 1 + first).map { it.info }, contacts)
+    val expected = userList.subList(index + 1, index + 1 + first)
+    assertEquals(expected, contacts)
+}
+
+/** The name of a GraphQL operation which is concerned with the pagination of accounts. */
+private enum class GroupChatUsersOperationName {
+    /** Represents `Query.readChat`. */
+    READ_CHAT,
+
+    /** Represents `Query.readChats`. */
+    READ_CHATS,
+
+    /** Represents `Query.searchChats`. */
+    SEARCH_CHATS,
+
+    /** Represents `Query.searchMessages`. */
+    SEARCH_MESSAGES,
 }
 
 private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {

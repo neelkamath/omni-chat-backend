@@ -1,6 +1,6 @@
 package com.neelkamath.omniChat.db
 
-import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.time.delay
 import java.time.Duration
 
@@ -11,10 +11,10 @@ import java.time.Duration
  * [Notifier.publish]ed before a subscription to be received, and messages [Notifier.publish]ed after a subscription to
  * be missed.
  */
-suspend fun awaitBrokering(): Unit = delay(Duration.ofMillis(150))
+suspend fun awaitBrokering(): Unit = delay(Duration.ofMillis(250))
 
 /** [Notifier.subscribe]s after [awaitBrokering]. */
-suspend fun <T> Notifier<T>.safelySubscribe(userId: Int): Flowable<T> {
+suspend fun <T> Notifier<T>.safelySubscribe(userId: Int): TestSubscriber<T> {
     awaitBrokering()
-    return subscribe(userId)
+    return subscribe(userId).subscribeWith(TestSubscriber())
 }

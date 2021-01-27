@@ -57,6 +57,13 @@ type Query {
     readStars: [StarredMessage!]!
 
     """
+    Returns users blocked by this user.
+
+    You must send an access token with this request.
+    """
+    readBlockedUsers(first: Int, after: Cursor): AccountsConnection!
+
+    """
     The online statuses of users the user has in their contacts, or has a chat with.
 
     You must send an access token with this request.
@@ -167,6 +174,22 @@ type Query {
 }
 
 type Mutation {
+    """
+    Blocks the `userId`. Does nothing if the user has already been blocked, or the user is blocking themselves.
+
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user ID doesn't exist).
+
+    You must send an access token with this request.
+    """
+    blockUser(userId: Int!): Placeholder!
+
+    """
+    Unblocks the `userId`. Does nothing if the user wasn't blocked.
+
+    You must send an access token with this request.
+    """
+    unblockUser(userId: Int!): Placeholder!
+
     """
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
     chats with the user will have their chats deleted, etc.
@@ -574,7 +597,8 @@ type Subscription {
     subscribeToGroupChats: GroupChatsSubscription!
 }
 
-union MessagesSubscription = CreatedSubscription
+union MessagesSubscription =
+    | CreatedSubscription
     | NewTextMessage
     | NewActionMessage
     | NewPicMessage
@@ -601,13 +625,25 @@ union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
-"""An `UpdatedAccount` might be sent if the account's profile pic was updated."""
-union AccountsSubscription = CreatedSubscription | NewContact | UpdatedAccount | DeletedContact
+"""
+When the account's profile pic gets updated, an `UpdatedAccount` will be sent.
+
+A user will be automatically unblocked when they delete their account. In this scenario, an `UnblockedAccount` will not
+be sent because it's a rare event, and the client would've had to deal with the user viewing a user who's account was
+just deleted.
+"""
+union AccountsSubscription =
+    | CreatedSubscription
+    | NewContact
+    | UpdatedAccount
+    | DeletedContact
+    | BlockedAccount
+    | UnblockedAccount
 
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-An `UpdatedGroupChat` might be sent if the chat's pic was updated.
+When a group chat's pic gets updated, an `UpdatedGroupChat` will be sent.
 
 If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
 """
@@ -771,6 +807,16 @@ type Account implements AccountData {
     firstName: Name!
     lastName: Name!
     bio: Bio!
+}
+
+"""The user blocked the `userId`."""
+type BlockedAccount {
+    userId: Int!
+}
+
+"""The user unblocked the `userId`."""
+type UnblockedAccount {
+    userId: Int!
 }
 
 type NewContact implements AccountData {

@@ -159,3 +159,9 @@ CREATE TABLE action_message_actions
     action_message_id INTEGER        NOT NULL REFERENCES action_messages (id),
     action            VARCHAR(10000) NOT NULL
 );
+CREATE TABLE blocked_users
+(
+    id              SERIAL PRIMARY KEY,
+    blocker_user_id INTEGER NOT NULL REFERENCES users (id),
+    blocked_user_id INTEGER NOT NULL REFERENCES users (id)
+);

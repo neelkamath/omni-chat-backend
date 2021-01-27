@@ -12,16 +12,45 @@ import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
 import com.neelkamath.omniChat.testingObjectMapper
-
 import io.ktor.http.*
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
 
-const val RESET_PASSWORD_QUERY = """
+private const val UNBLOCK_USER_QUERY = """
+    mutation UnblockUser(${"$"}userId: Int!) {
+        unblockUser(userId: ${"$"}userId)
+    }
+"""
+
+private fun operateUnblockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+
+private fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
+    val data = operateUnblockUser(userId, blockedUserId).data!!["unblockUser"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+private const val BLOCK_USER_QUERY = """
+    mutation BlockUser(${"$"}userId: Int!) {
+        blockUser(userId: ${"$"}userId)
+    }
+"""
+
+private fun operateBlockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(BLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+
+private fun blockUser(userId: Int, blockedUserId: Int): Placeholder {
+    val data = operateBlockUser(userId, blockedUserId).data!!["blockUser"] as String
+    return testingObjectMapper.convertValue(data)
+}
+
+private fun errBlockUser(userId: Int, blockedUserId: Int): String =
+    operateBlockUser(userId, blockedUserId).errors!![0].message
+
+private const val RESET_PASSWORD_QUERY = """
     mutation ResetPassword(${"$"}emailAddress: String!, ${"$"}passwordResetCode: Int!, ${"$"}newPassword: Password!) {
         resetPassword(
             emailAddress: ${"$"}emailAddress
@@ -34,10 +63,10 @@ const val RESET_PASSWORD_QUERY = """
 private fun operateResetPassword(
     emailAddress: String,
     passwordResetCode: Int,
-    newPassword: Password
+    newPassword: Password,
 ): GraphQlResponse = executeGraphQlViaEngine(
     RESET_PASSWORD_QUERY,
-    mapOf("emailAddress" to emailAddress, "passwordResetCode" to passwordResetCode, "newPassword" to newPassword.value)
+    mapOf("emailAddress" to emailAddress, "passwordResetCode" to passwordResetCode, "newPassword" to newPassword.value),
 )
 
 fun resetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): Boolean =
@@ -46,7 +75,7 @@ fun resetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Pas
 fun errResetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): String =
     operateResetPassword(emailAddress, passwordResetCode, newPassword).errors!![0].message
 
-const val VERIFY_EMAIL_ADDRESS_QUERY = """
+private const val VERIFY_EMAIL_ADDRESS_QUERY = """
     mutation VerifyEmailAddress(${"$"}emailAddress: String!, ${"$"}verificationCode: Int!) {
         verifyEmailAddress(emailAddress: ${"$"}emailAddress, verificationCode: ${"$"}verificationCode)
     }
@@ -64,7 +93,7 @@ fun verifyEmailAddress(emailAddress: String, verificationCode: Int): Boolean =
 fun errVerifyEmailAddress(emailAddress: String, verificationCode: Int): String =
     operateVerifyEmailAddress(emailAddress, verificationCode).errors!![0].message
 
-const val TRIGGER_ACTION_QUERY = """
+private const val TRIGGER_ACTION_QUERY = """
     mutation TriggerAction(${"$"}messageId: Int!, ${"$"}action: MessageText!) {
         triggerAction(messageId: ${"$"}messageId, action: ${"$"}action)
     }
@@ -81,7 +110,7 @@ fun triggerAction(userId: Int, messageId: Int, action: MessageText): Placeholder
 fun errTriggerAction(userId: Int, messageId: Int, action: MessageText): String =
     operateTriggerAction(userId, messageId, action).errors!![0].message
 
-const val CREATE_ACTION_MESSAGE_QUERY = """
+private const val CREATE_ACTION_MESSAGE_QUERY = """
     mutation CreateActionMessage(${"$"}chatId: Int!, ${"$"}message: ActionMessageInput!, ${"$"}contextMessageId: Int) {
         createActionMessage(chatId: ${"$"}chatId, message: ${"$"}message, contextMessageId: ${"$"}contextMessageId)
     }
@@ -116,7 +145,7 @@ fun errCreateActionMessage(
     contextMessageId: Int? = null
 ): String = operateCreateActionMessage(userId, chatId, message, contextMessageId).errors!![0].message
 
-const val FORWARD_MESSAGE_QUERY = """
+private const val FORWARD_MESSAGE_QUERY = """
     mutation ForwardMessage(${"$"}chatId: Int!, ${"$"}messageId: Int!, ${"$"}contextMessageId: Int) {
         forwardMessage(chatId: ${"$"}chatId, messageId: ${"$"}messageId, contextMessageId: ${"$"}contextMessageId)
     }
@@ -141,7 +170,7 @@ fun forwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: I
 fun errForwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int? = null): String =
     operateForwardMessage(userId, chatId, messageId, contextMessageId).errors!![0].message
 
-const val REMOVE_GROUP_CHAT_USERS_QUERY = """
+private const val REMOVE_GROUP_CHAT_USERS_QUERY = """
     mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
         removeGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
     }
@@ -162,7 +191,7 @@ fun removeGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Place
 fun errRemoveGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
     operateRemoveGroupChatUsers(userId, chatId, userIdList).errors!![0].message
 
-const val SET_INVITABILITY_QUERY = """
+private const val SET_INVITABILITY_QUERY = """
     mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
         setInvitability(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable)
     }
@@ -179,7 +208,7 @@ fun setInvitability(userId: Int, chatId: Int, isInvitable: Boolean): Placeholder
 fun errSetInvitability(userId: Int, chatId: Int, isInvitable: Boolean): String =
     operateSetInvitability(userId, chatId, isInvitable).errors!![0].message
 
-const val CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY = """
+private const val CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY = """
     mutation CreateGroupChatInviteMessage(${"$"}chatId: Int!, ${"$"}invitedChatId: Int!, ${"$"}contextMessageId: Int) {
         createGroupChatInviteMessage(
             chatId: ${"$"}chatId
@@ -218,7 +247,7 @@ fun errCreateGroupChatInviteMessage(
     contextMessageId: Int? = null
 ): String = operateCreateGroupChatInviteMessage(userId, chatId, invitedChatId, contextMessageId).errors!![0].message
 
-const val JOIN_GROUP_CHAT_QUERY = """
+private const val JOIN_GROUP_CHAT_QUERY = """
     mutation JoinGroupChat(${"$"}inviteCode: Uuid!) {
         joinGroupChat(inviteCode: ${"$"}inviteCode)
     }
@@ -235,7 +264,7 @@ fun joinGroupChat(userId: Int, inviteCode: UUID): Placeholder {
 fun errJoinGroupChat(userId: Int, inviteCode: UUID): String =
     operateJoinGroupChat(userId, inviteCode).errors!![0].message
 
-const val CREATE_POLL_MESSAGE_QUERY = """
+private const val CREATE_POLL_MESSAGE_QUERY = """
     mutation CreatePollMessage(${"$"}chatId: Int!, ${"$"}poll: PollInput!, ${"$"}contextMessageId: Int) {
         createPollMessage(chatId: ${"$"}chatId, poll: ${"$"}poll, contextMessageId: ${"$"}contextMessageId)
     }
@@ -260,7 +289,7 @@ fun createPollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageI
 fun errCreatePollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int? = null): String =
     operateCreatePollMessage(userId, chatId, poll, contextMessageId).errors!![0].message
 
-const val SET_POLL_VOTE_QUERY = """
+private const val SET_POLL_VOTE_QUERY = """
     mutation SetPollVote(${"$"}messageId: Int!, ${"$"}option: MessageText!, ${"$"}vote: Boolean!) {
         setPollVote(messageId: ${"$"}messageId, option: ${"$"}option, vote: ${"$"}vote)
     }
@@ -281,7 +310,7 @@ fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean)
 fun errSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): String =
     operateSetPollVote(userId, messageId, option, vote).errors!![0].message
 
-const val SET_BROADCAST_STATUS_QUERY = """
+private const val SET_BROADCAST_STATUS_QUERY = """
     mutation SetBroadcastStatus(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
         setBroadcastStatus(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
     }
@@ -295,7 +324,7 @@ fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placehol
     return testingObjectMapper.convertValue(data)
 }
 
-const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
+private const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
     mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
         makeGroupChatAdmins(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
     }
@@ -312,7 +341,7 @@ fun makeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): Placeh
 fun errMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): String =
     operateMakeGroupChatAdmins(userId, chatId, userIdList).errors!![0].message
 
-const val ADD_GROUP_CHAT_USERS_QUERY = """
+private const val ADD_GROUP_CHAT_USERS_QUERY = """
     mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
         addGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
     }
@@ -329,7 +358,7 @@ fun addGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placehol
 fun errAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
     operateAddGroupChatUsers(userId, chatId, userIdList).errors!![0].message
 
-const val UPDATE_GROUP_CHAT_DESCRIPTION_QUERY = """
+private const val UPDATE_GROUP_CHAT_DESCRIPTION_QUERY = """
     mutation UpdateGroupChatDescription(${"$"}chatId: Int!, ${"$"}description: GroupChatDescription!) {
         updateGroupChatDescription(chatId: ${"$"}chatId, description: ${"$"}description)
     }
@@ -365,7 +394,7 @@ fun updateGroupChatTitle(userId: Int, chatId: Int, title: GroupChatTitle): Place
     return testingObjectMapper.convertValue(data)
 }
 
-const val DELETE_STAR_QUERY = """
+private const val DELETE_STAR_QUERY = """
     mutation DeleteStar(${"$"}messageId: Int!) {
         deleteStar(messageId: ${"$"}messageId)
     }
@@ -379,7 +408,7 @@ fun deleteStar(userId: Int, messageId: Int): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-const val STAR_QUERY = """
+private const val STAR_QUERY = """
     mutation Star(${"$"}messageId: Int!) {
         star(messageId: ${"$"}messageId)
     }
@@ -395,7 +424,7 @@ fun star(userId: Int, messageId: Int): Placeholder {
 
 fun errStar(userId: Int, messageId: Int): String = operateStar(userId, messageId).errors!![0].message
 
-const val SET_ONLINE_STATUS_QUERY = """
+private const val SET_ONLINE_STATUS_QUERY = """
     mutation SetOnlineStatus(${"$"}isOnline: Boolean!) {
         setOnlineStatus(isOnline: ${"$"}isOnline)
     }
@@ -409,7 +438,7 @@ fun setOnlineStatus(userId: Int, isOnline: Boolean): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-const val SET_TYPING_QUERY = """
+private const val SET_TYPING_QUERY = """
     mutation SetTyping(${"$"}chatId: Int!, ${"$"}isTyping: Boolean!) {
         setTyping(chatId: ${"$"}chatId, isTyping: ${"$"}isTyping)
     }
@@ -426,7 +455,7 @@ fun setTyping(userId: Int, chatId: Int, isTyping: Boolean): Placeholder {
 fun errSetTyping(userId: Int, chatId: Int, isTyping: Boolean): String =
     operateSetTyping(userId, chatId, isTyping).errors!![0].message
 
-const val DELETE_GROUP_CHAT_PIC_QUERY = """
+private const val DELETE_GROUP_CHAT_PIC_QUERY = """
     mutation DeleteGroupChatPic(${"$"}chatId: Int!) {
         deleteGroupChatPic(chatId: ${"$"}chatId)
     }
@@ -440,7 +469,7 @@ fun deleteGroupChatPic(userId: Int, chatId: Int): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-const val DELETE_PROFILE_PIC_QUERY = """
+private const val DELETE_PROFILE_PIC_QUERY = """
     mutation DeleteProfilePic {
         deleteProfilePic
     }
@@ -454,7 +483,7 @@ fun deleteProfilePic(userId: Int): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-const val CREATE_ACCOUNTS_QUERY = """
+private const val CREATE_ACCOUNTS_QUERY = """
     mutation CreateAccount(${"$"}account: AccountInput!) {
         createAccount(account: ${"$"}account)
     }
@@ -470,7 +499,7 @@ fun createAccount(account: AccountInput): Placeholder {
 
 fun errCreateAccount(account: AccountInput): String = operateCreateAccount(account).errors!![0].message
 
-const val CREATE_CONTACTS_QUERY = """
+private const val CREATE_CONTACTS_QUERY = """
     mutation CreateContacts(${"$"}userIdList: [Int!]!) {
         createContacts(userIdList: ${"$"}userIdList)
     }
@@ -487,7 +516,7 @@ fun createContacts(userId: Int, userIdList: List<Int>): Placeholder {
 fun errCreateContacts(userId: Int, userIdList: List<Int>): String =
     operateCreateContacts(userId, userIdList).errors!![0].message
 
-const val CREATE_GROUP_CHAT_QUERY = """
+private const val CREATE_GROUP_CHAT_QUERY = """
     mutation CreateGroupChat(${"$"}chat: GroupChatInput!) {
         createGroupChat(chat: ${"$"}chat)
     }
@@ -499,7 +528,7 @@ private fun operateCreateGroupChat(userId: Int, chat: GroupChatInput): GraphQlRe
 fun errCreateGroupChat(userId: Int, chat: GroupChatInput): String =
     operateCreateGroupChat(userId, chat).errors!![0].message
 
-const val CREATE_MESSAGE_QUERY = """
+private const val CREATE_MESSAGE_QUERY = """
     mutation CreateTextMessage(${"$"}chatId: Int!, ${"$"}text: MessageText!, ${"$"}contextMessageId: Int) {
         createTextMessage(chatId: ${"$"}chatId, text: ${"$"}text, contextMessageId: ${"$"}contextMessageId)
     }
@@ -524,7 +553,7 @@ fun createTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessag
 fun errCreateTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): String =
     operateCreateTextMessage(userId, chatId, text, contextMessageId).errors!![0].message
 
-const val CREATE_PRIVATE_CHAT_QUERY = """
+private const val CREATE_PRIVATE_CHAT_QUERY = """
     mutation CreatePrivateChat(${"$"}userId: Int!) {
         createPrivateChat(userId: ${"$"}userId)
     }
@@ -539,7 +568,7 @@ fun createPrivateChat(userId: Int, otherUserId: Int): Int =
 fun errCreatePrivateChat(userId: Int, otherUserId: Int): String =
     operateCreatePrivateChat(userId, otherUserId).errors!![0].message
 
-const val CREATE_STATUS_QUERY = """
+private const val CREATE_STATUS_QUERY = """
     mutation CreateStatus(${"$"}messageId: Int!, ${"$"}status: MessageStatus!) {
         createStatus(messageId: ${"$"}messageId, status: ${"$"}status)
     }
@@ -556,7 +585,7 @@ fun createStatus(userId: Int, messageId: Int, status: MessageStatus): Placeholde
 fun errCreateStatus(userId: Int, messageId: Int, status: MessageStatus): String =
     operateCreateStatus(userId, messageId, status).errors!![0].message
 
-const val DELETE_ACCOUNT_QUERY = """
+private const val DELETE_ACCOUNT_QUERY = """
     mutation DeleteAccount {
         deleteAccount
     }
@@ -572,7 +601,7 @@ fun deleteAccount(userId: Int): Placeholder {
 
 fun errDeleteAccount(userId: Int): String = operateDeleteAccount(userId).errors!![0].message
 
-const val DELETE_CONTACTS_QUERY = """
+private const val DELETE_CONTACTS_QUERY = """
     mutation DeleteContacts(${"$"}userIdList: [Int!]!) {
         deleteContacts(userIdList: ${"$"}userIdList)
     }
@@ -586,7 +615,7 @@ fun deleteContacts(userId: Int, userIdList: List<Int>): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-const val DELETE_MESSAGE_QUERY = """
+private const val DELETE_MESSAGE_QUERY = """
     mutation DeleteMessage(${"$"}id: Int!) {
         deleteMessage(id: ${"$"}id)
     }
@@ -603,7 +632,7 @@ fun deleteMessage(userId: Int, messageId: Int): Placeholder {
 fun errDeleteMessage(userId: Int, messageId: Int): String =
     operateDeleteMessage(userId, messageId).errors!![0].message
 
-const val DELETE_PRIVATE_CHAT_QUERY = """
+private const val DELETE_PRIVATE_CHAT_QUERY = """
     mutation DeletePrivateChat(${"$"}chatId: Int!) {
         deletePrivateChat(chatId: ${"$"}chatId)
     }
@@ -620,7 +649,7 @@ fun deletePrivateChat(userId: Int, chatId: Int): Placeholder {
 fun errDeletePrivateChat(userId: Int, chatId: Int): String =
     operateDeletePrivateChat(userId, chatId).errors!![0].message
 
-const val EMAIL_PASSWORD_RESET_CODE_QUERY = """
+private const val EMAIL_PASSWORD_RESET_CODE_QUERY = """
     mutation EmailPasswordResetCode(${"$"}emailAddress: String!) {
         emailPasswordResetCode(emailAddress: ${"$"}emailAddress)
     }
@@ -637,7 +666,7 @@ fun emailPasswordResetCode(emailAddress: String): Placeholder {
 fun errEmailPasswordResetCode(emailAddress: String): String =
     operateEmailPasswordResetCode(emailAddress).errors!![0].message
 
-const val EMAIL_EMAIL_ADDRESS_VERIFICATION_QUERY = """
+private const val EMAIL_EMAIL_ADDRESS_VERIFICATION_QUERY = """
     mutation EmailEmailAddressVerification(${"$"}emailAddress: String!) {
         emailEmailAddressVerification(emailAddress: ${"$"}emailAddress)
     }
@@ -654,7 +683,7 @@ fun emailEmailAddressVerification(emailAddress: String): Placeholder {
 fun errEmailEmailAddressVerification(emailAddress: String): String =
     operateEmailEmailAddressVerification(emailAddress).errors!![0].message
 
-const val UPDATE_ACCOUNT_QUERY = """
+private const val UPDATE_ACCOUNT_QUERY = """
     mutation UpdateAccount(${"$"}update: AccountUpdate!) {
         updateAccount(update: ${"$"}update)
     }
@@ -673,6 +702,34 @@ fun errUpdateAccount(userId: Int, update: AccountUpdate): String =
 
 @ExtendWith(DbExtension::class)
 class MutationsTest {
+    @Nested
+    inner class UnblockUser {
+        @Test
+        fun `The user must be unblocked`() {
+            val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
+            BlockedUsers.create(blockerId, blockedId)
+            unblockUser(blockerId, blockedId)
+            assertEquals(0, BlockedUsers.count())
+        }
+    }
+
+    @Nested
+    inner class BlockUser {
+        @Test
+        fun `The user must be blocked`() {
+            val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
+            blockUser(blockerId, blockedId)
+            val userId = BlockedUsers.read(blockerId).edges[0].node.id
+            assertEquals(blockedId, userId)
+        }
+
+        @Test
+        fun `A nonexistent user mustn't be blocked`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            assertEquals(InvalidUserIdException.message, errBlockUser(userId, -1))
+        }
+    }
+
     @Nested
     inner class ResetPassword {
         @Test
@@ -740,7 +797,7 @@ class MutationsTest {
                 chatId,
                 ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
-            val subscriber = messagesNotifier.safelySubscribe(admin.id).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.safelySubscribe(admin.id)
             triggerAction(admin.id, messageId, action)
             awaitBrokering()
             subscriber.assertValue(TriggeredAction(messageId, action, admin))

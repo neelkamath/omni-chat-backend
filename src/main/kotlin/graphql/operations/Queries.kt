@@ -248,6 +248,12 @@ fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     return Users.search(query, pagination)
 }
 
+fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
+    env.verifyAuth()
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    return BlockedUsers.read(env.userId!!, pagination)
+}
+
 fun readGroupChat(env: DataFetchingEnvironment): GroupChatInfoDto {
     val inviteCode = env.getArgument<UUID>("inviteCode")
     if (!GroupChats.isExistentInviteCode(inviteCode)) throw InvalidInviteCodeException

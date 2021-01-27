@@ -5,7 +5,6 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -174,8 +173,8 @@ class MessagesTest {
         fun `Subscribers must receive notifications of created messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
-            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+            val (adminSubscriber, user1Subscriber, user2Subscriber) =
+                listOf(adminId, user1Id, user2Id).map { messagesNotifier.safelySubscribe(it) }
             repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
@@ -191,8 +190,7 @@ class MessagesTest {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 PrivateChatDeletions.create(chatId, user1Id)
-                val subscriber =
-                    messagesNotifier.safelySubscribe(user1Id).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(user1Id)
                 val messageId = Messages.message(user2Id, chatId)
                 awaitBrokering()
                 Messages.readMessage(user1Id, messageId).toNewTextMessage().let(subscriber::assertValue)
@@ -281,8 +279,7 @@ class MessagesTest {
             runBlocking {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
-                val subscriber =
-                    messagesNotifier.safelySubscribe(user1Id).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(user1Id)
                 Messages.deleteChat(chatId)
                 awaitBrokering()
                 subscriber.assertValue(DeletionOfEveryMessage(chatId))
@@ -308,8 +305,7 @@ class MessagesTest {
             runBlocking {
                 val adminId = createVerifiedUsers(1)[0].info.id
                 val chatId = GroupChats.create(listOf(adminId))
-                val subscriber =
-                    messagesNotifier.safelySubscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(adminId)
                 val until = LocalDateTime.now()
                 Messages.deleteChatUntil(chatId, until)
                 awaitBrokering()
@@ -325,8 +321,7 @@ class MessagesTest {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-                val subscriber =
-                    messagesNotifier.safelySubscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(adminId)
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
                 subscriber.assertValue(UserChatMessagesRemoval(chatId, userId))
@@ -344,8 +339,7 @@ class MessagesTest {
                 Messages.create(userId, chatId)
                 chatId
             }
-            val (chat1Subscriber, chat2Subscriber) = (1..2)
-                .map { messagesNotifier.safelySubscribe(userId).subscribeWith(TestSubscriber()) }
+            val (chat1Subscriber, chat2Subscriber) = (1..2).map { messagesNotifier.safelySubscribe(userId) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             listOf(chat1Subscriber, chat2Subscriber).forEach {
@@ -362,8 +356,7 @@ class MessagesTest {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val messageId = Messages.message(user1Id, chatId)
-                val subscriber =
-                    messagesNotifier.safelySubscribe(user1Id).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.safelySubscribe(user1Id)
                 Messages.delete(messageId)
                 awaitBrokering()
                 subscriber.assertValue(DeletedMessage(chatId, messageId))

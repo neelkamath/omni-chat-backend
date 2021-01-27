@@ -7,7 +7,6 @@ import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -24,10 +23,8 @@ class TypingStatusesTest {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
-                val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                    .map {
-                        typingStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
-                    }
+                val (user1Subscriber, user2Subscriber, user3Subscriber) =
+                    listOf(user1Id, user2Id, user3Id).map { typingStatusesNotifier.safelySubscribe(it) }
                 val isTyping = true
                 TypingStatuses.set(chatId, user1Id, isTyping)
                 awaitBrokering()

@@ -30,6 +30,7 @@ private val tables: List<Table> = listOf(
     PrivateChatDeletions,
     PrivateChats,
     Chats,
+    BlockedUsers,
     Users,
     Pics,
 )

@@ -19,7 +19,7 @@ val db: Database by lazy {
         "jdbc:postgresql://$url/$db?reWriteBatchedInserts=true",
         "org.postgresql.Driver",
         System.getenv("POSTGRES_USER"),
-        System.getenv("POSTGRES_PASSWORD")
+        System.getenv("POSTGRES_PASSWORD"),
     )
 }
 
@@ -74,6 +74,10 @@ fun readChatSharers(userId: Int): List<Int> =
  * - The [userId] will be deleted from the [Users].
  * - Clients who have [Notifier.subscribe]d via [groupChatsNotifier] will be [Notifier.unsubscribe]d.
  *
+ * ## Blocked Users
+ *
+ * - Users who have blocked, or been blocked by the [userId] will be deleted from the blocked users list.
+ *
  * ## Contacts
  *
  * - The user's [Contacts] will be deleted.
@@ -109,15 +113,16 @@ fun deleteUser(userId: Int) {
     if (!GroupChatUsers.canUserLeave(userId))
         throw IllegalArgumentException(
             """
-                The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
-                users.
-                """
+            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
+            users.
+            """
         )
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.removeUser(userId)
     TypingStatuses.deleteUser(userId)
     Messages.deleteUserMessages(userId)
+    BlockedUsers.deleteUser(userId)
     Users.delete(userId)
     groupChatsNotifier.unsubscribe { it == userId }
     accountsNotifier.unsubscribe { it == userId }

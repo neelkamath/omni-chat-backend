@@ -6,7 +6,6 @@ import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
 import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.*
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -20,8 +19,7 @@ class UsersTest {
         fun `Updating the user's online status to the current value mustn't cause notifications to be sent`() {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
-                val subscriber = onlineStatusesNotifier
-                    .safelySubscribe(contactOwnerId).subscribeWith(TestSubscriber())
+                val subscriber = onlineStatusesNotifier.safelySubscribe(contactOwnerId)
                 Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -35,9 +33,8 @@ class UsersTest {
                 Contacts.create(contactOwnerId, setOf(updaterId))
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
-                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId).map {
-                        onlineStatusesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber())
-                    }
+                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
+                        .map { onlineStatusesNotifier.safelySubscribe(it) }
                 val status = Users.read(updaterId).isOnline.not()
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()

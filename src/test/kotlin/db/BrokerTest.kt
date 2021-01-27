@@ -4,7 +4,6 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.UpdatedAccount
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -31,7 +30,7 @@ class BrokerTest {
                     privateChatSharerSubscriber,
                     groupChatSharerSubscriber
                 ) = listOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
-                    .map { accountsNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { accountsNotifier.safelySubscribe(it) }
                 negotiateUserUpdate(userId)
                 awaitBrokering()
                 deletedPrivateChatSharerSubscriber.assertNoValues()
@@ -54,8 +53,8 @@ class NotifierTest {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
                 val notifier = Notifier<String>(Topic.MESSAGES)
-                val (subscriber1, subscriber2, subscriber3, subscriber4) = listOf(user1Id, user1Id, user2Id, user3Id)
-                    .map { notifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+                val (subscriber1, subscriber2, subscriber3, subscriber4) =
+                    listOf(user1Id, user1Id, user2Id, user3Id).map { notifier.safelySubscribe(it) }
                 val update = "update"
                 notifier.notify(listOf(Notification(user1Id, update), Notification(user2Id, update)))
                 awaitBrokering()

@@ -8,15 +8,26 @@ the HTTP request used to send the GraphQL document has changed, then the major v
 
 ## v0.9.0
 
+### GraphQL
+
+- New:
+  - `Query.readBlockedUsers`
+  - `Mutation.blockUser`
+  - `Mutation.unblockUser`
+  - `BlockedAccount` `type`
+  - `UnblockedAccount` `type`
+- Updated:
+  - `AccountsSubscription` `union`
+
 ### REST API
 
 - Updated:
-    - `/profile-pic`
-    - `/group-chat-pic`
-    - `/pic-message`
-    - `/audio-message`
-    - `/video-message`
-    - `/doc-message`
+  - `/profile-pic`
+  - `/group-chat-pic`
+  - `/pic-message`
+  - `/audio-message`
+  - `/video-message`
+  - `/doc-message`
 
 ## v0.8.3
 

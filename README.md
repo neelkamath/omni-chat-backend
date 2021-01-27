@@ -22,15 +22,16 @@ API. Here are the features implemented so far:
 - [x] Star messages.
 - [x] Markdown support.
 - [x] Reply to a message to prevent context loss.
+- [x] Block and unblock users without them knowing.
 - Message types:
-  - [x] Text
-  - [x] Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
-  - [x] Audio
-  - [x] Pictures
-  - [x] Polls
-  - [x] Videos
-  - [x] Group chat invites
-  - [x] Doc (i.e., any file type)
+    - [x] Text
+    - [x] Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
+    - [x] Audio
+    - [x] Pictures
+    - [x] Polls
+    - [x] Videos
+    - [x] Group chat invites
+    - [x] Doc (i.e., any file type)
 - Group chats (e.g., a school class's chat):
   - [x] Multiple admins.
   - [x] If you are added to a chat, or are added back to a chat after leaving it, you'll be able to see the entire chat'

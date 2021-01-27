@@ -31,6 +31,10 @@ Here's the usual flow for using the API if you're building a bot:
   user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the
   messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't
   matter.
+- Though the server knows which users have been blocked, it doesn't treat blocked users differently. The client chooses
+  what to do with messages, etc. from a blocked user. For example, if a blocked user creates a chat with the user, the
+  client could hide it in a page away from the main chats where the user would have to explicitly navigate to should
+  they want to (e.g., the way Gmail handles spam email).
 
 ## Security
 

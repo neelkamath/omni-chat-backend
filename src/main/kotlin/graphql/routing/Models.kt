@@ -286,6 +286,12 @@ data class GroupChatDescription(val value: String) {
     }
 }
 
+/** The user blocked the [userId]. */
+data class BlockedAccount(val userId: Int) : AccountsSubscription
+
+/** The user unblocked the [userId]. */
+data class UnblockedAccount(val userId: Int) : AccountsSubscription
+
 /** An [IllegalArgumentException] will be thrown if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(
     val chatId: Int,
@@ -1104,25 +1110,38 @@ data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
 data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {
     companion object {
-        /** The [accountEdges] will be sorted in ascending order of their [AccountEdge.cursor] for you. */
+        /**
+         * An [AccountsConnection] is used when the dataset used is too large to load in one go. Certain datasets are
+         * considered large in the context of networking but not in a server program. For example, a list of thousands
+         * of elements has a negligible performance impact on a server but is too large to transfer as JSON to a client.
+         * In such cases, you can easily build an [AccountsConnection] by passing the entire dataset to this function.
+         * Of course, if the dataset would be considered large by a server program as well, then this function shouldn't
+         * be used since the [accountEdges] passed must contain the entire dataset.
+         *
+         * The [accountEdges] will be sorted in ascending order of their [AccountEdge.cursor] for you.
+         */
         fun build(accountEdges: List<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
             val (first, after) = pagination ?: ForwardPagination()
             val accounts = accountEdges.sortedBy { it.cursor }
             val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
             val firstAccounts = if (first == null) afterAccounts else afterAccounts.take(first)
-            val edges = firstAccounts.map { AccountEdge(it.node, cursor = it.cursor) }
+            val edges = firstAccounts.map { AccountEdge(it.node, it.cursor) }
             val pageInfo = PageInfo(
                 hasNextPage = firstAccounts.size < afterAccounts.size,
                 hasPreviousPage = afterAccounts.size < accounts.size,
                 startCursor = accounts.firstOrNull()?.cursor,
-                endCursor = accounts.lastOrNull()?.cursor
+                endCursor = accounts.lastOrNull()?.cursor,
             )
             return AccountsConnection(edges, pageInfo)
         }
     }
 }
 
-data class AccountEdge(val node: Account, val cursor: Cursor)
+data class AccountEdge(val node: Account, val cursor: Cursor) {
+    companion object {
+        fun build(userId: Int, cursor: Cursor): AccountEdge = AccountEdge(Users.read(userId).toAccount(), cursor)
+    }
+}
 
 data class PageInfo(
     val hasNextPage: Boolean,

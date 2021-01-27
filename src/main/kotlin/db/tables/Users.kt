@@ -129,7 +129,7 @@ object Users : IntIdTable() {
         this[emailAddress],
         Name(this[firstName]),
         Name(this[lastName]),
-        Bio(this[bio])
+        Bio(this[bio]),
     )
 
     /**
@@ -205,7 +205,6 @@ object Users : IntIdTable() {
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val users = transaction {
             selectAll()
-                .orderBy(Users.id)
                 .filter {
                     it[username].contains(query, ignoreCase = true) ||
                             it[firstName].contains(query, ignoreCase = true) ||

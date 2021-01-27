@@ -9,7 +9,6 @@ import com.neelkamath.omniChat.graphql.operations.triggerAction
 import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.TriggeredAction
-import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -29,7 +28,7 @@ class ActionMessagesTest {
             val messageId = Messages.message(
                 adminId,
                 chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No"))),
             )
             assertTrue(ActionMessages.hasAction(messageId, action))
             assertFalse(ActionMessages.hasAction(messageId, MessageText("nonexistent action")))
@@ -46,10 +45,10 @@ class ActionMessagesTest {
             val messageId = Messages.message(
                 admin.id,
                 chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No"))),
             )
-            val (adminSubscriber, userSubscriber) = listOf(admin.id, user.id)
-                .map { messagesNotifier.safelySubscribe(it).subscribeWith(TestSubscriber()) }
+            val (adminSubscriber, userSubscriber) =
+                listOf(admin.id, user.id).map { messagesNotifier.safelySubscribe(it) }
             triggerAction(user.id, messageId, action)
             awaitBrokering()
             adminSubscriber.assertValue(TriggeredAction(messageId, action, user))

@@ -91,7 +91,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: MessageText,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.TEXT, contextMessageId, isForwarded) { messageId ->
         TextMessages.create(messageId, message)
     }
@@ -101,7 +101,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: ActionMessageInput,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.ACTION, contextMessageId, isForwarded) { messageId ->
         ActionMessages.create(messageId, message)
     }
@@ -111,7 +111,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: CaptionedPic,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
         PicMessages.create(messageId, message)
     }
@@ -121,7 +121,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         invitedChatId: Int,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.GROUP_CHAT_INVITE, contextMessageId, isForwarded) { messageId ->
         GroupChatInviteMessages.create(messageId, invitedChatId)
     }
@@ -131,40 +131,37 @@ object Messages : IntIdTable() {
         chatId: Int,
         message: Audio,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
-    ): Unit =
-        create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
-            AudioMessages.create(messageId, message)
-        }
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
+        AudioMessages.create(messageId, message)
+    }
 
     fun createVideoMessage(
         userId: Int,
         chatId: Int,
         message: Mp4,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
-    ): Unit =
-        create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
-            VideoMessages.create(messageId, message)
-        }
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
+        VideoMessages.create(messageId, message)
+    }
 
     fun createDocMessage(
         userId: Int,
         chatId: Int,
         message: Doc,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
-    ): Unit =
-        create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
-            DocMessages.create(messageId, message)
-        }
+        isForwarded: Boolean = false,
+    ): Unit = create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
+        DocMessages.create(messageId, message)
+    }
 
     fun createPollMessage(
         userId: Int,
         chatId: Int,
         message: PollInput,
         contextMessageId: Int?,
-        isForwarded: Boolean = false
+        isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.POLL, contextMessageId, isForwarded) { messageId ->
         PollMessages.create(messageId, message)
     }
@@ -182,7 +179,7 @@ object Messages : IntIdTable() {
         type: MessageType,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
-        creator: (messageId: Int) -> Unit
+        creator: (messageId: Int) -> Unit,
     ) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")

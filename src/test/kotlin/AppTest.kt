@@ -8,6 +8,7 @@ import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createTextMessage
 import com.neelkamath.omniChat.graphql.routing.*
 import io.ktor.http.*
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,27 +16,30 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
-@Suppress("ClassName")
-class Application_MainTest {
-    @Test
-    fun `An access token must work for queries and mutations`() {
-        val userId = createVerifiedUsers(1)[0].info.id
-        val token = buildTokenSet(userId).accessToken
-        assertNotEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
-        )
-    }
+class AppTest {
+    @Nested
+    @Suppress("ClassName")
+    inner class Application_Main {
+        @Test
+        fun `An access token must work for queries and mutations`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val token = buildTokenSet(userId).accessToken
+            assertNotEquals(
+                HttpStatusCode.Unauthorized,
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+            )
+        }
 
-    @Test
-    fun `A token from an account with an unverified email address mustn't work for queries and mutation`() {
-        val userId = createVerifiedUsers(1)[0].info.id
-        val token = buildTokenSet(userId).accessToken
-        Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
-        assertEquals(
-            HttpStatusCode.Unauthorized,
-            executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
-        )
+        @Test
+        fun `A token from an account with an unverified email address mustn't work for queries and mutation`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            val token = buildTokenSet(userId).accessToken
+            Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
+            assertEquals(
+                HttpStatusCode.Unauthorized,
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+            )
+        }
     }
 }
 

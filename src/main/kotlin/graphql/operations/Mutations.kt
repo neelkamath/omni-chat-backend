@@ -16,6 +16,20 @@ fun verifyEmailAddress(env: DataFetchingEnvironment): Boolean {
     return Users.verifyEmailAddress(address, env.getArgument("verificationCode"))
 }
 
+fun blockUser(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val userId = env.getArgument<Int>("userId")
+    if (!Users.exists(userId)) throw InvalidUserIdException
+    BlockedUsers.create(env.userId!!, userId)
+    return Placeholder
+}
+
+fun unblockUser(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    BlockedUsers.delete(env.userId!!, env.getArgument("userId"))
+    return Placeholder
+}
+
 fun createAccount(env: DataFetchingEnvironment): Placeholder {
     val account = env.parseArgument<AccountInput>("account")
     if (Users.isUsernameTaken(account.username)) throw UsernameTakenException
