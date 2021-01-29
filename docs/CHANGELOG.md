@@ -6,6 +6,14 @@ APIs). For example, if the server has a backward incompatible change such as a D
 changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of
 the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## v0.11.0
+
+### GraphQL
+
+- Bug fixes:
+  - `Subscription`s now send back the `__typename` for the `CreatedSubscription` `type`.
+  - `Subscription.subscribeToAccounts` now sends back the `BlockedAccount` and `UnblockedAccount` `type`s.
+
 ## v0.10.0
 
 ### GraphQL

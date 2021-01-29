@@ -26,7 +26,7 @@ private data class GraphQlSubscription(
     /** Operation name (e.g., `"subscribeToMessages"`). */
     val operation: String,
     /** The [CloseReason] to send the client when the subscription is successfully completed. */
-    val completionReason: CloseReason
+    val completionReason: CloseReason,
 )
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
@@ -37,7 +37,7 @@ fun routeGraphQlSubscriptions(context: Routing) {
         "accounts-subscription" to "subscribeToAccounts",
         "group-chats-subscription" to "subscribeToGroupChats",
         "typing-statuses-subscription" to "subscribeToTypingStatuses",
-        "online-statuses-subscription" to "subscribeToOnlineStatuses"
+        "online-statuses-subscription" to "subscribeToOnlineStatuses",
     )
     for ((path, operation) in subscriptions)
         routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
@@ -63,7 +63,7 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
         } catch (_: UnknownOperationException) {
             val reason = CloseReason(
                 CloseReason.Codes.VIOLATED_POLICY,
-                "You've sent multiple GraphQL operations, but haven't specified which one to execute."
+                "You've sent multiple GraphQL operations, but haven't specified which one to execute.",
             )
             send(Frame.Close(reason))
         } catch (_: JWTVerificationException) {
@@ -81,7 +81,7 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  */
 private suspend fun buildExecutionResult(
     session: DefaultWebSocketServerSession,
-    accessToken: String
+    accessToken: String,
 ): ExecutionResult = with(session) {
     val userId = jwtVerifier.verify(accessToken).subject.toInt()
     // It's possible the user updated their email address just after the token was created.
@@ -101,7 +101,7 @@ private suspend fun buildExecutionResult(
 private suspend fun subscribe(
     session: DefaultWebSocketServerSession,
     subscription: GraphQlSubscription,
-    result: ExecutionResult
+    result: ExecutionResult,
 ) = with(session) {
     val subscriber = Subscriber(this, subscription)
     result.getData<Publisher<ExecutionResult>>().subscribe(subscriber)
@@ -141,7 +141,7 @@ private suspend fun closeWithError(session: DefaultWebSocketServerSession, resul
 @Suppress("ReactiveStreamsSubscriberImplementation")
 private class Subscriber(
     private val session: DefaultWebSocketServerSession,
-    private val graphQlSubscription: GraphQlSubscription
+    private val graphQlSubscription: GraphQlSubscription,
 ) : Subscriber<ExecutionResult> {
 
     private lateinit var subscription: Subscription
@@ -158,9 +158,10 @@ private class Subscriber(
         val doc = mapOf(
             "data" to mapOf(
                 graphQlSubscription.operation to mapOf(
-                    "placeholder" to ""
-                )
-            )
+                    "__typename" to "CreatedSubscription",
+                    "placeholder" to "",
+                ),
+            ),
         )
         val json = objectMapper.writeValueAsString(doc)
         withSession { send(Frame.Text(json)) }
@@ -191,7 +192,7 @@ private class Subscriber(
 
     /** Runs the [callback] in the [session]. */
     private inline fun withSession(
-        crossinline callback: suspend DefaultWebSocketServerSession.() -> Unit
+        crossinline callback: suspend DefaultWebSocketServerSession.() -> Unit,
     ): Unit = with(session) {
         launch(Dispatchers.IO) { callback() }
     }

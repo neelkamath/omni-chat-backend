@@ -54,7 +54,7 @@ object BlockedUsers : IntIdTable() {
      */
     fun delete(blockerUserId: Int, blockedUserId: Int): Unit = transaction {
         deleteWhere { (BlockedUsers.blockerUserId eq blockerUserId) and (BlockedUsers.blockedUserId eq blockedUserId) }
-            .takeIf { it > 0 }
+            .takeIf { it == 1 }
             ?.let { accountsNotifier.publish(blockerUserId to UnblockedAccount(blockedUserId)) }
     }
 
