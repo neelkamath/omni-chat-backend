@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.9.0
+  version: 0.10.0
   title: Omni Chat
   description: |
     Functionality supplementary to the GraphQL API such as uploading and downloading images.
@@ -9,8 +9,8 @@ info:
     few KiB. If the original image itself is within 100px by 100px, then the thumbnail will happen to be a copy of the
     same image. When displaying a small scaled image (e.g., a profile pic) you should only render the thumbnail, and not
     load the original, since the difference in quality is negligible. When showing a picture in a container larger than
-    100px (e.g., a pic message, an enlarged profile pic), you should first load the thumbnail to use as a placeholder
-    while the original is downloading.
+    100px (e.g., a pic message, an enlarged profile pic), you should load the original. You can also initially load the
+    thumbnail followed by the original for a medium-scaled image (e.g., the way searching images on Google works).
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat

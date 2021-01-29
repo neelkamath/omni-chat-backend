@@ -41,6 +41,20 @@ schema {
 
 type Query {
     """
+    Whether the user has blocked the `userId`. If the user doesn't exist, `false` will be returned.
+
+    You must send an access token with this request.
+    """
+    isBlocked(userId: Int!): Boolean!
+
+    """
+    Whether the user has the `userId` in their contacts. If the user doesn't exist, `false` will be returned.
+
+    You must send an access token with this request.
+    """
+    isContact(userId: Int!): Boolean!
+
+    """
     Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
     the only admin of a group chat containing users other than themselves. In this case, they must first appoint a
     different user as the admin.
@@ -144,7 +158,7 @@ type Query {
     readContacts(first: Int, after: Cursor): AccountsConnection!
 
     """
-    Case-insensitively searches contacts using the `query`.
+    Case-insensitively searches contacts by `query`ing their usernames, first names, last names, and email addresses.
 
     You must send an access token with this request.
     """
@@ -545,7 +559,6 @@ type Mutation {
 
     """
     Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-    Existing contacts will be ignored.
 
     Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs didn't exist).
 

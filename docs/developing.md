@@ -147,4 +147,4 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 1. Add a [changelog](CHANGELOG.md) entry.
 1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
 1. Update [`cloud.md`](cloud.md).
-1. Only commit to the `master` branch when releasing a new version.
+1. Only commit to the `master` branch when releasing a new version, or overwriting the previous one.

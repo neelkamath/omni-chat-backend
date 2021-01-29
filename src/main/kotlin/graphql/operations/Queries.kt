@@ -268,3 +268,13 @@ fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
         messagesPagination = BackwardPagination(last = 0)
     ).map { GroupChatDto(it.id) }
 }
+
+fun isBlocked(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    return BlockedUsers.exists(env.userId!!, env.getArgument("userId"))
+}
+
+fun isContact(env: DataFetchingEnvironment): Boolean {
+    env.verifyAuth()
+    return env.getArgument("userId") in Contacts.readIdList(env.userId!!)
+}
