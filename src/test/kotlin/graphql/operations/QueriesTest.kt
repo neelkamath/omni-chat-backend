@@ -17,7 +17,31 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
 
-private const val READ_BLOCKED_USERS = """
+private const val IS_CONTACT_QUERY = """
+    query IsContact(${"$"}userId: Int!) {
+        isContact(userId: ${"$"}userId)
+    }
+"""
+
+private fun operateIsContact(userId: Int, otherUserId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(IS_CONTACT_QUERY, mapOf("userId" to otherUserId), userId)
+
+private fun isContact(userId: Int, otherUserId: Int): Boolean =
+    operateIsContact(userId, otherUserId).data!!["isContact"] as Boolean
+
+private const val IS_BLOCKED_QUERY = """
+    query IsBlocked(${"$"}userId: Int!) {
+        isBlocked(userId: ${"$"}userId)
+    }
+"""
+
+private fun operateIsBlocked(userId: Int, otherUserId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(IS_BLOCKED_QUERY, mapOf("userId" to otherUserId), userId)
+
+private fun isBlocked(userId: Int, otherUserId: Int): Boolean =
+    operateIsBlocked(userId, otherUserId).data!!["isBlocked"] as Boolean
+
+private const val READ_BLOCKED_USERS_QUERY = """
     query ReadBlockedUsers(${"$"}first: Int, ${"$"}after: Cursor) {
         readBlockedUsers(first: ${"$"}first, after: ${"$"}after) {
             $ACCOUNTS_CONNECTION_FRAGMENT
@@ -27,7 +51,7 @@ private const val READ_BLOCKED_USERS = """
 
 private fun operateReadBlockedUsers(userId: Int, pagination: ForwardPagination? = null): GraphQlResponse =
     executeGraphQlViaEngine(
-        READ_BLOCKED_USERS,
+        READ_BLOCKED_USERS_QUERY,
         mapOf("first" to pagination?.first, "after" to pagination?.after.toString()),
         userId,
     )
@@ -627,6 +651,50 @@ class ChatMessagesDtoTest {
 
 @ExtendWith(DbExtension::class)
 class QueriesTest {
+    @Nested
+    inner class IsBlocked {
+        @Test
+        fun `The user must be blocked`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            BlockedUsers.create(user1Id, user2Id)
+            assertTrue(isBlocked(user1Id, user2Id))
+        }
+
+        @Test
+        fun `The user must not be blocked`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            assertFalse(isBlocked(user1Id, user2Id))
+        }
+
+        @Test
+        fun `A nonexistent user must not be blocked`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            assertFalse(isBlocked(userId, -1))
+        }
+    }
+
+    @Nested
+    inner class IsContact {
+        @Test
+        fun `The user must be a contact`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            Contacts.create(user1Id, setOf(user2Id))
+            assertTrue(isContact(user1Id, user2Id))
+        }
+
+        @Test
+        fun `The user must not be a contact`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            assertFalse(isContact(user1Id, user2Id))
+        }
+
+        @Test
+        fun `A nonexistent user must not be a contact`() {
+            val userId = createVerifiedUsers(1)[0].info.id
+            assertFalse(isContact(userId, -1))
+        }
+    }
+
     @Nested
     inner class ReadBlockedUsers {
         @Test

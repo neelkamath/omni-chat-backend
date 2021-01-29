@@ -21,9 +21,7 @@ To shut down: `docker-compose down`
 
 ## Migrating
 
-Here's how to migrate from the previous version (0.8.3) to this version (0.9.0):
+Here's how to migrate from the previous version (0.9.0) to this version (0.10.0):
 
-1. Ensure the application isn't running: `docker-compose down`.
-1. Wipe the DB because this version is backwards-incompatible: `docker volume rm omni-chat_db`
 1. Re-download [`docker-compose.yml`](docker-compose.yml).
 1. [Use](#usage).

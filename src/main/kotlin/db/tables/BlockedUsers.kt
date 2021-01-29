@@ -42,7 +42,7 @@ object BlockedUsers : IntIdTable() {
     }
 
     /** Whether the [blockerUserId] has blocked the [blockedUserId]. */
-    private fun exists(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
+    fun exists(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
         select { (BlockedUsers.blockedUserId eq blockedUserId) and (BlockedUsers.blockerUserId eq blockerUserId) }
             .empty()
             .not()
