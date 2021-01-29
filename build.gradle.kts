@@ -5,7 +5,7 @@ plugins {
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.10.0"
+version = "0.11.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -22,7 +22,7 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
 
-    val ktorVersion = "1.5.0"
+    val ktorVersion = "1.5.1"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-jackson:$ktorVersion")
