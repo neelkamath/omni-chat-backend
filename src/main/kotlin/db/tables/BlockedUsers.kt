@@ -28,7 +28,7 @@ object BlockedUsers : IntIdTable() {
                 it[this.blockedUserId] = blockedUserId
             }
         }
-        accountsNotifier.publish(blockerUserId to BlockedAccount(blockedUserId))
+        accountsNotifier.publish(blockerUserId to BlockedAccount.build(blockedUserId))
     }
 
     /** Reads the list of users the [userId] has blocked. */

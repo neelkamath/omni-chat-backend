@@ -822,14 +822,19 @@ type Account implements AccountData {
     bio: Bio!
 }
 
-"""The user blocked the `userId`."""
-type BlockedAccount {
-    userId: Int!
+"""A blocked user."""
+type BlockedAccount implements AccountData {
+    id: Int!
+    username: Username!
+    emailAddress: String!
+    firstName: Name!
+    lastName: Name!
+    bio: Bio!
 }
 
-"""The user unblocked the `userId`."""
+"""The user `id` of an unblocked user."""
 type UnblockedAccount {
-    userId: Int!
+    id: Int!
 }
 
 type NewContact implements AccountData {
