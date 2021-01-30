@@ -286,11 +286,23 @@ data class GroupChatDescription(val value: String) {
     }
 }
 
-/** The user blocked the [userId]. */
-data class BlockedAccount(val userId: Int) : AccountsSubscription
+/** A blocked user. */
+data class BlockedAccount(
+    override val id: Int,
+    override val username: Username,
+    override val emailAddress: String,
+    override val firstName: Name,
+    override val lastName: Name,
+    override val bio: Bio,
+) : AccountsSubscription, AccountData {
+    companion object {
+        fun build(userId: Int): BlockedAccount =
+            with(Users.read(userId)) { BlockedAccount(id, username, emailAddress, firstName, lastName, bio) }
+    }
+}
 
-/** The user unblocked the [userId]. */
-data class UnblockedAccount(val userId: Int) : AccountsSubscription
+/** An unblocked user. */
+data class UnblockedAccount(val id: Int) : AccountsSubscription
 
 /** An [IllegalArgumentException] will be thrown if the [newUsers] and [removedUsers] aren't distinct. */
 data class UpdatedGroupChat(

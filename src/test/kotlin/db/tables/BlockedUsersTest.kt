@@ -46,7 +46,7 @@ class BlockedUsersTest {
                 listOf(blockerId, blockedId).map { accountsNotifier.safelySubscribe(it) }
             BlockedUsers.create(blockerId, blockedId)
             awaitBrokering()
-            blockerSubscriber.assertValue(BlockedAccount(blockedId))
+            blockerSubscriber.assertValue(BlockedAccount.build(blockedId))
             blockedSubscriber.assertNoValues()
         }
     }

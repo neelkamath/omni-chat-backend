@@ -58,6 +58,7 @@
 ### Production
 
 To test the production build:
+
 1. Start the server on http://localhost:
     ```
     docker-compose \
