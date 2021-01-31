@@ -115,20 +115,7 @@ object PrivateChats : Table() {
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
 
-    /**
-     * Whether [user1Id] and [user2Id] are in a chat with each other (i.e., a chat [PrivateChats.exists] between them,
-     * and neither of them has the chat deleted).
-     *
-     * @see [readOtherUserIdList]
-     */
-    fun areInChat(user1Id: Int, user2Id: Int): Boolean =
-        user2Id in readOtherUserIdList(user1Id) && user1Id in readOtherUserIdList(user2Id)
-
-    /**
-     * Whether there exists a chat between [user1Id] and [user2Id].
-     *
-     * @see [areInChat]
-     */
+    /** Whether there exists a chat between [user1Id] and [user2Id]. */
     fun exists(user1Id: Int, user2Id: Int): Boolean = transaction {
         val where = { userId: Int -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
         !select { where(user1Id) and where(user2Id) }.empty()
@@ -182,11 +169,7 @@ object PrivateChats : Table() {
         return if (userIdList[0] == userId) userIdList[1] else userIdList[0]
     }
 
-    /**
-     * Returns the ID of every other user the [userId] has chats with (excluding deleted chats).
-     *
-     * @see [areInChat]
-     */
+    /** Returns the ID of every other user the [userId] has chats with (excluding deleted chats). */
     fun readOtherUserIdList(userId: Int): List<Int> =
         readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }
 }

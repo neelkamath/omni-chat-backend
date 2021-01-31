@@ -135,24 +135,6 @@ class PrivateChatsTest {
     }
 
     @Nested
-    inner class AreInChat {
-        @Test
-        fun `Two users must be said to be in a chat`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            PrivateChats.create(user1Id, user2Id)
-            assertTrue(PrivateChats.areInChat(user1Id, user2Id))
-        }
-
-        @Test
-        fun `Two users mustn't be said to be in a chat if one of them deleted the chat`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            PrivateChatDeletions.create(chatId, user1Id)
-            assertFalse(PrivateChats.areInChat(user1Id, user2Id))
-        }
-    }
-
-    @Nested
     inner class ReadChatId {
         @Test
         fun `The chat's ID must be read if the participant is in the chat but the user isn't`() {

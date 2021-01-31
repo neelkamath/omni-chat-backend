@@ -440,10 +440,9 @@ type Mutation {
     deletePrivateChat(chatId: Int!): Placeholder!
 
     """
-    Creates a private chat with the `userId`. Returns the chat's ID.
+    Creates a private chat with the `userId` if the chat doesn't exist. Returns the chat's ID.
 
-    Returned `errors[0].message`s could be `"CHAT_EXISTS"`, or `"INVALID_USER_ID"` (i.e., the specified user doesn't
-    exist).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the specified user doesn't exist).
 
     You must send an access token with this request.
     """

@@ -26,8 +26,6 @@ object UnregisteredEmailAddressException : GraphQlDocDataException("UNREGISTERED
 
 object InvalidUserIdException : GraphQlDocDataException("INVALID_USER_ID")
 
-object ChatExistsException : GraphQlDocDataException("CHAT_EXISTS")
-
 object InvalidContactException : GraphQlDocDataException("INVALID_CONTACT")
 
 object InvalidMessageIdException : GraphQlDocDataException("INVALID_MESSAGE_ID")
