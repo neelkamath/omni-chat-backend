@@ -1614,13 +1614,6 @@ class MutationsTest {
         }
 
         @Test
-        fun `Attempting to create a chat the user is in must return an error`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            createPrivateChat(user1Id, user2Id)
-            assertEquals(ChatExistsException.message, errCreatePrivateChat(user1Id, user2Id))
-        }
-
-        @Test
         fun `Recreating a chat the user deleted must cause the existing chat's ID to be returned`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = createPrivateChat(user1Id, user2Id)

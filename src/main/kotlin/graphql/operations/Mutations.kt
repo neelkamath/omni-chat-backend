@@ -140,7 +140,6 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val invitedUserId = env.getArgument<Int>("userId")
     if (!Users.exists(invitedUserId) || invitedUserId == env.userId!!) throw InvalidUserIdException
-    if (PrivateChats.areInChat(env.userId!!, invitedUserId)) throw ChatExistsException
     return if (PrivateChats.exists(env.userId!!, invitedUserId)) PrivateChats.readChatId(invitedUserId, env.userId!!)
     else PrivateChats.create(env.userId!!, invitedUserId)
 }
