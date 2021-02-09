@@ -554,14 +554,18 @@ object Messages : IntIdTable() {
      *
      * @return
      * - `false` if the [messageId] doesn't exist.
+     * - `true` if the [messageId] is from a public group chat (regardless of whether the [userId] is a participant).
+     * - `false` if the [userId] is `null`, and the [messageId] isn't from a public group chat.
      * - `false` if the [messageId] is from a chat the user isn't in.
      * - `true` if the [messageId] is from a group chat the [userId] is in.
      * - `true` if the [messageId] is from a private chat the [userId] hasn't deleted.
      * - `false` if the [messageId] was sent before the [userId] deleted the private chat.
      */
-    fun isVisible(userId: Int, messageId: Int): Boolean {
+    fun isVisible(userId: Int?, messageId: Int): Boolean {
         if (!exists(messageId)) return false
         val chatId = readChatIdFromMessageId(messageId)
+        if (GroupChats.isExistentPublicChat(chatId)) return true
+        if (userId == null) return false
         if (!isUserInChat(userId, chatId)) return false
         if (chatId in GroupChatUsers.readChatIdList(userId)) return true
         val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return true

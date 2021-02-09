@@ -32,9 +32,9 @@ class MediaHandlerTest {
         }
 
         @Test
-        fun `An HTTP status code of 400 must be returned when retrieving a nonexistent message`() {
+        fun `An HTTP status code of 401 must be returned when retrieving a nonexistent message`() {
             val token = createVerifiedUsers(1)[0].accessToken
-            assertEquals(HttpStatusCode.BadRequest, getAudioMessage(token, messageId = 1).status())
+            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(token, messageId = 1).status())
         }
 
         @Test

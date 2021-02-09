@@ -46,8 +46,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Pic'
-        '400':
-          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
@@ -78,8 +76,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Audio'
-        '400':
-          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
@@ -113,8 +109,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Video'
-        '400':
-          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
@@ -149,8 +143,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/Doc'
-        '400':
-          description: The user can't see the specified message (e.g., it's from a chat the user isn't in).
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
