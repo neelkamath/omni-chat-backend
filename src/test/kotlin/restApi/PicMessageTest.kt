@@ -60,9 +60,9 @@ class PicMessageTest {
         }
 
         @Test
-        fun `An HTTP status code of 400 must be returned when retrieving a nonexistent message`() {
+        fun `An HTTP status code of 401 must be returned when retrieving a nonexistent message`() {
             val token = createVerifiedUsers(1)[0].accessToken
-            assertEquals(HttpStatusCode.BadRequest, getPicMessage(token, messageId = 1, PicType.ORIGINAL).status())
+            assertEquals(HttpStatusCode.Unauthorized, getPicMessage(token, messageId = 1, PicType.ORIGINAL).status())
         }
 
         private fun createMessage(): Pair<String, Int> {
