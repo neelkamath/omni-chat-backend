@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.13.0
+  version: 0.14.0
   title: Omni Chat
   description: |
     Functionality supplementary to the GraphQL API such as uploading and downloading images.
@@ -35,7 +35,8 @@ paths:
     description: Create and read pic chat messages.
     get:
       tags: [ picMessage ]
-      description: Reads the pic from a message. To get the caption, use the GraphQL API.
+      description: Reads the pic from a message. To get the caption, use the GraphQL API. You needn't pass an access
+        token if the chat is public.
       operationId: getPicMessage
       security:
         - bearerAuth: [ ]
@@ -68,7 +69,7 @@ paths:
     description: Create and read audio chat messages.
     get:
       tags: [ audioMessage ]
-      description: Reads an audio message.
+      description: Reads an audio message. You needn't pass an access token if the chat is public.
       operationId: getAudioMessage
       security:
         - bearerAuth: [ ]
@@ -103,7 +104,7 @@ paths:
     description: Create and read video chat messages.
     get:
       tags: [ videoMessage ]
-      description: Reads a video message.
+      description: Reads a video message. You needn't pass an access token if the chat is public.
       operationId: getVideoMessage
       security:
         - bearerAuth: [ ]
@@ -139,7 +140,7 @@ paths:
       and video messages when possible.
     get:
       tags: [ docMessage ]
-      description: Reads a doc message.
+      description: Reads a doc message. You needn't pass an access token if the chat is public.
       operationId: getDocMessage
       security:
         - bearerAuth: [ ]
@@ -204,8 +205,11 @@ paths:
   /group-chat-pic:
     get:
       tags: [ groupChatPic ]
-      description: Retrieves the group chat's pic.
+      description: Retrieves the group chat's pic. An access token needn't be sent if the chat is public. Otherwise,
+        the user must be a participant to view the pic.
       operationId: getGroupChatPic
+      security:
+        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/PicType'
@@ -215,7 +219,7 @@ paths:
         '204':
           description: The chat doesn't have a pic.
         '400':
-          description: The chat doesn't exist.
+          description: Invalid chat ID.
     patch:
       tags: [ groupChatPic ]
       description: Update the group chat's pic. The user must be an admin of the chat.

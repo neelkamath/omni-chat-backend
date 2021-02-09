@@ -13,7 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private fun getPicMessage(accessToken: String, messageId: Int, type: PicType): TestApplicationResponse =
+private fun getPicMessage(accessToken: String? = null, messageId: Int, type: PicType): TestApplicationResponse =
     getFileMessage(accessToken, path = "pic-message", messageId, type)
 
 private fun postPicMessage(

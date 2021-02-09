@@ -1,11 +1,11 @@
 plugins {
     application
-    kotlin("jvm") version "1.4.21"
+    kotlin("jvm") version "1.4.30"
     id("com.github.johnrengelman.shadow") version "6.1.0"
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.13.0"
+version = "0.14.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -48,7 +48,7 @@ tasks {
         manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
     register("printVersion") { println(project.version) }
-    val jvmTarget = "14"
+    val jvmTarget = "15"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }

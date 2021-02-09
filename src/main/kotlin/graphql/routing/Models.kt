@@ -116,7 +116,7 @@ interface BareMessage {
     val isForwarded: Boolean
 
     fun toNewTextMessage(): NewTextMessage = NewTextMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -126,7 +126,7 @@ interface BareMessage {
     )
 
     fun toNewActionMessage(): NewActionMessage = NewActionMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -136,10 +136,10 @@ interface BareMessage {
     )
 
     fun toNewAudioMessage(): NewAudioMessage =
-        NewAudioMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
+        NewAudioMessage(Messages.readChatIdFromMessageId(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
-        val chatId = Messages.readChatFromMessage(messageId)
+        val chatId = Messages.readChatIdFromMessageId(messageId)
         return NewGroupChatInviteMessage(
             chatId,
             messageId,
@@ -152,13 +152,13 @@ interface BareMessage {
     }
 
     fun toNewDocMessage(): NewDocMessage =
-        NewDocMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
+        NewDocMessage(Messages.readChatIdFromMessageId(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewVideoMessage(): NewVideoMessage =
-        NewVideoMessage(Messages.readChatFromMessage(messageId), messageId, sender, dateTimes, context, isForwarded)
+        NewVideoMessage(Messages.readChatIdFromMessageId(messageId), messageId, sender, dateTimes, context, isForwarded)
 
     fun toNewPicMessage(): NewPicMessage = NewPicMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -168,7 +168,7 @@ interface BareMessage {
     )
 
     fun toNewPollMessage(): NewPollMessage = NewPollMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -407,7 +407,7 @@ interface Message : BareMessage {
     val hasStar: Boolean
 
     fun toUpdatedTextMessage(): UpdatedTextMessage = UpdatedTextMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -418,7 +418,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedActionMessage(): UpdatedActionMessage = UpdatedActionMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -429,7 +429,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedPicMessage(): UpdatedPicMessage = UpdatedPicMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -440,7 +440,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedAudioMessage(): UpdatedAudioMessage = UpdatedAudioMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -450,7 +450,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage {
-        val chatId = Messages.readChatFromMessage(messageId)
+        val chatId = Messages.readChatIdFromMessageId(messageId)
         return UpdatedGroupChatInviteMessage(
             chatId,
             messageId,
@@ -464,7 +464,7 @@ interface Message : BareMessage {
     }
 
     fun toUpdatedDocMessage(): UpdatedDocMessage = UpdatedDocMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -474,7 +474,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedVideoMessage(): UpdatedVideoMessage = UpdatedVideoMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -484,7 +484,7 @@ interface Message : BareMessage {
     )
 
     fun toUpdatedPollMessage(): UpdatedPollMessage = UpdatedPollMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -495,7 +495,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredTextMessage(): StarredTextMessage = StarredTextMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -505,7 +505,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredActionMessage(): StarredActionMessage = StarredActionMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -515,7 +515,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredPicMessage(): StarredPicMessage = StarredPicMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -525,7 +525,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredAudioMessage(): StarredAudioMessage = StarredAudioMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -534,7 +534,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredGroupChatInviteMessage(): StarredGroupChatInviteMessage {
-        val chatId = Messages.readChatFromMessage(messageId)
+        val chatId = Messages.readChatIdFromMessageId(messageId)
         return StarredGroupChatInviteMessage(
             chatId,
             messageId,
@@ -547,7 +547,7 @@ interface Message : BareMessage {
     }
 
     fun toStarredDocMessage(): StarredDocMessage = StarredDocMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -556,7 +556,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredVideoMessage(): StarredVideoMessage = StarredVideoMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -565,7 +565,7 @@ interface Message : BareMessage {
     )
 
     fun toStarredPollMessage(): StarredPollMessage = StarredPollMessage(
-        Messages.readChatFromMessage(messageId),
+        Messages.readChatIdFromMessageId(messageId),
         messageId,
         sender,
         dateTimes,
@@ -692,7 +692,7 @@ data class GroupChatInviteMessage(
                 context,
                 isForwarded,
                 if (userId == null) false else Stargazers.hasStar(userId, messageId),
-                GroupChats.readInviteCode(Messages.readChatFromMessage(messageId))
+                GroupChats.readInviteCode(Messages.readChatIdFromMessageId(messageId))
             )
         }
     }

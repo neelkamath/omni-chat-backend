@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.Doc
+import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.Messages
 import com.neelkamath.omniChat.db.tables.Mp4
 import com.neelkamath.omniChat.userId
@@ -50,8 +51,12 @@ inline fun getMediaMessage(
     get {
         val messageId = call.parameters["message-id"]!!.toInt()
         val picType = call.parameters["pic-type"]?.let(PicType::valueOf)
-        if (Messages.isVisible(call.userId!!, messageId)) call.respondBytes(bytesReader(messageId, picType))
-        else call.respond(HttpStatusCode.BadRequest)
+        if (Messages.isVisible(call.userId!!, messageId)) {
+            val chatId = Messages.readChatIdFromMessageId(messageId)
+            if (GroupChats.isExistentPublicChat(chatId) || call.userId != null)
+                call.respondBytes(bytesReader(messageId, picType))
+            else call.respond(HttpStatusCode.Unauthorized)
+        } else call.respond(HttpStatusCode.BadRequest)
     }
 }
 

@@ -395,7 +395,7 @@ object Messages : IntIdTable() {
      *
      * @see [Messages.exists]
      */
-    fun readChatFromMessage(messageId: Int): Int = transaction {
+    fun readChatIdFromMessageId(messageId: Int): Int = transaction {
         select { Messages.id eq messageId }.first()[chatId]
     }
 
@@ -464,7 +464,7 @@ object Messages : IntIdTable() {
      * [messagesNotifier].
      */
     fun delete(id: Int) {
-        val chatId = readChatFromMessage(id)
+        val chatId = readChatIdFromMessageId(id)
         deleteChatMessages(id)
         messagesNotifier.publish(DeletedMessage(chatId, id), readUserIdList(chatId))
     }
@@ -561,7 +561,7 @@ object Messages : IntIdTable() {
      */
     fun isVisible(userId: Int, messageId: Int): Boolean {
         if (!exists(messageId)) return false
-        val chatId = readChatFromMessage(messageId)
+        val chatId = readChatIdFromMessageId(messageId)
         if (!isUserInChat(userId, chatId)) return false
         if (chatId in GroupChatUsers.readChatIdList(userId)) return true
         val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return true

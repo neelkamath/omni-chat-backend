@@ -6,9 +6,11 @@ import io.ktor.auth.*
 import io.ktor.routing.*
 
 fun routeVideoMessage(routing: Routing): Unit = with(routing) {
-    authenticate {
-        route("video-message") {
+    route("video-message") {
+        authenticate(optional = true) {
             getMediaMessage(this) { messageId, _ -> VideoMessages.read(messageId).bytes }
+        }
+        authenticate {
             postMediaMessage(this, { readMultipartMp4() }) { userId, chatId, message, contextMessageId ->
                 Messages.createVideoMessage(userId, chatId, message, contextMessageId)
             }
