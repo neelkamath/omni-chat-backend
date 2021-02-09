@@ -976,7 +976,7 @@ type ActionMessage implements BareMessage, Message {
     context: MessageContext!
     isForwarded: Boolean!
     hasStar: Boolean!
-    message: ActionMessage!
+    message: ActionableMessage!
 }
 
 type PicMessage implements BareMessage, Message {
@@ -1071,7 +1071,7 @@ type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessag
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: ActionMessage!
+    message: ActionableMessage!
 }
 
 type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
@@ -1157,7 +1157,7 @@ type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: ActionMessage!
+    message: ActionableMessage!
 }
 
 type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
@@ -1247,7 +1247,7 @@ type UpdatedActionMessage implements UpdatedMessage, BareChatMessage, BareMessag
     context: MessageContext!
     isForwarded: Boolean!
     hasStar: Boolean!
-    message: ActionMessage!
+    message: ActionableMessage!
 }
 
 type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {

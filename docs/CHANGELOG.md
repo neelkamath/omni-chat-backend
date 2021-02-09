@@ -6,6 +6,25 @@ APIs). For example, if the server has a backward incompatible change such as a D
 changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of
 the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## v0.14.0
+
+### GraphQL
+
+- Bug fixes:
+  - `ActionMessage` `type`
+  - `StarredActionMessage` `type`
+  - `NewActionMessage` `type`
+  - `UpdatedActionMessage` `type`
+
+### REST API
+
+- Bug fixes:
+  - `/pic-message`
+  - `/audio-message`
+  - `/video-message`
+  - `/doc-message`
+  - `/group-chat-pic`
+
 ## v0.13.0
 
 ### GraphQL

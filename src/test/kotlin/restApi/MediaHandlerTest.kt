@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.graphql.routing.GroupChatPublicity
 import com.neelkamath.omniChat.testingObjectMapper
 
 import io.ktor.http.*
@@ -31,9 +32,30 @@ class MediaHandlerTest {
         }
 
         @Test
-        fun `An HTTP status code of 400 must be returned when retrieving a nonexistent message`() {
+        fun `An HTTP status code of 401 must be returned when retrieving a nonexistent message`() {
             val token = createVerifiedUsers(1)[0].accessToken
-            assertEquals(HttpStatusCode.BadRequest, getAudioMessage(token, messageId = 1).status())
+            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(token, messageId = 1).status())
+        }
+
+        @Test
+        fun `The message must be read from a public chat sans access token`() {
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(listOf(admin.info.id), publicity = GroupChatPublicity.PUBLIC)
+            val audio = Audio(ByteArray(1), Audio.Type.MP3)
+            val messageId = Messages.message(admin.info.id, chatId, audio)
+            val response = getAudioMessage(messageId = messageId)
+            assertEquals(HttpStatusCode.OK, response.status())
+            assertTrue(audio.bytes.contentEquals(response.byteContent))
+        }
+
+        @Test
+        fun `An access token must be required to read a message which isn't from a public chat`() {
+            val admin = createVerifiedUsers(1)[0]
+            val chatId = GroupChats.create(listOf(admin.info.id))
+            val audio = Audio(ByteArray(1), Audio.Type.MP3)
+            val messageId = Messages.message(admin.info.id, chatId, audio)
+            val response = getAudioMessage(messageId = messageId)
+            assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
     }
 

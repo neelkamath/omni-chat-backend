@@ -13,7 +13,7 @@ data class DummyFile(val name: String, val bytes: Int) {
 }
 
 fun getFileMessage(
-    accessToken: String,
+    accessToken: String? = null,
     path: String,
     messageId: Int,
     picType: PicType? = null,
@@ -22,7 +22,7 @@ fun getFileMessage(
         .filter { it.second != null }
         .formUrlEncode()
     handleRequest(HttpMethod.Get, "$path?$parameters") {
-        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
     }.response
 }
 

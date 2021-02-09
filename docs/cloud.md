@@ -10,16 +10,16 @@ This is the recommended method to run the server in the cloud. For example, you 
    only use the message brokering feature, you needn't persist data to the disk.
 1. Set up the server:
    1. Run
-      the `neelkamath/omni-chat:0.13.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat)
+      the `neelkamath/omni-chat:0.14.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat)
       .
    1. Set the [environment variables](env.md).
    1. Connect to PostgreSQL and Redis.
 
 ### Migrating
 
-Here's how to migrate from the previous version (0.12.0) to this version (0.13.0):
+Here's how to migrate from the previous version (0.13.0) to this version (0.14.0):
 
-1. The new version can run alongside the previous version while the old instances are shutting down since they are
-   backwards-compatible.
+1. Since the new version is backwards-incompatible, the previous version's instances must be stopped before running the
+   new version.
 1. Run
-   the `neelkamath/omni-chat:0.13.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat). 
+   the `neelkamath/omni-chat:0.14.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat). 

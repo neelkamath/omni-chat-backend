@@ -70,7 +70,7 @@ fun createStatus(env: DataFetchingEnvironment): Placeholder {
  */
 private fun verifyCanCreateStatus(messageId: Int, userId: Int, status: MessageStatus) {
     if (!Messages.exists(messageId) || !Messages.isVisible(userId, messageId)) throw InvalidMessageIdException
-    val chatId = Messages.readChatFromMessage(messageId)
+    val chatId = Messages.readChatIdFromMessageId(messageId)
     if (!isUserInChat(userId, chatId) || Messages.readMessage(userId, messageId).sender.id == userId)
         throw InvalidMessageIdException
     if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException
@@ -162,7 +162,7 @@ fun deleteMessage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("id")
     if (!Messages.exists(messageId)) throw InvalidMessageIdException
-    val chatId = Messages.readChatFromMessage(messageId)
+    val chatId = Messages.readChatIdFromMessageId(messageId)
     if (!isUserInChat(env.userId!!, chatId) ||
         Messages.readMessage(env.userId!!, messageId).sender.id != env.userId!! ||
         !Messages.isVisible(env.userId!!, messageId)

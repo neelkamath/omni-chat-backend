@@ -18,11 +18,9 @@ import io.ktor.util.pipeline.*
 import java.io.File
 
 fun routePicMessage(routing: Routing): Unit = with(routing) {
-    authenticate {
-        route("pic-message") {
-            getPicMessage(this)
-            postPicMessage(this)
-        }
+    route("pic-message") {
+        authenticate(optional = true) { getPicMessage(this) }
+        authenticate { postPicMessage(this) }
     }
 }
 

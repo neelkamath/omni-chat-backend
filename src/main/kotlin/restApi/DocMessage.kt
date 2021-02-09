@@ -6,9 +6,11 @@ import io.ktor.auth.*
 import io.ktor.routing.*
 
 fun routeDocMessage(routing: Routing): Unit = with(routing) {
-    authenticate {
-        route("doc-message") {
+    route("doc-message") {
+        authenticate(optional = true) {
             getMediaMessage(this) { messageId, _ -> DocMessages.read(messageId).bytes }
+        }
+        authenticate {
             postMediaMessage(this, { readMultipartDoc() }) { userId, chatId, message, contextMessageId ->
                 Messages.createDocMessage(userId, chatId, message, contextMessageId)
             }

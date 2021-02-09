@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.assertEquals
 
-fun getAudioMessage(accessToken: String, messageId: Int): TestApplicationResponse =
+fun getAudioMessage(accessToken: String? = null, messageId: Int): TestApplicationResponse =
     getFileMessage(accessToken, path = "audio-message", messageId)
 
 fun postAudioMessage(

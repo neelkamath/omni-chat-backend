@@ -44,6 +44,22 @@ class MessagesTest {
     @Nested
     inner class IsVisible {
         @Test
+        fun `The message must be visible if the chat is public even if the user ID is null`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val messageId = Messages.message(adminId, chatId)
+            assertTrue(Messages.isVisible(userId = null, messageId))
+        }
+
+        @Test
+        fun `The message must not be visible if the user is null, and the chat isn't public`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
+            assertFalse(Messages.isVisible(userId = null, messageId))
+        }
+
+        @Test
         fun `A nonexistent message mustn't be said to be visible`() {
             val userId = createVerifiedUsers(1)[0].info.id
             assertFalse(Messages.isVisible(userId, messageId = 1))
