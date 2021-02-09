@@ -5,7 +5,7 @@ RUN gradle shadowJar
 COPY src/main/ src/main/
 RUN gradle shadowJar
 
-FROM adoptopenjdk:14-jre-hotspot
+FROM adoptopenjdk:15-jre-hotspot
 WORKDIR /app
 COPY --from=builder /home/gradle/project/build/libs/*.jar omni-chat.jar
 COPY src/main/resources/db/migration/ .

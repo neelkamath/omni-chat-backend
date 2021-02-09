@@ -6,7 +6,7 @@ plugins {
 }
 
 version = "0.14.0"
-application.mainClass.set("io.ktor.server.netty.EngineMain")
+application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
 
@@ -45,7 +45,7 @@ tasks {
         jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
     withType<Jar> {
-        manifest { attributes(mapOf("Main-Class" to application.mainClass)) }
+        manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
     }
     register("printVersion") { println(project.version) }
     val jvmTarget = "15"
