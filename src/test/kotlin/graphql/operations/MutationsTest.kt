@@ -1186,7 +1186,7 @@ class MutationsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             makeGroupChatAdmins(adminId, chatId, listOf(userId))
-            assertEquals(listOf(adminId, userId), GroupChatUsers.readAdminIdList(chatId))
+            assertEquals(setOf(adminId, userId), GroupChatUsers.readAdminIdList(chatId).toSet())
         }
 
         @Test
