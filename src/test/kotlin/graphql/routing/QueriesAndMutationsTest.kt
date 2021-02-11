@@ -32,19 +32,21 @@ class QueriesAndMutationsTest {
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
+            val accessToken = createVerifiedUsers(1)[0].accessToken
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query IsUsernameTaken {
-                            isUsernameTaken(username: "john_doe")
+                        query IsBlocked {
+                            isBlocked(userId: 1)
                         }
                         
-                        query IsEmailAddressTaken {
-                            isEmailAddressTaken(emailAddress: "john.doe@example.com")
+                        query IsContact {
+                            isContact(userId: 1)
                         }
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    val operationName = "IsEmailAddressTaken".takeIf { mustSupplyOperationName }
+                    addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+                    val operationName = "IsBlocked".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }

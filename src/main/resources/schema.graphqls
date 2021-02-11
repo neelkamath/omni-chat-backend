@@ -55,15 +55,6 @@ type Query {
     isContact(userId: Int!): Boolean!
 
     """
-    Returns whether the user's account can be deleted. The only reason the account cannot be deleted is if the user is
-    the only admin of a group chat containing users other than themselves. In this case, they must first appoint a
-    different user as the admin.
-
-    An access token must be sent with this request.
-    """
-    canDeleteAccount: Boolean!
-
-    """
     Returns the user's starred messages.
 
     An access token must be sent with this request.
@@ -110,12 +101,6 @@ type Query {
     An access token must be sent with this request.
     """
     readAccount: Account!
-
-    """Returns whether the `username` has been taken."""
-    isUsernameTaken(username: Username!): Boolean!
-
-    """Returns whether the `emailAddress` has been taken."""
-    isEmailAddressTaken(emailAddress: String!): Boolean!
 
     """
     Returns the chats the user is in.
@@ -208,7 +193,10 @@ type Mutation {
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
     chats with the user will have their chats deleted, etc.
 
-    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"` (i.e., if not `Query.canDeleteAccount`).
+    The only reason the account cannot be deleted is if the user is the only admin of a group chat containing users
+    other than themselves. In this case, they must first appoint a different user as an admin.
+
+    Returned `errors[0].message`s could be `"CANNOT_DELETE_ACCOUNT"`.
 
     An access token must be sent with this request.
     """
@@ -295,9 +283,7 @@ type Mutation {
     createStatus(messageId: Int!, status: MessageStatus!): Placeholder!
 
     """
-    Updates the user's account. Only the non-null fields will be updated. Use `Query.isUsernameTaken` and
-    `Query.isEmailAddressTaken` to see whether the user can update the `AccountUpdate.username` and
-    `AccountUpdate.emailAddress` fields to the requested ones respectively. None of the updates will take place if even
+    Updates the user's account. Only the non-null fields will be updated. None of the updates will take place if even
     one of the fields were invalid. If the user updates their email address to something other than their current
     address, they must be loged out because the current access token will be invalid until they verify their new email
     address.
@@ -316,9 +302,7 @@ type Mutation {
 
     """
     Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
-    verify their email address. Use `Query.isUsernameTaken` and `Query.isEmailAddressTaken` to see whether the requested
-    `AccountInput.username` and `AccountInput.emailAddress` fields respectively. Use `Mutation.verifyEmailAddress` to
-    verify the user's email address.
+    verify their email address. Use `Mutation.verifyEmailAddress` to verify the user's email address.
 
     Returned `errors[0].message`s could be `"USERNAME_TAKEN"`, `"EMAIL_ADDRESS_TAKEN"`, or `"INVALID_DOMAIN"` (i.e.,
     this Omni Chat instance disallows the given `AccountInput.emailAddress`'s domain; for example,
@@ -329,8 +313,7 @@ type Mutation {
     """
     Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
     created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
-    and therefore requires it to be resent. Use `Query.isEmailAddressTaken` to check whether the supplied `emailAddress`
-    exists.
+    and therefore requires it to be resent.
 
     Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`, or `"EMAIL_ADDRESS_VERIFIED"` (i.e., the
     `emailAddress` is already verified).
@@ -339,9 +322,8 @@ type Mutation {
 
     """
     Sends a password reset email to the supplied `emailAddress`. The email will contain a password reset code which must
-    then be passed to `Mutation.resetPassword`. Use `Query.isEmailAddressTaken` to check whether the supplied
-    `emailAddress` exists. If the user is logged in (i.e., an access token is present), and wants to update their
-    password, `Mutation.updateAccount` should be used instead.
+    then be passed to `Mutation.resetPassword`. If the user is logged in (i.e., an access token is present), and wants
+    to update their password, `Mutation.updateAccount` should be used instead.
 
     Returned `errors[0].message`s could be `"UNREGISTERED_EMAIL_ADDRESS"`.
     """

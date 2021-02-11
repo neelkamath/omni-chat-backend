@@ -11,86 +11,89 @@ the HTTP request used to send the GraphQL document has changed, then the major v
 ### GraphQL
 
 - New:
-  - `Mutation.setOnline`
-  - `Mutation.setBroadcast`
+    - `Mutation.setOnline`
+    - `Mutation.setBroadcast`
 - Removed:
-  - `Mutation.setOnlineStatus`
-  - `Mutation.setBroadcastStatus`
+    - `Mutation.setOnlineStatus`
+    - `Mutation.setBroadcastStatus`
+    - `QueryIsUsernameTaken`
+    - `Query.isEmailAddressTaken`
+    - `Query.canDeleteAccount`
 - Bug fixes:
-  - `Mutation.triggerAction`
+    - `Mutation.triggerAction`
 
 ## v0.14.0
 
 ### GraphQL
 
 - Bug fixes:
-  - `ActionMessage` `type`
-  - `StarredActionMessage` `type`
-  - `NewActionMessage` `type`
-  - `UpdatedActionMessage` `type`
+    - `ActionMessage` `type`
+    - `StarredActionMessage` `type`
+    - `NewActionMessage` `type`
+    - `UpdatedActionMessage` `type`
 
 ### REST API
 
 - Bug fixes:
-  - `/pic-message`
-  - `/audio-message`
-  - `/video-message`
-  - `/doc-message`
-  - `/group-chat-pic`
+    - `/pic-message`
+    - `/audio-message`
+    - `/video-message`
+    - `/doc-message`
+    - `/group-chat-pic`
 
 ## v0.13.0
 
 ### GraphQL
 
 - Updated:
-  - `Mutations.createPrivateChat`
+    - `Mutations.createPrivateChat`
 
 ## v0.12.0
 
 ### GraphQL
 
 - Updated:
-  - `BlockedAccount` `type`
-  - `UnblockedAccount` `type`
+    - `BlockedAccount` `type`
+    - `UnblockedAccount` `type`
 
 ## v0.11.0
 
 ### GraphQL
 
 - Bug fixes:
-  - `Subscription`s now send back the `__typename` for the `CreatedSubscription` `type`.
-  - `Subscription.subscribeToAccounts` now sends back the `BlockedAccount` and `UnblockedAccount` `type`s.
+    - `Subscription`s now send back the `__typename` for the `CreatedSubscription` `type`.
+    - `Subscription.subscribeToAccounts` now sends back the `BlockedAccount` and `UnblockedAccount` `type`s.
 
 ## v0.10.0
 
 ### GraphQL
 
 - New:
-  - `Query.isBlocked`
-  - `Query.isContact`
+    - `Query.isBlocked`
+    - `Query.isContact`
 
 ## v0.9.0
 
 ### GraphQL
 
 - New:
-  - `Query.readBlockedUsers`
-  - `Mutation.blockUser`
-  - `Mutation.unblockUser`
-  - `BlockedAccount` `type`
-  - `UnblockedAccount` `type`
+    - `Query.readBlockedUsers`
+    - `Mutation.blockUser`
+    - `Mutation.unblockUser`
+    - `BlockedAccount` `type`
+    - `UnblockedAccount` `type`
 - Updated:
-  - `AccountsSubscription` `union`
+    - `AccountsSubscription` `union`
 
 ### REST API
 
 - Updated:
-  - `/profile-pic`
-  - `/group-chat-pic`
-  - `/pic-message`
-  - `/audio-message`
-  - `/video-message`
-  - `/doc-message`
+    - `/profile-pic`
+    - `/group-chat-pic`
+    - `/pic-message`
+    - `/audio-message`
+    - `/video-message`
+    - `/doc-message`
 
 ## v0.8.3
 

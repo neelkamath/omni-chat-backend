@@ -1835,7 +1835,7 @@ class MutationsTest {
     @Nested
     inner class UpdateAccount {
         private fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
-            assertFalse(isUsernameTaken(accountBeforeUpdate.username))
+            assertFalse(Users.isUsernameTaken(accountBeforeUpdate.username))
             with(Users.read(accountAfterUpdate.username!!)) {
                 assertEquals(accountAfterUpdate.username, username)
                 assertEquals(accountAfterUpdate.emailAddress, emailAddress)
