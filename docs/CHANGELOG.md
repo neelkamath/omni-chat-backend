@@ -13,6 +13,13 @@ the HTTP request used to send the GraphQL document has changed, then the major v
 - New:
     - `Mutation.setOnline`
     - `Mutation.setBroadcast`
+- Updated:
+    - `Mutation.createStatus`
+    - `Mutation.addGroupChatUsers`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.makeGroupChatAdmins`
+    - `Mutation.createGroupChat`
+    - `Mutation.createContacts`
 - Removed:
     - `Mutation.setOnlineStatus`
     - `Mutation.setBroadcastStatus`

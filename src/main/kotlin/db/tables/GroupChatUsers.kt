@@ -103,14 +103,12 @@ object GroupChatUsers : IntIdTable() {
 
     /**
      * Whether the [userIdList] can be removed from the [chatId]. Returns `false` if there would be users sans admins
-     * left in the [chatId], or if the [userIdList] contains users who aren't in the [chatId].
+     * left in the [chatId]. Users who aren't in the chat are ignored.
      */
-    fun canUsersLeave(chatId: Int, userIdList: List<Int>): Boolean = canUsersLeave(chatId, userIdList.toSet())
-
-    private fun canUsersLeave(chatId: Int, userIdList: Set<Int>): Boolean {
-        val existingUserIdList = readUserIdList(chatId).toSet()
-        if (userIdList.any { it !in existingUserIdList }) return false
-        return userIdList == existingUserIdList || (existingUserIdList - userIdList).any { isAdmin(it, chatId) }
+    private fun canUsersLeave(chatId: Int, userIdList: Collection<Int>): Boolean {
+        val existing = readUserIdList(chatId).toSet()
+        val supplied = userIdList.filter { it in existing }.toSet()
+        return supplied == existing || (existing - supplied).any { isAdmin(it, chatId) }
     }
 
     private fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())

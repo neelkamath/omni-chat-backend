@@ -207,10 +207,8 @@ suited for GraphQL such as image uploads. You can view the REST API documentatio
 downloaded earlier, `rest-api.html`, in your browser.
 
 Since there are many operations, we've categorized each of them below. The same operation may occur under different
-categories. Operations starting with `Query.`, `Mutation.`, and `Subscription.` (e.g., `Query.readChat`) are from the
-GraphQL API. Operations starting with `/` (e.g., `/profile-pic`) are from the REST API. You can use your browser or
-editor's "Find in page" feature to quickly find the relevant documentation once you've found the operation you want to
-use.
+categories. You can use your browser or editor's "Find in page" feature to quickly find the relevant documentation once
+you've found the operation you want to use.
 
 ### User
 

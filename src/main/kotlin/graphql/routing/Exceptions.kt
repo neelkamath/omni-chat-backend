@@ -30,8 +30,6 @@ object InvalidContactException : GraphQlDocDataException("INVALID_CONTACT")
 
 object InvalidMessageIdException : GraphQlDocDataException("INVALID_MESSAGE_ID")
 
-object DuplicateStatusException : GraphQlDocDataException("DUPLICATE_STATUS")
-
 object CannotDeleteAccountException : GraphQlDocDataException("CANNOT_DELETE_ACCOUNT")
 
 object InvalidPollException : GraphQlDocDataException("INVALID_POLL")

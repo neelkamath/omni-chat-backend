@@ -360,14 +360,14 @@ private fun operateSearchChatMessages(
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_CHAT_MESSAGES_QUERY,
     mapOf(
         "chatId" to chatId,
         "query" to query,
         "last" to pagination?.last,
-        "before" to pagination?.before?.toString()
+        "before" to pagination?.before?.toString(),
     ),
     userId
 )
@@ -376,7 +376,7 @@ fun searchChatMessages(
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): List<MessageEdge> {
     val data = operateSearchChatMessages(chatId, query, pagination, userId).data!!["searchChatMessages"] as List<*>
     return testingObjectMapper.convertValue(data)

@@ -18,6 +18,9 @@ backend API.
 
 ## Usage
 
+**Note**: Operations starting with `Query.`, `Mutation.`, and `Subscription.` (e.g., `Query.readChat`) are from the
+GraphQL API. Operations starting with `/` (e.g., `/profile-pic`) are from the REST API.
+
 - [Docs](docs/api.md)
     - Download the `rest-api.html` asset from a [release](https://github.com/neelkamath/omni-chat/releases). It'll be
       referenced in the docs.

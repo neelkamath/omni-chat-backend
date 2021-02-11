@@ -71,38 +71,38 @@ class GroupChatUsersTest {
     @Nested
     inner class CanUsersLeave {
         @Test
-        fun `Checking if users who aren't in the chat can leave must return false`() {
+        fun `Checking if users who aren't in the chat can leave must return true`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            assertFalse(GroupChatUsers.canUsersLeave(chatId, userId))
+            GroupChatUsers.removeUsers(chatId, userId)
         }
 
         @Test
         fun `The users must be able to leave if the chat will be empty`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            assertTrue(GroupChatUsers.canUsersLeave(chatId, adminId, userId))
+            GroupChatUsers.removeUsers(chatId, adminId, userId)
         }
 
         @Test
         fun `The users mustn't be able to leave if the chat will have users sans admins`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            assertFalse(GroupChatUsers.canUsersLeave(chatId, adminId))
+            assertFailsWith<IllegalArgumentException> { GroupChatUsers.removeUsers(chatId, adminId) }
         }
 
         @Test
-        fun `A non-admin must be able to leave if the chat will have admins remaining`() {
+        fun `A non-admin must be able to leave`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            assertTrue(GroupChatUsers.canUsersLeave(chatId, userId))
+            GroupChatUsers.removeUsers(chatId, userId)
         }
 
         @Test
-        fun `An admin must be able to leave if the chat has another admin`() {
+        fun `An admin must be able to leave if there's another admin`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id, admin2Id))
-            assertTrue(GroupChatUsers.canUsersLeave(chatId, admin1Id))
+            GroupChatUsers.removeUsers(chatId, admin1Id)
         }
     }
 

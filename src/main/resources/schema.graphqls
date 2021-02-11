@@ -273,10 +273,11 @@ type Mutation {
 
     """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
-    `MessageStatus.DELIVERED` record, the delivery status will be created.
+    `MessageStatus.DELIVERED` record, the delivery status will be created. Nothing will happen if the status was already
+    created.
 
     Returned `errors[0].message`s could be `"INVALID_MESSAGE_ID"` (i.e., the message doesn't exist in a chat the user is
-    in, or the message is the user's own), or `"DUPLICATE_STATUS"` (i.e., the user has already created that status).
+    in, or the message is the user's own).
 
     An access token must be sent with this request.
     """
@@ -329,47 +330,30 @@ type Mutation {
     """
     emailPasswordResetCode(emailAddress: String!): Placeholder!
 
-    """
-    Only an admin can perform this operation.
-
-    An access token must be sent with this request.
-    """
+    """An access token must be sent with this request. Only an admin can perform this operation."""
     updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
 
-    """
-    Only an admin can perform this operation.
-
-    An access token must be sent with this request.
-    """
+    """An access token must be sent with this request. Only an admin can perform this operation."""
     updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
 
-    """
-    Users already in the chat will be ignored. Only an admin can perform this operation.
-
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., a user to be added to the chat doesn't exist).
-
-    An access token must be sent with this request.
-    """
+    """An access token must be sent with this request. Only an admin can perform this operation."""
     addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Only an admin can perform this operation. Messages sent by, and polls voted on, by removed users will remain.
+    Messages sent by, and polls voted on, by removed users will remain.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users to be removed isn't in the chat,
-    or the user must first appoint another user as an admin because they're the last admin but there are other users).
+    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user attempted to leave the chat but they
+    must first appoint another user as an admin because they're the last admin of an otherwise nonempty chat).
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. Only an admin can perform this operation.
     """
     removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Makes every user in the `userIdList` an admin of the `chatId`. If the `userId`'s already an admin, nothing will
-    happen. Only an admin can perform this operation.
+    Makes every user in the `userIdList` an admin of the `chatId`. Users who either aren't in the chat, or are already
+    admins, are ignored.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the users in the `userIdList` isn't in the
-    chat).
-
-    An access token must be sent with this request.
+    An access token must be sent with this request. Only an admin can perform this operation.
     """
     makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
@@ -377,9 +361,8 @@ type Mutation {
     Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
     contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
 
-    Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., one of the participants' IDs don't exist), or
-    `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's `GroupChatInput.adminIdList` wasn't a subset of the
-    `GroupChatInput.userIdList`).
+    Returned `errors[0].message`s could be `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's
+    `GroupChatInput.adminIdList` wasn't a subset of the `GroupChatInput.userIdList`).
 
     An access token must be sent with this request.
     """
@@ -538,9 +521,7 @@ type Mutation {
     deleteContacts(userIdList: [Int!]!): Placeholder!
 
     """
-    Saves contacts. Contacts previously saved will be ignored. If the user's own contact is present, it will be ignored.
-
-    Returned `errors[0].message`s could be `"INVALID_CONTACT"` (i.e., one of the user IDs doesn't exist).
+    Saves contacts. Previously saved contacts, nonexistent users, and the user's own ID will be ignored.
 
     An access token must be sent with this request.
     """

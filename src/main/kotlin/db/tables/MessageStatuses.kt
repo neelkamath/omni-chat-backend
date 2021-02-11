@@ -47,9 +47,9 @@ object MessageStatuses : Table() {
         if (!Messages.isVisible(userId, messageId))
             throw IllegalArgumentException(
                 """
-                    The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they 
-                    deleted the chat.
-                    """.trimIndent()
+                The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted
+                the chat.
+                """.trimIndent()
             )
         if (Messages.readMessage(userId, messageId).sender.id == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")

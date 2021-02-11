@@ -208,7 +208,7 @@ data class AccountUpdate(
     val emailAddress: String? = null,
     val firstName: Name? = null,
     val lastName: Name? = null,
-    val bio: Bio? = null
+    val bio: Bio? = null,
 )
 
 /**
@@ -221,13 +221,13 @@ data class GroupChatInput(
     val userIdList: List<Int>,
     val adminIdList: List<Int>,
     val isBroadcast: Boolean,
-    val publicity: GroupChatPublicity
+    val publicity: GroupChatPublicity,
 ) {
     init {
         if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
         if (!userIdList.containsAll(adminIdList))
             throw IllegalArgumentException(
-                "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
+                "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList).",
             )
     }
 }

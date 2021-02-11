@@ -22,9 +22,9 @@ object Contacts : IntIdTable() {
      * Saves the [ownerId]'s [contactIdList], ignoring existing contacts. The [ownerId] will be notified of the
      * [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier].
      */
-    fun create(ownerId: Int, contactIdList: Set<Int>) {
+    fun create(ownerId: Int, contactIdList: Collection<Int>) {
         val existingContacts = readIdList(ownerId)
-        val newContacts = contactIdList.filter { it !in existingContacts }
+        val newContacts = contactIdList.filter { it !in existingContacts }.toSet()
         transaction {
             batchInsert(newContacts) {
                 this[contactOwnerId] = ownerId
