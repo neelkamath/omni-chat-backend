@@ -40,7 +40,7 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun setOnlineStatus(env: DataFetchingEnvironment): Placeholder {
+fun setOnline(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     Users.setOnlineStatus(env.userId!!, env.getArgument("isOnline"))
     return Placeholder
@@ -48,9 +48,7 @@ fun setOnlineStatus(env: DataFetchingEnvironment): Placeholder {
 
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val saved = Contacts.readIdList(env.userId!!)
-    val userIdList = env.getArgument<List<Int>>("userIdList").filter { it !in saved && it != env.userId!! }.toSet()
-    if (userIdList.any { !Users.exists(it) }) throw InvalidContactException
+    val userIdList = env.getArgument<List<Int>>("userIdList").filter { Users.exists(it) && it != env.userId!! }
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }
@@ -59,21 +57,13 @@ fun createStatus(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
     val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
-    verifyCanCreateStatus(messageId, env.userId!!, status)
-    MessageStatuses.create(env.userId!!, messageId, status)
-    return Placeholder
-}
-
-/**
- * An [IllegalArgumentException] or [DuplicateStatusException] will be thrown if the [userId] cannot create the [status]
- * on the [messageId].
- */
-private fun verifyCanCreateStatus(messageId: Int, userId: Int, status: MessageStatus) {
-    if (!Messages.exists(messageId) || !Messages.isVisible(userId, messageId)) throw InvalidMessageIdException
-    val chatId = Messages.readChatIdFromMessageId(messageId)
-    if (!isUserInChat(userId, chatId) || Messages.readMessage(userId, messageId).sender.id == userId)
+    if (MessageStatuses.exists(messageId, env.userId!!, status)) return Placeholder
+    try {
+        MessageStatuses.create(env.userId!!, messageId, status)
+    } catch (_: IllegalArgumentException) {
         throw InvalidMessageIdException
-    if (MessageStatuses.exists(messageId, userId, status)) throw DuplicateStatusException
+    }
+    return Placeholder
 }
 
 fun deleteStar(env: DataFetchingEnvironment): Placeholder {
@@ -85,17 +75,18 @@ fun deleteStar(env: DataFetchingEnvironment): Placeholder {
 fun createGroupChat(env: DataFetchingEnvironment): Int {
     env.verifyAuth()
     val args = env.getArgument<Map<*, *>>("chat")
-    @Suppress("UNCHECKED_CAST") val userIdList = args["userIdList"] as List<Int>
-    if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
-    @Suppress("UNCHECKED_CAST") val adminIdList = args["adminIdList"] as List<Int>
+
+    @Suppress("UNCHECKED_CAST")
+    val userIdList = (args["userIdList"] as List<Int>).filter(Users::exists) + env.userId!!
+    @Suppress("UNCHECKED_CAST") val adminIdList = (args["adminIdList"] as List<Int>) + env.userId!!
     if (!userIdList.containsAll(adminIdList)) throw InvalidAdminIdException
     val chat = GroupChatInput(
         args["title"] as GroupChatTitle,
         args["description"] as GroupChatDescription,
-        userIdList + env.userId!!,
-        adminIdList + env.userId!!,
+        userIdList,
+        adminIdList,
         args["isBroadcast"] as Boolean,
-        objectMapper.convertValue(args["publicity"] as String)
+        objectMapper.convertValue(args["publicity"] as String),
     )
     return GroupChats.create(chat)
 }
@@ -120,7 +111,21 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun setBroadcastStatus(env: DataFetchingEnvironment): Placeholder {
+@Suppress("DuplicatedCode")
+fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    val contextMessageId = env.getArgument<Int?>("contextMessageId")
+    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
+    val messageId = env.getArgument<Int>("messageId")
+    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
+    Messages.forward(env.userId!!, chatId, messageId, contextMessageId)
+    return Placeholder
+}
+
+fun setBroadcast(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
@@ -252,35 +257,33 @@ fun updateGroupChatDescription(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-@Suppress("DuplicatedCode")
 fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (userIdList.any { !Users.exists(it) }) throw InvalidUserIdException
+    val userIdList = env.getArgument<List<Int>>("userIdList").filter(Users::exists)
     GroupChatUsers.addUsers(chatId, userIdList)
     return Placeholder
 }
 
-@Suppress("DuplicatedCode")
 fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (!GroupChatUsers.canUsersLeave(chatId, userIdList)) throw InvalidUserIdException
-    GroupChatUsers.removeUsers(chatId, userIdList)
+    try {
+        GroupChatUsers.removeUsers(chatId, userIdList)
+    } catch (_: IllegalArgumentException) {
+        throw InvalidUserIdException
+    }
     return Placeholder
 }
 
-@Suppress("DuplicatedCode")
 fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("userIdList")
-    if (userIdList.any { !isUserInChat(it, chatId) }) throw InvalidUserIdException
+    val userIdList = env.getArgument<List<Int>>("userIdList").filter { isUserInChat(it, chatId) }
     GroupChatUsers.makeAdmins(chatId, userIdList)
     return Placeholder
 }
@@ -339,20 +342,6 @@ fun setInvitability(env: DataFetchingEnvironment): Placeholder {
     if (GroupChats.isExistentPublicChat(chatId)) throw InvalidChatIdException
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     GroupChats.setInvitability(chatId, env.getArgument("isInvitable"))
-    return Placeholder
-}
-
-@Suppress("DuplicatedCode")
-fun forwardMessage(env: DataFetchingEnvironment): Placeholder {
-    env.verifyAuth()
-    val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) throw InvalidChatIdException
-    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
-    val contextMessageId = env.getArgument<Int?>("contextMessageId")
-    if (contextMessageId != null && contextMessageId !in Messages.readIdList(chatId)) throw InvalidMessageIdException
-    val messageId = env.getArgument<Int>("messageId")
-    if (!Messages.isVisible(env.userId!!, messageId)) throw InvalidMessageIdException
-    Messages.forward(env.userId!!, chatId, messageId, contextMessageId)
     return Placeholder
 }
 

@@ -116,6 +116,12 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 |`enum`|`enum class`|
 |`scalar`|A `data class`, `typealias`, predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
 
+## Naming Convention
+
+We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (
+e.g., `deleteAccount`), `is` (e.g., `isUsernameTaken`), and `search` (e.g., `searchAccounts`) to name functions. Don't
+use `get`, `set`, etc. unless needed.
+
 ## Writing Tests
 
 - Pics must be actual images (e.g., [`76px×57px.jpg`](../src/test/resources/76px×57px.jpg)) because a thumbnail is

@@ -161,40 +161,6 @@ fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
     return testingObjectMapper.convertValue(data)
 }
 
-private const val CAN_DELETE_ACCOUNT_QUERY = """
-    query CanDeleteAccount {
-        canDeleteAccount
-    }
-"""
-
-private fun operateCanDeleteAccount(userId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(CAN_DELETE_ACCOUNT_QUERY, userId = userId)
-
-fun canDeleteAccount(userId: Int): Boolean = operateCanDeleteAccount(userId).data!!["canDeleteAccount"] as Boolean
-
-private const val IS_EMAIL_ADDRESS_TAKEN_QUERY = """
-    query IsEmailAddressTaken(${"$"}emailAddress: String!) {
-        isEmailAddressTaken(emailAddress: ${"$"}emailAddress)
-    }
-"""
-
-private fun operateIsEmailAddressTaken(emailAddress: String): GraphQlResponse =
-    executeGraphQlViaEngine(IS_EMAIL_ADDRESS_TAKEN_QUERY, mapOf("emailAddress" to emailAddress))
-
-fun isEmailAddressTaken(emailAddress: String): Boolean =
-    operateIsEmailAddressTaken(emailAddress).data!!["isEmailAddressTaken"] as Boolean
-
-private const val IS_USERNAME_TAKEN_QUERY = """
-    query IsUsernameTaken(${"$"}username: Username!) {
-        isUsernameTaken(username: ${"$"}username)
-    }
-"""
-
-private fun operateIsUsernameTaken(username: Username): GraphQlResponse =
-    executeGraphQlViaEngine(IS_USERNAME_TAKEN_QUERY, mapOf("username" to username))
-
-fun isUsernameTaken(username: Username): Boolean = operateIsUsernameTaken(username).data!!["isUsernameTaken"] as Boolean
-
 const val READ_ACCOUNT_QUERY = """
     query ReadAccount {
         readAccount {
@@ -394,14 +360,14 @@ private fun operateSearchChatMessages(
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_CHAT_MESSAGES_QUERY,
     mapOf(
         "chatId" to chatId,
         "query" to query,
         "last" to pagination?.last,
-        "before" to pagination?.before?.toString()
+        "before" to pagination?.before?.toString(),
     ),
     userId
 )
@@ -410,7 +376,7 @@ fun searchChatMessages(
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): List<MessageEdge> {
     val data = operateSearchChatMessages(chatId, query, pagination, userId).data!!["searchChatMessages"] as List<*>
     return testingObjectMapper.convertValue(data)
@@ -744,51 +710,6 @@ class QueriesTest {
             Contacts.create(contactOwnerId, setOf(contactId))
             PrivateChats.create(contactOwnerId, chatSharerId)
             assertEquals(setOf(contactId, chatSharerId), readOnlineStatuses(contactOwnerId).map { it.userId }.toSet())
-        }
-    }
-
-    @Nested
-    inner class CanDeleteAccount {
-        @Test
-        fun `An account must be deletable if the user is the admin of an otherwise empty chat`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
-            GroupChats.create(listOf(adminId))
-            assertTrue(canDeleteAccount(adminId))
-        }
-
-        @Test
-        fun `An account mustn't be deletable if the user is the last admin of a group chat with other users`() {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
-            GroupChats.create(listOf(adminId), listOf(userId))
-            assertFalse(canDeleteAccount(adminId))
-        }
-    }
-
-    @Nested
-    inner class IsEmailAddressTaken {
-        @Test
-        fun `The email mustn't be taken`() {
-            assertFalse(isEmailAddressTaken("username@example.com"))
-        }
-
-        @Test
-        fun `The email must be taken`() {
-            val address = createVerifiedUsers(1)[0].info.emailAddress
-            assertTrue(isEmailAddressTaken(address))
-        }
-    }
-
-    @Nested
-    inner class IsUsernameTaken {
-        @Test
-        fun `The username mustn't be taken`() {
-            assertFalse(isUsernameTaken(Username("u")))
-        }
-
-        @Test
-        fun `The username must be taken`() {
-            val username = createVerifiedUsers(1)[0].info.username
-            assertTrue(isUsernameTaken(username))
         }
     }
 

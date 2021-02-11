@@ -118,11 +118,6 @@ class GroupChatInfoDto(private val inviteCode: UUID) {
         GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
 }
 
-fun canDeleteAccount(env: DataFetchingEnvironment): Boolean {
-    env.verifyAuth()
-    return GroupChatUsers.canUserLeave(env.userId!!)
-}
-
 fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
     env.verifyAuth()
     val userIdList = Contacts.readIdList(env.userId!!) +
@@ -131,14 +126,6 @@ fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
     return userIdList.map {
         with(Users.read(it)) { OnlineStatus(it, isOnline, lastOnline) }
     }
-}
-
-fun isEmailAddressTaken(env: DataFetchingEnvironment): Boolean =
-    Users.isEmailAddressTaken(env.getArgument("emailAddress"))
-
-fun isUsernameTaken(env: DataFetchingEnvironment): Boolean {
-    val username = env.parseArgument<Username>("username")
-    return Users.isUsernameTaken(username)
 }
 
 fun readAccount(env: DataFetchingEnvironment): Account {

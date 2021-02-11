@@ -21,7 +21,7 @@ To shut down: `docker-compose down`
 
 ## Migrating
 
-Here's how to migrate from the previous version (0.13.0) to this version (0.14.0):
+Here's how to migrate from the previous version (0.14.0) to this version (0.15.0):
 
 1. Re-download [`docker-compose.yml`](docker-compose.yml).
 1. [Use](#usage).

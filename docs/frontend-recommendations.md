@@ -2,8 +2,8 @@
 
 Since this repo is for the backend API, here are recommendations for a developer creating a frontend UI:
 
-- Have a _Developers_ section which links to the URL Omni Chat is running on, and Omni Chat's [docs](api.md) so that
-  third party developers can create and run bots, etc. for your app.
+- Have a _Developers_ section which states the URL Omni Chat instance is running on (e.g., `api.example.com`), and links
+  to Omni Chat's [docs](../README.md) so that third party developers can create and run bots, etc. for your app.
 - Messages consisting solely of a single emoji should have the emoji enlarged.
 - Optionally require a password or biometric to unlock the app.
 - Allow the user to draw messages in-app. You could convert it to an image before sending.

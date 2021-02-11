@@ -310,17 +310,17 @@ fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean)
 fun errSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): String =
     operateSetPollVote(userId, messageId, option, vote).errors!![0].message
 
-private const val SET_BROADCAST_STATUS_QUERY = """
-    mutation SetBroadcastStatus(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
-        setBroadcastStatus(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
+private const val SET_BROADCAST_QUERY = """
+    mutation SetBroadcast(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
+        setBroadcast(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
     }
 """
 
-private fun operateSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): GraphQlResponse =
-    executeGraphQlViaEngine(SET_BROADCAST_STATUS_QUERY, mapOf("chatId" to chatId, "isBroadcast" to isBroadcast), userId)
+private fun operateSetBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_BROADCAST_QUERY, mapOf("chatId" to chatId, "isBroadcast" to isBroadcast), userId)
 
-fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
-    val data = operateSetBroadcastStatus(userId, chatId, isBroadcast).data!!["setBroadcastStatus"] as String
+fun setBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
+    val data = operateSetBroadcast(userId, chatId, isBroadcast).data!!["setBroadcast"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -338,9 +338,6 @@ fun makeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): Placeh
     return testingObjectMapper.convertValue(data)
 }
 
-fun errMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): String =
-    operateMakeGroupChatAdmins(userId, chatId, userIdList).errors!![0].message
-
 private const val ADD_GROUP_CHAT_USERS_QUERY = """
     mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
         addGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
@@ -354,9 +351,6 @@ fun addGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placehol
     val data = operateAddGroupChatUsers(userId, chatId, userIdList).data!!["addGroupChatUsers"] as String
     return testingObjectMapper.convertValue(data)
 }
-
-fun errAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
-    operateAddGroupChatUsers(userId, chatId, userIdList).errors!![0].message
 
 private const val UPDATE_GROUP_CHAT_DESCRIPTION_QUERY = """
     mutation UpdateGroupChatDescription(${"$"}chatId: Int!, ${"$"}description: GroupChatDescription!) {
@@ -424,17 +418,17 @@ fun star(userId: Int, messageId: Int): Placeholder {
 
 fun errStar(userId: Int, messageId: Int): String = operateStar(userId, messageId).errors!![0].message
 
-private const val SET_ONLINE_STATUS_QUERY = """
-    mutation SetOnlineStatus(${"$"}isOnline: Boolean!) {
-        setOnlineStatus(isOnline: ${"$"}isOnline)
+private const val SET_ONLINE_QUERY = """
+    mutation SetOnline(${"$"}isOnline: Boolean!) {
+        setOnline(isOnline: ${"$"}isOnline)
     }
 """
 
-private fun operateSetOnlineStatus(userId: Int, isOnline: Boolean): GraphQlResponse =
-    executeGraphQlViaEngine(SET_ONLINE_STATUS_QUERY, mapOf("isOnline" to isOnline), userId)
+private fun operateSetOnline(userId: Int, isOnline: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_ONLINE_QUERY, mapOf("isOnline" to isOnline), userId)
 
-fun setOnlineStatus(userId: Int, isOnline: Boolean): Placeholder {
-    val data = operateSetOnlineStatus(userId, isOnline).data!!["setOnlineStatus"] as String
+fun setOnline(userId: Int, isOnline: Boolean): Placeholder {
+    val data = operateSetOnline(userId, isOnline).data!!["setOnline"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -513,20 +507,11 @@ fun createContacts(userId: Int, userIdList: List<Int>): Placeholder {
     return testingObjectMapper.convertValue(data)
 }
 
-fun errCreateContacts(userId: Int, userIdList: List<Int>): String =
-    operateCreateContacts(userId, userIdList).errors!![0].message
-
 private const val CREATE_GROUP_CHAT_QUERY = """
     mutation CreateGroupChat(${"$"}chat: GroupChatInput!) {
         createGroupChat(chat: ${"$"}chat)
     }
 """
-
-private fun operateCreateGroupChat(userId: Int, chat: GroupChatInput): GraphQlResponse =
-    executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), userId)
-
-fun errCreateGroupChat(userId: Int, chat: GroupChatInput): String =
-    operateCreateGroupChat(userId, chat).errors!![0].message
 
 private const val CREATE_MESSAGE_QUERY = """
     mutation CreateTextMessage(${"$"}chatId: Int!, ${"$"}text: MessageText!, ${"$"}contextMessageId: Int) {
@@ -1156,13 +1141,13 @@ class MutationsTest {
     }
 
     @Nested
-    inner class SetBroadcastStatus {
+    inner class SetBroadcast {
         @Test
         fun `Only an admin must be allowed to set the broadcast status`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
-                SET_BROADCAST_STATUS_QUERY,
+                SET_BROADCAST_QUERY,
                 mapOf("chatId" to chatId, "isBroadcast" to true),
                 user.accessToken
             )
@@ -1174,7 +1159,7 @@ class MutationsTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isBroadcast = true
-            setBroadcastStatus(adminId, chatId, isBroadcast)
+            setBroadcast(adminId, chatId, isBroadcast)
             assertEquals(isBroadcast, GroupChats.readChat(chatId, userId = adminId).isBroadcast)
         }
     }
@@ -1190,10 +1175,10 @@ class MutationsTest {
         }
 
         @Test
-        fun `Making a user who isn't in the chat an admin must fail`() {
+        fun `Making a user who isn't in the chat an admin mustn't fail`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            assertEquals(InvalidUserIdException.message, errMakeGroupChatAdmins(adminId, chatId, listOf(userId)))
+            makeGroupChatAdmins(adminId, chatId, listOf(userId))
         }
 
         @Test
@@ -1220,11 +1205,12 @@ class MutationsTest {
         }
 
         @Test
-        fun `An exception must be thrown when adding a nonexistent user`() {
+        fun `Adding a nonexistent user must do nothing`() {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val invalidUserId = -1
-            assertEquals(InvalidUserIdException.message, errAddGroupChatUsers(adminId, chatId, listOf(invalidUserId)))
+            addGroupChatUsers(adminId, chatId, listOf(invalidUserId))
+            assertEquals(listOf(adminId), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
@@ -1266,10 +1252,10 @@ class MutationsTest {
         }
 
         @Test
-        fun `Removing a nonexistent user must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+        fun `Removing invalid users mustn't fail`() {
+            val (adminId, userNotInChatId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            assertEquals(InvalidUserIdException.message, errRemoveGroupChatUsers(adminId, chatId, listOf(-1)))
+            removeGroupChatUsers(adminId, chatId, listOf(-1, userNotInChatId))
         }
     }
 
@@ -1355,10 +1341,10 @@ class MutationsTest {
     }
 
     @Nested
-    inner class SetOnlineStatus {
+    inner class SetOnline {
         private fun assertOnlineStatus(isOnline: Boolean) {
             val userId = createVerifiedUsers(1)[0].info.id
-            setOnlineStatus(userId, isOnline)
+            setOnline(userId, isOnline)
             assertEquals(isOnline, Users.read(userId).isOnline)
         }
 
@@ -1473,18 +1459,10 @@ class MutationsTest {
     @Nested
     inner class CreateContacts {
         @Test
-        fun `Trying to save the user's own contact must be ignored`() {
+        fun `The user's own contact, and nonexistent users must be ignored`() {
             val (ownerId, userId) = createVerifiedUsers(2).map { it.info.id }
-            createContacts(ownerId, listOf(ownerId, userId))
+            createContacts(ownerId, listOf(ownerId, userId, -1))
             assertEquals(listOf(userId), Contacts.readIdList(ownerId))
-        }
-
-        @Test
-        fun `If one of the contacts to be saved is invalid, then none of them must be saved`() {
-            val (ownerId, userId) = createVerifiedUsers(2).map { it.info.id }
-            val contacts = listOf(userId, -1)
-            assertEquals(InvalidContactException.message, errCreateContacts(ownerId, contacts))
-            assertTrue(Contacts.readIdList(ownerId).isEmpty())
         }
     }
 
@@ -1499,7 +1477,7 @@ class MutationsTest {
                 "userIdList" to listOf(user1Id, user2Id),
                 "adminIdList" to listOf<Int>(),
                 "isBroadcast" to false,
-                "publicity" to GroupChatPublicity.NOT_INVITABLE
+                "publicity" to GroupChatPublicity.NOT_INVITABLE,
             )
             val chatId = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
                 .data!!["createGroupChat"] as Int
@@ -1511,19 +1489,29 @@ class MutationsTest {
             assertEquals(listOf(adminId), chats[0].adminIdList)
         }
 
-        @Test
-        fun `A group chat mustn't be created when supplied with an invalid user ID`() {
-            val userId = createVerifiedUsers(1)[0].info.id
-            val invalidUserId = -1
-            val chat = GroupChatInput(
-                GroupChatTitle("T"),
-                GroupChatDescription(""),
-                userIdList = listOf(userId, invalidUserId),
-                adminIdList = listOf(userId),
-                isBroadcast = false,
-                publicity = GroupChatPublicity.NOT_INVITABLE
+        private fun create(adminId: Int, userIdList: List<Int>) {
+            val chat = mapOf(
+                "title" to GroupChatTitle("T"),
+                "description" to GroupChatDescription(""),
+                "userIdList" to userIdList,
+                "adminIdList" to listOf(adminId),
+                "isBroadcast" to false,
+                "publicity" to GroupChatPublicity.NOT_INVITABLE,
             )
-            assertEquals(InvalidUserIdException.message, errCreateGroupChat(userId, chat))
+            val response = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), adminId)
+            assertNotNull(response.data)
+        }
+
+        @Test
+        fun `A group chat must be created when supplied with an invalid user ID`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            create(adminId, userIdList = listOf(adminId, -1))
+        }
+
+        @Test
+        fun `The chat must be created if the user's ID was passed in the admin ID list but not user ID list`() {
+            val adminId = createVerifiedUsers(1)[0].info.id
+            create(adminId, userIdList = listOf())
         }
 
         @Test
@@ -1537,11 +1525,9 @@ class MutationsTest {
                 "isBroadcast" to false,
                 "publicity" to GroupChatPublicity.NOT_INVITABLE
             )
-            val response = executeGraphQlViaEngine(
-                CREATE_GROUP_CHAT_QUERY,
-                mapOf("chat" to chat),
-                user1Id
-            ).errors!![0].message
+            val response = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), user1Id)
+                .errors!![0]
+                .message
             assertEquals(InvalidAdminIdException.message, response)
         }
     }
@@ -1656,10 +1642,14 @@ class MutationsTest {
         }
 
         @Test
-        fun `Creating a duplicate status must fail`() {
-            val (messageId, user1Id) = createUtilizedPrivateChat()
-            createStatus(user1Id, messageId, MessageStatus.DELIVERED)
-            assertEquals(DuplicateStatusException.message, errCreateStatus(user1Id, messageId, MessageStatus.DELIVERED))
+        fun `Creating a duplicate status must do nothing`(): Unit = runBlocking {
+            val (messageId, userId) = createUtilizedPrivateChat()
+            val create = { createStatus(userId, messageId, MessageStatus.DELIVERED) }
+            create()
+            val subscriber = messagesNotifier.safelySubscribe(userId)
+            create()
+            awaitBrokering()
+            subscriber.assertNoValues()
         }
 
         @Test
@@ -1835,7 +1825,7 @@ class MutationsTest {
     @Nested
     inner class UpdateAccount {
         private fun testAccount(accountBeforeUpdate: Account, accountAfterUpdate: AccountUpdate) {
-            assertFalse(isUsernameTaken(accountBeforeUpdate.username))
+            assertFalse(Users.isUsernameTaken(accountBeforeUpdate.username))
             with(Users.read(accountAfterUpdate.username!!)) {
                 assertEquals(accountAfterUpdate.username, username)
                 assertEquals(accountAfterUpdate.emailAddress, emailAddress)
