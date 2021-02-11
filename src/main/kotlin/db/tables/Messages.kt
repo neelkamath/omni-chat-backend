@@ -216,7 +216,7 @@ object Messages : IntIdTable() {
             chatId,
             ActionMessages.read(messageId).toActionMessageInput(),
             contextMessageId,
-            isForwarded = true
+            isForwarded = true,
         )
 
         MessageType.PIC ->
@@ -227,7 +227,7 @@ object Messages : IntIdTable() {
             chatId,
             GroupChatInviteMessages.read(messageId),
             contextMessageId,
-            isForwarded = true
+            isForwarded = true,
         )
 
         MessageType.AUDIO ->
@@ -257,7 +257,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         query: String,
         pagination: BackwardPagination? = null,
-        userId: Int? = null
+        userId: Int? = null,
     ): List<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
 
     /**
