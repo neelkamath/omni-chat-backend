@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  version: 0.14.0
+  version: 0.15.0
   title: Omni Chat
   description: |
     Functionality supplementary to the GraphQL API such as uploading and downloading images.
@@ -273,14 +273,14 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidPicMessage'
     Audio:
-      description: An MP3/MP4 audio not exceeding 5 MiB.
+      description: An MP3/MP4 video not exceeding 5 MiB.
       content:
         audio/mp3, audio/mp4:
           schema:
             type: string
             format: binary
     Video:
-      description: An MP4 audio not exceeding 5 MiB.
+      description: An MP4 video not exceeding 5 MiB.
       content:
         video/mp4:
           schema:
@@ -371,8 +371,7 @@ components:
                 type: integer
               caption:
                 type: string
-                description: The pic's caption. 1-10,000 characters, of which at least one isn't whitespace. Uses
-                  CommonMark.
+                description: The pic's caption. Must be a valid `MessageText` `scalar` (refer to the GraphQL schema).
           encoding:
             pic:
               contentType: image/png, image/jpeg

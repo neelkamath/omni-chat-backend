@@ -40,7 +40,7 @@ fun createAccount(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun setOnlineStatus(env: DataFetchingEnvironment): Placeholder {
+fun setOnline(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     Users.setOnlineStatus(env.userId!!, env.getArgument("isOnline"))
     return Placeholder
@@ -120,7 +120,7 @@ fun createTextMessage(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun setBroadcastStatus(env: DataFetchingEnvironment): Placeholder {
+fun setBroadcast(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException

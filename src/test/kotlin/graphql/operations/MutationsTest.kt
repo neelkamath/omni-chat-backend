@@ -310,17 +310,17 @@ fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean)
 fun errSetPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): String =
     operateSetPollVote(userId, messageId, option, vote).errors!![0].message
 
-private const val SET_BROADCAST_STATUS_QUERY = """
-    mutation SetBroadcastStatus(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
-        setBroadcastStatus(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
+private const val SET_BROADCAST_QUERY = """
+    mutation SetBroadcast(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
+        setBroadcast(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
     }
 """
 
-private fun operateSetBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): GraphQlResponse =
-    executeGraphQlViaEngine(SET_BROADCAST_STATUS_QUERY, mapOf("chatId" to chatId, "isBroadcast" to isBroadcast), userId)
+private fun operateSetBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_BROADCAST_QUERY, mapOf("chatId" to chatId, "isBroadcast" to isBroadcast), userId)
 
-fun setBroadcastStatus(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
-    val data = operateSetBroadcastStatus(userId, chatId, isBroadcast).data!!["setBroadcastStatus"] as String
+fun setBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
+    val data = operateSetBroadcast(userId, chatId, isBroadcast).data!!["setBroadcast"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -424,17 +424,17 @@ fun star(userId: Int, messageId: Int): Placeholder {
 
 fun errStar(userId: Int, messageId: Int): String = operateStar(userId, messageId).errors!![0].message
 
-private const val SET_ONLINE_STATUS_QUERY = """
-    mutation SetOnlineStatus(${"$"}isOnline: Boolean!) {
-        setOnlineStatus(isOnline: ${"$"}isOnline)
+private const val SET_ONLINE_QUERY = """
+    mutation SetOnline(${"$"}isOnline: Boolean!) {
+        setOnline(isOnline: ${"$"}isOnline)
     }
 """
 
-private fun operateSetOnlineStatus(userId: Int, isOnline: Boolean): GraphQlResponse =
-    executeGraphQlViaEngine(SET_ONLINE_STATUS_QUERY, mapOf("isOnline" to isOnline), userId)
+private fun operateSetOnline(userId: Int, isOnline: Boolean): GraphQlResponse =
+    executeGraphQlViaEngine(SET_ONLINE_QUERY, mapOf("isOnline" to isOnline), userId)
 
-fun setOnlineStatus(userId: Int, isOnline: Boolean): Placeholder {
-    val data = operateSetOnlineStatus(userId, isOnline).data!!["setOnlineStatus"] as String
+fun setOnline(userId: Int, isOnline: Boolean): Placeholder {
+    val data = operateSetOnline(userId, isOnline).data!!["setOnline"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -1156,13 +1156,13 @@ class MutationsTest {
     }
 
     @Nested
-    inner class SetBroadcastStatus {
+    inner class SetBroadcast {
         @Test
         fun `Only an admin must be allowed to set the broadcast status`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
-                SET_BROADCAST_STATUS_QUERY,
+                SET_BROADCAST_QUERY,
                 mapOf("chatId" to chatId, "isBroadcast" to true),
                 user.accessToken
             )
@@ -1174,7 +1174,7 @@ class MutationsTest {
             val adminId = createVerifiedUsers(1)[0].info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isBroadcast = true
-            setBroadcastStatus(adminId, chatId, isBroadcast)
+            setBroadcast(adminId, chatId, isBroadcast)
             assertEquals(isBroadcast, GroupChats.readChat(chatId, userId = adminId).isBroadcast)
         }
     }
@@ -1355,10 +1355,10 @@ class MutationsTest {
     }
 
     @Nested
-    inner class SetOnlineStatus {
+    inner class SetOnline {
         private fun assertOnlineStatus(isOnline: Boolean) {
             val userId = createVerifiedUsers(1)[0].info.id
-            setOnlineStatus(userId, isOnline)
+            setOnline(userId, isOnline)
             assertEquals(isOnline, Users.read(userId).isOnline)
         }
 
