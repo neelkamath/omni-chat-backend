@@ -10,8 +10,7 @@ This is the recommended method to run the server locally. For example, you might
 1. Download [`dockerize`](../docker/dockerize).
 1. If you're not using Windows, run `chmod +x dockerize`.
 1. Download [`docker-compose.yml`](docker-compose.yml).
-1. Create a file named `.env`. Copy-paste the key-value pairs from the [example `.env`](.env) into it,
-   and [set your own values](env.md).
+1. Create a file named `.env`. Copy-paste the key-value pairs from the [example `.env`](.env) into it, and [set your own values](env.md).
 
 ## Usage
 

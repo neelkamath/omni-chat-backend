@@ -336,11 +336,16 @@ type Mutation {
     """An access token must be sent with this request. Only an admin can perform this operation."""
     updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
 
-    """An access token must be sent with this request. Only an admin can perform this operation."""
+    """
+    Nonexistent users, and users who are already in the chat will be ignored.
+
+    An access token must be sent with this request. Only an admin can perform this operation.
+    """
     addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Messages sent by, and polls voted on, by removed users will remain.
+    Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
+    chat will be ignored.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user attempted to leave the chat but they
     must first appoint another user as an admin because they're the last admin of an otherwise nonempty chat).
@@ -350,16 +355,17 @@ type Mutation {
     removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Makes every user in the `userIdList` an admin of the `chatId`. Users who either aren't in the chat, or are already
-    admins, are ignored.
+    Makes every user in the `userIdList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
+    users who are already admins, are ignored.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
     makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
+    Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
+    `GroupChatInput.adminIdList` needn't contain the user's own ID, as it is implicitly included. The created chat's ID
+    is returned.
 
     Returned `errors[0].message`s could be `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's
     `GroupChatInput.adminIdList` wasn't a subset of the `GroupChatInput.userIdList`).

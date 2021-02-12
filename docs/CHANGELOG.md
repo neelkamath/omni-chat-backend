@@ -1,10 +1,6 @@
 # Changelog
 
-The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number, and
-follows [semver](https://semver.org/). Major and minor versions get based off of the API (i.e., the GraphQL and REST
-APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't
-changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of
-the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
+The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number, and follows [semver](https://semver.org/). Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
 ## v0.15.0
 
@@ -141,8 +137,7 @@ the HTTP request used to send the GraphQL document has changed, then the major v
     - `Query.requestOnetimeToken`
 - Bug fixes:
     - `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
-    - `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the
-      connection opens as a text event.
+    - `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the connection opens as a text event.
 
 ### REST API
 
