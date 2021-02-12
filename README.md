@@ -5,11 +5,13 @@ _Trusted, Extensible, Better Chat_
 ![Cover](branding/facebook_cover_photo_2.png)
 
 - [About](docs/about.md)
-- There's an [official web app](https://github.com/neelkamath/omni-chat-web) which uses this API.
 - To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the [release tag](https://github.com/neelkamath/omni-chat/tags) (e.g., `v0.1.1`).
 - Here are the guides for running the server using [Docker Compose](docs/docker-compose.md) (recommended for local development), and the [cloud](docs/cloud.md) (recommended for production).
-- [Official JavaScript API wrapper library](https://www.npmjs.com/package/@neelkamath/omni-chat)
 - Read these [recommendations](docs/frontend-recommendations.md) if you're a developer creating a frontend UI which uses this API.
+
+Here are some notable project built using Omni Chat. If you've built an app, library, etc., create a [GitHub issue](https://github.com/neelkamath/omni-chat-backend/issues) to have it added to this list.
+- (Official) [Web app](https://github.com/neelkamath/omni-chat-web)
+- (Official) [JavaScript API wrapper library](https://www.npmjs.com/package/@neelkamath/omni-chat)
 
 ## Usage
 
