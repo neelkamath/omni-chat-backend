@@ -126,11 +126,9 @@ We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update`
 - Test cases should be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
 - Each function tested should have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`, `Person_Companion_build` for `fun build()` in a `companion object` where the `companion object` is inside a `class Person`, `MyNestedClass_myFun` for `fun myFun()` in `class MyNestedClass`). Test cases should be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
 
-### Forking
+## Diagram
 
-If you're forking this repo, and want the CI/CD pipeline to run, you'll need to create the following [secrets](https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository):
-- Create secrets for the variables starting with `SMTP_` (e.g., `SMTP_HOST`) documented in [`env.md`](env.md).
-- To upload the Docker image, you'll need to [create a Docker Hub account](https://hub.docker.com/signup), and create an [access token](https://docs.docker.com/docker-hub/access-tokens/). Store the access token as the value of the `DOCKER_HUB_PASSWORD` secret.
+![Diagram](diagram.svg)
 
 ## Releasing
 

@@ -163,6 +163,7 @@ Since there are many operations, we've categorized each of them below. The same 
 
 - `Query.requestTokenSet`
 - `Query.refreshTokenSet`
+- `Query.readAccount`
 - `Mutation.deleteAccount`
 - `Mutation.verifyEmailAddress`
 - `Mutation.resetPassword`
@@ -173,6 +174,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Mutation.createAccount`
 - `Mutation.emailEmailAddressVerification`
 - `Mutation.emailPasswordResetCode`
+- `Subscription.subscribeToAccounts`
 - `/profile-pic`
 
 ### Other Users
@@ -191,14 +193,20 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Query.readBlockedUsers`
 - `Mutation.blockUser`
 - `Mutation.unblockUser`
+- `Subscription.subscribeToAccounts`
+- `/profile-pic`
 
 ### Contacts
 
 - `Query.isContact`
 - `Query.readContacts`
 - `Query.searchContacts`
+- `Query.readOnlineStatuses`
 - `Mutation.deleteContacts`
 - `Mutation.createContacts`
+- `Subscription.subscribeToOnlineStatuses`
+- `Subscription.subscribeToAccounts`
+- `/profile-pic`
 
 ### Chats
 
@@ -207,6 +215,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Query.readGroupChat`
 - `Query.searchChats`
 - `Query.searchPublicChats`
+- `Query.readOnlineStatuses`
 - `Mutation.deleteGroupChatPic`
 - `Mutation.updateGroupChatTitle`
 - `Mutation.updateGroupChatDescription`
@@ -220,6 +229,9 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Mutation.deletePrivateChat`
 - `Mutation.createPrivateChat`
 - `Subscription.subscribeToGroupChats`
+- `Subscription.subscribeToOnlineStatuses`
+- `Subscription.subscribeToTypingStatuses`
+- `Subscription.subscribeToAccounts`
 - `/group-chat-pic`
 
 ### Messages
