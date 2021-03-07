@@ -19,6 +19,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.makeGroupChatAdmins`
 - `Mutation.deleteContacts`
 - `Mutation.createContacts`
+- `Subscription.subscribeToGroupChats` now sends back an `ExitedUser` if the user themselves left the chat.
 - `UpdatedAccount` `type`
 
 ### Fixed

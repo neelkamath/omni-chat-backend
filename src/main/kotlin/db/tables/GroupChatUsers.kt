@@ -118,7 +118,7 @@ object GroupChatUsers : IntIdTable() {
      * [canUsersLeave]. If every user is removed, the [chatId] will be [GroupChats.delete]d. Returns whether the chat
      * was deleted.
      *
-     * Subscribers, excluding the [userIdList], will be notified of the [ExitedUser]s via [groupChatsNotifier].
+     * Subscribers (including the [userIdList]) will be notified of the [ExitedUser]s via [groupChatsNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: List<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
@@ -127,7 +127,7 @@ object GroupChatUsers : IntIdTable() {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
         for (userId in userIdList.toSet())
-            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId))
+            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId) + userIdList)
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

@@ -162,19 +162,26 @@ class GroupChatUsersTest {
         }
 
         @Test
-        fun `Participants must be notified of removed users once even if the user was removed twice`() {
-            runBlocking {
-                val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
-                val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-                awaitBrokering()
-                val (adminSubscriber, userSubscriber, nonParticipantSubscriber) =
-                    listOf(adminId, userId, nonParticipantId)
-                        .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
-                GroupChatUsers.removeUsers(chatId, userId, userId)
-                awaitBrokering()
-                adminSubscriber.assertValue(ExitedUser(userId, chatId))
-                listOf(userSubscriber, nonParticipantSubscriber).forEach { it.assertNoValues() }
-            }
+        fun `Only one notification must be sent even if the user was removed twice`(): Unit = runBlocking {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            awaitBrokering()
+            val (adminSubscriber, userSubscriber) =
+                listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+            GroupChatUsers.removeUsers(chatId, userId, userId)
+            awaitBrokering()
+            listOf(adminSubscriber, userSubscriber).forEach { it.assertValue(ExitedUser(userId, chatId)) }
+        }
+
+        @Test
+        fun `Non-participants mustn't be notified`(): Unit = runBlocking {
+            val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            awaitBrokering()
+            val subscriber = groupChatsNotifier.subscribe(nonParticipantId).subscribeWith(TestSubscriber())
+            GroupChatUsers.removeUsers(chatId, userId)
+            awaitBrokering()
+            subscriber.assertNoValues()
         }
 
         @Test

@@ -625,7 +625,7 @@ A `GroupChatId` is the ID of the chat the user was added to.
 
 When a group chat's pic gets updated, an `UpdatedGroupChat` will be sent.
 
-If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+If the subscriber leaves the chat, they will receive their own `ExitedUser` message.
 """
 union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
 
