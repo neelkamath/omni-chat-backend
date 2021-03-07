@@ -8,6 +8,19 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.16.0
 
+### Updated
+
+- `Query.isBlocked`
+- `Query.isContact`
+- `Mutation.blockUser`
+- `Mutation.unblockUser`
+- `Mutation.addGroupChatUsers`
+- `Mutation.removeGroupChatUsers`
+- `Mutation.makeGroupChatAdmins`
+- `Mutation.deleteContacts`
+- `Mutation.createContacts`
+- `UpdatedAccount` `type`
+
 ### Fixed
 
 - Fixed an issue where some notifications weren't sent back to clients over WebSockets.

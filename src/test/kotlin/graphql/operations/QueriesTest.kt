@@ -18,28 +18,28 @@ import java.util.*
 import kotlin.test.*
 
 private const val IS_CONTACT_QUERY = """
-    query IsContact(${"$"}userId: Int!) {
-        isContact(userId: ${"$"}userId)
+    query IsContact(${"$"}id: Int!) {
+        isContact(id: ${"$"}id)
     }
 """
 
-private fun operateIsContact(userId: Int, otherUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(IS_CONTACT_QUERY, mapOf("userId" to otherUserId), userId)
+private fun operateIsContact(userId: Int, contactId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(IS_CONTACT_QUERY, mapOf("id" to contactId), userId)
 
-private fun isContact(userId: Int, otherUserId: Int): Boolean =
-    operateIsContact(userId, otherUserId).data!!["isContact"] as Boolean
+private fun isContact(userId: Int, contactId: Int): Boolean =
+    operateIsContact(userId, contactId).data!!["isContact"] as Boolean
 
 private const val IS_BLOCKED_QUERY = """
-    query IsBlocked(${"$"}userId: Int!) {
-        isBlocked(userId: ${"$"}userId)
+    query IsBlocked(${"$"}id: Int!) {
+        isBlocked(id: ${"$"}id)
     }
 """
 
-private fun operateIsBlocked(userId: Int, otherUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(IS_BLOCKED_QUERY, mapOf("userId" to otherUserId), userId)
+private fun operateIsBlocked(userId: Int, blockedUserId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(IS_BLOCKED_QUERY, mapOf("id" to blockedUserId), userId)
 
-private fun isBlocked(userId: Int, otherUserId: Int): Boolean =
-    operateIsBlocked(userId, otherUserId).data!!["isBlocked"] as Boolean
+private fun isBlocked(userId: Int, blockedUserId: Int): Boolean =
+    operateIsBlocked(userId, blockedUserId).data!!["isBlocked"] as Boolean
 
 private const val READ_BLOCKED_USERS_QUERY = """
     query ReadBlockedUsers(${"$"}first: Int, ${"$"}after: Cursor) {

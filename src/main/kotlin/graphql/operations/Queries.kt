@@ -258,10 +258,10 @@ fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
 
 fun isBlocked(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    return BlockedUsers.exists(env.userId!!, env.getArgument("userId"))
+    return BlockedUsers.exists(env.userId!!, env.getArgument("id"))
 }
 
 fun isContact(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    return env.getArgument("userId") in Contacts.readIdList(env.userId!!)
+    return env.getArgument("id") in Contacts.readIdList(env.userId!!)
 }

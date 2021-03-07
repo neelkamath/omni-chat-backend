@@ -331,7 +331,7 @@ interface TypingStatusesSubscription
 data class TypingStatus(val chatId: Int, val userId: Int, val isTyping: Boolean) : TypingStatusesSubscription
 
 data class UpdatedAccount(
-    val userId: Int,
+    val id: Int,
     val username: Username,
     val emailAddress: String,
     val firstName: Name,

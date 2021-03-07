@@ -20,13 +20,13 @@ import java.util.*
 import kotlin.test.*
 
 private const val UNBLOCK_USER_QUERY = """
-    mutation UnblockUser(${"$"}userId: Int!) {
-        unblockUser(userId: ${"$"}userId)
+    mutation UnblockUser(${"$"}id: Int!) {
+        unblockUser(id: ${"$"}id)
     }
 """
 
 private fun operateUnblockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+    executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("id" to blockedUserId), userId)
 
 private fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
     val data = operateUnblockUser(userId, blockedUserId).data!!["unblockUser"] as String
@@ -34,13 +34,13 @@ private fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
 }
 
 private const val BLOCK_USER_QUERY = """
-    mutation BlockUser(${"$"}userId: Int!) {
-        blockUser(userId: ${"$"}userId)
+    mutation BlockUser(${"$"}id: Int!) {
+        blockUser(id: ${"$"}id)
     }
 """
 
 private fun operateBlockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(BLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+    executeGraphQlViaEngine(BLOCK_USER_QUERY, mapOf("id" to blockedUserId), userId)
 
 private fun blockUser(userId: Int, blockedUserId: Int): Placeholder {
     val data = operateBlockUser(userId, blockedUserId).data!!["blockUser"] as String
@@ -171,25 +171,21 @@ fun errForwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId
     operateForwardMessage(userId, chatId, messageId, contextMessageId).errors!![0].message
 
 private const val REMOVE_GROUP_CHAT_USERS_QUERY = """
-    mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        removeGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        removeGroupChatUsers(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateRemoveGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(
-        REMOVE_GROUP_CHAT_USERS_QUERY,
-        mapOf("chatId" to chatId, "userIdList" to userIdList),
-        userId
-    )
+private fun operateRemoveGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(REMOVE_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun removeGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateRemoveGroupChatUsers(userId, chatId, userIdList).data!!["removeGroupChatUsers"] as String
+fun removeGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateRemoveGroupChatUsers(userId, chatId, idList).data!!["removeGroupChatUsers"] as String
     return testingObjectMapper.convertValue(data)
 }
 
-fun errRemoveGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
-    operateRemoveGroupChatUsers(userId, chatId, userIdList).errors!![0].message
+fun errRemoveGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): String =
+    operateRemoveGroupChatUsers(userId, chatId, idList).errors!![0].message
 
 private const val SET_INVITABILITY_QUERY = """
     mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
@@ -325,30 +321,30 @@ fun setBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
 }
 
 private const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
-    mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        makeGroupChatAdmins(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        makeGroupChatAdmins(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(MAKE_GROUP_CHAT_ADMINS_QUERY, mapOf("chatId" to chatId, "userIdList" to userIdList), userId)
+private fun operateMakeGroupChatAdmins(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(MAKE_GROUP_CHAT_ADMINS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun makeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateMakeGroupChatAdmins(userId, chatId, userIdList).data!!["makeGroupChatAdmins"] as String
+fun makeGroupChatAdmins(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateMakeGroupChatAdmins(userId, chatId, idList).data!!["makeGroupChatAdmins"] as String
     return testingObjectMapper.convertValue(data)
 }
 
 private const val ADD_GROUP_CHAT_USERS_QUERY = """
-    mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        addGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        addGroupChatUsers(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(ADD_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "userIdList" to userIdList), userId)
+private fun operateAddGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(ADD_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun addGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateAddGroupChatUsers(userId, chatId, userIdList).data!!["addGroupChatUsers"] as String
+fun addGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateAddGroupChatUsers(userId, chatId, idList).data!!["addGroupChatUsers"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -494,16 +490,16 @@ fun createAccount(account: AccountInput): Placeholder {
 fun errCreateAccount(account: AccountInput): String = operateCreateAccount(account).errors!![0].message
 
 private const val CREATE_CONTACTS_QUERY = """
-    mutation CreateContacts(${"$"}userIdList: [Int!]!) {
-        createContacts(userIdList: ${"$"}userIdList)
+    mutation CreateContacts(${"$"}idList: [Int!]!) {
+        createContacts(idList: ${"$"}idList)
     }
 """
 
-private fun operateCreateContacts(userId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(CREATE_CONTACTS_QUERY, mapOf("userIdList" to userIdList), userId)
+private fun operateCreateContacts(userId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(CREATE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
 
-fun createContacts(userId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateCreateContacts(userId, userIdList).data!!["createContacts"] as String
+fun createContacts(userId: Int, idList: List<Int>): Placeholder {
+    val data = operateCreateContacts(userId, idList).data!!["createContacts"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -587,16 +583,16 @@ fun deleteAccount(userId: Int): Placeholder {
 fun errDeleteAccount(userId: Int): String = operateDeleteAccount(userId).errors!![0].message
 
 private const val DELETE_CONTACTS_QUERY = """
-    mutation DeleteContacts(${"$"}userIdList: [Int!]!) {
+    mutation DeleteContacts(${"$"}idList: [Int!]!) {
         deleteContacts(userIdList: ${"$"}userIdList)
     }
 """
 
-private fun operateDeleteContacts(userId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(DELETE_CONTACTS_QUERY, mapOf("userIdList" to userIdList), userId)
+private fun operateDeleteContacts(userId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(DELETE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
 
-fun deleteContacts(userId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateDeleteContacts(userId, userIdList).data!!["deleteContacts"] as String
+fun deleteContacts(userId: Int, idList: List<Int>): Placeholder {
+    val data = operateDeleteContacts(userId, idList).data!!["deleteContacts"] as String
     return testingObjectMapper.convertValue(data)
 }
 

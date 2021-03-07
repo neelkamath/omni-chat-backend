@@ -41,18 +41,18 @@ schema {
 
 type Query {
     """
-    Whether the user has blocked the `userId`. If the user doesn't exist, `false` will be returned.
+    Whether the user has blocked the `id`. If the user doesn't exist, `false` will be returned.
 
     An access token must be sent with this request.
     """
-    isBlocked(userId: Int!): Boolean!
+    isBlocked(id: Int!): Boolean!
 
     """
-    Whether the user has the `userId` in their contacts. If the user doesn't exist, `false` will be returned.
+    Whether the user has the `id` in their contacts. If the user doesn't exist, `false` will be returned.
 
     An access token must be sent with this request.
     """
-    isContact(userId: Int!): Boolean!
+    isContact(id: Int!): Boolean!
 
     """
     Returns the user's starred messages.
@@ -174,20 +174,20 @@ type Query {
 
 type Mutation {
     """
-    Blocks the `userId`. Does nothing if the user has already been blocked, or the user is blocking themselves.
+    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user ID doesn't exist).
 
     An access token must be sent with this request.
     """
-    blockUser(userId: Int!): Placeholder!
+    blockUser(id: Int!): Placeholder!
 
     """
-    Unblocks the `userId`. Does nothing if the user wasn't blocked.
+    Unblocks the `id`. Does nothing if the user wasn't blocked.
 
     An access token must be sent with this request.
     """
-    unblockUser(userId: Int!): Placeholder!
+    unblockUser(id: Int!): Placeholder!
 
     """
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
@@ -341,7 +341,7 @@ type Mutation {
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    addGroupChatUsers(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
     Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
@@ -352,15 +352,15 @@ type Mutation {
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    removeGroupChatUsers(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
-    Makes every user in the `userIdList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
+    Makes every user in the `idList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
     users who are already admins, are ignored.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    makeGroupChatAdmins(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
     Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
@@ -524,14 +524,14 @@ type Mutation {
 
     An access token must be sent with this request.
     """
-    deleteContacts(userIdList: [Int!]!): Placeholder!
+    deleteContacts(idList: [Int!]!): Placeholder!
 
     """
     Saves contacts. Previously saved contacts, nonexistent users, and the user's own ID will be ignored.
 
     An access token must be sent with this request.
     """
-    createContacts(userIdList: [Int!]!): Placeholder!
+    createContacts(idList: [Int!]!): Placeholder!
 }
 
 type Subscription {
@@ -670,7 +670,7 @@ type ExitedUser {
 
 """null fields correspond to the field not existing."""
 type UpdatedAccount {
-    userId: Int!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
