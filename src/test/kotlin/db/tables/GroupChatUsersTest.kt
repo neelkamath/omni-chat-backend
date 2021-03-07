@@ -5,10 +5,10 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -41,8 +41,9 @@ class GroupChatUsersTest {
             runBlocking {
                 val (admin, user) = createVerifiedUsers(2).map { it.info }
                 val chatId = GroupChats.create(listOf(admin.id))
+                awaitBrokering()
                 val (adminSubscriber, userSubscriber) =
-                    listOf(admin.id, user.id).map { groupChatsNotifier.safelySubscribe(it) }
+                    listOf(admin.id, user.id).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.addUsers(chatId, user.id)
                 awaitBrokering()
                 adminSubscriber.assertValue(UpdatedGroupChat(chatId, newUsers = listOf(user)))
@@ -130,8 +131,10 @@ class GroupChatUsersTest {
             runBlocking {
                 val (adminId, toBeAdminId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), userIdList = listOf(toBeAdminId))
+                awaitBrokering()
                 val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
-                    listOf(adminId, toBeAdminId, nonParticipantId).map { groupChatsNotifier.safelySubscribe(it) }
+                    listOf(adminId, toBeAdminId, nonParticipantId)
+                        .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.makeAdmins(chatId, toBeAdminId)
                 awaitBrokering()
                 listOf(adminSubscriber, toBeAdminSubscriber)
@@ -163,8 +166,10 @@ class GroupChatUsersTest {
             runBlocking {
                 val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+                awaitBrokering()
                 val (adminSubscriber, userSubscriber, nonParticipantSubscriber) =
-                    listOf(adminId, userId, nonParticipantId).map { groupChatsNotifier.safelySubscribe(it) }
+                    listOf(adminId, userId, nonParticipantId)
+                        .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.removeUsers(chatId, userId, userId)
                 awaitBrokering()
                 adminSubscriber.assertValue(ExitedUser(userId, chatId))

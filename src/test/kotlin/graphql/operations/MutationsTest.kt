@@ -6,13 +6,13 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
 import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.http.*
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -778,7 +778,8 @@ class MutationsTest {
                 chatId,
                 ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
             )
-            val subscriber = messagesNotifier.safelySubscribe(admin.id)
+            awaitBrokering()
+            val subscriber = messagesNotifier.subscribe(admin.id).subscribeWith(TestSubscriber())
             triggerAction(admin.id, messageId, action)
             awaitBrokering()
             subscriber.assertValue(TriggeredAction(messageId, action, admin))
@@ -1642,7 +1643,8 @@ class MutationsTest {
             val (messageId, userId) = createUtilizedPrivateChat()
             val create = { createStatus(userId, messageId, MessageStatus.DELIVERED) }
             create()
-            val subscriber = messagesNotifier.safelySubscribe(userId)
+            awaitBrokering()
+            val subscriber = messagesNotifier.subscribe(userId).subscribeWith(TestSubscriber())
             create()
             awaitBrokering()
             subscriber.assertNoValues()
