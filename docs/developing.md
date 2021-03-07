@@ -113,7 +113,7 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 |`enum`|`enum class`|
 |`scalar`|A `data class`, `typealias`, predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
 
-## Naming Convention
+## Naming Conventions
 
 We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (e.g., `deleteAccount`), `is` (e.g., `isUsernameTaken`), and `search` (e.g., `searchAccounts`) to name functions. Don't use `get`, `set`, etc. unless needed.
 
@@ -128,12 +128,15 @@ We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update`
 
 ## Diagram
 
+Here's a diagram of how the service works. The client application isn't included in this repo but are in the diagram for the purpose of explanation. PostgreSQL and Redis may be set up as clusters similar to the API server.
+
 ![Diagram](diagram.svg)
 
 ## Releasing
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in [`docker-compose.yml`](docker-compose.yml).
+1. Update the **Operations** section of the [API docs](api.md).
 1. Add a [changelog](CHANGELOG.md) entry.
 1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
 1. Update [`cloud.md`](cloud.md).
-1. Only commit to the `master` branch when releasing a new version, or overwriting the previous one.
+1. Commit to the `master` branch to either release a new version or overwriting the previous one.

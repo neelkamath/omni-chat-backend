@@ -4,18 +4,21 @@ _Trusted, Extensible, Better Chat_
 
 ![Cover](branding/facebook_cover_photo_2.png)
 
-- [About](docs/about.md)
-- To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the [release tag](https://github.com/neelkamath/omni-chat/tags) (e.g., `v0.1.1`).
-- Here are the guides for running the server using [Docker Compose](docs/docker-compose.md) (recommended for local development), and the [cloud](docs/cloud.md) (recommended for production).
-- Read these [recommendations](docs/frontend-recommendations.md) if you're a developer creating a frontend UI which uses this API.
+Read about the service [here](docs/about.md).
 
-Here are some notable project built using Omni Chat. If you've built an app, library, etc., create a [GitHub issue](https://github.com/neelkamath/omni-chat-backend/issues) to have it added to this list.
+To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat/tree/<VERSION>`, where `<VERSION>` is the [release tag](https://github.com/neelkamath/omni-chat/tags) (e.g., `v0.1.1`).
+
+Here are the guides for running the server using [Docker Compose](docs/docker-compose.md) (recommended for local development), and the [cloud](docs/cloud.md) (recommended for production).
+
+Read these [recommendations](docs/frontend-recommendations.md) if you're a developer creating a frontend UI which uses this API.
+
+Here are some notable projects built using Omni Chat. If you've built an app, library, etc., create a [GitHub issue](https://github.com/neelkamath/omni-chat-backend/issues/new) to have it added to this list.
 - (Official) [Web app](https://github.com/neelkamath/omni-chat-web)
 - (Official) [JavaScript API wrapper library](https://www.npmjs.com/package/@neelkamath/omni-chat)
 
 ## Usage
 
-**Note**: Operations starting with `Query.`, `Mutation.`, and `Subscription.` (e.g., `Query.readChat`) are from the GraphQL API. Operations starting with `/` (e.g., `/profile-pic`) are from the REST API.
+**Note**: Operations starting with `Query`, `Mutation`, and `Subscription` (e.g., `Query.readChat`) are from the GraphQL API. Operations starting with `/` (e.g., `/profile-pic`) are from the REST API.
 
 - [Docs](docs/api.md)
     - Download the `rest-api.html` asset from a [release](https://github.com/neelkamath/omni-chat/releases). It'll be referenced in the docs.

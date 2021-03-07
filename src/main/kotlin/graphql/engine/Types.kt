@@ -24,7 +24,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
 
 private inline fun wireType(
     builder: TypeRuntimeWiring.Builder,
-    crossinline reader: (Any) -> String
+    crossinline reader: (Any) -> String,
 ): TypeRuntimeWiring.Builder = builder.typeResolver {
     val type = reader(it.getObject())
     it.schema.getObjectType(type)

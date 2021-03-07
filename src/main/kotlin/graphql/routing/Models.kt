@@ -906,7 +906,7 @@ data class NewTextMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: MessageText
+    val message: MessageText,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewActionMessage(
@@ -916,7 +916,7 @@ data class NewActionMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: ActionableMessage
+    val message: ActionableMessage,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewPicMessage(
@@ -926,7 +926,7 @@ data class NewPicMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val caption: MessageText?
+    val caption: MessageText?,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewPollMessage(

@@ -155,107 +155,131 @@ Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
 
 ## Operations
 
-The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP(S) and WS(S) protocols. Here's the GraphQL API's [schema](../src/main/resources/schema.graphqls). There's also a REST API for tasks which aren't well suited for GraphQL such as image uploads. You can view the REST API documentation by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
+The application is primarily a [GraphQL](https://graphql.org/) API served over the HTTP and WS protocols. Here's the GraphQL API's [schema](../src/main/resources/schema.graphqls). There's also a REST API for tasks which aren't well suited for GraphQL such as image uploads. You can view the REST API documentation by opening the release asset you downloaded earlier, `rest-api.html`, in your browser.
 
 Since there are many operations, we've categorized each of them below. The same operation may occur under different categories. You can use your browser or editor's "Find in page" feature to quickly find the relevant documentation once you've found the operation you want to use.
 
 ### User
 
-- `Query.requestTokenSet`
-- `Query.refreshTokenSet`
-- `Query.readAccount`
-- `Mutation.deleteAccount`
-- `Mutation.verifyEmailAddress`
-- `Mutation.resetPassword`
-- `Mutation.setOnline`
-- `Mutation.setTyping`
-- `Mutation.deleteProfilePic`
-- `Mutation.updateAccount`
-- `Mutation.createAccount`
-- `Mutation.emailEmailAddressVerification`
-- `Mutation.emailPasswordResetCode`
-- `Subscription.subscribeToAccounts`
-- `/profile-pic`
+- `Query`
+    - `requestTokenSet`
+    - `refreshTokenSet`
+    - `readAccount`
+- `Mutation`
+    - `deleteAccount`
+    - `verifyEmailAddress`
+    - `resetPassword`
+    - `setOnline`
+    - `setTyping`
+    - `deleteProfilePic`
+    - `updateAccount`
+    - `createAccount`
+    - `emailEmailAddressVerification`
+    - `emailPasswordResetCode`
+- `Subscription`
+    - `subscribeToAccounts`
+- REST API
+    - `/profile-pic`
 
 ### Other Users
 
-- `Query.readAccount`
-- `Query.readOnlineStatuses`
-- `Query.searchUsers`
-- `Subscription.subscribeToOnlineStatuses`
-- `Subscription.subscribeToTypingStatuses`
-- `Subscription.subscribeToAccounts`
-- `/profile-pic`
+- `Query`
+    - `readAccount`
+    - `readOnlineStatuses`
+    - `searchUsers`
+- `Subscription`
+    - `subscribeToOnlineStatuses`
+    - `subscribeToTypingStatuses`
+    - `subscribeToAccounts`
+- REST API
+    - `/profile-pic`
 
 ### Blocked Users
 
-- `Query.isBlocked`
-- `Query.readBlockedUsers`
-- `Mutation.blockUser`
-- `Mutation.unblockUser`
-- `Subscription.subscribeToAccounts`
-- `/profile-pic`
+- `Query`
+    - `isBlocked`
+    - `readBlockedUsers`
+- `Mutation`
+    - `blockUser`
+    - `unblockUser`
+- `Subscription`
+    - `subscribeToAccounts`
+- REST API
+    - `/profile-pic`
 
 ### Contacts
 
-- `Query.isContact`
-- `Query.readContacts`
-- `Query.searchContacts`
-- `Query.readOnlineStatuses`
-- `Mutation.deleteContacts`
-- `Mutation.createContacts`
-- `Subscription.subscribeToOnlineStatuses`
-- `Subscription.subscribeToAccounts`
-- `/profile-pic`
+- `Query`
+    - `isContact`
+    - `readContacts`
+    - `searchContacts`
+    - `readOnlineStatuses`
+- `Mutation`
+    - `deleteContacts`
+    - `createContacts`
+- `Subscription`
+    - `subscribeToOnlineStatuses`
+    - `subscribeToAccounts`
+- REST API
+    - `/profile-pic`
 
 ### Chats
 
-- `Query.readChats`
-- `Query.readChat`
-- `Query.readGroupChat`
-- `Query.searchChats`
-- `Query.searchPublicChats`
-- `Query.readOnlineStatuses`
-- `Mutation.deleteGroupChatPic`
-- `Mutation.updateGroupChatTitle`
-- `Mutation.updateGroupChatDescription`
-- `Mutation.addGroupChatUsers`
-- `Mutation.removeGroupChatUsers`
-- `Mutation.makeGroupChatAdmins`
-- `Mutation.createGroupChat`
-- `Mutation.setBroadcast`
-- `Mutation.setInvitability`
-- `Mutation.joinGroupChat`
-- `Mutation.deletePrivateChat`
-- `Mutation.createPrivateChat`
-- `Subscription.subscribeToGroupChats`
-- `Subscription.subscribeToOnlineStatuses`
-- `Subscription.subscribeToTypingStatuses`
-- `Subscription.subscribeToAccounts`
-- `/group-chat-pic`
+- `Query`
+    - `readChats`
+    - `readChat`
+    - `readGroupChat`
+    - `searchChats`
+    - `searchPublicChats`
+    - `readOnlineStatuses`
+- `Mutation`
+    - `deleteGroupChatPic`
+    - `updateGroupChatTitle`
+    - `updateGroupChatDescription`
+    - `addGroupChatUsers`
+    - `removeGroupChatUsers`
+    - `makeGroupChatAdmins`
+    - `createGroupChat`
+    - `setBroadcast`
+    - `setInvitability`
+    - `joinGroupChat`
+    - `deletePrivateChat`
+    - `createPrivateChat`
+- `Subscription`
+    - `subscribeToGroupChats`
+    - `subscribeToOnlineStatuses`
+    - `subscribeToTypingStatuses`
+    - `subscribeToAccounts`
+- REST API
+    - `/group-chat-pic`
 
 ### Messages
 
-- `Query.readStars`
-- `Query.searchChatMessages`
-- `Query.searchMessages`
-- `Mutation.star`
-- `Mutation.deleteStar`
-- `Mutation.createStatus`
-- `Mutation.createTextMessage`
-- `Mutation.createActionMessage`
-- `Mutation.createGroupChatInviteMessage`
-- `Mutation.createPollMessage`
-- `Mutation.forwardMessage`
-- `Mutation.triggerAction`
-- `Mutation.setPollVote`
-- `Mutation.deleteMessage`
-- `Subscription.subscribeToMessages`
-- `/pic-message`
-- `/audio-message`
-- `/video-message`
-- `/doc-message`
+- `Query`
+    - `readStars`
+    - `searchChatMessages`
+    - `searchMessages`
+- `Mutation`
+    - `star`
+    - `deleteStar`
+    - `createStatus`
+    - `createTextMessage`
+    - `createActionMessage`
+    - `createGroupChatInviteMessage`
+    - `createPollMessage`
+    - `forwardMessage`
+    - `triggerAction`
+    - `setPollVote`
+    - `deleteMessage`
+- `Subscription`
+    - `subscribeToMessages`
+- REST API
+    - `/pic-message`
+    - `/audio-message`
+    - `/video-message`
+    - `/doc-message`
 
 ### Miscellaneous
 
-- `/health-check`
+- REST API
+    - `/health-check`

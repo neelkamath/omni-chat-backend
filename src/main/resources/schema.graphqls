@@ -1013,6 +1013,7 @@ interface BareChatMessage implements BareMessage {
     isForwarded: Boolean!
 }
 
+"""The message which the user starred."""
 interface StarredMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -1185,7 +1186,7 @@ type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which was updated."""
+"""An existing `messageId` in the `chatId` which was updated. Only the `dateTimes` would be updated."""
 interface UpdatedMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!

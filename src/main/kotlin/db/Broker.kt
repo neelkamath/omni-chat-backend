@@ -134,7 +134,7 @@ class Notifier<T>(private val topic: Topic) {
      * [notify] subscribers. [publish] [notifications] to notify subscribers from outside [subscribeToMessageBroker].
      */
     fun notify(notifications: List<Notification<T>>): Unit = clients.forEach { client ->
-        notifications.firstOrNull { it.userId == client.userId }?.let { client.subject.onNext(it.update) }
+        notifications.forEach { if (it.userId == client.userId) client.subject.onNext(it.update) }
     }
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */

@@ -86,13 +86,13 @@ object PrivateChats : Table() {
     private fun buildPrivateChat(
         row: ResultRow,
         userId: Int,
-        pagination: BackwardPagination? = null
+        pagination: BackwardPagination? = null,
     ): PrivateChat {
         val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
         return PrivateChat(
             row[id],
             Users.read(otherUserId).toAccount(),
-            Messages.readPrivateChatConnection(row[id], userId, pagination)
+            Messages.readPrivateChatConnection(row[id], userId, pagination),
         )
     }
 
