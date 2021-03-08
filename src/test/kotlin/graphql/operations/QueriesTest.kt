@@ -33,30 +33,6 @@ private fun readTypingStatuses(userId: Int): List<TypingStatus> {
     return testingObjectMapper.convertValue(data)
 }
 
-private const val IS_CONTACT_QUERY = """
-    query IsContact(${"$"}id: Int!) {
-        isContact(id: ${"$"}id)
-    }
-"""
-
-private fun operateIsContact(userId: Int, contactId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(IS_CONTACT_QUERY, mapOf("id" to contactId), userId)
-
-private fun isContact(userId: Int, contactId: Int): Boolean =
-    operateIsContact(userId, contactId).data!!["isContact"] as Boolean
-
-private const val IS_BLOCKED_QUERY = """
-    query IsBlocked(${"$"}id: Int!) {
-        isBlocked(id: ${"$"}id)
-    }
-"""
-
-private fun operateIsBlocked(userId: Int, blockedUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(IS_BLOCKED_QUERY, mapOf("id" to blockedUserId), userId)
-
-private fun isBlocked(userId: Int, blockedUserId: Int): Boolean =
-    operateIsBlocked(userId, blockedUserId).data!!["isBlocked"] as Boolean
-
 private const val READ_BLOCKED_USERS_QUERY = """
     query ReadBlockedUsers(${"$"}first: Int, ${"$"}after: Cursor) {
         readBlockedUsers(first: ${"$"}first, after: ${"$"}after) {
@@ -645,50 +621,6 @@ class QueriesTest {
             TypingStatuses.set(privateChatId, nonParticipantId, isTyping = true)
             val expected = listOf(TypingStatus(groupChatId, participant1Id, isTyping = true))
             assertEquals(expected, readTypingStatuses(adminId))
-        }
-    }
-
-    @Nested
-    inner class IsBlocked {
-        @Test
-        fun `The user must be blocked`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            BlockedUsers.create(user1Id, user2Id)
-            assertTrue(isBlocked(user1Id, user2Id))
-        }
-
-        @Test
-        fun `The user must not be blocked`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            assertFalse(isBlocked(user1Id, user2Id))
-        }
-
-        @Test
-        fun `A nonexistent user must not be blocked`() {
-            val userId = createVerifiedUsers(1)[0].info.id
-            assertFalse(isBlocked(userId, -1))
-        }
-    }
-
-    @Nested
-    inner class IsContact {
-        @Test
-        fun `The user must be a contact`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            Contacts.create(user1Id, setOf(user2Id))
-            assertTrue(isContact(user1Id, user2Id))
-        }
-
-        @Test
-        fun `The user must not be a contact`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            assertFalse(isContact(user1Id, user2Id))
-        }
-
-        @Test
-        fun `A nonexistent user must not be a contact`() {
-            val userId = createVerifiedUsers(1)[0].info.id
-            assertFalse(isContact(userId, -1))
         }
     }
 

@@ -26,8 +26,6 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("readBlockedUsers", ::readBlockedUsers)
     .dataFetcher("readGroupChat", ::readGroupChat)
     .dataFetcher("searchPublicChats", ::searchPublicChats)
-    .dataFetcher("isBlocked", ::isBlocked)
-    .dataFetcher("isContact", ::isContact)
 
 private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("deleteAccount", ::deleteAccount)

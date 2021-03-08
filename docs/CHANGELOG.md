@@ -30,6 +30,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedGroupChat` `type`
 - `UpdatedOnlineStatus` `type`
 
+### Removed
+
+- `Query.isBlocked`
+- `Query.isContact`
+
 ### Fixed
 
 - Fixed an issue where some notifications weren't sent back to clients over WebSockets.

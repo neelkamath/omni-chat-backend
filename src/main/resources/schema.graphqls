@@ -41,20 +41,6 @@ schema {
 
 type Query {
     """
-    Whether the user has blocked the `id`. If the user doesn't exist, `false` will be returned.
-
-    An access token must be sent with this request.
-    """
-    isBlocked(id: Int!): Boolean!
-
-    """
-    Whether the user has the `id` in their contacts. If the user doesn't exist, `false` will be returned.
-
-    An access token must be sent with this request.
-    """
-    isContact(id: Int!): Boolean!
-
-    """
     Returns the user's starred messages.
 
     An access token must be sent with this request.
