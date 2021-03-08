@@ -189,11 +189,11 @@ class UsersTest {
     inner class UpdatePic {
         @Test
         fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
-            val subscriber = accountsNotifier.subscribe(user2Id).subscribeWith(TestSubscriber())
-            Users.updatePic(user1Id, readPic("76px×57px.jpg"))
+            val userId = createVerifiedUsers(1)[0].info.id
+            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            Users.updatePic(userId, readPic("76px×57px.jpg"))
             awaitBrokering()
-            subscriber.assertValue(UpdatedProfilePic(user1Id))
+            subscriber.assertValue(UpdatedProfilePic(userId))
         }
     }
 }

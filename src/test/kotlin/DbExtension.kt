@@ -17,11 +17,12 @@ class DbExtension : BeforeAllCallback, BeforeEachCallback {
     }
 
     override fun beforeEach(context: ExtensionContext) {
+        val userIdList = Users.read()
         /*
         If the test runner was aborted mid-run, then it will not run an <afterEach()> callback since the test case it
-        was executing never completed. This is why we wipe the DB in the <beforeAll()> callback instead.
+        was executing never completed. It's also possible the DB was populated manually prior to the automated test
+        suite got run. It's for these reasons we wipe the DB in the <beforeEach()> callback instead.
          */
-        val userIdList = Users.read()
         wipeDb()
         userIdList.forEach(::deleteUser)
     }

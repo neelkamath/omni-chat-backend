@@ -93,11 +93,11 @@ class SubscriptionsTest {
     inner class Subscribe {
         @Test
         fun `Recreating a subscription mustn't cause duplicate notifications from the previous connection`() {
-            val (owner, user) = createVerifiedUsers(2)
-            subscribeToAccounts(owner.accessToken) {}
-            subscribeToAccounts(owner.accessToken) { incoming ->
+            val (user, contact) = createVerifiedUsers(2)
+            subscribeToAccounts(user.accessToken) {}
+            subscribeToAccounts(user.accessToken) { incoming ->
                 parseFrameData<CreatedSubscription>(incoming)
-                Contacts.create(owner.info.id, setOf(user.info.id))
+                Contacts.create(user.info.id, setOf(contact.info.id))
                 awaitBrokering()
                 assertNotNull(incoming.poll())
                 assertNull(incoming.poll())

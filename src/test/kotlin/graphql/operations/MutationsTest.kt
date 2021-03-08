@@ -584,7 +584,7 @@ fun errDeleteAccount(userId: Int): String = operateDeleteAccount(userId).errors!
 
 private const val DELETE_CONTACTS_QUERY = """
     mutation DeleteContacts(${"$"}idList: [Int!]!) {
-        deleteContacts(userIdList: ${"$"}userIdList)
+        deleteContacts(idList: ${"$"}idList)
     }
 """
 
@@ -1184,7 +1184,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
                 MAKE_GROUP_CHAT_ADMINS_QUERY,
-                mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
+                mapOf("chatId" to chatId, "idList" to listOf<Int>()),
                 user.accessToken
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
@@ -1216,8 +1216,8 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
                 ADD_GROUP_CHAT_USERS_QUERY,
-                mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
-                user.accessToken
+                mapOf("chatId" to chatId, "idList" to listOf<Int>()),
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }

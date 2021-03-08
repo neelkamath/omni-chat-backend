@@ -270,7 +270,7 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("idList")
+    val userIdList = env.getArgument<List<Int>>("idList").toSet()
     try {
         GroupChatUsers.removeUsers(chatId, userIdList)
     } catch (_: IllegalArgumentException) {

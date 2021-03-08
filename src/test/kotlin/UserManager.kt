@@ -7,8 +7,8 @@ import com.neelkamath.omniChat.graphql.routing.*
 private var userCount = 0
 
 data class VerifiedUser(val info: Account, val password: Password) {
-    val login = Login(info.username, password)
-    val accessToken = buildTokenSet(info.id).accessToken
+    val login: Login = Login(info.username, password)
+    val accessToken: String by lazy { buildTokenSet(info.id).accessToken }
 
     companion object {
         fun build(account: AccountInput): VerifiedUser = with(account) {

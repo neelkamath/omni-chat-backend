@@ -120,13 +120,13 @@ object GroupChatUsers : IntIdTable() {
      *
      * Subscribers (including the [userIdList]) will be notified of the [ExitedUser]s via [groupChatsNotifier].
      */
-    fun removeUsers(chatId: Int, userIdList: List<Int>): Boolean {
+    fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
             throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
         transaction {
             deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
         }
-        for (userId in userIdList.toSet())
+        for (userId in userIdList)
             groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId) + userIdList)
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
@@ -135,7 +135,7 @@ object GroupChatUsers : IntIdTable() {
         return false
     }
 
-    fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toList())
+    fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toSet())
 
     /**
      * Whether the [userId] can leave every chat they're in. Returns `false` only if they're the last admin of a chat
