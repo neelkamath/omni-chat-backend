@@ -41,8 +41,10 @@ class UsersTest {
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
                 listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
-                    .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
+                listOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach {
+                    val lastOnline = Users.read(updaterId).lastOnline
+                    it.assertValue(UpdatedOnlineStatus(updaterId, status, lastOnline))
+                }
             }
     }
 

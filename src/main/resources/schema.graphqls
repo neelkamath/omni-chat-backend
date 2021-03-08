@@ -649,6 +649,8 @@ type TriggeredAction {
 type UpdatedOnlineStatus {
     userId: Int!
     isOnline: Boolean!
+    """`null` if the `userId` has never set an online status."""
+    lastOnline: DateTime
 }
 
 type OnlineStatus {

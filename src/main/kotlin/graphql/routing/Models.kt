@@ -186,7 +186,7 @@ data class NewContact(
     override val emailAddress: String,
     override val firstName: Name,
     override val lastName: Name,
-    override val bio: Bio
+    override val bio: Bio,
 ) : AccountData, AccountsSubscription {
     companion object {
         fun build(userId: Int): NewContact =
@@ -196,7 +196,11 @@ data class NewContact(
 
 interface OnlineStatusesSubscription
 
-data class UpdatedOnlineStatus(val userId: Int, val isOnline: Boolean) : OnlineStatusesSubscription
+data class UpdatedOnlineStatus(
+    val userId: Int,
+    val isOnline: Boolean,
+    val lastOnline: LocalDateTime?,
+) : OnlineStatusesSubscription
 
 data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?)
 

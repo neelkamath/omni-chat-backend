@@ -27,6 +27,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Subscription.subscribeToGroupChats` now sends back an `ExitedUser` if the user themselves left the chat.
 - `UpdatedAccount` `type`
 - `UpdatedGroupChat` `type`
+- `UpdatedOnlineStatus` `type`
 
 ### Fixed
 
