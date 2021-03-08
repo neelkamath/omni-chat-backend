@@ -414,93 +414,29 @@ interface Message : BareMessage {
     override val isForwarded: Boolean
     val hasStar: Boolean
 
-    fun toUpdatedTextMessage(): UpdatedTextMessage = UpdatedTextMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar,
-        TextMessages.read(messageId)
-    )
+    fun toUpdatedTextMessage(): UpdatedTextMessage =
+        UpdatedTextMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedActionMessage(): UpdatedActionMessage = UpdatedActionMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar,
-        ActionMessages.read(messageId)
-    )
+    fun toUpdatedActionMessage(): UpdatedActionMessage =
+        UpdatedActionMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedPicMessage(): UpdatedPicMessage = UpdatedPicMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar,
-        PicMessages.read(messageId).caption
-    )
+    fun toUpdatedPicMessage(): UpdatedPicMessage =
+        UpdatedPicMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedAudioMessage(): UpdatedAudioMessage = UpdatedAudioMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar
-    )
+    fun toUpdatedAudioMessage(): UpdatedAudioMessage =
+        UpdatedAudioMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage {
-        val chatId = Messages.readChatIdFromMessageId(messageId)
-        return UpdatedGroupChatInviteMessage(
-            chatId,
-            messageId,
-            sender,
-            dateTimes,
-            context,
-            isForwarded,
-            hasStar,
-            GroupChats.readInviteCode(chatId)
-        )
-    }
+    fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage =
+        UpdatedGroupChatInviteMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedDocMessage(): UpdatedDocMessage = UpdatedDocMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar
-    )
+    fun toUpdatedDocMessage(): UpdatedDocMessage =
+        UpdatedDocMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedVideoMessage(): UpdatedVideoMessage = UpdatedVideoMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar
-    )
+    fun toUpdatedVideoMessage(): UpdatedVideoMessage =
+        UpdatedVideoMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
-    fun toUpdatedPollMessage(): UpdatedPollMessage = UpdatedPollMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        dateTimes,
-        context,
-        isForwarded,
-        hasStar,
-        PollMessages.read(messageId)
-    )
+    fun toUpdatedPollMessage(): UpdatedPollMessage =
+        UpdatedPollMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
 
     fun toStarredTextMessage(): StarredTextMessage = StarredTextMessage(
         Messages.readChatIdFromMessageId(messageId),
@@ -984,14 +920,10 @@ data class NewVideoMessage(
     override val isForwarded: Boolean
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
-interface UpdatedMessage : BareChatMessage, BareMessage {
-    override val chatId: Int
-    override val messageId: Int
-    override val sender: Account
-    override val dateTimes: MessageDateTimes
-    override val context: MessageContext
-    override val isForwarded: Boolean
-    val hasStar: Boolean
+interface UpdatedMessage {
+    val chatId: Int
+    val messageId: Int
+    val statuses: List<MessageDateTimeStatus>
 
     companion object {
         /** Returns a concrete class for the [messageId] as seen by the [userId]. */
@@ -1013,87 +945,50 @@ interface UpdatedMessage : BareChatMessage, BareMessage {
 data class UpdatedTextMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean,
-    val message: MessageText
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedActionMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean,
-    val message: ActionableMessage
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedPicMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean,
-    val caption: MessageText?
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedPollMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean,
-    val poll: Poll
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedAudioMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedGroupChatInviteMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean,
-    val inviteCode: UUID
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedDocMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class UpdatedVideoMessage(
     override val chatId: Int,
     override val messageId: Int,
-    override val sender: Account,
-    override val dateTimes: MessageDateTimes,
-    override val context: MessageContext,
-    override val isForwarded: Boolean,
-    override val hasStar: Boolean
-) : UpdatedMessage, BareChatMessage, BareMessage, MessagesSubscription
+    override val statuses: List<MessageDateTimeStatus>,
+) : UpdatedMessage, MessagesSubscription
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus>)
 

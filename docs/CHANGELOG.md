@@ -29,6 +29,15 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedAccount` `type`
 - `UpdatedGroupChat` `type`
 - `UpdatedOnlineStatus` `type`
+- `UpdatedMessage` `interface`
+- `UpdatedTextMessage` `type`
+- `UpdatedActionMessage` `type`
+- `UpdatedPicMessage` `type`
+- `UpdatedPollMessage` `type`
+- `UpdatedAudioMessage` `type`
+- `UpdatedGroupChatInviteMessage` `type`
+- `UpdatedDocMessage` `type`
+- `UpdatedVideoMessage` `type`
 
 ### Removed
 

@@ -1191,100 +1191,59 @@ type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which was updated. Only the `dateTimes` would be updated."""
-interface UpdatedMessage implements BareChatMessage, BareMessage {
+"""An existing `messageId` in the `chatId` which had its `statuses` updated."""
+interface UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedTextMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedTextMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: MessageText!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedActionMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedActionMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: ActionableMessage!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedPicMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    caption: MessageText
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedPollMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    poll: Poll!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedAudioMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedGroupChatInviteMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedGroupChatInviteMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    inviteCode: Uuid!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedDocMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedDocMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedVideoMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedVideoMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
 type MessageDateTimes {
