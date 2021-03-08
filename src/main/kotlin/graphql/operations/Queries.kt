@@ -128,6 +128,12 @@ fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
     }
 }
 
+fun readTypingStatuses(env: DataFetchingEnvironment): List<TypingStatus> {
+    env.verifyAuth()
+    val idList = PrivateChats.readUserChatIdList(env.userId!!) + GroupChatUsers.readChatIdList(env.userId!!)
+    return TypingStatuses.readChats(idList, env.userId!!).toList()
+}
+
 fun readAccount(env: DataFetchingEnvironment): Account {
     env.verifyAuth()
     return Users.read(env.userId!!).toAccount()

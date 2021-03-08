@@ -285,6 +285,15 @@ const val CREATED_SUBSCRIPTION_FRAGMENT = """
     }
 """
 
+const val TYPING_STATUS_FRAGMENT = """
+    ... on TypingStatus {
+        __typename
+        chatId
+        userId
+        isTyping
+    }
+"""
+
 const val GROUP_CHAT_FRAGMENT = """
     ... on GroupChat {
         __typename

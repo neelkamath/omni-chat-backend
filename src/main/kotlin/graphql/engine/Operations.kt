@@ -10,6 +10,7 @@ fun wireGraphQlOperations(builder: RuntimeWiring.Builder): RuntimeWiring.Builder
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("readOnlineStatuses", ::readOnlineStatuses)
+    .dataFetcher("readTypingStatuses", ::readTypingStatuses)
     .dataFetcher("readAccount", ::readAccount)
     .dataFetcher("readChat", ::readChat)
     .dataFetcher("readChats", ::readChats)

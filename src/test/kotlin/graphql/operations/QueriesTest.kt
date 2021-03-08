@@ -17,6 +17,22 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.test.*
 
+private const val READ_TYPING_STATUSES = """
+    query ReadTypingStatuses {
+        readTypingStatuses {
+            $TYPING_STATUS_FRAGMENT
+        }
+    }
+"""
+
+private fun operateReadTypingStatuses(userId: Int): GraphQlResponse =
+    executeGraphQlViaEngine(READ_TYPING_STATUSES, userId = userId)
+
+private fun readTypingStatuses(userId: Int): List<TypingStatus> {
+    val data = operateReadTypingStatuses(userId).data!!["readTypingStatuses"] as List<*>
+    return testingObjectMapper.convertValue(data)
+}
+
 private const val IS_CONTACT_QUERY = """
     query IsContact(${"$"}id: Int!) {
         isContact(id: ${"$"}id)
@@ -617,6 +633,21 @@ class ChatMessagesDtoTest {
 
 @ExtendWith(DbExtension::class)
 class QueriesTest {
+    @Nested
+    inner class ReadTypingStatuses {
+        @Test
+        fun `Typing statuses from the user's chats must be read excluding the user's own`() {
+            val (adminId, participant1Id, participant2Id, nonParticipantId) = createVerifiedUsers(4).map { it.info.id }
+            val groupChatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
+            val privateChatId = PrivateChats.create(participant2Id, nonParticipantId)
+            TypingStatuses.set(groupChatId, adminId, isTyping = true)
+            TypingStatuses.set(groupChatId, participant1Id, isTyping = true)
+            TypingStatuses.set(privateChatId, nonParticipantId, isTyping = true)
+            val expected = listOf(TypingStatus(groupChatId, participant1Id, isTyping = true))
+            assertEquals(expected, readTypingStatuses(adminId))
+        }
+    }
+
     @Nested
     inner class IsBlocked {
         @Test

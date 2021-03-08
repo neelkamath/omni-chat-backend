@@ -76,6 +76,13 @@ type Query {
     readOnlineStatuses: [OnlineStatus!]!
 
     """
+    The statuses of users who are typing in a chat the user is in. The user's own status won't be returned.
+
+    An access token must be sent with this request.
+    """
+    readTypingStatuses: [TypingStatus!]!
+
+    """
     Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
     message captions in the `chatId`.
 

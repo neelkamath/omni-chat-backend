@@ -69,4 +69,18 @@ class TypingStatusesTest {
             assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
         }
     }
+
+    @Nested
+    inner class ReadChats {
+        @Test
+        fun `Only users who are typing must be returned excluding the user themselves`() {
+            val (adminId, participant1Id, participant2Id) = createVerifiedUsers(3).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
+            TypingStatuses.set(chatId, adminId, isTyping = true)
+            TypingStatuses.set(chatId, participant1Id, isTyping = true)
+            val expected = setOf(TypingStatus(chatId, participant1Id, isTyping = true))
+            val actual = TypingStatuses.readChats(setOf(chatId), adminId)
+            assertEquals(expected, actual)
+        }
+    }
 }

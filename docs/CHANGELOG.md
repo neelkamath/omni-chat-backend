@@ -10,6 +10,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Added
 
+- `Query.readTypingStatuses`
 - `UpdatedProfilePic` `type`
 - `UpdatedGroupChatPic` `type`
 
