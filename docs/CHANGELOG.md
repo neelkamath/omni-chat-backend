@@ -8,6 +8,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.16.0
 
+### Added
+
+- `UpdatedProfilePic` `type`
+- `UpdatedGroupChatPic` `type`
+
 ### Updated
 
 - `Query.isBlocked`
@@ -21,6 +26,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.createContacts`
 - `Subscription.subscribeToGroupChats` now sends back an `ExitedUser` if the user themselves left the chat.
 - `UpdatedAccount` `type`
+- `UpdatedGroupChat` `type`
 
 ### Fixed
 

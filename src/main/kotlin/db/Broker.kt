@@ -163,8 +163,12 @@ val typingStatusesNotifier = Notifier<TypingStatusesSubscription>(Topic.TYPING_S
 
 val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription>(Topic.ONLINE_STATUSES)
 
-/** Notifies subscribers of the updated [userId] via [accountsNotifier]. */
-fun negotiateUserUpdate(userId: Int) {
+/**
+ * Notifies subscribers of the updated [userId] via [accountsNotifier]. If [isProfilePic], an [UpdatedProfilePic] will
+ * be sent, and an [UpdatedAccount] otherwise.
+ */
+fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
     val subscribers = Contacts.readOwners(userId) + userId + readChatSharers(userId)
-    accountsNotifier.publish(UpdatedAccount.build(userId), subscribers)
+    val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount.build(userId)
+    accountsNotifier.publish(update, subscribers)
 }

@@ -143,7 +143,7 @@ object GroupChats : Table() {
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        groupChatsNotifier.publish(UpdatedGroupChat(chatId), GroupChatUsers.readUserIdList(chatId))
+        groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId))
     }
 
     fun readPic(chatId: Int): Pic? = transaction {

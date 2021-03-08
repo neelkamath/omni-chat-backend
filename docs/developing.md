@@ -96,8 +96,8 @@ npx @stoplight/spectral lint docs/openapi.yaml
 
 ## GraphQL
 
-- An operation which is a subscription must be named using the format `subscribeTo<UPDATE>` (
-  e.g., `subscribeToMessages`).
+- Since it's understood that the [mutations](../src/main/kotlin/graphql/operations/Mutations.kt), [models](../src/main/kotlin/graphql/routing/Models.kt), etc. are for the [schema](../src/main/resources/schema.graphqls), don't duplicate the schema doc comments in the Kotlin files.
+- An operation which is a subscription must be named using the format `subscribeTo<UPDATE>` (e.g., `subscribeToMessages`).
 - An operation which is a subscription must return a `union` named using the format `<UPDATE>Subscription`, and includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).

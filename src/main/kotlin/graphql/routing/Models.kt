@@ -330,6 +330,10 @@ interface TypingStatusesSubscription
 
 data class TypingStatus(val chatId: Int, val userId: Int, val isTyping: Boolean) : TypingStatusesSubscription
 
+data class UpdatedProfilePic(val id: Int) : AccountsSubscription
+
+data class UpdatedGroupChatPic(val id: Int) : GroupChatsSubscription
+
 data class UpdatedAccount(
     val id: Int,
     val username: Username,

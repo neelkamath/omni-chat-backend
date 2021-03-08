@@ -33,7 +33,7 @@ class BrokerTest {
                     groupChatSharerSubscriber
                 ) = listOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
                     .map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
-                negotiateUserUpdate(userId)
+                negotiateUserUpdate(userId, isProfilePic = false)
                 awaitBrokering()
                 deletedPrivateChatSharerSubscriber.assertNoValues()
                 listOf(

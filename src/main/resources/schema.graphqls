@@ -606,8 +606,6 @@ union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
 """
-When the account's profile pic gets updated, an `UpdatedAccount` will be sent.
-
 A user will be automatically unblocked when they delete their account. In this scenario, an `UnblockedAccount` will not
 be sent because it's a rare event, and the client would've had to deal with the user viewing a user who's account was
 just deleted.
@@ -616,18 +614,27 @@ union AccountsSubscription =
     | CreatedSubscription
     | NewContact
     | UpdatedAccount
+    | UpdatedProfilePic
     | DeletedContact
     | BlockedAccount
     | UnblockedAccount
 
+"""The `id` of the user who updated their profile pic."""
+type UpdatedProfilePic {
+    id: Int!
+}
+
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-When a group chat's pic gets updated, an `UpdatedGroupChat` will be sent.
-
 If the subscriber leaves the chat, they will receive their own `ExitedUser` message.
 """
-union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
+union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUser
+
+"""The `id` of the group chat whose pic was updated."""
+type UpdatedGroupChatPic {
+    id: Int!
+}
 
 """
 The `action` on the action `messageId` which was `triggeredBy` the user. This will only be sent to the user who created
@@ -668,7 +675,7 @@ type ExitedUser {
     userId: Int!
 }
 
-"""null fields correspond to the field not existing."""
+"""null fields correspond to the field not existing. This will not be sent if the profile pic was updated."""
 type UpdatedAccount {
     id: Int!
     username: Username!
@@ -678,7 +685,10 @@ type UpdatedAccount {
     bio: Bio!
 }
 
-"""Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before."""
+"""
+Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before. This
+will not be sent if the pic has been updated.
+"""
 type UpdatedGroupChat {
     chatId: Int!
     title: GroupChatTitle

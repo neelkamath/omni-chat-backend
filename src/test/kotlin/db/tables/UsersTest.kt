@@ -2,9 +2,11 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readPic
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -178,6 +180,18 @@ class UsersTest {
         fun `A valid login must be stated as such`() {
             val login = createVerifiedUsers(1)[0].login
             assertTrue(Users.isValidLogin(login))
+        }
+    }
+
+    @Nested
+    inner class UpdatePic {
+        @Test
+        fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val subscriber = accountsNotifier.subscribe(user2Id).subscribeWith(TestSubscriber())
+            Users.updatePic(user1Id, readPic("76px×57px.jpg"))
+            awaitBrokering()
+            subscriber.assertValue(UpdatedProfilePic(user1Id))
         }
     }
 }

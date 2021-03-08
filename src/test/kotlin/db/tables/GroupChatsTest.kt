@@ -101,7 +101,7 @@ class GroupChatsTest {
                     .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
                 awaitBrokering()
-                adminSubscriber.assertValue(UpdatedGroupChat(chatId))
+                adminSubscriber.assertValue(UpdatedGroupChatPic(chatId))
                 nonParticipantSubscriber.assertNoValues()
             }
         }
