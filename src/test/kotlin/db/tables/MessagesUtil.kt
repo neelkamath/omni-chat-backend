@@ -52,7 +52,7 @@ fun Messages.message(
     chatId: Int,
     message: PollInput,
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Int {
     createPollMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()
@@ -63,7 +63,7 @@ fun Messages.message(
     chatId: Int,
     message: ActionMessageInput,
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Int {
     createActionMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()

@@ -12,18 +12,21 @@ object PollOptions : IntIdTable() {
     private val pollId: Column<Int> = integer("poll_id").references(PollMessages.id)
     private val option: Column<String> = varchar("option", MessageText.MAX_LENGTH)
 
-    fun create(pollId: Int, options: List<MessageText>): Unit = transaction {
+    fun create(pollId: Int, options: LinkedHashSet<MessageText>): Unit = transaction {
         batchInsert(options) {
             this[PollOptions.pollId] = pollId
             this[option] = it.value
         }
     }
 
-    fun read(pollId: Int): List<PollOption> = transaction {
-        select { PollOptions.pollId eq pollId }.map {
-            val votes = PollVotes.read(it[PollOptions.id].value)
-            PollOption(MessageText(it[option]), votes)
-        }
+    fun read(pollId: Int): LinkedHashSet<PollOption> = transaction {
+        select { PollOptions.pollId eq pollId }
+            .orderBy(PollOptions.id)
+            .map {
+                val votes = PollVotes.read(it[PollOptions.id].value)
+                PollOption(MessageText(it[option]), votes.toList())
+            }
+            .toSet() as LinkedHashSet
     }
 
     /** Returns the option ID of the [pollId]'s [option]. */
@@ -32,11 +35,11 @@ object PollOptions : IntIdTable() {
     }
 
     /** Returns the IDs of all [PollOptions] every poll in the [pollIdList] has. */
-    private fun readIdList(pollIdList: List<Int>): List<Int> = transaction {
-        select { pollId inList pollIdList }.map { it[PollOptions.id].value }
+    private fun readIdList(pollIdList: Collection<Int>): Set<Int> = transaction {
+        select { pollId inList pollIdList }.map { it[PollOptions.id].value }.toSet()
     }
 
-    fun delete(pollIdList: List<Int>) {
+    fun delete(pollIdList: Collection<Int>) {
         PollVotes.deleteVotes(readIdList(pollIdList))
         transaction {
             deleteWhere { pollId inList pollIdList }

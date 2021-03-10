@@ -69,32 +69,32 @@ class UsersTest {
     @Nested
     inner class Search {
         /** Creates users, and returns their IDs. */
-        private fun createUsers(): List<Int> = listOf(
+        private fun createUsers(): Set<Int> = setOf(
             AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
             AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
             AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
+            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John")),
         ).map {
             Users.create(it)
             Users.read(it.username).id
-        }
+        }.toSet()
 
         @Test
         fun `Users must be searched case-insensitively`() {
             val infoList = createUsers()
-            val search = { query: String, userIdList: List<Int> ->
-                assertEquals(userIdList, Users.search(query).edges.map { it.cursor })
+            val search = { query: String, userIdList: Set<Int> ->
+                assertEquals(userIdList, Users.search(query).edges.map { it.cursor }.toSet())
             }
-            search("tOnY", listOf(infoList[0]))
-            search("doe", listOf(infoList[1]))
-            search("john", listOf(infoList[1], infoList[2], infoList[3]))
+            search("tOnY", setOf(infoList.first()))
+            search("doe", setOf(infoList.elementAt(1)))
+            search("john", setOf(infoList.elementAt(1), infoList.elementAt(2), infoList.elementAt(3)))
         }
 
         @Test
         fun `Searching users mustn't include duplicate results`() {
             val userIdList = listOf(
                 AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
+                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony")),
             ).map {
                 Users.create(it)
                 Users.read(it.username).id
@@ -107,7 +107,7 @@ class UsersTest {
     inner class Update {
         @Test
         fun `Updating an account must update only the specified fields`() {
-            val user = createVerifiedUsers(1)[0]
+            val user = createVerifiedUsers(1).first()
             val update = AccountUpdate(Username("updated"), firstName = Name("updated"))
             Users.update(user.info.id, update)
             with(Users.read(user.info.id)) {
@@ -146,7 +146,7 @@ class UsersTest {
     @Nested
     inner class UpdateEmailAddress {
         private fun assertEmailAddressUpdate(changeAddress: Boolean) {
-            val (userId, _, emailAddress) = createVerifiedUsers(1)[0].info
+            val (userId, _, emailAddress) = createVerifiedUsers(1).first().info
             val address = if (changeAddress) "updated address" else emailAddress
             Users.update(userId, AccountUpdate(emailAddress = address))
             assertNotEquals(changeAddress, Users.read(userId).hasVerifiedEmailAddress)
@@ -173,14 +173,14 @@ class UsersTest {
 
         @Test
         fun `An incorrect password mustn't be a valid login`() {
-            val username = createVerifiedUsers(1)[0].login.username
+            val username = createVerifiedUsers(1).first().login.username
             val login = Login(username, Password("incorrect"))
             assertFalse(Users.isValidLogin(login))
         }
 
         @Test
         fun `A valid login must be stated as such`() {
-            val login = createVerifiedUsers(1)[0].login
+            val login = createVerifiedUsers(1).first().login
             assertTrue(Users.isValidLogin(login))
         }
     }
@@ -189,7 +189,7 @@ class UsersTest {
     inner class UpdatePic {
         @Test
         fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
             Users.updatePic(userId, readPic("76px×57px.jpg"))
             awaitBrokering()

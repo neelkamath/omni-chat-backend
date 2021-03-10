@@ -2,14 +2,11 @@ package com.neelkamath.omniChat.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
-import com.neelkamath.omniChat.main
-import com.neelkamath.omniChat.testingObjectMapper
 
 import io.ktor.application.*
 import io.ktor.http.*
@@ -25,14 +22,14 @@ class QueriesAndMutationsTest {
     inner class RouteGraphQlQueriesAndMutations {
         @Test
         fun `The GraphQL engine must be queried via the HTTP interface`() {
-            val user = createVerifiedUsers(1)[0]
+            val user = createVerifiedUsers(1).first()
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
             val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
             assertEquals(user.info, testingObjectMapper.convertValue(data))
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
-            val accessToken = createVerifiedUsers(1)[0].accessToken
+            val accessToken = createVerifiedUsers(1).first().accessToken
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """

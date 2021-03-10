@@ -34,7 +34,7 @@ class TypingStatusesTest {
         }
 
         private fun assertSet(repetitions: Int) {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             repeat(repetitions) {
                 TypingStatuses.set(chatId, adminId, isTyping = true)
@@ -57,7 +57,7 @@ class TypingStatusesTest {
     inner class Read {
         @Test
         fun `The status must be read`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isTyping = true
             TypingStatuses.set(chatId, adminId, isTyping)

@@ -250,85 +250,91 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Case-insensitively [query]s the [chatId]'s messages as seen by the [userId], or an anonymous user if there's no
-     * [userId].
+     * Case-insensitively [query]s the [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if no
+     * [userId] was passed. The returned [MessageEdge]s are chronologically ordered.
      */
     fun searchGroupChat(
         chatId: Int,
         query: String,
         pagination: BackwardPagination? = null,
         userId: Int? = null,
-    ): List<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
+    ): LinkedHashSet<MessageEdge> = search(readGroupChat(chatId, pagination, userId), query)
 
     /**
      * [query]s the private chat [id]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions])
-     * by the [userId].
+     * by the [userId]. The returned [MessageEdge]s are chronologically ordered.
      */
     fun searchPrivateChat(
         chatId: Int,
         userId: Int,
         query: String,
         pagination: BackwardPagination? = null
-    ): List<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
+    ): LinkedHashSet<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
-     * Case-insensitively [query]s [MessageEdge.node]s. An [IllegalArgumentException] will be thrown if the [edges]
-     * [MessageEdge.node] isn't a concrete class.
+     * Case-insensitively [query]s the [edges]s [MessageEdge.node]s. An [IllegalArgumentException] will be thrown if the
+     * [edges] [MessageEdge.node] isn't a concrete class.
      *
      * @see [searchGroupChat]
      * @see [searchPrivateChat]
      */
-    private fun search(edges: List<MessageEdge>, query: String): List<MessageEdge> = edges.filter { edge ->
-        when (edge.node) {
-            is TextMessage -> edge.node.message.value.contains(query, ignoreCase = true)
-            is PicMessage -> edge.node.caption?.value?.contains(query, ignoreCase = true) ?: false
-            is PollMessage -> {
-                val poll = PollMessages.read(edge.node.messageId)
-                poll.title.value.contains(query, ignoreCase = true) ||
-                        poll.options.any { it.option.value.contains(query, ignoreCase = true) }
+    private fun search(edges: LinkedHashSet<MessageEdge>, query: String): LinkedHashSet<MessageEdge> = edges
+        .filter { edge ->
+            when (edge.node) {
+                is TextMessage -> edge.node.message.value.contains(query, ignoreCase = true)
+                is ActionMessage -> {
+                    val actionableMessage = ActionMessages.read(edge.node.messageId)
+                    actionableMessage.text.value.contains(query, ignoreCase = true) ||
+                            actionableMessage.actions.any { it.value.contains(query, ignoreCase = true) }
+                }
+                is PicMessage -> edge.node.caption?.value?.contains(query, ignoreCase = true) ?: false
+                is PollMessage -> {
+                    val poll = PollMessages.read(edge.node.messageId)
+                    poll.title.value.contains(query, ignoreCase = true) ||
+                            poll.options.any { it.option.value.contains(query, ignoreCase = true) }
+                }
+                is AudioMessage, is GroupChatInviteMessage, is DocMessage, is VideoMessage -> false
+                else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
             }
-            is ActionMessage -> {
-                val actionableMessage = ActionMessages.read(edge.node.messageId)
-                actionableMessage.text.value.contains(query, ignoreCase = true) ||
-                        actionableMessage.actions.any { it.value.contains(query, ignoreCase = true) }
-            }
-            is AudioMessage -> false
-            else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
         }
-    }
+        .toSet() as LinkedHashSet
 
     /**
-     * The [chatId]'s [Message]s which haven't been deleted (such as through [PrivateChatDeletions]) by the [userId].
+     * Returns the [chatId]'s [MessageEdge]s (chronologically ordered) which haven't been deleted (such as through
+     * [PrivateChatDeletions]) by the [userId].
      *
      * @see [readPrivateChatConnection]
      */
-    fun readPrivateChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): List<MessageEdge> {
+    fun readPrivateChat(userId: Int, chatId: Int, pagination: BackwardPagination? = null): LinkedHashSet<MessageEdge> {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
         return readChat(chatId, pagination, op, userId)
     }
 
     /**
-     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId].
+     * Returns the [chatId]'s [MessageEdge]s (chronologically ordered) as seen by the [userId], or an anonymous user if
+     * there's no [userId].
      *
      * @see [readGroupChatConnection]
      */
-    fun readGroupChat(chatId: Int, pagination: BackwardPagination? = null, userId: Int? = null): List<MessageEdge> =
-        readChat(chatId, pagination, userId = userId)
+    fun readGroupChat(
+        chatId: Int,
+        pagination: BackwardPagination? = null,
+        userId: Int? = null,
+    ): LinkedHashSet<MessageEdge> = readChat(chatId, pagination, userId = userId)
 
     /**
-     * The [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId]. The returned
-     * [MessageEdge.node]s are concrete classes.
+     * Returns the [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if there's no [userId]. The
+     * returned [MessageEdge.node]s are concrete classes sorted chronologically.
      *
      * @see [readPrivateChat]
-     * @see [readGroupChat]
      * @see [readGroupChat]
      */
     private fun readChat(
         chatId: Int,
         pagination: BackwardPagination? = null,
         filter: Filter = null,
-        userId: Int? = null
-    ): List<MessageEdge> {
+        userId: Int? = null,
+    ): LinkedHashSet<MessageEdge> {
         val (last, before) = pagination ?: BackwardPagination()
         var op = this.chatId eq chatId
         before?.let { op = op and (Messages.id less it) }
@@ -339,12 +345,13 @@ object Messages : IntIdTable() {
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
                 .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
+                .toSet() as LinkedHashSet
         }
     }
 
     /** The message IDs in the [chatId] in order of creation. */
-    fun readIdList(chatId: Int): List<Int> = transaction {
-        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }
+    fun readIdList(chatId: Int): LinkedHashSet<Int> = transaction {
+        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }.toSet() as LinkedHashSet
     }
 
     /** Returns a concrete class for the [messageId] as seen by the [userId]. */
@@ -383,7 +390,8 @@ object Messages : IntIdTable() {
         val message = object : BareMessage {
             override val messageId: Int = messageId
             override val sender: Account = Users.read(row[senderId]).toAccount()
-            override val dateTimes: MessageDateTimes = MessageDateTimes(row[sent], MessageStatuses.read(messageId))
+            override val dateTimes: MessageDateTimes =
+                MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList())
             override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
             override val isForwarded: Boolean = row[this@Messages.isForwarded]
         }
@@ -400,7 +408,7 @@ object Messages : IntIdTable() {
     }
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
-    private fun deleteChatMessages(messageIdList: List<Int>) {
+    private fun deleteChatMessages(messageIdList: Collection<Int>) {
         MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
         TextMessages.delete(messageIdList)
@@ -473,8 +481,8 @@ object Messages : IntIdTable() {
      * Every [ChatAndMessageId] the [userId] created which are visible to at least one user. Returns an empty list if
      * the [userId] doesn't exist.
      */
-    private fun readChatMessages(userId: Int): List<ChatAndMessageId> = transaction {
-        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }
+    private fun readChatMessages(userId: Int): Set<ChatAndMessageId> = transaction {
+        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }.toSet()
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
@@ -483,10 +491,10 @@ object Messages : IntIdTable() {
     }
 
     /** The [id] list for the [chatId]. */
-    private fun readMessageIdList(chatId: Int, filter: Filter = null): List<Int> = transaction {
+    private fun readMessageIdList(chatId: Int, filter: Filter = null): Set<Int> = transaction {
         val chatOp = Messages.chatId eq chatId
         val op = if (filter == null) chatOp else chatOp and filter
-        select(op).map { it[Messages.id].value }
+        select(op).map { it[Messages.id].value }.toSet()
     }
 
     fun exists(id: Int): Boolean = transaction {
@@ -497,19 +505,21 @@ object Messages : IntIdTable() {
     fun readGroupChatConnection(
         chatId: Int,
         pagination: BackwardPagination? = null,
-        userId: Int? = null
-    ): MessagesConnection =
-        MessagesConnection(readGroupChat(chatId, pagination, userId), buildPageInfo(chatId, pagination?.before))
+        userId: Int? = null,
+    ): MessagesConnection = MessagesConnection(
+        readGroupChat(chatId, pagination, userId).toList(),
+        buildPageInfo(chatId, pagination?.before),
+    )
 
     fun readPrivateChatConnection(
         chatId: Int,
         userId: Int,
-        pagination: BackwardPagination? = null
+        pagination: BackwardPagination? = null,
     ): MessagesConnection {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
         return MessagesConnection(
-            readPrivateChat(userId, chatId, pagination),
-            buildPageInfo(chatId, pagination?.before, op)
+            readPrivateChat(userId, chatId, pagination).toList(),
+            buildPageInfo(chatId, pagination?.before, op),
         )
     }
 

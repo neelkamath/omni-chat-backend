@@ -22,7 +22,7 @@ object GroupChatInviteMessages : Table() {
         select { GroupChatInviteMessages.messageId eq messageId }.first()[groupChatId]
     }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

@@ -45,7 +45,7 @@ class ContactsTest {
         @Test
         fun `Every contact owner must be read`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
-            val owners = listOf(user2Id, user3Id)
+            val owners = listOf(user2Id, user3Id).toSet()
             owners.forEach { Contacts.create(it, setOf(user1Id)) }
             assertEquals(owners, Contacts.readOwners(user1Id))
             owners.forEach { assertTrue(Contacts.readOwners(it).isEmpty()) }

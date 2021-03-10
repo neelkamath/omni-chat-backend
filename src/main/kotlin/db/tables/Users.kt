@@ -213,7 +213,7 @@ object Users : IntIdTable() {
                 }
                 .map { AccountEdge(it.toAccount(), it[Users.id].value) }
         }
-        return AccountsConnection.build(users, pagination)
+        return AccountsConnection.build(users.toSet(), pagination)
     }
 
     /**

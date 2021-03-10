@@ -38,6 +38,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedGroupChatInviteMessage` `type`
 - `UpdatedDocMessage` `type`
 - `UpdatedVideoMessage` `type`
+- `Query.searchChatMessages` now returns messages in chronological order.
+- `Query.searchMessages` now returns messages in chronological order.
 
 ### Removed
 
@@ -47,6 +49,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Fixed
 
 - Fixed an issue where some notifications weren't sent back to clients over WebSockets.
+- Fixed `NewActionMessage` `type`, etc. not being supported in `Subscription`s.
+- `Query.searchChatMessages` works now.
+- `Query.searchMessages` works now.
 
 ## [0.15.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.15.0) - 2021-02-15
 

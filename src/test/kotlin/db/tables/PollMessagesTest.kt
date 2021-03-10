@@ -39,7 +39,7 @@ class PollMessagesTest {
     @Nested
     inner class HasOption {
         private fun assertOptionExistence(exists: Boolean) {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val existentOption = MessageText("option 1")
             val poll = PollInput(MessageText("Title"), listOf(existentOption, MessageText("option 2")))

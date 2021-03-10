@@ -23,7 +23,11 @@ val db: Database by lazy {
     )
 }
 
-data class ChatEdges(val chatId: Int, val edges: List<MessageEdge>)
+data class ChatEdges(
+    val chatId: Int,
+    /** Chronologically ordered. */
+    val edges: LinkedHashSet<MessageEdge>,
+)
 
 data class ForwardPagination(val first: Int? = null, val after: Int? = null)
 
@@ -57,11 +61,11 @@ infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "
 fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
-fun readUserIdList(chatId: Int): List<Int> =
+fun readUserIdList(chatId: Int): Set<Int> =
     if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
 
 /** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
-fun readChatSharers(userId: Int): List<Int> =
+fun readChatSharers(userId: Int): Set<Int> =
     PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
 
 /**

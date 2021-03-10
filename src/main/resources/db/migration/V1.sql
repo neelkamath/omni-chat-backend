@@ -156,6 +156,7 @@ CREATE TABLE action_messages
 );
 CREATE TABLE action_message_actions
 (
+    id                SERIAL PRIMARY KEY,
     action_message_id INTEGER        NOT NULL REFERENCES action_messages (id),
     action            VARCHAR(10000) NOT NULL
 );

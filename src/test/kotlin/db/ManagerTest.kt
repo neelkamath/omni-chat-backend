@@ -26,7 +26,7 @@ class DbTest {
         @Test
         fun `The deleted user must be unsubscribed via the new group chats broker`() {
             runBlocking {
-                val userId = createVerifiedUsers(1)[0].info.id
+                val userId = createVerifiedUsers(1).first().info.id
                 val subscriber = groupChatsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
@@ -45,7 +45,7 @@ class DbTest {
         @Test
         fun `The deleted user must be unsubscribed from contact updates`() {
             runBlocking {
-                val userId = createVerifiedUsers(1)[0].info.id
+                val userId = createVerifiedUsers(1).first().info.id
                 val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
@@ -70,7 +70,7 @@ class DbTest {
         @Test
         fun `The user must be unsubscribed from message updates`() {
             runBlocking {
-                val userId = createVerifiedUsers(1)[0].info.id
+                val userId = createVerifiedUsers(1).first().info.id
                 val subscriber = messagesNotifier.subscribe(userId).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
@@ -82,24 +82,26 @@ class DbTest {
     @Suppress("ClassName")
     inner class AccountsConnection_build {
         /** Creates [count] users. */
-        private fun createAccountEdges(count: Int = 3): List<AccountEdge> =
-            createVerifiedUsers(count).zip(Users.read()).map { (user, cursor) -> AccountEdge(user.info, cursor) }
+        private fun createAccountEdges(count: Int = 3): LinkedHashSet<AccountEdge> = createVerifiedUsers(count)
+            .zip(Users.read())
+            .map { (user, cursor) -> AccountEdge(user.info, cursor) }
+            .toSet() as LinkedHashSet
 
         @Test
         fun `Every user must be retrieved if neither cursor nor limit get supplied`() {
             val edges = createAccountEdges()
-            assertEquals(edges, AccountsConnection.build(edges).edges)
+            assertEquals(edges, AccountsConnection.build(edges).edges.toSet())
         }
 
         @Test
         fun `Using a deleted user's cursor must cause pagination to work as if the user still exists`() {
             val edges = createAccountEdges(10)
             val index = 5
-            val deletedUser = edges[index]
+            val deletedUser = edges.elementAt(index)
             Users.delete(deletedUser.node.id)
             val first = 3
             assertEquals(
-                edges.subList(index + 1, index + 1 + first),
+                edges.toList().subList(index + 1, index + 1 + first),
                 AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges
             )
         }
@@ -115,7 +117,7 @@ class DbTest {
         @Test
         fun `Retrieving the last user must cause the page info to state there are only users before`() {
             val edges = createAccountEdges()
-            AccountsConnection.build(edges, ForwardPagination(after = edges[1].cursor)).pageInfo.run {
+            AccountsConnection.build(edges, ForwardPagination(after = edges.elementAt(1).cursor)).pageInfo.run {
                 assertFalse(hasNextPage)
                 assertTrue(hasPreviousPage)
             }
@@ -123,7 +125,7 @@ class DbTest {
 
         @Test
         fun `The start and end cursors must be null if there are no users`() {
-            AccountsConnection.build(accountEdges = listOf()).pageInfo.run {
+            AccountsConnection.build(accountEdges = setOf()).pageInfo.run {
                 assertNull(startCursor)
                 assertNull(endCursor)
             }
@@ -138,7 +140,7 @@ class DbTest {
         fun `The first and last cursors must be the first and last users respectively`() {
             val edges = createAccountEdges()
             AccountsConnection.build(edges).pageInfo.run {
-                assertEquals(edges[0].cursor, startCursor)
+                assertEquals(edges.first().cursor, startCursor)
                 assertEquals(edges.last().cursor, endCursor)
             }
         }
@@ -149,8 +151,8 @@ class DbTest {
             val first = 3
             val index = 5
             assertEquals(
-                edges.subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, edges[index].cursor)).edges
+                edges.toList().subList(index + 1, index + 1 + first),
+                AccountsConnection.build(edges, ForwardPagination(first, edges.elementAt(index).cursor)).edges,
             )
         }
 
@@ -158,7 +160,8 @@ class DbTest {
         fun `The specified number of users must be retrieved from the first user when there's no cursor`() {
             val edges = createAccountEdges(5)
             val first = 3
-            assertEquals(edges.subList(0, first), AccountsConnection.build(edges, ForwardPagination(first)).edges)
+            val actual = AccountsConnection.build(edges, ForwardPagination(first)).edges
+            assertEquals(edges.toList().subList(0, first), actual)
         }
 
         @Test
@@ -167,7 +170,7 @@ class DbTest {
             val index = 5
             assertEquals(
                 edges.drop(index + 1),
-                AccountsConnection.build(edges, ForwardPagination(after = edges[index].cursor)).edges
+                AccountsConnection.build(edges, ForwardPagination(after = edges.elementAt(index).cursor)).edges,
             )
         }
 
@@ -178,10 +181,9 @@ class DbTest {
                 .map { (user, cursor) -> AccountEdge(user.info, cursor) }
             val first = 3
             val index = 5
-            assertEquals(
-                edges.subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges.shuffled(), ForwardPagination(first, edges[index].cursor)).edges
-            )
+            val actual =
+                AccountsConnection.build(edges.shuffled().toSet(), ForwardPagination(first, edges[index].cursor)).edges
+            assertEquals(edges.subList(index + 1, index + 1 + first), actual)
         }
     }
 }

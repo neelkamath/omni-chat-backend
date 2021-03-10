@@ -26,14 +26,14 @@ object GroupChatUsers : IntIdTable() {
      *
      * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier].
      */
-    fun makeAdmins(chatId: Int, userIdList: List<Int>, shouldNotify: Boolean = true) {
+    fun makeAdmins(chatId: Int, userIdList: Collection<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
         if (invalidUsers.isNotEmpty()) throw IllegalArgumentException("$invalidUsers aren't in the chat (ID: $chatId).")
         transaction {
             update({ (groupChatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
         if (shouldNotify) {
-            val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId))
+            val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId).toList())
             groupChatsNotifier.publish(update, readUserIdList(chatId))
         }
     }
@@ -55,19 +55,21 @@ object GroupChatUsers : IntIdTable() {
      * @see [readUsers]
      * @see [readAdminIdList]
      */
-    fun readUserIdList(chatId: Int): List<Int> = transaction {
-        select { groupChatId eq chatId }.map { it[userId] }
+    fun readUserIdList(chatId: Int): Set<Int> = transaction {
+        select { groupChatId eq chatId }.map { it[userId] }.toSet()
     }
 
-    fun readAdminIdList(chatId: Int): List<Int> = transaction {
-        select { (groupChatId eq chatId) and (isAdmin eq true) }.map { it[userId] }
+    fun readAdminIdList(chatId: Int): Set<Int> = transaction {
+        select { (groupChatId eq chatId) and (isAdmin eq true) }.map { it[userId] }.toSet()
     }
 
-    private fun readAccountEdges(chatId: Int): List<AccountEdge> = transaction {
-        select { groupChatId eq chatId }.map {
-            val account = Users.read(it[userId]).toAccount()
-            AccountEdge(account, cursor = it[GroupChatUsers.id].value)
-        }
+    private fun readAccountEdges(chatId: Int): Set<AccountEdge> = transaction {
+        select { groupChatId eq chatId }
+            .map {
+                val account = Users.read(it[userId]).toAccount()
+                AccountEdge(account, cursor = it[GroupChatUsers.id].value)
+            }
+            .toSet()
     }
 
     /** @see [readUserIdList] */
@@ -78,7 +80,7 @@ object GroupChatUsers : IntIdTable() {
      * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
      * [groupChatsNotifier], and new users of the [GroupChatId] via [groupChatsNotifier].
      */
-    fun addUsers(chatId: Int, users: List<Int>) {
+    fun addUsers(chatId: Int, users: Collection<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
         transaction {
             batchInsert(newUserIdList) {
@@ -147,7 +149,7 @@ object GroupChatUsers : IntIdTable() {
     fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
     /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
-    fun readChatIdList(userId: Int): List<Int> = transaction {
-        select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }
+    fun readChatIdList(userId: Int): Set<Int> = transaction {
+        select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }.toSet()
     }
 }

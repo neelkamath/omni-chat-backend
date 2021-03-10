@@ -111,7 +111,7 @@ class GroupChatsTest {
     inner class Delete {
         @Test
         fun `Deleting a nonempty chat must throw an exception`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertFailsWith<IllegalArgumentException> { GroupChats.delete(chatId) }
         }
@@ -134,7 +134,7 @@ class GroupChatsTest {
     inner class QueryUserChatEdges {
         @Test
         fun `Chats must be queried`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(listOf(adminId)) }
             val queryText = "hi"
             val (message1, message2) = listOf(chat1Id, chat2Id).map {
@@ -142,9 +142,9 @@ class GroupChatsTest {
                 MessageEdge(Messages.readMessage(adminId, messageId), cursor = messageId)
             }
             Messages.create(adminId, chat3Id, MessageText("bye"))
-            val chat1Edges = ChatEdges(chat1Id, listOf(message1))
-            val chat2Edges = ChatEdges(chat2Id, listOf(message2))
-            assertEquals(listOf(chat1Edges, chat2Edges), GroupChats.queryUserChatEdges(adminId, queryText))
+            val chat1Edges = ChatEdges(chat1Id, setOf(message1) as LinkedHashSet)
+            val chat2Edges = ChatEdges(chat2Id, setOf(message2) as LinkedHashSet)
+            assertEquals(setOf(chat1Edges, chat2Edges), GroupChats.queryUserChatEdges(adminId, queryText))
         }
     }
 
@@ -152,7 +152,7 @@ class GroupChatsTest {
     inner class Search {
         @Test
         fun `Chats must be searched case-insensitively`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val titles = listOf("Title 1", "Title 2", "Iron Man Fan Club")
             titles.forEach { GroupChats.create(listOf(adminId), title = GroupChatTitle(it)) }
             assertEquals(listOf(titles[0], titles[1]), GroupChats.search(adminId, "itle ").map { it.title.value })
@@ -164,7 +164,7 @@ class GroupChatsTest {
     inner class SetInvitability {
         @Test
         fun `An exception must be thrown if the chat is public`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             assertFailsWith<IllegalArgumentException> { GroupChats.setInvitability(chatId, isInvitable = true) }
         }
@@ -193,14 +193,14 @@ class GroupChatsTest {
 
         @Test
         fun `A chat disallowing invitations must be stated as such`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertFalse(GroupChats.isInvitable(chatId))
         }
 
         @Test
         fun `A chat allowing invites must state such`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             assertTrue(GroupChats.isInvitable(chatId))
         }

@@ -23,17 +23,20 @@ data class VerifiedUser(val info: Account, val password: Password) {
  *
  * Regardless of how many times this is called, the user returned is guaranteed to be unique. The username, password,
  * email, first name, and last name use the format `username<INTEGER>`, `password<INTEGER>`, `<USERNAME>@example.com`
- * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively.
+ * `firstName<INTEGER>`, and `lastName<INTEGER>` respectively. The returned [VerifiedUser]s are in ascending order of
+ * the `<INTEGER>`.
  */
-fun createVerifiedUsers(count: Int): List<VerifiedUser> = (1..count).map {
-    val account = AccountInput(
-        Username("username${++userCount}"),
-        Password("password$userCount"),
-        "username$userCount@example.com",
-        Name("firstName$userCount"),
-        Name("lastName$userCount")
-    )
-    Users.create(account)
-    verifyEmailAddress(account.username)
-    VerifiedUser.build(account)
-}
+fun createVerifiedUsers(count: Int): LinkedHashSet<VerifiedUser> = (1..count)
+    .map {
+        val account = AccountInput(
+            Username("username${++userCount}"),
+            Password("password$userCount"),
+            "username$userCount@example.com",
+            Name("firstName$userCount"),
+            Name("lastName$userCount"),
+        )
+        Users.create(account)
+        verifyEmailAddress(account.username)
+        VerifiedUser.build(account)
+    }
+    .toSet() as LinkedHashSet

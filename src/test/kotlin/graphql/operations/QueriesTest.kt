@@ -10,7 +10,6 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.testingObjectMapper
-
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -213,7 +212,7 @@ fun readChats(
         userId,
         privateChatMessagesPagination,
         usersPagination,
-        groupChatMessagesPagination
+        groupChatMessagesPagination,
     ).data!!["readChats"] as List<*>
     return testingObjectMapper.convertValue(chats)
 }
@@ -543,7 +542,7 @@ class ChatMessagesDtoTest {
     inner class ReadGroupChat {
         @Test
         fun `The chat's info must be read`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val inviteCode = GroupChats.readInviteCode(chatId)
             assertEquals(GroupChats.readChatInfo(inviteCode), readGroupChat(inviteCode))
@@ -561,29 +560,29 @@ class ChatMessagesDtoTest {
         val adminId: Int,
         /** Every message sent has this text. */
         val text: MessageText,
-        /** The ten messages the admin sent. */
-        val messageIdList: List<Int>
+        /** The ten messages the admin sent in the order of their creation. */
+        val messageIdList: LinkedHashSet<Int>,
     )
 
     @Nested
     inner class GetMessages {
         private fun createUtilizedChat(): AdminMessages {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val message = MessageText("t")
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }.toSet() as LinkedHashSet
             return AdminMessages(adminId, message, messageIdList)
         }
 
         private fun testPagination(mustDeleteMessage: Boolean) {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
             val index = 5
-            if (mustDeleteMessage) Messages.delete(messageIdList[index])
+            if (mustDeleteMessage) Messages.delete(messageIdList.elementAt(index))
             val last = 3
             val cursors = searchMessages(
                 adminId,
                 queryText.value,
-                chatMessagesPagination = BackwardPagination(last, before = messageIdList[index])
+                chatMessagesPagination = BackwardPagination(last, before = messageIdList.elementAt(index))
             ).flatMap { it.messages }.map { it.cursor }
             assertEquals(messageIdList.take(index).takeLast(last), cursors)
         }
@@ -601,7 +600,7 @@ class ChatMessagesDtoTest {
         @Test
         fun `If neither cursor nor limit are supplied, every message must be retrieved`() {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
-            val cursors = searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor }
+            val cursors = searchMessages(adminId, queryText.value).flatMap { it.messages }.map { it.cursor }.toSet()
             assertEquals(messageIdList, cursors)
         }
     }
@@ -628,7 +627,7 @@ class QueriesTest {
     inner class ReadBlockedUsers {
         @Test
         fun `Blocked users must be paginated`() {
-            val blockerId = createVerifiedUsers(1)[0].info.id
+            val blockerId = createVerifiedUsers(1).first().info.id
             val userIdList = createVerifiedUsers(10).map { it.info.id }
             userIdList.forEach { BlockedUsers.create(blockerId, it) }
             val index = 5
@@ -644,7 +643,7 @@ class QueriesTest {
     inner class SearchPublicChats {
         @Test
         fun `Chats must be case-insensitively queried by their title`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             GroupChats.create(listOf(adminId), title = GroupChatTitle("Kotlin/Native"))
             val chatId = GroupChats
                 .create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), publicity = GroupChatPublicity.PUBLIC)
@@ -680,7 +679,7 @@ class QueriesTest {
     inner class ReadAccount {
         @Test
         fun `The user's account info must be returned`() {
-            val user = createVerifiedUsers(1)[0].info
+            val user = createVerifiedUsers(1).first().info
             assertEquals(user, readAccount(user.id))
         }
     }
@@ -719,14 +718,14 @@ class QueriesTest {
 
         @Test
         fun `Reading a public chat mustn't require an access token`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             readChat(chatId)
         }
 
         @Test
         fun `When a user reads a public chat, the chat must be represented the way they see it`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
@@ -736,7 +735,7 @@ class QueriesTest {
 
         @Test
         fun `Requesting a chat using an invalid ID must return an error`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidChatIdException.message, errReadChat(id = 1, userId = userId))
         }
 
@@ -770,7 +769,7 @@ class QueriesTest {
     inner class RefreshTokenSet {
         @Test
         fun `A refresh token must issue a new token set`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val refreshToken = buildTokenSet(userId).refreshToken
             refreshTokenSet(refreshToken)
         }
@@ -787,7 +786,7 @@ class QueriesTest {
     inner class RequestTokenSet {
         @Test
         fun `The access token must work`() {
-            val login = createVerifiedUsers(1)[0].login
+            val login = createVerifiedUsers(1).first().login
             val token = requestTokenSet(login).accessToken
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = token)
             assertNotEquals(HttpStatusCode.Unauthorized, response.status())
@@ -808,7 +807,7 @@ class QueriesTest {
 
         @Test
         fun `An incorrect password must cause an exception to be thrown`() {
-            val login = createVerifiedUsers(1)[0].login
+            val login = createVerifiedUsers(1).first().login
             val invalidLogin = login.copy(password = Password("incorrect password"))
             assertEquals(IncorrectPasswordException.message, errRequestTokenSet(invalidLogin))
         }
@@ -824,7 +823,7 @@ class QueriesTest {
             Messages.create(user2Id, chatId, MessageText(":) hey"))
             Messages.create(user1Id, chatId, MessageText("How are you?"))
             val messages = searchChatMessages(chatId, "hey", userId = user1Id)
-            assertEquals(Messages.readPrivateChat(user1Id, chatId).dropLast(1), messages)
+            assertEquals(Messages.readPrivateChat(user1Id, chatId).toList().dropLast(1), messages)
         }
 
         @Test
@@ -836,7 +835,7 @@ class QueriesTest {
 
         @Test
         fun `A public chat must be searchable without an account`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val text = "text"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
@@ -845,7 +844,7 @@ class QueriesTest {
 
         @Test
         fun `When a user searches a public chat, it must be returned as it's seen by the user`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val text = "t"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
@@ -893,7 +892,7 @@ class QueriesTest {
                 Users.create(it)
                 it.toAccount()
             }
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             Contacts.create(userId, accounts.map { it.id }.toSet())
             val testContacts = { query: String, accountList: List<Account> ->
                 assertEquals(accountList, searchContacts(userId, query).edges.map { it.node })
@@ -942,8 +941,8 @@ class QueriesTest {
             assertEquals(accounts.dropLast(1), searchUsers("iron").edges.map { it.node })
         }
 
-        private fun createAccounts(): List<AccountInput> {
-            val accounts = listOf(
+        private fun createAccounts(): Set<AccountInput> {
+            val accounts = setOf(
                 AccountInput(Username("iron_man"), Password("p"), "iron.man@example.com"),
                 AccountInput(Username("tony_hawk"), Password("p"), "tony.hawk@example.com"),
                 AccountInput(Username("lol"), Password("p"), "iron.fist@example.com"),
@@ -951,7 +950,7 @@ class QueriesTest {
                 AccountInput(Username("jo_mama"), Password("p"), "mama@example.com", firstName = Name("Iron")),
                 AccountInput(Username("nope"), Password("p"), "nope@example.com", lastName = Name("Irony")),
                 AccountInput(Username("black_widow"), Password("p"), "black.widow@example.com"),
-                AccountInput(Username("iron_spider"), Password("p"), "iron.spider@example.com")
+                AccountInput(Username("iron_spider"), Password("p"), "iron.spider@example.com"),
             )
             accounts.forEach(Users::create)
             return accounts
@@ -991,7 +990,7 @@ private enum class MessagesOperationName {
 
 /** Asserts that the [operation] paginates correctly. */
 private fun testMessagesPagination(operation: MessagesOperationName) {
-    val adminId = createVerifiedUsers(1)[0].info.id
+    val adminId = createVerifiedUsers(1).first().info.id
     val chatId = GroupChats.create(listOf(adminId))
     val text = MessageText("t")
     val messageIdList = (1..10).map { Messages.message(adminId, chatId, text) }
@@ -1024,7 +1023,7 @@ private enum class ContactsOperationName {
 }
 
 private fun testContactsPagination(operation: ContactsOperationName) {
-    val ownerId = createVerifiedUsers(1)[0].info.id
+    val ownerId = createVerifiedUsers(1).first().info.id
     val userList = createVerifiedUsers(10).map { it.info }
     Contacts.create(ownerId, userList.map { it.id }.toSet())
     val index = 5
@@ -1055,7 +1054,7 @@ private enum class GroupChatUsersOperationName {
 }
 
 private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationName) {
-    val adminId = createVerifiedUsers(1)[0].info.id
+    val adminId = createVerifiedUsers(1).first().info.id
     val users = createVerifiedUsers(10)
     val userIdList = users.map { it.info.id }
     val chatId = GroupChats.create(listOf(adminId), userIdList)
@@ -1064,7 +1063,7 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
     val first = 3
     val userCursors = GroupChatUsers.read()
     val index = 5
-    val pagination = ForwardPagination(first, after = userCursors[index])
+    val pagination = ForwardPagination(first, after = userCursors.elementAt(index))
     val chat = when (operationName) {
         GroupChatUsersOperationName.READ_CHAT -> readChat(chatId, usersPagination = pagination, userId = adminId)
         GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination)[0]
@@ -1075,5 +1074,6 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
         GroupChatUsersOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text, usersPagination = pagination)[0].chat
     } as GroupChat
-    assertEquals(userCursors.subList(index + 1, index + 1 + first).map { it }, chat.users.edges.map { it.cursor })
+    val expected = userCursors.toList().subList(index + 1, index + 1 + first).map { it }
+    assertEquals(expected, chat.users.edges.map { it.cursor })
 }

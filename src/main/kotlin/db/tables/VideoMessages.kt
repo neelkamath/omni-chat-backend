@@ -53,7 +53,7 @@ object VideoMessages : Table() {
         select { messageId eq id }.first()[video].let(::Mp4)
     }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

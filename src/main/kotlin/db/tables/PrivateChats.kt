@@ -58,8 +58,8 @@ object PrivateChats : Table() {
      * @see [readIdList]
      * @see [readUserChatIdList]
      */
-    fun readUserChats(userId: Int, messagesPagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }
+    fun readUserChats(userId: Int, messagesPagination: BackwardPagination? = null): Set<PrivateChat> =
+        readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }.toSet()
 
     /**
      * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
@@ -68,15 +68,16 @@ object PrivateChats : Table() {
      * @see [readIdList]
      * @see [readUserChats]
      */
-    fun readUserChatIdList(userId: Int): List<Int> = readUserChatsRows(userId).map { it[id] }
+    fun readUserChatIdList(userId: Int): Set<Int> = readUserChatsRows(userId).map { it[id] }.toSet()
 
     /**
      * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
      * deletion.
      */
-    private fun readUserChatsRows(userId: Int): List<ResultRow> = transaction {
+    private fun readUserChatsRows(userId: Int): Set<ResultRow> = transaction {
         select { (user1Id eq userId) or (user2Id eq userId) }
             .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
+            .toSet()
     }
 
     fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat = transaction {
@@ -101,8 +102,8 @@ object PrivateChats : Table() {
      *
      * @see [readUserChats]
      */
-    fun readIdList(userId: Int): List<Int> = transaction {
-        select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }
+    fun readIdList(userId: Int): Set<Int> = transaction {
+        select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }.toSet()
     }
 
     /**
@@ -110,10 +111,11 @@ object PrivateChats : Table() {
      * Only chats having messages matching the [query] will be returned. Only the matched message [ChatEdges.edges] will
      * be returned.
      */
-    fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = readUserChatIdList(userId)
+    fun queryUserChatEdges(userId: Int, query: String): Set<ChatEdges> = readUserChatIdList(userId)
         .associateWith { Messages.searchPrivateChat(it, userId, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
+        .toSet()
 
     /** Whether there exists a chat between [user1Id] and [user2Id]. */
     fun exists(user1Id: Int, user2Id: Int): Boolean = transaction {
@@ -125,8 +127,8 @@ object PrivateChats : Table() {
      * Searches chats the [userId] has by case-insensitively [query]ing other users' first name, last name, and
      * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
      */
-    fun search(userId: Int, query: String, pagination: BackwardPagination? = null): List<PrivateChat> =
-        readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }
+    fun search(userId: Int, query: String, pagination: BackwardPagination? = null): Set<PrivateChat> =
+        readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }.toSet()
 
     /** [delete]s every chat which the [userId] is in. Nothing will happen if the [userId] doesn't exist. */
     fun deleteUserChats(userId: Int): Unit = readIdList(userId).forEach(::delete)
@@ -149,14 +151,14 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Returns the IDs of the users in the [chatId]. Even if one of the users has deleted the chat, their ID will be
+     * Returns the two IDs of the users in the [chatId]. Even if one of the users has deleted the chat, their ID will be
      * returned.
      *
      * @see [readOtherUserId]
      */
-    fun readUserIdList(chatId: Int): List<Int> = transaction {
+    fun readUserIdList(chatId: Int): Set<Int> = transaction {
         val row = select { PrivateChats.id eq chatId }.first()
-        listOf(row[user1Id], row[user2Id])
+        listOf(row[user1Id], row[user2Id]).toSet()
     }
 
     /**
@@ -165,11 +167,11 @@ object PrivateChats : Table() {
      * @see [readUserIdList]
      */
     fun readOtherUserId(chatId: Int, userId: Int): Int {
-        val userIdList = readUserIdList(chatId)
-        return if (userIdList[0] == userId) userIdList[1] else userIdList[0]
+        val (user1Id, user2Id) = readUserIdList(chatId).toList()
+        return if (userId == user1Id) user2Id else user1Id
     }
 
     /** Returns the ID of every other user the [userId] has chats with (excluding deleted chats). */
-    fun readOtherUserIdList(userId: Int): List<Int> =
-        readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }
+    fun readOtherUserIdList(userId: Int): Set<Int> =
+        readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }.toSet()
 }

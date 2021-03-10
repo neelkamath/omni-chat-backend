@@ -1,13 +1,11 @@
 package com.neelkamath.omniChat.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.GroupChatPublicity
-import com.neelkamath.omniChat.testingObjectMapper
 
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
@@ -22,7 +20,7 @@ class MediaHandlerTest {
     inner class GetMediaMessage {
         @Test
         fun `A message must be read with an HTTP status code of 200`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val audio = Audio(ByteArray(1), Audio.Type.MP3)
             val messageId = Messages.message(admin.info.id, chatId, audio)
@@ -33,13 +31,13 @@ class MediaHandlerTest {
 
         @Test
         fun `An HTTP status code of 401 must be returned when retrieving a nonexistent message`() {
-            val token = createVerifiedUsers(1)[0].accessToken
+            val token = createVerifiedUsers(1).first().accessToken
             assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(token, messageId = 1).status())
         }
 
         @Test
         fun `The message must be read from a public chat sans access token`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id), publicity = GroupChatPublicity.PUBLIC)
             val audio = Audio(ByteArray(1), Audio.Type.MP3)
             val messageId = Messages.message(admin.info.id, chatId, audio)
@@ -50,7 +48,7 @@ class MediaHandlerTest {
 
         @Test
         fun `An access token must be required to read a message which isn't from a public chat`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val audio = Audio(ByteArray(1), Audio.Type.MP3)
             val messageId = Messages.message(admin.info.id, chatId, audio)
@@ -63,7 +61,7 @@ class MediaHandlerTest {
     inner class PostMediaMessage {
         @Test
         fun `An HTTP status code of 204 must be returned when a message has been created with a context`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val messageId = Messages.message(admin.info.id, chatId)
             val dummy = DummyFile("audio.mp3", bytes = 1)
@@ -75,7 +73,7 @@ class MediaHandlerTest {
 
         @Test
         fun `Messaging in a nonexistent chat must fail`() {
-            val token = createVerifiedUsers(1)[0].accessToken
+            val token = createVerifiedUsers(1).first().accessToken
             val dummy = DummyFile("audio.mp3", bytes = 1)
             val response = postAudioMessage(token, dummy, chatId = 1)
             assertEquals(HttpStatusCode.BadRequest, response.status())
@@ -85,7 +83,7 @@ class MediaHandlerTest {
 
         @Test
         fun `Using an invalid message context must fail`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("audio.mp3", bytes = 1)
             val response = postAudioMessage(admin.accessToken, dummy, chatId, contextMessageId = 1)
@@ -95,7 +93,7 @@ class MediaHandlerTest {
         }
 
         private fun testBadRequest(dummy: DummyFile) {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val response = postAudioMessage(admin.accessToken, dummy, chatId)
             assertEquals(HttpStatusCode.BadRequest, response.status())

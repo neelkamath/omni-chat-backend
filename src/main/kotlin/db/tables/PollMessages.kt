@@ -24,7 +24,7 @@ object PollMessages : IntIdTable() {
                 it[title] = poll.title.value
             }.value
         }
-        PollOptions.create(pollId, poll.options)
+        PollOptions.create(pollId, poll.options.toSet() as LinkedHashSet)
     }
 
     fun exists(messageId: Int): Boolean = transaction {
@@ -36,7 +36,7 @@ object PollMessages : IntIdTable() {
             select { PollMessages.messageId eq messageId }.first()
         }
         val options = PollOptions.read(row[id].value)
-        return Poll(MessageText(row[title]), options)
+        return Poll(MessageText(row[title]), options.toList())
     }
 
     /**
@@ -65,11 +65,11 @@ object PollMessages : IntIdTable() {
     }
 
     /** Returns the ID of every poll message in the [messageIdList]. */
-    private fun readIdList(messageIdList: List<Int>): List<Int> = transaction {
-        select { messageId inList messageIdList }.map { it[PollMessages.id].value }
+    private fun readIdList(messageIdList: Collection<Int>): Set<Int> = transaction {
+        select { messageId inList messageIdList }.map { it[PollMessages.id].value }.toSet()
     }
 
-    fun delete(messageIdList: List<Int>) {
+    fun delete(messageIdList: Collection<Int>) {
         PollOptions.delete(readIdList(messageIdList))
         transaction {
             deleteWhere { messageId inList messageIdList }

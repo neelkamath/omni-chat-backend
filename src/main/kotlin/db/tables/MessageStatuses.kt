@@ -90,7 +90,7 @@ object MessageStatuses : Table() {
     }
 
     /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
-    fun delete(messageIdList: List<Int>): Unit = transaction {
+    fun delete(messageIdList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
     }
 
@@ -108,8 +108,9 @@ object MessageStatuses : Table() {
     }
 
     /** [messageId]'s [MessageDateTimeStatus]es. */
-    fun read(messageId: Int): List<MessageDateTimeStatus> = transaction {
+    fun read(messageId: Int): Set<MessageDateTimeStatus> = transaction {
         select { MessageStatuses.messageId eq messageId }
             .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
+            .toSet()
     }
 }

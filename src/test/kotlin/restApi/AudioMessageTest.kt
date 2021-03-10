@@ -32,7 +32,7 @@ class AudioMessageTest {
     inner class RouteAudioMessage {
         @Test
         fun `Using a capitalized file extensions mustn't fail`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("audio.MP3", bytes = 1)
             assertEquals(HttpStatusCode.NoContent, postAudioMessage(admin.accessToken, dummy, chatId).status())

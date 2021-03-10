@@ -70,7 +70,7 @@ type Query {
 
     """
     Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
-    message captions in the `chatId`.
+    message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
     chat).
@@ -82,7 +82,8 @@ type Query {
     """
     Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
     and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
-    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results.
+    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's messages
+    are chronologically ordered.
 
     An access token must be sent with this request.
     """

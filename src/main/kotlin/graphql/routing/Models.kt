@@ -378,7 +378,7 @@ data class GroupChatInfo(
     override val title: GroupChatTitle,
     override val description: GroupChatDescription,
     override val isBroadcast: Boolean,
-    override val publicity: GroupChatPublicity
+    override val publicity: GroupChatPublicity,
 ) : BareGroupChat
 
 data class GroupChat(
@@ -1035,7 +1035,7 @@ data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageIn
          *
          * The [accountEdges] will be sorted in ascending order of their [AccountEdge.cursor] for you.
          */
-        fun build(accountEdges: List<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
+        fun build(accountEdges: Set<AccountEdge>, pagination: ForwardPagination? = null): AccountsConnection {
             val (first, after) = pagination ?: ForwardPagination()
             val accounts = accountEdges.sortedBy { it.cursor }
             val afterAccounts = if (after == null) accounts else accounts.filter { it.cursor > after }
@@ -1066,7 +1066,7 @@ data class PageInfo(
 )
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
-private fun <T> validateOptions(options: List<T>) {
+private fun <T> validateOptions(options: Collection<T>) {
     if (options.size < 2) throw IllegalArgumentException("There must be at least two options: $options.")
     if (options.toSet().size != options.size) throw IllegalArgumentException("Options must be unique: $options.")
 }

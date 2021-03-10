@@ -18,7 +18,7 @@ class GroupChatInputTest {
                     userIdList = listOf(1),
                     adminIdList = listOf(),
                     isBroadcast = false,
-                    publicity = GroupChatPublicity.NOT_INVITABLE
+                    publicity = GroupChatPublicity.NOT_INVITABLE,
                 )
             }
         }
@@ -32,7 +32,7 @@ class GroupChatInputTest {
                     userIdList = listOf(1),
                     adminIdList = listOf(1, 2),
                     isBroadcast = false,
-                    publicity = GroupChatPublicity.NOT_INVITABLE
+                    publicity = GroupChatPublicity.NOT_INVITABLE,
                 )
             }
         }

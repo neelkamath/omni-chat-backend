@@ -37,7 +37,7 @@ object PicMessages : Table() {
         select { messageId eq id }.first()
     }.let { CaptionedPic(Pic(it[type], it[original], it[thumbnail]), it[caption]?.let(::MessageText)) }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

@@ -27,7 +27,7 @@ class BlockedUsersTest {
 
         @Test
         fun `The user mustn't be able to block themselves`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             BlockedUsers.create(userId, userId)
             assertEquals(0, BlockedUsers.count())
         }

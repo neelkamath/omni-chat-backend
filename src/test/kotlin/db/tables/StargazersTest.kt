@@ -53,7 +53,7 @@ class StargazersTest {
         @Test
         fun `Deleting a nonexistent star mustn't cause anything to happen`() {
             runBlocking {
-                val adminId = createVerifiedUsers(1)[0].info.id
+                val adminId = createVerifiedUsers(1).first().info.id
                 val chatId = GroupChats.create(listOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()

@@ -158,7 +158,7 @@ class GroupChatUsersTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             assertFalse(GroupChatUsers.removeUsers(chatId, userId))
-            assertEquals(listOf(adminId), GroupChatUsers.readUserIdList(chatId))
+            assertEquals(setOf(adminId), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
@@ -211,7 +211,7 @@ class GroupChatUsersTest {
 
         @Test
         fun `The admin of a chat must have such stated`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertTrue(GroupChatUsers.isAdmin(adminId, chatId))
         }

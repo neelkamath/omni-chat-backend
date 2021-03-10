@@ -48,7 +48,7 @@ fun setOnline(env: DataFetchingEnvironment): Placeholder {
 
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<Int>>("idList").filter { Users.exists(it) && it != env.userId!! }
+    val userIdList = env.getArgument<List<Int>>("idList").filter { Users.exists(it) && it != env.userId!! }.toSet()
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }

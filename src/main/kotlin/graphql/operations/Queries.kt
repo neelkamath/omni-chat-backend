@@ -30,7 +30,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
     val description: GroupChatDescription
 
     @Suppress("unused")
-    val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
+    val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id).toList()
 
     @Suppress("MemberVisibilityCanBePrivate")
     val inviteCode: UUID?
@@ -89,12 +89,12 @@ sealed class ChatMessagesDto(val chat: ChatDto, private val messageEdges: List<M
 private class SearchGroupChatMessagesDto(
     userId: Int,
     chatId: Int,
-    messageEdges: List<MessageEdge>
+    messageEdges: List<MessageEdge>,
 ) : ChatMessagesDto(GroupChatDto(chatId, userId), messageEdges)
 
 private class SearchPrivateChatMessagesDto(
     chatId: Int,
-    messageEdges: List<MessageEdge>
+    messageEdges: List<MessageEdge>,
 ) : ChatMessagesDto(PrivateChatDto(chatId), messageEdges)
 
 class GroupChatInfoDto(private val inviteCode: UUID) {
@@ -186,12 +186,13 @@ fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
     val query = env.getArgument<String>("query")
     val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
     if (env.userId == null && GroupChats.isExistentPublicChat(chatId))
-        return Messages.searchGroupChat(chatId, query, pagination)
+        return Messages.searchGroupChat(chatId, query, pagination).toList()
     env.verifyAuth()
     return when (chatId) {
-        in PrivateChats.readIdList(env.userId!!) -> Messages.searchPrivateChat(chatId, env.userId!!, query, pagination)
+        in PrivateChats.readIdList(env.userId!!) ->
+            Messages.searchPrivateChat(chatId, env.userId!!, query, pagination).toList()
         in GroupChatUsers.readChatIdList(env.userId!!) ->
-            Messages.searchGroupChat(chatId, query, pagination, env.userId!!)
+            Messages.searchGroupChat(chatId, query, pagination, env.userId!!).toList()
         else -> throw InvalidChatIdException
     }
 }
@@ -228,10 +229,10 @@ fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges) }
+        .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges.toList()) }
     val privateChats = PrivateChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
+        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges.toList()) }
     return groupChats + privateChats
 }
 

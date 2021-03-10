@@ -22,7 +22,7 @@ class ActionMessagesTest {
     inner class HasAction {
         @Test
         fun `Only the existent action must be said to exist`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val action = MessageText("Yes")
             val messageId = Messages.message(

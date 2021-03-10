@@ -51,7 +51,7 @@ object DocMessages : Table() {
         select { messageId eq id }.first()[doc].let(::Doc)
     }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

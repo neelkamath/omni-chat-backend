@@ -8,7 +8,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 fun Table.count(): Long = transaction { selectAll().count() }
 
-private val tables: List<Table> = listOf(
+private val tables: Set<Table> = setOf(
     Contacts,
     MessageStatuses,
     Stargazers,

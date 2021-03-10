@@ -33,7 +33,7 @@ object AudioMessages : Table() {
         return Audio(row[audio], row[type])
     }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

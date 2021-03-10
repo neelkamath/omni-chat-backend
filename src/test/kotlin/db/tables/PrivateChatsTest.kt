@@ -46,7 +46,7 @@ class PrivateChatsTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             val test = { userId: Int, otherUserId: Int ->
-                assertEquals(otherUserId, PrivateChats.readUserChats(userId)[0].user.id)
+                assertEquals(otherUserId, PrivateChats.readUserChats(userId).first().user.id)
             }
             test(user1Id, user2Id)
             test(user2Id, user1Id)
@@ -97,9 +97,9 @@ class PrivateChatsTest {
                 MessageEdge(Messages.readMessage(user1Id, messageId), cursor = messageId)
             }
             Messages.create(user1Id, chat3Id, MessageText("bye"))
-            val chat1Edges = ChatEdges(chat1Id, listOf(message1))
-            val chat2Edges = ChatEdges(chat2Id, listOf(message2))
-            assertEquals(listOf(chat1Edges, chat2Edges), PrivateChats.queryUserChatEdges(user1Id, queryText))
+            val chat1Edges = ChatEdges(chat1Id, setOf(message1) as LinkedHashSet)
+            val chat2Edges = ChatEdges(chat2Id, setOf(message2) as LinkedHashSet)
+            assertEquals(setOf(chat1Edges, chat2Edges), PrivateChats.queryUserChatEdges(user1Id, queryText))
         }
     }
 
@@ -107,7 +107,7 @@ class PrivateChatsTest {
     inner class Search {
         @Test
         fun `Chats must be searched by case-insensitively querying usernames, email addresses, and names`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val userIdList = listOf(
                 AccountInput(Username("dave_tompson"), Password("p"), emailAddress = "dave@example.com"),
                 AccountInput(Username("iron_man_fan"), Password("p"), emailAddress = "tom@example.com"),
@@ -159,7 +159,7 @@ class PrivateChatsTest {
         fun `Retrieving the user IDs of a chat must return them`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            assertEquals(listOf(user1Id, user2Id), PrivateChats.readUserIdList(chatId))
+            assertEquals(setOf(user1Id, user2Id), PrivateChats.readUserIdList(chatId))
         }
     }
 
@@ -182,7 +182,7 @@ class PrivateChatsTest {
             PrivateChats.create(user1Id, user2Id)
             val chatId = PrivateChats.create(user1Id, user3Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertEquals(listOf(user2Id), PrivateChats.readOtherUserIdList(user1Id))
+            assertEquals(setOf(user2Id), PrivateChats.readOtherUserIdList(user1Id))
         }
     }
 }

@@ -57,7 +57,7 @@ class PrivateChatDeletionsTest {
     inner class Create {
         @Test
         fun `Deleting a chat the user was never in must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertFailsWith<IllegalArgumentException> { PrivateChatDeletions.create(chatId = 1, userId = userId) }
         }
 

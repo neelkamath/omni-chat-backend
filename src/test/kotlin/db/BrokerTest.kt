@@ -30,7 +30,7 @@ class BrokerTest {
                     contactOwnerSubscriber,
                     deletedPrivateChatSharerSubscriber,
                     privateChatSharerSubscriber,
-                    groupChatSharerSubscriber
+                    groupChatSharerSubscriber,
                 ) = listOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
                     .map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 negotiateUserUpdate(userId, isProfilePic = false)
@@ -40,7 +40,7 @@ class BrokerTest {
                     userSubscriber,
                     contactOwnerSubscriber,
                     privateChatSharerSubscriber,
-                    groupChatSharerSubscriber
+                    groupChatSharerSubscriber,
                 ).forEach { it.assertValue(UpdatedAccount.build(userId)) }
             }
     }

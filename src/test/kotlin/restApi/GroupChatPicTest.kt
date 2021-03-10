@@ -42,7 +42,7 @@ class GroupChatPicTest {
     inner class PatchGroupChatPic {
         @Test
         fun `Updating the pic must cause an HTTP status code of 204 to be received, and the DB to be updated`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val pic = readPic("76px×57px.jpg")
             assertEquals(HttpStatusCode.NoContent, patchGroupChatPic(admin.accessToken, pic, chatId).status())
@@ -50,7 +50,7 @@ class GroupChatPicTest {
         }
 
         private fun testBadRequest(filename: String) {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val response = patchGroupChatPic(admin.accessToken, filename, readBytes(filename), chatId)
             assertEquals(HttpStatusCode.BadRequest, response.status())
@@ -78,7 +78,7 @@ class GroupChatPicTest {
     inner class GetGroupChatPic {
         @Test
         fun `A pic must be retrieved with an HTTP status code of 200`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val pic = readPic("76px×57px.jpg")
             GroupChats.updatePic(chatId, pic)
@@ -89,7 +89,7 @@ class GroupChatPicTest {
 
         @Test
         fun `An HTTP status code of 204 must be received when reading a nonexistent pic`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val status = getGroupChatPic(admin.accessToken, chatId, PicType.ORIGINAL).status()
             assertEquals(HttpStatusCode.NoContent, status)
@@ -101,7 +101,7 @@ class GroupChatPicTest {
         }
 
         private fun createGroupChat(): ChatPic {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val pic = readPic("1008px×756px.jpg")
             GroupChats.updatePic(chatId, pic)
@@ -124,7 +124,7 @@ class GroupChatPicTest {
 
         @Test
         fun `The pic must be retrieved from a public chat sans access token`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val status = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).status()
             assertEquals(HttpStatusCode.NoContent, status)
@@ -132,7 +132,7 @@ class GroupChatPicTest {
 
         @Test
         fun `The pic must not be retrieved from a chat sans access token`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val status = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).status()
             assertEquals(HttpStatusCode.Unauthorized, status)

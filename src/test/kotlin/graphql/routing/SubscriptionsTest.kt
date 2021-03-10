@@ -1,8 +1,6 @@
 package com.neelkamath.omniChat.graphql.routing
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.buildTokenSet
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.Users
@@ -39,7 +37,7 @@ class SubscriptionsTest {
                 }
             """
             val operationName = "SubscribeToAccounts".takeIf { mustSupplyOperationName }
-            val token = createVerifiedUsers(1)[0].accessToken
+            val token = createVerifiedUsers(1).first().accessToken
             executeGraphQlSubscriptionViaWebSocket(
                 path = "accounts-subscription",
                 GraphQlRequest(query, operationName = operationName),
@@ -62,7 +60,7 @@ class SubscriptionsTest {
 
         @Test
         fun `A token from an account with an unverified email address mustn't work`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val token = buildTokenSet(userId).accessToken
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             executeGraphQlSubscriptionViaWebSocket(
