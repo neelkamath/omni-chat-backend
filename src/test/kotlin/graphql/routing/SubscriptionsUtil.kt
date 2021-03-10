@@ -23,7 +23,7 @@ fun executeGraphQlSubscriptionViaWebSocket(
     path: String,
     request: GraphQlRequest,
     accessToken: String? = null,
-    callback: SubscriptionCallback
+    callback: SubscriptionCallback,
 ): Unit = withTestApplication(Application::main) {
     handleWebSocketConversation(path) { incoming, outgoing ->
         if (accessToken != null) outgoing.send(Frame.Text(accessToken))

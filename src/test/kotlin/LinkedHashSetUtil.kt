@@ -1,5 +1,7 @@
 package com.neelkamath.omniChat
 
+fun <T> linkedHashSetOf(vararg elements: T): LinkedHashSet<T> = LinkedHashSet(elements.toSet())
+
 operator fun <T> LinkedHashSet<T>.component1(): T = elementAt(0)
 
 operator fun <T> LinkedHashSet<T>.component2(): T = elementAt(1)

@@ -87,7 +87,7 @@ enum class Topic {
     },
     ONLINE_STATUSES {
         override fun toString() = "onlineStatuses"
-    }
+    },
 }
 
 /** [subscribe]d clients with the [userId] will receive the corresponding [update]. */

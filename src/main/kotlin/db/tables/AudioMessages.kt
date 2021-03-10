@@ -14,7 +14,7 @@ object AudioMessages : Table() {
         name = "type",
         sql = "audio_type",
         fromDb = { Audio.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("audio_type", it) }
+        toDb = { PostgresEnum("audio_type", it) },
     )
 
     /** @see [Messages.createAudioMessage] */

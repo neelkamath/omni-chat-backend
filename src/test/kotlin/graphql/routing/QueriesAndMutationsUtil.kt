@@ -13,7 +13,7 @@ import io.ktor.server.testing.*
 fun readGraphQlHttpResponse(
     query: String,
     variables: Map<String, Any?>? = null,
-    accessToken: String? = null
+    accessToken: String? = null,
 ): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(testingObjectMapper::readValue)
 
 /**
@@ -26,7 +26,7 @@ fun readGraphQlHttpResponse(
 fun executeGraphQlViaHttp(
     query: String,
     variables: Map<String, Any?>? = null,
-    accessToken: String? = null
+    accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(HttpMethod.Post, "query-or-mutation") {
         accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }

@@ -5,8 +5,8 @@ This is the recommended method to run the server locally. For example, you might
 ## Installation
 
 1. Install [Docker](https://docs.docker.com/get-docker/).
-1. `mkdir omni-chat`
-1. `cd omni-chat`
+1. `mkdir omni-chat-backend`
+1. `cd omni-chat-backend`
 1. Download [`dockerize`](../docker/dockerize).
 1. If you're not using Windows, run `chmod +x dockerize`.
 1. Download [`docker-compose.yml`](docker-compose.yml).
@@ -20,7 +20,8 @@ To shut down: `docker-compose down`
 
 ## Migrating
 
-Here's how to migrate from the previous version (0.14.0) to this version (0.15.0):
+Here's how to migrate from the previous version (0.15.0) to this version (0.16.0):
 
 1. Re-download [`docker-compose.yml`](docker-compose.yml).
+1. Wipe the DB: `docker volume rm omni-chat-backend_db`
 1. [Use](#usage).

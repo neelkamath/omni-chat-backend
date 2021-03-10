@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.graphql.routing.MessageText
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.batchInsert
@@ -25,7 +26,7 @@ object ActionMessageActions : IntIdTable() {
         select { ActionMessageActions.actionMessageId eq actionMessageId }
             .orderBy(ActionMessageActions.id)
             .map { MessageText(it[action]) }
-            .toSet() as LinkedHashSet
+            .toLinkedHashSet()
     }
 
     fun delete(actionMessageIdList: Collection<Int>): Unit = transaction {

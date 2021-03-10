@@ -37,7 +37,7 @@ class AppTest {
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             assertEquals(
                 HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status(),
             )
         }
     }
@@ -107,7 +107,7 @@ class SpecComplianceTest {
                 "groupChat_messages_last" to null,
                 "groupChat_messages_before" to null,
             ),
-            admin.accessToken
+            admin.accessToken,
         )["data"] as Map<*, *>
         val data = testingObjectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
         val messages = testingObjectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)

@@ -119,7 +119,7 @@ fun deleteUser(userId: Int) {
             """
             The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
             users.
-            """
+            """,
         )
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)

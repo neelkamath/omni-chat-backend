@@ -5,7 +5,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChat.graphql.operations.ONLINE_STATUS_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChat.graphql.operations.STARRED_MESSAGE_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 
 import io.ktor.application.*
@@ -33,17 +35,21 @@ class QueriesAndMutationsTest {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query IsBlocked {
-                            isBlocked(userId: 1)
+                        query ReadStars {
+                            readStars {
+                                $STARRED_MESSAGE_FRAGMENT
+                            }
                         }
                         
-                        query IsContact {
-                            isContact(userId: 1)
+                        query ReadOnlineStatuses {
+                            readOnlineStatuses {
+                                $ONLINE_STATUS_FRAGMENT
+                            }
                         }
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    val operationName = "IsBlocked".takeIf { mustSupplyOperationName }
+                    val operationName = "ReadStars".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }
@@ -74,7 +80,7 @@ class QueriesAndMutationsTest {
             val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_TITLE_QUERY,
                 mapOf("chatId" to chatId, "title" to "T"),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }

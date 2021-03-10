@@ -41,7 +41,7 @@ class SubscriptionsTest {
             executeGraphQlSubscriptionViaWebSocket(
                 path = "accounts-subscription",
                 GraphQlRequest(query, operationName = operationName),
-                token
+                token,
             ) { incoming ->
                 if (mustSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
                 else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
@@ -66,7 +66,7 @@ class SubscriptionsTest {
             executeGraphQlSubscriptionViaWebSocket(
                 path = "messages-subscription",
                 GraphQlRequest(subscribeToMessagesQuery),
-                token
+                token,
             ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
@@ -81,9 +81,9 @@ class SubscriptionsTest {
         """
         executeGraphQlSubscriptionViaWebSocket(
             path = "accounts-subscription",
-            request = GraphQlRequest(subscribeToAccountsQuery),
-            accessToken = accessToken,
-            callback = callback
+            GraphQlRequest(subscribeToAccountsQuery),
+            accessToken,
+            callback,
         )
     }
 
@@ -94,6 +94,7 @@ class SubscriptionsTest {
             val (user, contact) = createVerifiedUsers(2)
             subscribeToAccounts(user.accessToken) {}
             subscribeToAccounts(user.accessToken) { incoming ->
+                awaitBrokering()
                 parseFrameData<CreatedSubscription>(incoming)
                 Contacts.create(user.info.id, setOf(contact.info.id))
                 awaitBrokering()

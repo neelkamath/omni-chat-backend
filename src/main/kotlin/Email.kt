@@ -42,7 +42,7 @@ private fun emailEmailAddressVerification(emailAddress: String, code: Int) {
     email(
         emailAddress,
         subject = "Verify your $name account's email address",
-        body = "Please enter your verification code, $code, in $name to verify your email address."
+        body = "Please enter your verification code, $code, in $name to verify your email address.",
     )
 }
 
@@ -52,7 +52,7 @@ fun emailResetPassword(emailAddress: String) {
     email(
         emailAddress,
         subject = "Reset your $name account's password",
-        body = "Please enter your verification code, $code, in $name to reset your password."
+        body = "Please enter your verification code, $code, in $name to reset your password.",
     )
 }
 

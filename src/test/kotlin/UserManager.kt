@@ -39,4 +39,4 @@ fun createVerifiedUsers(count: Int): LinkedHashSet<VerifiedUser> = (1..count)
         verifyEmailAddress(account.username)
         VerifiedUser.build(account)
     }
-    .toSet() as LinkedHashSet
+    .toLinkedHashSet()

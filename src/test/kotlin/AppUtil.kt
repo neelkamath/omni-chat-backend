@@ -337,7 +337,7 @@ private object GroupChatTitleSerializer : JsonSerializer<GroupChatTitle>() {
     override fun serialize(
         groupChatTitle: GroupChatTitle,
         generator: JsonGenerator,
-        provider: SerializerProvider
+        provider: SerializerProvider,
     ): Unit = generator.writeString(groupChatTitle.value)
 }
 
@@ -350,7 +350,7 @@ private object GroupChatDescriptionSerializer : JsonSerializer<GroupChatDescript
     override fun serialize(
         groupChatDescription: GroupChatDescription,
         generator: JsonGenerator,
-        provider: SerializerProvider
+        provider: SerializerProvider,
     ): Unit = generator.writeString(groupChatDescription.value)
 }
 
@@ -387,7 +387,7 @@ private object UuidSerializer : JsonSerializer<UUID>() {
 /** Convenience function for [ObjectMapper.registerModule]. Registers the [T]'s [serializer] and [deserializer]. */
 private inline fun <reified T : Any> ObjectMapper.register(
     deserializer: JsonDeserializer<T>,
-    serializer: JsonSerializer<T>? = null
+    serializer: JsonSerializer<T>? = null,
 ): ObjectMapper {
     val module = SimpleModule()
     module.addDeserializer(T::class.java, deserializer)

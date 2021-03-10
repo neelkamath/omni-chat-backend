@@ -21,7 +21,7 @@ object MessageStatuses : Table() {
         name = "status",
         sql = "message_status",
         fromDb = { MessageStatus.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("message_status", it) }
+        toDb = { PostgresEnum("message_status", it) },
     )
 
     /** The user recording the [status]. */
@@ -49,14 +49,14 @@ object MessageStatuses : Table() {
                 """
                 The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted
                 the chat.
-                """.trimIndent()
+                """.trimIndent(),
             )
         if (Messages.readMessage(userId, messageId).sender.id == userId)
             throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
         if (exists(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
             throw IllegalArgumentException(
-                "The message (ID: $messageId) has already been $text the user (ID: $userId)."
+                "The message (ID: $messageId) has already been $text the user (ID: $userId).",
             )
         }
         if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERED))

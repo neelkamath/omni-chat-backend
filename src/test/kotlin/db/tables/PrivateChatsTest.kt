@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.ChatEdges
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.linkedHashSetOf
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
@@ -97,8 +98,8 @@ class PrivateChatsTest {
                 MessageEdge(Messages.readMessage(user1Id, messageId), cursor = messageId)
             }
             Messages.create(user1Id, chat3Id, MessageText("bye"))
-            val chat1Edges = ChatEdges(chat1Id, setOf(message1) as LinkedHashSet)
-            val chat2Edges = ChatEdges(chat2Id, setOf(message2) as LinkedHashSet)
+            val chat1Edges = ChatEdges(chat1Id, linkedHashSetOf(message1))
+            val chat2Edges = ChatEdges(chat2Id, linkedHashSetOf(message2))
             assertEquals(setOf(chat1Edges, chat2Edges), PrivateChats.queryUserChatEdges(user1Id, queryText))
         }
     }
@@ -115,13 +116,13 @@ class PrivateChatsTest {
                     Username("vader"),
                     Password("p"),
                     emailAddress = "vader@example.com",
-                    firstName = Name("Tommy")
+                    firstName = Name("Tommy"),
                 ),
                 AccountInput(
                     Username("leia"),
                     Password("p"),
                     emailAddress = "leia@example.com",
-                    lastName = Name("Tomas")
+                    lastName = Name("Tomas"),
                 ),
                 AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com")
             ).map {

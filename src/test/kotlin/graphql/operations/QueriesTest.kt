@@ -1,15 +1,12 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.buildTokenSet
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -84,7 +81,7 @@ private fun operateSearchPublicChats(
 fun searchPublicChats(
     query: String,
     usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null
+    messagesPagination: BackwardPagination? = null,
 ): List<GroupChat> {
     val data =
         operateSearchPublicChats(query, usersPagination, messagesPagination).data!!["searchPublicChats"] as List<*>
@@ -109,8 +106,8 @@ private fun operateReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagin
         mapOf(
             "inviteCode" to inviteCode.toString(),
             "groupChatInfo_users_first" to usersPagination?.first,
-            "groupChatInfo_users_after" to usersPagination?.after?.toString()
-        )
+            "groupChatInfo_users_after" to usersPagination?.after?.toString(),
+        ),
     )
 
 fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
@@ -188,7 +185,7 @@ private fun operateReadChats(
     userId: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     READ_CHATS_QUERY,
     mapOf(
@@ -197,16 +194,16 @@ private fun operateReadChats(
         "groupChat_users_first" to usersPagination?.first,
         "groupChat_users_after" to usersPagination?.after?.toString(),
         "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
+        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString(),
     ),
-    userId
+    userId,
 )
 
 fun readChats(
     userId: Int,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): List<Chat> {
     val chats = operateReadChats(
         userId,
@@ -239,7 +236,7 @@ private fun operateReadChat(
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     READ_CHAT_QUERY,
     mapOf(
@@ -249,9 +246,9 @@ private fun operateReadChat(
         "groupChat_users_first" to usersPagination?.first,
         "groupChat_users_after" to usersPagination?.after?.toString(),
         "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
+        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString(),
     ),
-    userId
+    userId,
 )
 
 fun readChat(
@@ -259,14 +256,14 @@ fun readChat(
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): Chat {
     val data = operateReadChat(
         id,
         privateChatMessagesPagination,
         usersPagination,
         groupChatMessagesPagination,
-        userId
+        userId,
     ).data!!["readChat"] as Map<*, *>
     return testingObjectMapper.convertValue(data)
 }
@@ -276,13 +273,13 @@ fun errReadChat(
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): String = operateReadChat(
     id,
     privateChatMessagesPagination,
     usersPagination,
     groupChatMessagesPagination,
-    userId
+    userId,
 ).errors!![0].message
 
 private const val READ_CONTACTS_QUERY = """
@@ -297,7 +294,7 @@ private fun operateReadContacts(userId: Int, pagination: ForwardPagination? = nu
     executeGraphQlViaEngine(
         READ_CONTACTS_QUERY,
         mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
-        userId
+        userId,
     )
 
 fun readContacts(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
@@ -360,7 +357,7 @@ private fun operateSearchChatMessages(
         "last" to pagination?.last,
         "before" to pagination?.before?.toString(),
     ),
-    userId
+    userId,
 )
 
 fun searchChatMessages(
@@ -377,7 +374,7 @@ fun errSearchChatMessages(
     chatId: Int,
     query: String,
     pagination: BackwardPagination? = null,
-    userId: Int? = null
+    userId: Int? = null,
 ): String = operateSearchChatMessages(chatId, query, pagination, userId).errors!![0].message
 
 private const val SEARCH_CHATS_QUERY = """
@@ -402,7 +399,7 @@ private fun operateSearchChats(
     query: String,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_CHATS_QUERY,
     mapOf(
@@ -414,7 +411,7 @@ private fun operateSearchChats(
         "groupChat_messages_last" to groupChatMessagesPagination?.last,
         "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
     ),
-    userId = userId
+    userId,
 )
 
 fun searchChats(
@@ -422,7 +419,7 @@ fun searchChats(
     query: String,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): List<Chat> {
     val chats = operateSearchChats(
         userId,
@@ -445,11 +442,11 @@ private const val SEARCH_CONTACTS_QUERY = """
 private fun operateSearchContacts(
     userId: Int,
     query: String,
-    pagination: ForwardPagination? = null
+    pagination: ForwardPagination? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_CONTACTS_QUERY,
     mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
-    userId
+    userId,
 )
 
 fun searchContacts(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
@@ -481,7 +478,7 @@ private fun operateSearchMessages(
     chatMessagesPagination: BackwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     SEARCH_MESSAGES_QUERY,
     mapOf(
@@ -495,7 +492,7 @@ private fun operateSearchMessages(
         "groupChat_messages_last" to groupChatMessagesPagination?.last,
         "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
     ),
-    userId
+    userId,
 )
 
 fun searchMessages(
@@ -504,7 +501,7 @@ fun searchMessages(
     chatMessagesPagination: BackwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null
+    groupChatMessagesPagination: BackwardPagination? = null,
 ): List<ChatMessages> {
     val messages = operateSearchMessages(
         userId,
@@ -512,7 +509,7 @@ fun searchMessages(
         chatMessagesPagination,
         privateChatMessagesPagination,
         usersPagination,
-        groupChatMessagesPagination
+        groupChatMessagesPagination,
     ).data!!["searchMessages"] as List<*>
     return testingObjectMapper.convertValue(messages)
 }
@@ -570,7 +567,7 @@ class ChatMessagesDtoTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val message = MessageText("t")
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }.toSet() as LinkedHashSet
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId, message) }.toLinkedHashSet()
             return AdminMessages(adminId, message, messageIdList)
         }
 
@@ -582,7 +579,7 @@ class ChatMessagesDtoTest {
             val cursors = searchMessages(
                 adminId,
                 queryText.value,
-                chatMessagesPagination = BackwardPagination(last, before = messageIdList.elementAt(index))
+                chatMessagesPagination = BackwardPagination(last, before = messageIdList.elementAt(index)),
             ).flatMap { it.messages }.map { it.cursor }
             assertEquals(messageIdList.take(index).takeLast(last), cursors)
         }
@@ -887,7 +884,7 @@ class QueriesTest {
                 AccountInput(Username("john_doe"), Password("p"), emailAddress = "john.doe@example.com"),
                 AccountInput(Username("john_roger"), Password("p"), emailAddress = "john.roger@example.com"),
                 AccountInput(Username("nick_bostrom"), Password("p"), emailAddress = "nick.bostrom@example.com"),
-                AccountInput(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", Name("John"))
+                AccountInput(Username("iron_man"), Password("p"), emailAddress = "roger@example.com", Name("John")),
             ).map {
                 Users.create(it)
                 it.toAccount()
@@ -933,7 +930,7 @@ class QueriesTest {
             val accounts = listOf(
                 AccountInput(Username("iron_man"), Password("p"), "tony@example.com"),
                 AccountInput(Username("iron_fist"), Password("p"), "iron_fist@example.com"),
-                AccountInput(Username("hulk"), Password("p"), "bruce@example.com")
+                AccountInput(Username("hulk"), Password("p"), "bruce@example.com"),
             ).map {
                 Users.create(it)
                 it.toAccount()

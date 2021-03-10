@@ -525,37 +525,41 @@ class MessagesTest {
         @Test
         fun `There mustn't be messages before the first message`() {
             val (adminId, chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
+            val hasPreviousPage = Messages
+                .readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
                 .pageInfo
                 .hasPreviousPage
-                .let(::assertFalse)
+            assertFalse(hasPreviousPage)
         }
 
         @Test
         fun `There mustn't be messages after the last message`() {
             val (adminId, chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId), adminId)
+            val hasNextPage = Messages
+                .readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId), adminId)
                 .pageInfo
                 .hasNextPage
-                .let(::assertFalse)
+            assertFalse(hasNextPage)
         }
 
         @Test
         fun `There must be messages before the last message`() {
             val (adminId, chatId, _, lastMessageId) = createChat()
-            Messages.readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId), adminId)
+            val hasPreviousPage = Messages
+                .readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId), adminId)
                 .pageInfo
                 .hasPreviousPage
-                .let(::assertTrue)
+            assertTrue(hasPreviousPage)
         }
 
         @Test
         fun `There must be messages after the first message`() {
             val (adminId, chatId, firstMessageId) = createChat()
-            Messages.readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
+            val hasNextPage = Messages
+                .readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
                 .pageInfo
                 .hasNextPage
-                .let(::assertTrue)
+            assertTrue(hasNextPage)
         }
     }
 

@@ -24,7 +24,7 @@ object GroupChats : Table() {
         name = "publicity",
         sql = "group_chat_publicity",
         fromDb = { GroupChatPublicity.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("group_chat_publicity", it) }
+        toDb = { PostgresEnum("group_chat_publicity", it) },
     )
     private val inviteCode: Column<UUID> =
         uuid("invite_code").uniqueIndex().defaultExpression(CustomFunction("gen_random_uuid", UUIDColumnType()))
@@ -66,7 +66,7 @@ object GroupChats : Table() {
         chatId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null,
-        userId: Int? = null
+        userId: Int? = null,
     ): GroupChat {
         val row = transaction {
             select { GroupChats.id eq chatId }.first()
@@ -127,7 +127,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, description = description),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -174,7 +174,7 @@ object GroupChats : Table() {
         userId: Int,
         query: String,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
+        messagesPagination: BackwardPagination? = null,
     ): Set<GroupChat> = transaction {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
             .map { buildGroupChat(it, usersPagination, messagesPagination, userId) }
@@ -185,7 +185,7 @@ object GroupChats : Table() {
     fun searchPublicChats(
         query: String,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
+        messagesPagination: BackwardPagination? = null,
     ): Set<GroupChat> = transaction {
         select { (publicity eq GroupChatPublicity.PUBLIC) and (title iLike query) }
             .map { buildGroupChat(it, usersPagination, messagesPagination) }
@@ -199,7 +199,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, isBroadcast = isBroadcast),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -216,7 +216,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, publicity = publicity),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -225,7 +225,7 @@ object GroupChats : Table() {
         row: ResultRow,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null,
-        userId: Int? = null
+        userId: Int? = null,
     ): GroupChat = GroupChat(
         row[id],
         GroupChatUsers.readAdminIdList(row[id]).toList(),

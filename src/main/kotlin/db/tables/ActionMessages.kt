@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.ActionableMessage
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.TriggeredAction
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.deleteWhere
@@ -26,7 +27,7 @@ object ActionMessages : IntIdTable() {
                 it[text] = message.text.value
             }.value
         }
-        ActionMessageActions.create(actionMessageId, message.actions.toSet() as LinkedHashSet)
+        ActionMessageActions.create(actionMessageId, message.actions.toLinkedHashSet())
     }
 
     fun exists(messageId: Int): Boolean = transaction {

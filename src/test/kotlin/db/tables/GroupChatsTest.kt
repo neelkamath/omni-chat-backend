@@ -7,6 +7,7 @@ import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.groupChatsNotifier
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.linkedHashSetOf
 import com.neelkamath.omniChat.readPic
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -142,8 +143,8 @@ class GroupChatsTest {
                 MessageEdge(Messages.readMessage(adminId, messageId), cursor = messageId)
             }
             Messages.create(adminId, chat3Id, MessageText("bye"))
-            val chat1Edges = ChatEdges(chat1Id, setOf(message1) as LinkedHashSet)
-            val chat2Edges = ChatEdges(chat2Id, setOf(message2) as LinkedHashSet)
+            val chat1Edges = ChatEdges(chat1Id, linkedHashSetOf(message1))
+            val chat2Edges = ChatEdges(chat2Id, linkedHashSetOf(message2))
             assertEquals(setOf(chat1Edges, chat2Edges), GroupChats.queryUserChatEdges(adminId, queryText))
         }
     }

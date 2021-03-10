@@ -246,8 +246,38 @@ const val POLL_MESSAGE_FRAGMENT = """
     }
 """
 
+const val ACTIONABLE_MESSAGE_FRAGMENT = """
+    ... on ActionableMessage {
+        __typename
+        text
+        actions
+    }
+"""
+
+const val ACTION_MESSAGE_FRAGMENT = """
+    ... on ActionMessage {
+        __typename
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+        hasStar
+        message {
+            $ACTIONABLE_MESSAGE_FRAGMENT
+        }
+    }
+"""
+
 const val MESSAGE_FRAGMENT = """
     $TEXT_MESSAGE_FRAGMENT
+    $ACTION_MESSAGE_FRAGMENT
     $AUDIO_MESSAGE_FRAGMENT
     $GROUP_CHAT_INVITE_MESSAGE_FRAGMENT
     $DOC_MESSAGE_FRAGMENT
@@ -317,11 +347,11 @@ const val PRIVATE_CHAT_FRAGMENT = """
     ... on PrivateChat {
         __typename
         id
-        user {
-            $ACCOUNT_FRAGMENT
-        }
         messages(last: ${"$"}privateChat_messages_last, before: ${"$"}privateChat_messages_before) {
             $MESSAGES_CONNECTION_FRAGMENT
+        }
+        user {
+            $ACCOUNT_FRAGMENT
         }
     }
 """
@@ -362,7 +392,7 @@ const val NEW_CONTACT_FRAGMENT = """
 const val UPDATED_ACCOUNT_FRAGMENT = """
     ... on UpdatedAccount {
         __typename
-        userId
+        id
         username
         emailAddress
         firstName
@@ -510,8 +540,30 @@ const val STARRED_POLL_MESSAGE_FRAGMENT = """
     }
 """
 
+const val STARRED_ACTION_MESSAGE_FRAGMENT = """
+    ... on StarredActionMessage {
+        __typename
+        chatId
+        messageId
+        sender {
+            $ACCOUNT_FRAGMENT
+        }
+        dateTimes {
+            $MESSAGE_DATE_TIMES_FRAGMENT
+        }
+        context {
+            $MESSAGE_CONTEXT_FRAGMENT
+        }
+        isForwarded
+        message {
+            $ACTIONABLE_MESSAGE_FRAGMENT
+        }
+    }
+"""
+
 const val STARRED_MESSAGE_FRAGMENT = """
     $STARRED_TEXT_MESSAGE_FRAGMENT
+    $STARRED_ACTION_MESSAGE_FRAGMENT
     $STARRED_PIC_MESSAGE_FRAGMENT
     $STARRED_AUDIO_MESSAGE_FRAGMENT
     $STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT
@@ -520,9 +572,36 @@ const val STARRED_MESSAGE_FRAGMENT = """
     $STARRED_POLL_MESSAGE_FRAGMENT
 """
 
+const val UPDATED_PROFILE_PIC_FRAGMENT = """
+    ... on UpdatedProfilePic {
+        __typename
+        id
+    }
+"""
+
+const val BLOCKED_ACCOUNT_FRAGMENT = """
+    ... on BlockedAccount {
+        id
+        username
+        emailAddress
+        firstName
+        lastName
+        bio
+    }
+"""
+
+const val UNBLOCKED_ACCOUNT_FRAGMENT = """
+    ... on UnblockedAccount {
+        id
+    }
+"""
+
 const val ACCOUNTS_SUBSCRIPTION_FRAGMENT = """
     $CREATED_SUBSCRIPTION_FRAGMENT
     $NEW_CONTACT_FRAGMENT
     $UPDATED_ACCOUNT_FRAGMENT
+    $UPDATED_PROFILE_PIC_FRAGMENT
     $DELETED_CONTACT_FRAGMENT
+    $BLOCKED_ACCOUNT_FRAGMENT
+    $UNBLOCKED_ACCOUNT_FRAGMENT
 """

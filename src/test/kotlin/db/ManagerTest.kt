@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.ExitedUser
+import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -85,7 +86,7 @@ class DbTest {
         private fun createAccountEdges(count: Int = 3): LinkedHashSet<AccountEdge> = createVerifiedUsers(count)
             .zip(Users.read())
             .map { (user, cursor) -> AccountEdge(user.info, cursor) }
-            .toSet() as LinkedHashSet
+            .toLinkedHashSet()
 
         @Test
         fun `Every user must be retrieved if neither cursor nor limit get supplied`() {
@@ -102,7 +103,7 @@ class DbTest {
             val first = 3
             assertEquals(
                 edges.toList().subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges
+                AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges,
             )
         }
 

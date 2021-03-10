@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.*
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -34,7 +35,7 @@ object Messages : IntIdTable() {
         name = "type",
         sql = "message_type",
         fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("message_type", it) }
+        toDb = { PostgresEnum("message_type", it) },
     )
 
     /** Whether this message was in reply to a particular message. */
@@ -59,7 +60,7 @@ object Messages : IntIdTable() {
         START,
 
         /** Last message's cursor. */
-        END
+        END,
     }
 
     /** Whether messages exist before or after a particular point in time. */
@@ -75,7 +76,7 @@ object Messages : IntIdTable() {
             chatId,
             usersPagination = ForwardPagination(first = 0),
             messagesPagination = BackwardPagination(last = 0),
-            userId = userId
+            userId = userId,
         ).isBroadcast
         return isBroadcast && !GroupChatUsers.isAdmin(userId, chatId)
     }
@@ -187,7 +188,7 @@ object Messages : IntIdTable() {
             throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
         if (contextMessageId != null && contextMessageId !in readIdList(chatId))
             throw IllegalArgumentException(
-                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId).",
             )
         val row = transaction {
             insert {
@@ -268,7 +269,7 @@ object Messages : IntIdTable() {
         chatId: Int,
         userId: Int,
         query: String,
-        pagination: BackwardPagination? = null
+        pagination: BackwardPagination? = null,
     ): LinkedHashSet<MessageEdge> = search(readPrivateChat(userId, chatId, pagination), query)
 
     /**
@@ -297,7 +298,7 @@ object Messages : IntIdTable() {
                 else -> throw IllegalArgumentException("${edge.node} didn't match a concrete class.")
             }
         }
-        .toSet() as LinkedHashSet
+        .toLinkedHashSet()
 
     /**
      * Returns the [chatId]'s [MessageEdge]s (chronologically ordered) which haven't been deleted (such as through
@@ -345,13 +346,13 @@ object Messages : IntIdTable() {
                 .let { if (last == null) it else it.limit(last) }
                 .reversed()
                 .map { MessageEdge(buildMessage(it, userId), cursor = it[Messages.id].value) }
-                .toSet() as LinkedHashSet
+                .toLinkedHashSet()
         }
     }
 
     /** The message IDs in the [chatId] in order of creation. */
     fun readIdList(chatId: Int): LinkedHashSet<Int> = transaction {
-        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }.toSet() as LinkedHashSet
+        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
     }
 
     /** Returns a concrete class for the [messageId] as seen by the [userId]. */
@@ -533,7 +534,7 @@ object Messages : IntIdTable() {
         hasNextPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.AFTER, filter),
         hasPreviousPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.BEFORE, filter),
         startCursor = readCursor(chatId, CursorType.START, filter),
-        endCursor = readCursor(chatId, CursorType.END, filter)
+        endCursor = readCursor(chatId, CursorType.END, filter),
     )
 
     /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.AFTER] the [messageId]. */

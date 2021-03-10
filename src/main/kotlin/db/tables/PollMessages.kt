@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.deleteWhere
@@ -24,7 +25,7 @@ object PollMessages : IntIdTable() {
                 it[title] = poll.title.value
             }.value
         }
-        PollOptions.create(pollId, poll.options.toSet() as LinkedHashSet)
+        PollOptions.create(pollId, poll.options.toLinkedHashSet())
     }
 
     fun exists(messageId: Int): Boolean = transaction {

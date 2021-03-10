@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollOption
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -26,7 +27,7 @@ object PollOptions : IntIdTable() {
                 val votes = PollVotes.read(it[PollOptions.id].value)
                 PollOption(MessageText(it[option]), votes.toList())
             }
-            .toSet() as LinkedHashSet
+            .toLinkedHashSet()
     }
 
     /** Returns the option ID of the [pollId]'s [option]. */

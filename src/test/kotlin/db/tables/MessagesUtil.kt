@@ -10,7 +10,7 @@ fun Messages.create(
     chatId: Int,
     text: MessageText = MessageText("t"),
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Unit = createTextMessage(userId, chatId, text, contextMessageId, isForwarded)
 
 /** Sends the [message] in the [chatId] from the [userId], and returns the message's ID. */
@@ -19,7 +19,7 @@ fun Messages.message(
     chatId: Int,
     message: MessageText = MessageText("t"),
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Int {
     createTextMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()
@@ -30,7 +30,7 @@ fun Messages.message(
     chatId: Int,
     message: Audio,
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Int {
     createAudioMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()
@@ -41,7 +41,7 @@ fun Messages.message(
     chatId: Int,
     message: CaptionedPic,
     contextMessageId: Int? = null,
-    isForwarded: Boolean = false
+    isForwarded: Boolean = false,
 ): Int {
     createPicMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()

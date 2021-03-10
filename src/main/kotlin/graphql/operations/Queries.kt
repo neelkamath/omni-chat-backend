@@ -43,7 +43,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
             id,
             usersPagination = ForwardPagination(first = 0),
             messagesPagination = BackwardPagination(last = 0),
-            userId = userId
+            userId = userId,
         )
         title = chat.title
         description = chat.description
@@ -259,6 +259,6 @@ fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
     return GroupChats.searchPublicChats(
         query,
         usersPagination = ForwardPagination(first = 0),
-        messagesPagination = BackwardPagination(last = 0)
+        messagesPagination = BackwardPagination(last = 0),
     ).map { GroupChatDto(it.id) }
 }

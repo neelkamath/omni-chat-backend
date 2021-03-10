@@ -186,6 +186,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Query`
     - `readAccount`
     - `readOnlineStatuses`
+    - `readTypingStatuses`
     - `searchUsers`
 - `Subscription`
     - `subscribeToOnlineStatuses`
@@ -197,7 +198,6 @@ Since there are many operations, we've categorized each of them below. The same 
 ### Blocked Users
 
 - `Query`
-    - `isBlocked`
     - `readBlockedUsers`
 - `Mutation`
     - `blockUser`
@@ -210,7 +210,6 @@ Since there are many operations, we've categorized each of them below. The same 
 ### Contacts
 
 - `Query`
-    - `isContact`
     - `readContacts`
     - `searchContacts`
     - `readOnlineStatuses`
