@@ -115,7 +115,7 @@ const val TEXT_MESSAGE_FRAGMENT = """
         }
         isForwarded
         hasStar
-        message
+        textMessage
     }
 """
 
@@ -269,7 +269,7 @@ const val ACTION_MESSAGE_FRAGMENT = """
         }
         isForwarded
         hasStar
-        message {
+        actionableMessage {
             $ACTIONABLE_MESSAGE_FRAGMENT
         }
     }
@@ -423,7 +423,7 @@ const val STARRED_TEXT_MESSAGE_FRAGMENT = """
             $MESSAGE_CONTEXT_FRAGMENT
         }
         isForwarded
-        message
+        textMessage
     }
 """
 
@@ -555,7 +555,7 @@ const val STARRED_ACTION_MESSAGE_FRAGMENT = """
             $MESSAGE_CONTEXT_FRAGMENT
         }
         isForwarded
-        message {
+        actionableMessage {
             $ACTIONABLE_MESSAGE_FRAGMENT
         }
     }
@@ -581,6 +581,7 @@ const val UPDATED_PROFILE_PIC_FRAGMENT = """
 
 const val BLOCKED_ACCOUNT_FRAGMENT = """
     ... on BlockedAccount {
+        __typename
         id
         username
         emailAddress
@@ -592,6 +593,7 @@ const val BLOCKED_ACCOUNT_FRAGMENT = """
 
 const val UNBLOCKED_ACCOUNT_FRAGMENT = """
     ... on UnblockedAccount {
+        __typename
         id
     }
 """

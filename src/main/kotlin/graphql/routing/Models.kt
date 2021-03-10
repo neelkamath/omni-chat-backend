@@ -526,7 +526,7 @@ data class TextMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
-    val message: MessageText,
+    val textMessage: MessageText,
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
@@ -551,7 +551,7 @@ data class ActionMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
-    val message: ActionableMessage,
+    val actionableMessage: ActionableMessage,
 ) : BareMessage, Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
@@ -745,7 +745,7 @@ data class StarredTextMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: MessageText,
+    val textMessage: MessageText,
 ) : StarredMessage, BareChatMessage, BareMessage
 
 data class StarredActionMessage(
@@ -755,7 +755,7 @@ data class StarredActionMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: ActionableMessage,
+    val actionableMessage: ActionableMessage,
 ) : StarredMessage, BareChatMessage, BareMessage
 
 data class StarredPicMessage(
@@ -850,7 +850,7 @@ data class NewTextMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: MessageText,
+    val textMessage: MessageText,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewActionMessage(
@@ -860,7 +860,7 @@ data class NewActionMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-    val message: ActionableMessage,
+    val actionableMessage: ActionableMessage,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
 data class NewPicMessage(

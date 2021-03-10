@@ -282,7 +282,7 @@ object Messages : IntIdTable() {
     private fun search(edges: LinkedHashSet<MessageEdge>, query: String): LinkedHashSet<MessageEdge> = edges
         .filter { edge ->
             when (edge.node) {
-                is TextMessage -> edge.node.message.value.contains(query, ignoreCase = true)
+                is TextMessage -> edge.node.textMessage.value.contains(query, ignoreCase = true)
                 is ActionMessage -> {
                     val actionableMessage = ActionMessages.read(edge.node.messageId)
                     actionableMessage.text.value.contains(query, ignoreCase = true) ||

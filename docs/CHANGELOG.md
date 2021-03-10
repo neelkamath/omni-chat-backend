@@ -38,6 +38,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedGroupChatInviteMessage` `type`
 - `UpdatedDocMessage` `type`
 - `UpdatedVideoMessage` `type`
+- `TextMessage` `type`
+- `ActionMessage` `type`
+- `NewTextMessage` `type`
+- `NewActionMessage` `type`
+- `StarredTextMessage` `type`
+- `StarredActionMessage` `type`
 - `Query.searchChatMessages` now returns messages in chronological order.
 - `Query.searchMessages` now returns messages in chronological order.
 

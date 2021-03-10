@@ -585,14 +585,12 @@ class ChatMessagesDtoTest {
         }
 
         @Test
-        fun `Messages must paginate using a cursor from a deleted message as if the message still exists`() {
+        fun `Messages must paginate using a cursor from a deleted message as if the message still exists`(): Unit =
             testPagination(mustDeleteMessage = true)
-        }
 
         @Test
-        fun `Only the messages specified by the cursor and limit must be retrieved`() {
+        fun `Only the messages specified by the cursor and limit must be retrieved`(): Unit =
             testPagination(mustDeleteMessage = false)
-        }
 
         @Test
         fun `If neither cursor nor limit are supplied, every message must be retrieved`() {
