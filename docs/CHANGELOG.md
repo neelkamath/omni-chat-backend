@@ -14,7 +14,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedProfilePic` `type`
 - `UpdatedGroupChatPic` `type`
 
-### Updated
+### Changed
 
 - `Query.isBlocked`
 - `Query.isContact`
@@ -66,7 +66,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.setOnline`
 - `Mutation.setBroadcast`
 
-### Updated
+### Changed
 
 - `Mutation.createStatus`
 - `Mutation.addGroupChatUsers`
@@ -103,13 +103,13 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.13.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.13.0) - 2021-01-31
 
-### Updated
+### Changed
 
 - `Mutation.createPrivateChat`
 
 ## [0.12.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.12.0) - 2021-01-30
 
-### Updated
+### Changed
 
 - `BlockedAccount` `type`
 - `UnblockedAccount` `type`
@@ -138,7 +138,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `BlockedAccount` `type`
 - `UnblockedAccount` `type`
 
-### Updated
+### Changed
 
 - `AccountsSubscription` `union`
 - `/profile-pic`
@@ -162,7 +162,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.8.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.1) - 2020-10-26
 
-### Updated
+### Changed
 
 - Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
 
@@ -172,7 +172,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.8.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.0) - 2020-10-18
 
-### Updated
+### Changed
 
 - Docker `message-broker` service's `image`
 - Renamed the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
@@ -204,7 +204,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.verifyEmailAddress`
 - `Mutation.emailPasswordResetCode`
 
-### Updated
+### Changed
 
 - `.env` file
 - `Mutation.updateAccount`
@@ -236,7 +236,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `NewActionMessage` `type`
 - `UpdatedActionMessage` `type`
 
-### Updated
+### Changed
 
 - `Query.searchChatMessages`
 - `Query.searchMessages`
@@ -250,7 +250,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.6.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.6.0) - 2020-08-31
 
-### Updated
+### Changed
 
 - Docker `auth` service's `image`
 - Docker `auth-db` service's `image`
@@ -274,7 +274,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `GroupChatsSubscription` `union`
 - `GroupChatPublicity` `enum`
 
-### Updated
+### Changed
 
 - `Mutation.createAccount`
 - `UpdatedOnlineStatus` `type`
@@ -326,7 +326,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `/video-message`
 - `/doc-message`
 
-### Updated
+### Changed
 
 - `TextMessage` `type`
 - `PicMessage` `type`
@@ -409,7 +409,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `/audio-message`
 - `/pic-message`
 
-### Updated
+### Changed
 
 - `MessagesSubscription` `union`
 - `Query.searchChatMessages`
@@ -434,7 +434,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.setBroadcastStatus`
 
-### Updated
+### Changed
 
 - `Mutation.createMessage`
 - `UpdatedGroupChat` `type`
@@ -453,7 +453,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `AccountInput` `input`
 - `GroupChatInput` `input`
 
-### Updated
+### Changed
 
 - `Mutation.createGroupChat`
 - `Mutation.createMessage`
