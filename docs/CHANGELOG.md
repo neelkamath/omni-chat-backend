@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## 0.17.0
+
+### Fixed
+
+- Fix `Mutation.deleteAccount`.
+
 ## [0.16.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.16.0) - 2021-03-10
 
 ### Added
@@ -14,10 +20,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `UpdatedProfilePic` `type`
 - `UpdatedGroupChatPic` `type`
 
-### Updated
+### Changed
 
-- `Query.isBlocked`
-- `Query.isContact`
 - `Mutation.blockUser`
 - `Mutation.unblockUser`
 - `Mutation.addGroupChatUsers`
@@ -25,7 +29,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.makeGroupChatAdmins`
 - `Mutation.deleteContacts`
 - `Mutation.createContacts`
-- `Subscription.subscribeToGroupChats` now sends back an `ExitedUser` if the user themselves left the chat.
+- Send back an `ExitedUser` over `Subscription.subscribeToGroupChats` if the user themselves left the chat.
 - `UpdatedAccount` `type`
 - `UpdatedGroupChat` `type`
 - `UpdatedOnlineStatus` `type`
@@ -44,8 +48,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `NewActionMessage` `type`
 - `StarredTextMessage` `type`
 - `StarredActionMessage` `type`
-- `Query.searchChatMessages` now returns messages in chronological order.
-- `Query.searchMessages` now returns messages in chronological order.
+- `GroupChatsSubscription` `union`
+- `AccountsSubscription` `union`
+- Return the messages from `Query.searchChatMessages` in chronological order.
+- Return the messages from `Query.searchMessages` in chronological order.
 
 ### Removed
 
@@ -54,8 +60,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- Fixed an issue where some notifications weren't sent back to clients over WebSockets.
-- Fixed `NewActionMessage` `type`, etc. not being supported in `Subscription`s.
+- Fix some notifications not being sent back to clients over WebSockets.
+- Fix `NewActionMessage` `type`, etc. not being supported in `Subscription`s.
 - `Query.searchChatMessages` works now.
 - `Query.searchMessages` works now.
 
@@ -66,7 +72,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.setOnline`
 - `Mutation.setBroadcast`
 
-### Updated
+### Changed
 
 - `Mutation.createStatus`
 - `Mutation.addGroupChatUsers`
@@ -103,13 +109,13 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.13.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.13.0) - 2021-01-31
 
-### Updated
+### Changed
 
 - `Mutation.createPrivateChat`
 
 ## [0.12.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.12.0) - 2021-01-30
 
-### Updated
+### Changed
 
 - `BlockedAccount` `type`
 - `UnblockedAccount` `type`
@@ -118,8 +124,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- `Subscription`s now send back the `__typename` for the `CreatedSubscription` `type`.
-- `Subscription.subscribeToAccounts` now sends back the `BlockedAccount` and `UnblockedAccount` `type`s.
+- Send back the `__typename` for the `CreatedSubscription` `type` for `Subscription`s.
+- Send back the `BlockedAccount` and `UnblockedAccount` `type`s in `Subscription.subscribeToAccounts`.
 
 ## [0.10.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.10.0) - 2021-01-29
 
@@ -138,7 +144,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `BlockedAccount` `type`
 - `UnblockedAccount` `type`
 
-### Updated
+### Changed
 
 - `AccountsSubscription` `union`
 - `/profile-pic`
@@ -152,31 +158,31 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- HTTP PATCH requests now work.
+- Fix HTTP PATCH requests.
 
 ## [0.8.2](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.2) - 2020-12-31
 
 ### Fixed
 
-- Fixed memory leaks.
+- Fix memory leaks.
 
 ## [0.8.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.1) - 2020-10-26
 
-### Updated
+### Changed
 
-- Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
+- Rename `DB_PASSWORD` to `POSTGRES_PASSWORD`.
 
 ### Fixed
 
-- The `docker-compose.yml` works.
+- Fix `docker-compose.yml`.
 
 ## [0.8.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.0) - 2020-10-18
 
-### Updated
+### Changed
 
 - Docker `message-broker` service's `image`
-- Renamed the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
-- The `/audio-message` endpoint now handles MP4 audio as well.
+- Rename the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
+- Handle MP4 audio on the `/audio-message` endpoint.
 
 ### Removed
 
@@ -185,9 +191,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
-- `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the connection opens as a text event.
-- Uploading files with capital letters in the file extension works now.
+- Return an error when `Mutation.emailEmailAddressVerification` is supplied a verified email address.
+- Fix file uploads with capital letters in the file extension.
+
+### Security
+
+- Send access tokens as a text event instead of in the URL for `Subscription`s.
 
 ## [0.7.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.7.1) - 2020-09-13
 
@@ -204,11 +213,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.verifyEmailAddress`
 - `Mutation.emailPasswordResetCode`
 
-### Updated
+### Changed
 
 - `.env` file
 - `Mutation.updateAccount`
-- `Mutation.sendEmailAddressVerification` renamed to `Mutation.emailEmailAddressVerification`
+- Rename `Mutation.sendEmailAddressVerification` to `Mutation.emailEmailAddressVerification`
 - `UpdatedAccount` `type`
 - `AccountData` `interface`
 - `Account` `type`
@@ -236,7 +245,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `NewActionMessage` `type`
 - `UpdatedActionMessage` `type`
 
-### Updated
+### Changed
 
 - `Query.searchChatMessages`
 - `Query.searchMessages`
@@ -245,12 +254,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- The example Docker Compose file now works for Windows users.
-- `Subscription`s no longer give back GraphQL documents with `null` `errors` keys.
+- Fix the example Docker Compose file for Windows users.
+- Don't give back `null` `errors` keys in GraphQL documents send back over `Subscription`s.
 
 ## [0.6.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.6.0) - 2020-08-31
 
-### Updated
+### Changed
 
 - Docker `auth` service's `image`
 - Docker `auth-db` service's `image`
@@ -274,7 +283,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `GroupChatsSubscription` `union`
 - `GroupChatPublicity` `enum`
 
-### Updated
+### Changed
 
 - `Mutation.createAccount`
 - `UpdatedOnlineStatus` `type`
@@ -326,7 +335,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `/video-message`
 - `/doc-message`
 
-### Updated
+### Changed
 
 - `TextMessage` `type`
 - `PicMessage` `type`
@@ -409,7 +418,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `/audio-message`
 - `/pic-message`
 
-### Updated
+### Changed
 
 - `MessagesSubscription` `union`
 - `Query.searchChatMessages`
@@ -434,7 +443,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.setBroadcastStatus`
 
-### Updated
+### Changed
 
 - `Mutation.createMessage`
 - `UpdatedGroupChat` `type`
@@ -453,7 +462,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `AccountInput` `input`
 - `GroupChatInput` `input`
 
-### Updated
+### Changed
 
 - `Mutation.createGroupChat`
 - `Mutation.createMessage`

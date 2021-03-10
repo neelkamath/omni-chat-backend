@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.db.deleteUser
 import com.neelkamath.omniChat.db.isUserInChat
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.parseArgument
@@ -152,7 +153,7 @@ fun createPrivateChat(env: DataFetchingEnvironment): Int {
 fun deleteAccount(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     if (!GroupChatUsers.canUserLeave(env.userId!!)) throw CannotDeleteAccountException
-    Users.delete(env.userId!!)
+    deleteUser(env.userId!!)
     return Placeholder
 }
 
