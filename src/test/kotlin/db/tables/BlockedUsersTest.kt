@@ -5,9 +5,9 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.BlockedAccount
 import com.neelkamath.omniChat.graphql.routing.UnblockedAccount
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -27,7 +27,7 @@ class BlockedUsersTest {
 
         @Test
         fun `The user mustn't be able to block themselves`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             BlockedUsers.create(userId, userId)
             assertEquals(0, BlockedUsers.count())
         }
@@ -43,7 +43,7 @@ class BlockedUsersTest {
         fun `Blocking the user must notify only the blocker`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             val (blockerSubscriber, blockedSubscriber) =
-                listOf(blockerId, blockedId).map { accountsNotifier.safelySubscribe(it) }
+                listOf(blockerId, blockedId).map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
             BlockedUsers.create(blockerId, blockedId)
             awaitBrokering()
             blockerSubscriber.assertValue(BlockedAccount.build(blockedId))
@@ -78,8 +78,9 @@ class BlockedUsersTest {
         fun `The user must be notified of the unblocked user`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             BlockedUsers.create(blockerId, blockedId)
+            awaitBrokering()
             val (blockerSubscriber, blockedSubscriber) =
-                listOf(blockerId, blockedId).map { accountsNotifier.safelySubscribe(it) }
+                listOf(blockerId, blockedId).map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
             BlockedUsers.delete(blockerId, blockedId)
             awaitBrokering()
             blockerSubscriber.assertValue(UnblockedAccount(blockedId))
@@ -89,7 +90,7 @@ class BlockedUsersTest {
         @Test
         fun `The user mustn't be notified when unblocking a user who wasn't blocked`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
-            val subscriber = accountsNotifier.safelySubscribe(blockerId)
+            val subscriber = accountsNotifier.subscribe(blockerId).subscribeWith(TestSubscriber())
             BlockedUsers.delete(blockerId, blockedId)
             awaitBrokering()
             subscriber.assertNoValues()

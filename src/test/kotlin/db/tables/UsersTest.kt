@@ -2,10 +2,12 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.readPic
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -19,7 +21,7 @@ class UsersTest {
         fun `Updating the user's online status to the current value mustn't cause notifications to be sent`() {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.info.id }
-                val subscriber = onlineStatusesNotifier.safelySubscribe(contactOwnerId)
+                val subscriber = onlineStatusesNotifier.subscribe(contactOwnerId).subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.read(contactId).isOnline)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -34,13 +36,15 @@ class UsersTest {
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                     listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
-                        .map { onlineStatusesNotifier.safelySubscribe(it) }
+                        .map { onlineStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 val status = Users.read(updaterId).isOnline.not()
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
                 listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, privateChatSharerSubscriber)
-                    .forEach { it.assertValue(UpdatedOnlineStatus(updaterId, status)) }
+                listOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach {
+                    val lastOnline = Users.read(updaterId).lastOnline
+                    it.assertValue(UpdatedOnlineStatus(updaterId, status, lastOnline))
+                }
             }
     }
 
@@ -65,32 +69,32 @@ class UsersTest {
     @Nested
     inner class Search {
         /** Creates users, and returns their IDs. */
-        private fun createUsers(): List<Int> = listOf(
+        private fun createUsers(): Set<Int> = setOf(
             AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
             AccountInput(Username("johndoe"), Password("p"), emailAddress = "john@example.com", Name("John")),
             AccountInput(Username("john.rogers"), Password("p"), emailAddress = "rogers@example.com"),
-            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John"))
+            AccountInput(Username("anonymous"), Password("p"), emailAddress = "anon@example.com", Name("John")),
         ).map {
             Users.create(it)
             Users.read(it.username).id
-        }
+        }.toSet()
 
         @Test
         fun `Users must be searched case-insensitively`() {
             val infoList = createUsers()
-            val search = { query: String, userIdList: List<Int> ->
-                assertEquals(userIdList, Users.search(query).edges.map { it.cursor })
+            val search = { query: String, userIdList: Set<Int> ->
+                assertEquals(userIdList, Users.search(query).edges.map { it.cursor }.toSet())
             }
-            search("tOnY", listOf(infoList[0]))
-            search("doe", listOf(infoList[1]))
-            search("john", listOf(infoList[1], infoList[2], infoList[3]))
+            search("tOnY", setOf(infoList.first()))
+            search("doe", setOf(infoList.elementAt(1)))
+            search("john", setOf(infoList.elementAt(1), infoList.elementAt(2), infoList.elementAt(3)))
         }
 
         @Test
         fun `Searching users mustn't include duplicate results`() {
             val userIdList = listOf(
                 AccountInput(Username("tony_stark"), Password("p"), emailAddress = "e"),
-                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony"))
+                AccountInput(Username("username"), Password("p"), "tony@example.com", Name("Tony")),
             ).map {
                 Users.create(it)
                 Users.read(it.username).id
@@ -103,7 +107,7 @@ class UsersTest {
     inner class Update {
         @Test
         fun `Updating an account must update only the specified fields`() {
-            val user = createVerifiedUsers(1)[0]
+            val user = createVerifiedUsers(1).first()
             val update = AccountUpdate(Username("updated"), firstName = Name("updated"))
             Users.update(user.info.id, update)
             with(Users.read(user.info.id)) {
@@ -142,7 +146,7 @@ class UsersTest {
     @Nested
     inner class UpdateEmailAddress {
         private fun assertEmailAddressUpdate(changeAddress: Boolean) {
-            val (userId, _, emailAddress) = createVerifiedUsers(1)[0].info
+            val (userId, _, emailAddress) = createVerifiedUsers(1).first().info
             val address = if (changeAddress) "updated address" else emailAddress
             Users.update(userId, AccountUpdate(emailAddress = address))
             assertNotEquals(changeAddress, Users.read(userId).hasVerifiedEmailAddress)
@@ -169,15 +173,27 @@ class UsersTest {
 
         @Test
         fun `An incorrect password mustn't be a valid login`() {
-            val username = createVerifiedUsers(1)[0].login.username
+            val username = createVerifiedUsers(1).first().login.username
             val login = Login(username, Password("incorrect"))
             assertFalse(Users.isValidLogin(login))
         }
 
         @Test
         fun `A valid login must be stated as such`() {
-            val login = createVerifiedUsers(1)[0].login
+            val login = createVerifiedUsers(1).first().login
             assertTrue(Users.isValidLogin(login))
+        }
+    }
+
+    @Nested
+    inner class UpdatePic {
+        @Test
+        fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
+            val userId = createVerifiedUsers(1).first().info.id
+            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            Users.updatePic(userId, readPic("76px×57px.jpg"))
+            awaitBrokering()
+            subscriber.assertValue(UpdatedProfilePic(userId))
         }
     }
 }

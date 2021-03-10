@@ -48,6 +48,13 @@ object TypingStatuses : Table() {
             ?.get(isTyping) ?: false
     }
 
+    /** Returns the statuses of users who are typing in the chat [idList] excluding the [userId]'s. */
+    fun readChats(idList: Collection<Int>, userId: Int): Set<TypingStatus> = transaction {
+        select { (chatId inList idList) and isTyping and (TypingStatuses.userId neq userId) }
+            .map { TypingStatus(it[chatId], it[TypingStatuses.userId], it[isTyping]) }
+            .toSet()
+    }
+
     /** Deletes every status created on the [chatId]. */
     fun deleteChat(chatId: Int): Unit = transaction {
         deleteWhere { TypingStatuses.chatId eq chatId }

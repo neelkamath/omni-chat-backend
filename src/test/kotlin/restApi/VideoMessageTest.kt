@@ -15,7 +15,7 @@ private fun postVideoMessage(
     accessToken: String,
     dummy: DummyFile,
     chatId: Int,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
         .filter { it.second != null }
@@ -29,7 +29,7 @@ class VideoMessageTest {
     inner class RouteVideoMessage {
         @Test
         fun `Using a capitalized file extension mustn't fail`() {
-            val admin = createVerifiedUsers(1)[0]
+            val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(listOf(admin.info.id))
             val dummy = DummyFile("video.MP4", bytes = 1)
             assertEquals(HttpStatusCode.NoContent, postVideoMessage(admin.accessToken, dummy, chatId).status())

@@ -142,7 +142,7 @@ object Users : IntIdTable() {
             it[lastOnline] = LocalDateTime.now()
         }
         val subscribers = Contacts.readOwners(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline), subscribers)
+        onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
     }
 
     /**
@@ -177,7 +177,7 @@ object Users : IntIdTable() {
                 update.bio?.let { statement[bio] = it.value }
             }
         }
-        negotiateUserUpdate(userId)
+        negotiateUserUpdate(userId, isProfilePic = false)
     }
 
     /** If the [emailAddress] differs from the [userId]'s current one, it'll be marked as unverified. */
@@ -198,7 +198,7 @@ object Users : IntIdTable() {
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        negotiateUserUpdate(userId)
+        negotiateUserUpdate(userId, isProfilePic = true)
     }
 
     /** Case-insensitively [query]s every user's username, first name, last name, and email address. */
@@ -213,7 +213,7 @@ object Users : IntIdTable() {
                 }
                 .map { AccountEdge(it.toAccount(), it[Users.id].value) }
         }
-        return AccountsConnection.build(users, pagination)
+        return AccountsConnection.build(users.toSet(), pagination)
     }
 
     /**

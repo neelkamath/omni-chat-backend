@@ -4,9 +4,9 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.PollInput
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -25,8 +25,9 @@ class PollMessagesTest {
                 val option1 = MessageText("option 1")
                 val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
                 val messageId = Messages.message(adminId, chatId, poll)
-                val (adminSubscriber, nonParticipantSubscriber) =
-                    listOf(adminId, nonParticipantId).map { messagesNotifier.safelySubscribe(it) }
+                awaitBrokering()
+                val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
+                    .map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 PollMessages.setVote(adminId, messageId, option1, vote = true)
                 awaitBrokering()
                 adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedPollMessage())
@@ -38,7 +39,7 @@ class PollMessagesTest {
     @Nested
     inner class HasOption {
         private fun assertOptionExistence(exists: Boolean) {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val existentOption = MessageText("option 1")
             val poll = PollInput(MessageText("Title"), listOf(existentOption, MessageText("option 2")))

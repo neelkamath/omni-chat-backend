@@ -22,22 +22,22 @@ class AppTest {
     inner class Application_Main {
         @Test
         fun `An access token must work for queries and mutations`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val token = buildTokenSet(userId).accessToken
             assertNotEquals(
                 HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status(),
             )
         }
 
         @Test
         fun `A token from an account with an unverified email address mustn't work for queries and mutation`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val token = buildTokenSet(userId).accessToken
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             assertEquals(
                 HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status()
+                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status(),
             )
         }
     }
@@ -54,13 +54,13 @@ class AppTest {
 class EncodingTest {
     @Test
     fun `A message must allow using emoji and multiple languages`() {
-        val adminId = createVerifiedUsers(1)[0].info.id
+        val adminId = createVerifiedUsers(1).first().info.id
         val chatId = GroupChats.create(listOf(adminId))
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         createTextMessage(adminId, chatId, message)
         assertEquals(
             message,
-            Messages.readGroupChat(chatId, userId = adminId)[0].node.messageId.let(TextMessages::read)
+            Messages.readGroupChat(chatId, userId = adminId).first().node.messageId.let(TextMessages::read),
         )
     }
 }
@@ -86,14 +86,14 @@ class SpecComplianceTest {
 
     @Test
     fun `The errors key mustn't be returned if there were no errors`() {
-        val login = createVerifiedUsers(1)[0].login
+        val login = createVerifiedUsers(1).first().login
         val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
         assertTrue("errors" !in keys)
     }
 
     @Test
     fun `null fields in the data key must be returned`() {
-        val admin = createVerifiedUsers(1)[0]
+        val admin = createVerifiedUsers(1).first()
         val chatId = GroupChats.create(listOf(admin.info.id))
         Messages.message(admin.info.id, chatId, MessageText("t"))
         val response = readGraphQlHttpResponse(
@@ -105,9 +105,9 @@ class SpecComplianceTest {
                 "groupChat_users_first" to null,
                 "groupChat_users_after" to null,
                 "groupChat_messages_last" to null,
-                "groupChat_messages_before" to null
+                "groupChat_messages_before" to null,
             ),
-            admin.accessToken
+            admin.accessToken,
         )["data"] as Map<*, *>
         val data = testingObjectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
         val messages = testingObjectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)

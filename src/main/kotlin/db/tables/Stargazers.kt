@@ -28,13 +28,13 @@ object Stargazers : Table() {
     }
 
     /** Returns the ID of every message the [userId] has starred. */
-    fun read(userId: Int): List<Int> = transaction {
-        select { Stargazers.userId eq userId }.map { it[messageId] }
+    fun read(userId: Int): Set<Int> = transaction {
+        select { Stargazers.userId eq userId }.map { it[messageId] }.toSet()
     }
 
     /** Returns the ID of every user who has starred the [messageId]. */
-    private fun readStargazers(messageId: Int): List<Int> = transaction {
-        select { Stargazers.messageId eq messageId }.map { it[userId] }
+    private fun readStargazers(messageId: Int): Set<Int> = transaction {
+        select { Stargazers.messageId eq messageId }.map { it[userId] }.toSet()
     }
 
     fun hasStar(userId: Int, messageId: Int): Boolean = transaction {
@@ -78,7 +78,7 @@ object Stargazers : Table() {
      *
      * @see [deleteStar]
      */
-    fun deleteStars(messageIdList: List<Int>): Unit = transaction {
+    fun deleteStars(messageIdList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
     }
 }

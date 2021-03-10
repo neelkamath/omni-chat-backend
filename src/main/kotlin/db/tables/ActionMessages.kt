@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.ActionableMessage
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.TriggeredAction
+import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.deleteWhere
@@ -26,7 +27,7 @@ object ActionMessages : IntIdTable() {
                 it[text] = message.text.value
             }.value
         }
-        ActionMessageActions.create(actionMessageId, message.actions)
+        ActionMessageActions.create(actionMessageId, message.actions.toLinkedHashSet())
     }
 
     fun exists(messageId: Int): Boolean = transaction {
@@ -54,16 +55,16 @@ object ActionMessages : IntIdTable() {
         val row = transaction {
             select { ActionMessages.messageId eq messageId }.first()
         }
-        val actions = ActionMessageActions.read(row[id].value)
+        val actions = ActionMessageActions.read(row[id].value).toList()
         return ActionableMessage(MessageText(row[text]), actions)
     }
 
     /** Returns the ID of every action message in the [messageIdList]. */
-    private fun readIdList(messageIdList: List<Int>): List<Int> = transaction {
-        select { messageId inList messageIdList }.map { it[ActionMessages.id].value }
+    private fun readIdList(messageIdList: Collection<Int>): Set<Int> = transaction {
+        select { messageId inList messageIdList }.map { it[ActionMessages.id].value }.toSet()
     }
 
-    fun delete(messageIdList: List<Int>) {
+    fun delete(messageIdList: Collection<Int>) {
         ActionMessageActions.delete(readIdList(messageIdList))
         transaction {
             deleteWhere { messageId inList messageIdList }

@@ -4,9 +4,9 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -23,8 +23,8 @@ class TypingStatusesTest {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
                 val chatId = PrivateChats.create(user1Id, user2Id)
-                val (user1Subscriber, user2Subscriber, user3Subscriber) =
-                    listOf(user1Id, user2Id, user3Id).map { typingStatusesNotifier.safelySubscribe(it) }
+                val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
+                    .map { typingStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 val isTyping = true
                 TypingStatuses.set(chatId, user1Id, isTyping)
                 awaitBrokering()
@@ -34,7 +34,7 @@ class TypingStatusesTest {
         }
 
         private fun assertSet(repetitions: Int) {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             repeat(repetitions) {
                 TypingStatuses.set(chatId, adminId, isTyping = true)
@@ -57,7 +57,7 @@ class TypingStatusesTest {
     inner class Read {
         @Test
         fun `The status must be read`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isTyping = true
             TypingStatuses.set(chatId, adminId, isTyping)
@@ -67,6 +67,20 @@ class TypingStatusesTest {
         @Test
         fun `false must be returned when reading a nonexistent status`() {
             assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
+        }
+    }
+
+    @Nested
+    inner class ReadChats {
+        @Test
+        fun `Only users who are typing must be returned excluding the user themselves`() {
+            val (adminId, participant1Id, participant2Id) = createVerifiedUsers(3).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
+            TypingStatuses.set(chatId, adminId, isTyping = true)
+            TypingStatuses.set(chatId, participant1Id, isTyping = true)
+            val expected = setOf(TypingStatus(chatId, participant1Id, isTyping = true))
+            val actual = TypingStatuses.readChats(setOf(chatId), adminId)
+            assertEquals(expected, actual)
         }
     }
 }

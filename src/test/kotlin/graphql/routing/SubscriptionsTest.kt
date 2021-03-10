@@ -1,8 +1,6 @@
 package com.neelkamath.omniChat.graphql.routing
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.buildTokenSet
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.tables.Contacts
 import com.neelkamath.omniChat.db.tables.Users
@@ -39,11 +37,11 @@ class SubscriptionsTest {
                 }
             """
             val operationName = "SubscribeToAccounts".takeIf { mustSupplyOperationName }
-            val token = createVerifiedUsers(1)[0].accessToken
+            val token = createVerifiedUsers(1).first().accessToken
             executeGraphQlSubscriptionViaWebSocket(
                 path = "accounts-subscription",
                 GraphQlRequest(query, operationName = operationName),
-                token
+                token,
             ) { incoming ->
                 if (mustSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
                 else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
@@ -62,13 +60,13 @@ class SubscriptionsTest {
 
         @Test
         fun `A token from an account with an unverified email address mustn't work`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val token = buildTokenSet(userId).accessToken
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
             executeGraphQlSubscriptionViaWebSocket(
                 path = "messages-subscription",
                 GraphQlRequest(subscribeToMessagesQuery),
-                token
+                token,
             ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
@@ -83,9 +81,9 @@ class SubscriptionsTest {
         """
         executeGraphQlSubscriptionViaWebSocket(
             path = "accounts-subscription",
-            request = GraphQlRequest(subscribeToAccountsQuery),
-            accessToken = accessToken,
-            callback = callback
+            GraphQlRequest(subscribeToAccountsQuery),
+            accessToken,
+            callback,
         )
     }
 
@@ -93,11 +91,12 @@ class SubscriptionsTest {
     inner class Subscribe {
         @Test
         fun `Recreating a subscription mustn't cause duplicate notifications from the previous connection`() {
-            val (owner, user) = createVerifiedUsers(2)
-            subscribeToAccounts(owner.accessToken) {}
-            subscribeToAccounts(owner.accessToken) { incoming ->
+            val (user, contact) = createVerifiedUsers(2)
+            subscribeToAccounts(user.accessToken) {}
+            subscribeToAccounts(user.accessToken) { incoming ->
+                awaitBrokering()
                 parseFrameData<CreatedSubscription>(incoming)
-                Contacts.create(owner.info.id, setOf(user.info.id))
+                Contacts.create(user.info.id, setOf(contact.info.id))
                 awaitBrokering()
                 assertNotNull(incoming.poll())
                 assertNull(incoming.poll())

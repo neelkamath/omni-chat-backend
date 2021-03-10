@@ -41,20 +41,6 @@ schema {
 
 type Query {
     """
-    Whether the user has blocked the `userId`. If the user doesn't exist, `false` will be returned.
-
-    An access token must be sent with this request.
-    """
-    isBlocked(userId: Int!): Boolean!
-
-    """
-    Whether the user has the `userId` in their contacts. If the user doesn't exist, `false` will be returned.
-
-    An access token must be sent with this request.
-    """
-    isContact(userId: Int!): Boolean!
-
-    """
     Returns the user's starred messages.
 
     An access token must be sent with this request.
@@ -76,8 +62,15 @@ type Query {
     readOnlineStatuses: [OnlineStatus!]!
 
     """
+    The statuses of users who are typing in a chat the user is in. The user's own status won't be returned.
+
+    An access token must be sent with this request.
+    """
+    readTypingStatuses: [TypingStatus!]!
+
+    """
     Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
-    message captions in the `chatId`.
+    message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
 
     Returned `errors[0].message`s could be `"INVALID_CHAT_ID"` (i.e., the chat isn't public, and the user isn't in the
     chat).
@@ -89,7 +82,8 @@ type Query {
     """
     Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
     and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
-    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results.
+    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's messages
+    are chronologically ordered.
 
     An access token must be sent with this request.
     """
@@ -174,20 +168,20 @@ type Query {
 
 type Mutation {
     """
-    Blocks the `userId`. Does nothing if the user has already been blocked, or the user is blocking themselves.
+    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user ID doesn't exist).
 
     An access token must be sent with this request.
     """
-    blockUser(userId: Int!): Placeholder!
+    blockUser(id: Int!): Placeholder!
 
     """
-    Unblocks the `userId`. Does nothing if the user wasn't blocked.
+    Unblocks the `id`. Does nothing if the user wasn't blocked.
 
     An access token must be sent with this request.
     """
-    unblockUser(userId: Int!): Placeholder!
+    unblockUser(id: Int!): Placeholder!
 
     """
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private
@@ -336,30 +330,36 @@ type Mutation {
     """An access token must be sent with this request. Only an admin can perform this operation."""
     updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
 
-    """An access token must be sent with this request. Only an admin can perform this operation."""
-    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    """
+    Nonexistent users, and users who are already in the chat will be ignored.
+
+    An access token must be sent with this request. Only an admin can perform this operation.
+    """
+    addGroupChatUsers(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
-    Messages sent by, and polls voted on, by removed users will remain.
+    Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
+    chat will be ignored.
 
     Returned `errors[0].message`s could be `"INVALID_USER_ID"` (i.e., the user attempted to leave the chat but they
     must first appoint another user as an admin because they're the last admin of an otherwise nonempty chat).
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    removeGroupChatUsers(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
-    Makes every user in the `userIdList` an admin of the `chatId`. Users who either aren't in the chat, or are already
-    admins, are ignored.
+    Makes every user in the `idList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
+    users who are already admins, are ignored.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    makeGroupChatAdmins(chatId: Int!, idList: [Int!]!): Placeholder!
 
     """
-    Creates a group chat. The `chat` parameter's `GroupChatInput.userIdList` and `GroupChatInput.adminIdList` needn't
-    contain the user's own ID, as it is implicitly included. The created chat's ID is returned.
+    Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
+    `GroupChatInput.adminIdList` needn't contain the user's own ID, as it is implicitly included. The created chat's ID
+    is returned.
 
     Returned `errors[0].message`s could be `"INVALID_ADMIN_ID"` (i.e., the `chat` parameter's
     `GroupChatInput.adminIdList` wasn't a subset of the `GroupChatInput.userIdList`).
@@ -518,14 +518,14 @@ type Mutation {
 
     An access token must be sent with this request.
     """
-    deleteContacts(userIdList: [Int!]!): Placeholder!
+    deleteContacts(idList: [Int!]!): Placeholder!
 
     """
     Saves contacts. Previously saved contacts, nonexistent users, and the user's own ID will be ignored.
 
     An access token must be sent with this request.
     """
-    createContacts(userIdList: [Int!]!): Placeholder!
+    createContacts(idList: [Int!]!): Placeholder!
 }
 
 type Subscription {
@@ -600,8 +600,6 @@ union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
 """
-When the account's profile pic gets updated, an `UpdatedAccount` will be sent.
-
 A user will be automatically unblocked when they delete their account. In this scenario, an `UnblockedAccount` will not
 be sent because it's a rare event, and the client would've had to deal with the user viewing a user who's account was
 just deleted.
@@ -610,18 +608,27 @@ union AccountsSubscription =
     | CreatedSubscription
     | NewContact
     | UpdatedAccount
+    | UpdatedProfilePic
     | DeletedContact
     | BlockedAccount
     | UnblockedAccount
 
+"""The `id` of the user who updated their profile pic."""
+type UpdatedProfilePic {
+    id: Int!
+}
+
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-When a group chat's pic gets updated, an `UpdatedGroupChat` will be sent.
-
-If the subscriber leaves the chat, they won't receive their own `ExitedUser` message.
+If the subscriber leaves the chat, they will receive their own `ExitedUser` message.
 """
-union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChat | ExitedUser
+union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUser
+
+"""The `id` of the group chat whose pic was updated."""
+type UpdatedGroupChatPic {
+    id: Int!
+}
 
 """
 The `action` on the action `messageId` which was `triggeredBy` the user. This will only be sent to the user who created
@@ -636,6 +643,8 @@ type TriggeredAction {
 type UpdatedOnlineStatus {
     userId: Int!
     isOnline: Boolean!
+    """`null` if the `userId` has never set an online status."""
+    lastOnline: DateTime
 }
 
 type OnlineStatus {
@@ -662,9 +671,9 @@ type ExitedUser {
     userId: Int!
 }
 
-"""null fields correspond to the field not existing."""
+"""null fields correspond to the field not existing. This will not be sent if the profile pic was updated."""
 type UpdatedAccount {
-    userId: Int!
+    id: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -672,7 +681,10 @@ type UpdatedAccount {
     bio: Bio!
 }
 
-"""Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before."""
+"""
+Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before. This
+will not be sent if the pic has been updated.
+"""
 type UpdatedGroupChat {
     chatId: Int!
     title: GroupChatTitle
@@ -928,7 +940,7 @@ type TextMessage implements BareMessage, Message {
     context: MessageContext!
     isForwarded: Boolean!
     hasStar: Boolean!
-    message: MessageText!
+    textMessage: MessageText!
 }
 
 type ActionMessage implements BareMessage, Message {
@@ -938,7 +950,7 @@ type ActionMessage implements BareMessage, Message {
     context: MessageContext!
     isForwarded: Boolean!
     hasStar: Boolean!
-    message: ActionableMessage!
+    actionableMessage: ActionableMessage!
 }
 
 type PicMessage implements BareMessage, Message {
@@ -1007,6 +1019,7 @@ interface BareChatMessage implements BareMessage {
     isForwarded: Boolean!
 }
 
+"""The message which the user starred."""
 interface StarredMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
@@ -1023,7 +1036,7 @@ type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage 
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: MessageText!
+    textMessage: MessageText!
 }
 
 type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessage {
@@ -1033,7 +1046,7 @@ type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessag
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: ActionableMessage!
+    actionableMessage: ActionableMessage!
 }
 
 type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
@@ -1109,7 +1122,7 @@ type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: MessageText!
+    textMessage: MessageText!
 }
 
 type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
@@ -1119,7 +1132,7 @@ type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
-    message: ActionableMessage!
+    actionableMessage: ActionableMessage!
 }
 
 type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
@@ -1179,100 +1192,59 @@ type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which was updated."""
-interface UpdatedMessage implements BareChatMessage, BareMessage {
+"""An existing `messageId` in the `chatId` which had its `statuses` updated."""
+interface UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedTextMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedTextMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: MessageText!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedActionMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedActionMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    message: ActionableMessage!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedPicMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedPicMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    caption: MessageText
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedPollMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedPollMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    poll: Poll!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedAudioMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedAudioMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedGroupChatInviteMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedGroupChatInviteMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
-    inviteCode: Uuid!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedDocMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedDocMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
-type UpdatedVideoMessage implements UpdatedMessage, BareChatMessage, BareMessage {
+type UpdatedVideoMessage implements UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    sender: Account!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-    hasStar: Boolean!
+    statuses: [MessageDateTimeStatus!]!
 }
 
 type MessageDateTimes {

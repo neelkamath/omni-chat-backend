@@ -18,7 +18,7 @@ object Pics : IntIdTable() {
         name = "type",
         sql = "pic_type",
         fromDb = { Pic.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("pic_type", it) }
+        toDb = { PostgresEnum("pic_type", it) },
     )
 
     /** Returns the ID of the pic. */

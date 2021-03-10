@@ -14,7 +14,7 @@ object AudioMessages : Table() {
         name = "type",
         sql = "audio_type",
         fromDb = { Audio.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("audio_type", it) }
+        toDb = { PostgresEnum("audio_type", it) },
     )
 
     /** @see [Messages.createAudioMessage] */
@@ -33,7 +33,7 @@ object AudioMessages : Table() {
         return Audio(row[audio], row[type])
     }
 
-    fun delete(idList: List<Int>): Unit = transaction {
+    fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
     }
 }

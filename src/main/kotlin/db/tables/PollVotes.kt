@@ -24,8 +24,9 @@ object PollVotes : Table() {
         select { (PollVotes.userId eq userId) and (PollVotes.optionId eq optionId) }.empty().not()
     }
 
-    fun read(optionId: Int): List<Int> = transaction {
-        select { PollVotes.optionId eq optionId }.map { it[userId] }
+    /** Returns the IDs of users who voted for the [optionId]. */
+    fun read(optionId: Int): Set<Int> = transaction {
+        select { PollVotes.optionId eq optionId }.map { it[userId] }.toSet()
     }
 
     /** Deletes the [userId]'s vote on the [optionId] if it exists. */
@@ -33,7 +34,7 @@ object PollVotes : Table() {
         deleteWhere { (PollVotes.userId eq userId) and (PollVotes.optionId eq optionId) }
     }
 
-    fun deleteVotes(optionIdList: List<Int>): Unit = transaction {
+    fun deleteVotes(optionIdList: Collection<Int>): Unit = transaction {
         deleteWhere { optionId inList optionIdList }
     }
 }

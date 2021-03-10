@@ -1,11 +1,11 @@
 plugins {
     application
-    kotlin("jvm") version "1.4.30"
+    kotlin("jvm") version "1.4.31"
     id("com.github.johnrengelman.shadow") version "6.1.0"
     id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.15.0"
+version = "0.16.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }

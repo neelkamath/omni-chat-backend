@@ -61,7 +61,7 @@ object PrivateChatDeletions : IntIdTable() {
      * deleted it.
      */
     private fun isChatDeleted(chatId: Int): Boolean {
-        val (user1Id, user2Id) = PrivateChats.readUserIdList(chatId)
+        val (user1Id, user2Id) = PrivateChats.readUserIdList(chatId).toList()
         return isDeleted(user1Id, chatId) && isDeleted(user2Id, chatId)
     }
 

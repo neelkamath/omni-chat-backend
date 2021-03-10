@@ -87,7 +87,7 @@ enum class Topic {
     },
     ONLINE_STATUSES {
         override fun toString() = "onlineStatuses"
-    }
+    },
 }
 
 /** [subscribe]d clients with the [userId] will receive the corresponding [update]. */
@@ -96,7 +96,7 @@ data class Notification<T>(val userId: Int, val update: T)
 /** [subscribe] to be [notify]d of updates. */
 class Notifier<T>(private val topic: Topic) {
     /** List of [subscribe]rs which must only be mutated in [subscribe] and [unsubscribe]. */
-    private val clients: MutableList<Client<T>> = mutableListOf()
+    private val clients: MutableSet<Client<T>> = mutableSetOf()
 
     private data class Client<T>(val userId: Int, val subject: PublishSubject<T>) {
         /** Guaranteed to be unique for every [Client]. */
@@ -116,7 +116,7 @@ class Notifier<T>(private val topic: Topic) {
     }
 
     /** Publishes [notifications] to the message broker which in turn [notify]s every server. */
-    fun publish(notifications: List<Notification<T>>) {
+    fun publish(notifications: Collection<Notification<T>>) {
         redisson.getTopic(topic.toString()).publish(notifications)
     }
 
@@ -133,8 +133,8 @@ class Notifier<T>(private val topic: Topic) {
      * This must only be called from [subscribeToMessageBroker]. Pass the [notifications] the message broker yielded to
      * [notify] subscribers. [publish] [notifications] to notify subscribers from outside [subscribeToMessageBroker].
      */
-    fun notify(notifications: List<Notification<T>>): Unit = clients.forEach { client ->
-        notifications.firstOrNull { it.userId == client.userId }?.let { client.subject.onNext(it.update) }
+    fun notify(notifications: Collection<Notification<T>>): Unit = clients.forEach { client ->
+        notifications.forEach { if (it.userId == client.userId) client.subject.onNext(it.update) }
     }
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */
@@ -163,8 +163,12 @@ val typingStatusesNotifier = Notifier<TypingStatusesSubscription>(Topic.TYPING_S
 
 val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription>(Topic.ONLINE_STATUSES)
 
-/** Notifies subscribers of the updated [userId] via [accountsNotifier]. */
-fun negotiateUserUpdate(userId: Int) {
+/**
+ * Notifies subscribers of the updated [userId] via [accountsNotifier]. If [isProfilePic], an [UpdatedProfilePic] will
+ * be sent, and an [UpdatedAccount] otherwise.
+ */
+fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
     val subscribers = Contacts.readOwners(userId) + userId + readChatSharers(userId)
-    accountsNotifier.publish(UpdatedAccount.build(userId), subscribers)
+    val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount.build(userId)
+    accountsNotifier.publish(update, subscribers)
 }

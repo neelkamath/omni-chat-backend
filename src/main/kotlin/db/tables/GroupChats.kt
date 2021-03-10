@@ -24,7 +24,7 @@ object GroupChats : Table() {
         name = "publicity",
         sql = "group_chat_publicity",
         fromDb = { GroupChatPublicity.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("group_chat_publicity", it) }
+        toDb = { PostgresEnum("group_chat_publicity", it) },
     )
     private val inviteCode: Column<UUID> =
         uuid("invite_code").uniqueIndex().defaultExpression(CustomFunction("gen_random_uuid", UUIDColumnType()))
@@ -66,7 +66,7 @@ object GroupChats : Table() {
         chatId: Int,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null,
-        userId: Int? = null
+        userId: Int? = null,
     ): GroupChat {
         val row = transaction {
             select { GroupChats.id eq chatId }.first()
@@ -91,12 +91,12 @@ object GroupChats : Table() {
 
     private fun buildChatInfo(row: ResultRow, usersPagination: ForwardPagination? = null): GroupChatInfo =
         GroupChatInfo(
-            GroupChatUsers.readAdminIdList(row[id]),
+            GroupChatUsers.readAdminIdList(row[id]).toList(),
             GroupChatUsers.readUsers(row[id], usersPagination),
             row[title].let(::GroupChatTitle),
             row[description].let(::GroupChatDescription),
             row[isBroadcast],
-            row[publicity]
+            row[publicity],
         )
 
     /**
@@ -107,9 +107,9 @@ object GroupChats : Table() {
     fun readUserChats(
         userId: Int,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
-    ): List<GroupChat> = transaction {
-        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination, userId) }
+        messagesPagination: BackwardPagination? = null,
+    ): Set<GroupChat> = transaction {
+        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination, userId) }.toSet()
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
@@ -127,7 +127,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, description = description),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -143,7 +143,7 @@ object GroupChats : Table() {
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        groupChatsNotifier.publish(UpdatedGroupChat(chatId), GroupChatUsers.readUserIdList(chatId))
+        groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId))
     }
 
     fun readPic(chatId: Int): Pic? = transaction {
@@ -174,20 +174,22 @@ object GroupChats : Table() {
         userId: Int,
         query: String,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
-    ): List<GroupChat> = transaction {
+        messagesPagination: BackwardPagination? = null,
+    ): Set<GroupChat> = transaction {
         select { (GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query) }
             .map { buildGroupChat(it, usersPagination, messagesPagination, userId) }
+            .toSet()
     }
 
     /** Case-insensitively [query]s public chats. */
     fun searchPublicChats(
         query: String,
         usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null
-    ): List<GroupChat> = transaction {
+        messagesPagination: BackwardPagination? = null,
+    ): Set<GroupChat> = transaction {
         select { (publicity eq GroupChatPublicity.PUBLIC) and (title iLike query) }
             .map { buildGroupChat(it, usersPagination, messagesPagination) }
+            .toSet()
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
@@ -197,7 +199,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, isBroadcast = isBroadcast),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -214,7 +216,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, publicity = publicity),
-            GroupChatUsers.readUserIdList(chatId)
+            GroupChatUsers.readUserIdList(chatId),
         )
     }
 
@@ -223,17 +225,17 @@ object GroupChats : Table() {
         row: ResultRow,
         usersPagination: ForwardPagination? = null,
         messagesPagination: BackwardPagination? = null,
-        userId: Int? = null
+        userId: Int? = null,
     ): GroupChat = GroupChat(
         row[id],
-        GroupChatUsers.readAdminIdList(row[id]),
+        GroupChatUsers.readAdminIdList(row[id]).toList(),
         GroupChatUsers.readUsers(row[id], usersPagination),
         GroupChatTitle(row[title]),
         GroupChatDescription(row[description]),
         Messages.readGroupChatConnection(row[id], messagesPagination, userId),
         row[isBroadcast],
         row[publicity],
-        row[inviteCode].takeIf { row[publicity] != GroupChatPublicity.NOT_INVITABLE }
+        row[inviteCode].takeIf { row[publicity] != GroupChatPublicity.NOT_INVITABLE },
     )
 
     /** Returns `false` if the [chatId] doesn't exist, or isn't invitable. */
@@ -260,8 +262,9 @@ object GroupChats : Table() {
      * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
      * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
      */
-    fun queryUserChatEdges(userId: Int, query: String): List<ChatEdges> = GroupChatUsers.readChatIdList(userId)
+    fun queryUserChatEdges(userId: Int, query: String): Set<ChatEdges> = GroupChatUsers.readChatIdList(userId)
         .associateWith { Messages.searchGroupChat(it, query, userId = userId) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
+        .toSet()
 }

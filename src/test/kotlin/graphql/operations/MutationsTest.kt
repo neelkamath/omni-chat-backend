@@ -1,18 +1,15 @@
 package com.neelkamath.omniChat.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.safelySubscribe
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.readPic
-import com.neelkamath.omniChat.testingObjectMapper
 import io.ktor.http.*
+import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -20,13 +17,13 @@ import java.util.*
 import kotlin.test.*
 
 private const val UNBLOCK_USER_QUERY = """
-    mutation UnblockUser(${"$"}userId: Int!) {
-        unblockUser(userId: ${"$"}userId)
+    mutation UnblockUser(${"$"}id: Int!) {
+        unblockUser(id: ${"$"}id)
     }
 """
 
 private fun operateUnblockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+    executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("id" to blockedUserId), userId)
 
 private fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
     val data = operateUnblockUser(userId, blockedUserId).data!!["unblockUser"] as String
@@ -34,13 +31,13 @@ private fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
 }
 
 private const val BLOCK_USER_QUERY = """
-    mutation BlockUser(${"$"}userId: Int!) {
-        blockUser(userId: ${"$"}userId)
+    mutation BlockUser(${"$"}id: Int!) {
+        blockUser(id: ${"$"}id)
     }
 """
 
 private fun operateBlockUser(userId: Int, blockedUserId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(BLOCK_USER_QUERY, mapOf("userId" to blockedUserId), userId)
+    executeGraphQlViaEngine(BLOCK_USER_QUERY, mapOf("id" to blockedUserId), userId)
 
 private fun blockUser(userId: Int, blockedUserId: Int): Placeholder {
     val data = operateBlockUser(userId, blockedUserId).data!!["blockUser"] as String
@@ -84,7 +81,7 @@ private const val VERIFY_EMAIL_ADDRESS_QUERY = """
 private fun operateVerifyEmailAddress(emailAddress: String, verificationCode: Int): GraphQlResponse =
     executeGraphQlViaEngine(
         VERIFY_EMAIL_ADDRESS_QUERY,
-        mapOf("emailAddress" to emailAddress, "verificationCode" to verificationCode)
+        mapOf("emailAddress" to emailAddress, "verificationCode" to verificationCode),
     )
 
 fun verifyEmailAddress(emailAddress: String, verificationCode: Int): Boolean =
@@ -120,18 +117,18 @@ private fun operateCreateActionMessage(
     userId: Int,
     chatId: Int,
     message: ActionMessageInput,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_ACTION_MESSAGE_QUERY,
     mapOf("chatId" to chatId, "message" to message, "contextMessageId" to contextMessageId),
-    userId
+    userId,
 )
 
 fun createActionMessage(
     userId: Int,
     chatId: Int,
     message: ActionMessageInput,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): Placeholder {
     val data = operateCreateActionMessage(userId, chatId, message, contextMessageId)
         .data!!["createActionMessage"] as String
@@ -142,7 +139,7 @@ fun errCreateActionMessage(
     userId: Int,
     chatId: Int,
     message: ActionMessageInput,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): String = operateCreateActionMessage(userId, chatId, message, contextMessageId).errors!![0].message
 
 private const val FORWARD_MESSAGE_QUERY = """
@@ -155,11 +152,11 @@ private fun operateForwardMessage(
     userId: Int,
     chatId: Int,
     messageId: Int,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     FORWARD_MESSAGE_QUERY,
     mapOf("chatId" to chatId, "messageId" to messageId, "contextMessageId" to contextMessageId),
-    userId
+    userId,
 )
 
 fun forwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int? = null): Placeholder {
@@ -171,25 +168,21 @@ fun errForwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId
     operateForwardMessage(userId, chatId, messageId, contextMessageId).errors!![0].message
 
 private const val REMOVE_GROUP_CHAT_USERS_QUERY = """
-    mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        removeGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        removeGroupChatUsers(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateRemoveGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(
-        REMOVE_GROUP_CHAT_USERS_QUERY,
-        mapOf("chatId" to chatId, "userIdList" to userIdList),
-        userId
-    )
+private fun operateRemoveGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(REMOVE_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun removeGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateRemoveGroupChatUsers(userId, chatId, userIdList).data!!["removeGroupChatUsers"] as String
+fun removeGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateRemoveGroupChatUsers(userId, chatId, idList).data!!["removeGroupChatUsers"] as String
     return testingObjectMapper.convertValue(data)
 }
 
-fun errRemoveGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): String =
-    operateRemoveGroupChatUsers(userId, chatId, userIdList).errors!![0].message
+fun errRemoveGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): String =
+    operateRemoveGroupChatUsers(userId, chatId, idList).errors!![0].message
 
 private const val SET_INVITABILITY_QUERY = """
     mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
@@ -222,18 +215,18 @@ private fun operateCreateGroupChatInviteMessage(
     userId: Int,
     chatId: Int,
     invitedChatId: Int,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY,
     mapOf("chatId" to chatId, "invitedChatId" to invitedChatId, "contextMessageId" to contextMessageId),
-    userId
+    userId,
 )
 
 fun createGroupChatInviteMessage(
     userId: Int,
     chatId: Int,
     invitedChatId: Int,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): Placeholder {
     val data = operateCreateGroupChatInviteMessage(userId, chatId, invitedChatId, contextMessageId)
         .data!!["createGroupChatInviteMessage"] as String
@@ -244,7 +237,7 @@ fun errCreateGroupChatInviteMessage(
     userId: Int,
     chatId: Int,
     invitedChatId: Int,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): String = operateCreateGroupChatInviteMessage(userId, chatId, invitedChatId, contextMessageId).errors!![0].message
 
 private const val JOIN_GROUP_CHAT_QUERY = """
@@ -274,11 +267,11 @@ private fun operateCreatePollMessage(
     userId: Int,
     chatId: Int,
     poll: PollInput,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_POLL_MESSAGE_QUERY,
     mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to contextMessageId),
-    userId
+    userId,
 )
 
 fun createPollMessage(userId: Int, chatId: Int, poll: PollInput, contextMessageId: Int? = null): Placeholder {
@@ -299,7 +292,7 @@ private fun operateSetPollVote(userId: Int, messageId: Int, option: MessageText,
     executeGraphQlViaEngine(
         SET_POLL_VOTE_QUERY,
         mapOf("messageId" to messageId, "option" to option, "vote" to vote),
-        userId
+        userId,
     )
 
 fun setPollVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean): Placeholder {
@@ -325,30 +318,30 @@ fun setBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): Placeholder {
 }
 
 private const val MAKE_GROUP_CHAT_ADMINS_QUERY = """
-    mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        makeGroupChatAdmins(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        makeGroupChatAdmins(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(MAKE_GROUP_CHAT_ADMINS_QUERY, mapOf("chatId" to chatId, "userIdList" to userIdList), userId)
+private fun operateMakeGroupChatAdmins(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(MAKE_GROUP_CHAT_ADMINS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun makeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateMakeGroupChatAdmins(userId, chatId, userIdList).data!!["makeGroupChatAdmins"] as String
+fun makeGroupChatAdmins(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateMakeGroupChatAdmins(userId, chatId, idList).data!!["makeGroupChatAdmins"] as String
     return testingObjectMapper.convertValue(data)
 }
 
 private const val ADD_GROUP_CHAT_USERS_QUERY = """
-    mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-        addGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+    mutation AddGroupChatUsers(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
+        addGroupChatUsers(chatId: ${"$"}chatId, idList: ${"$"}idList)
     }
 """
 
-private fun operateAddGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(ADD_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "userIdList" to userIdList), userId)
+private fun operateAddGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(ADD_GROUP_CHAT_USERS_QUERY, mapOf("chatId" to chatId, "idList" to idList), userId)
 
-fun addGroupChatUsers(userId: Int, chatId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateAddGroupChatUsers(userId, chatId, userIdList).data!!["addGroupChatUsers"] as String
+fun addGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): Placeholder {
+    val data = operateAddGroupChatUsers(userId, chatId, idList).data!!["addGroupChatUsers"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -361,11 +354,11 @@ private const val UPDATE_GROUP_CHAT_DESCRIPTION_QUERY = """
 private fun operateUpdateGroupChatDescription(
     userId: Int,
     chatId: Int,
-    description: GroupChatDescription
+    description: GroupChatDescription,
 ): GraphQlResponse = executeGraphQlViaEngine(
     UPDATE_GROUP_CHAT_DESCRIPTION_QUERY,
     mapOf("chatId" to chatId, "description" to description.value),
-    userId
+    userId,
 )
 
 fun updateGroupChatDescription(userId: Int, chatId: Int, description: GroupChatDescription): Placeholder {
@@ -494,16 +487,16 @@ fun createAccount(account: AccountInput): Placeholder {
 fun errCreateAccount(account: AccountInput): String = operateCreateAccount(account).errors!![0].message
 
 private const val CREATE_CONTACTS_QUERY = """
-    mutation CreateContacts(${"$"}userIdList: [Int!]!) {
-        createContacts(userIdList: ${"$"}userIdList)
+    mutation CreateContacts(${"$"}idList: [Int!]!) {
+        createContacts(idList: ${"$"}idList)
     }
 """
 
-private fun operateCreateContacts(userId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(CREATE_CONTACTS_QUERY, mapOf("userIdList" to userIdList), userId)
+private fun operateCreateContacts(userId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(CREATE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
 
-fun createContacts(userId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateCreateContacts(userId, userIdList).data!!["createContacts"] as String
+fun createContacts(userId: Int, idList: List<Int>): Placeholder {
+    val data = operateCreateContacts(userId, idList).data!!["createContacts"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -523,11 +516,11 @@ private fun operateCreateTextMessage(
     userId: Int,
     chatId: Int,
     text: MessageText,
-    contextMessageId: Int? = null
+    contextMessageId: Int? = null,
 ): GraphQlResponse = executeGraphQlViaEngine(
     CREATE_MESSAGE_QUERY,
     mapOf("chatId" to chatId, "text" to text, "contextMessageId" to contextMessageId),
-    userId
+    userId,
 )
 
 fun createTextMessage(userId: Int, chatId: Int, text: MessageText, contextMessageId: Int? = null): Placeholder {
@@ -587,16 +580,16 @@ fun deleteAccount(userId: Int): Placeholder {
 fun errDeleteAccount(userId: Int): String = operateDeleteAccount(userId).errors!![0].message
 
 private const val DELETE_CONTACTS_QUERY = """
-    mutation DeleteContacts(${"$"}userIdList: [Int!]!) {
-        deleteContacts(userIdList: ${"$"}userIdList)
+    mutation DeleteContacts(${"$"}idList: [Int!]!) {
+        deleteContacts(idList: ${"$"}idList)
     }
 """
 
-private fun operateDeleteContacts(userId: Int, userIdList: List<Int>): GraphQlResponse =
-    executeGraphQlViaEngine(DELETE_CONTACTS_QUERY, mapOf("userIdList" to userIdList), userId)
+private fun operateDeleteContacts(userId: Int, idList: List<Int>): GraphQlResponse =
+    executeGraphQlViaEngine(DELETE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
 
-fun deleteContacts(userId: Int, userIdList: List<Int>): Placeholder {
-    val data = operateDeleteContacts(userId, userIdList).data!!["deleteContacts"] as String
+fun deleteContacts(userId: Int, idList: List<Int>): Placeholder {
+    val data = operateDeleteContacts(userId, idList).data!!["deleteContacts"] as String
     return testingObjectMapper.convertValue(data)
 }
 
@@ -710,7 +703,7 @@ class MutationsTest {
 
         @Test
         fun `A nonexistent user mustn't be blocked`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidUserIdException.message, errBlockUser(userId, -1))
         }
     }
@@ -774,15 +767,16 @@ class MutationsTest {
     inner class TriggerAction {
         @Test
         fun `The action must be triggered`(): Unit = runBlocking {
-            val admin = createVerifiedUsers(1)[0].info
+            val admin = createVerifiedUsers(1).first().info
             val chatId = GroupChats.create(listOf(admin.id))
             val action = MessageText("Yes")
             val messageId = Messages.message(
                 admin.id,
                 chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No")))
+                ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No"))),
             )
-            val subscriber = messagesNotifier.safelySubscribe(admin.id)
+            awaitBrokering()
+            val subscriber = messagesNotifier.subscribe(admin.id).subscribeWith(TestSubscriber())
             triggerAction(admin.id, messageId, action)
             awaitBrokering()
             subscriber.assertValue(TriggeredAction(messageId, action, admin))
@@ -790,27 +784,27 @@ class MutationsTest {
 
         @Test
         fun `Triggering a message which isn't an action message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId, MessageText("t"))
             assertEquals(
                 InvalidMessageIdException.message,
-                errTriggerAction(adminId, messageId, MessageText("action"))
+                errTriggerAction(adminId, messageId, MessageText("action")),
             )
         }
 
         @Test
         fun `Triggering a nonexistent action must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(
                 adminId,
                 chatId,
-                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No"))),
             )
             assertEquals(
                 InvalidActionException.message,
-                errTriggerAction(adminId, messageId, MessageText("action"))
+                errTriggerAction(adminId, messageId, MessageText("action")),
             )
         }
     }
@@ -819,7 +813,7 @@ class MutationsTest {
     inner class CreateActionMessage {
         @Test
         fun `The message must be created with the context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
             val message = ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
@@ -839,46 +833,46 @@ class MutationsTest {
                     "chatId" to chatId,
                     "message" to ActionMessageInput(
                         MessageText("Do you code?"),
-                        listOf(MessageText("Yes"), MessageText("No"))
-                    )
+                        listOf(MessageText("Yes"), MessageText("No")),
+                    ),
                 ),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
         fun `Messaging in a chat the user isn't in must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val response = errCreateActionMessage(
                 userId,
                 chatId = 1,
-                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
+                ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No"))),
             )
             assertEquals(InvalidChatIdException.message, response)
         }
 
         @Test
         fun `Supplying an invalid action message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val error = executeGraphQlViaEngine(
                 CREATE_ACTION_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "message" to mapOf("text" to "Do you code?", "actions" to listOf<String>())),
-                adminId
+                adminId,
             ).errors!![0].message
             assertEquals(InvalidActionException.message, error)
         }
 
         @Test
         fun `Using a nonexistent context message ID must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val error = errCreateActionMessage(
                 adminId,
                 chatId,
                 ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No"))),
-                contextMessageId = 1
+                contextMessageId = 1,
             )
             assertEquals(InvalidMessageIdException.message, error)
         }
@@ -888,7 +882,7 @@ class MutationsTest {
     inner class ForwardMessage {
         @Test
         fun `The message must be forwarded with a context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val (chat1Id, chat2Id) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
             val messageId = Messages.message(adminId, chat1Id)
             val contextMessageId = Messages.message(adminId, chat2Id)
@@ -906,7 +900,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 FORWARD_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "messageId" to messageId),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -921,14 +915,14 @@ class MutationsTest {
 
         @Test
         fun `Forwarding a nonexistent message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             assertEquals(InvalidMessageIdException.message, errForwardMessage(adminId, chatId, messageId = 1))
         }
 
         @Test
         fun `Using an invalid context message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             val response = errForwardMessage(adminId, chatId, messageId, contextMessageId = 1)
@@ -948,7 +942,7 @@ class MutationsTest {
     inner class SetInvitability {
         @Test
         fun `The chat's invitability must be updated`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             setInvitability(adminId, chatId, isInvitable = true)
             assertEquals(GroupChatPublicity.INVITABLE, GroupChats.readChat(chatId).publicity)
@@ -956,7 +950,7 @@ class MutationsTest {
 
         @Test
         fun `Updating a public chat must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             assertEquals(InvalidChatIdException.message, errSetInvitability(adminId, chatId, isInvitable = true))
         }
@@ -968,7 +962,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 SET_INVITABILITY_QUERY,
                 mapOf("chatId" to chatId, "isInvitable" to true),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -978,7 +972,7 @@ class MutationsTest {
     inner class CreateGroupChatInviteMessage {
         @Test
         fun `A message must be created with a context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
@@ -992,20 +986,20 @@ class MutationsTest {
             val chatId = GroupChats.create(
                 adminIdList = listOf(admin1.info.id),
                 userIdList = listOf(admin2.info.id),
-                isBroadcast = true
+                isBroadcast = true,
             )
             val invitedChatId = GroupChats.create(listOf(admin2.info.id), publicity = GroupChatPublicity.INVITABLE)
             val response = executeGraphQlViaHttp(
                 CREATE_GROUP_CHAT_INVITE_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "invitedChatId" to invitedChatId),
-                admin2.accessToken
+                admin2.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
         fun `Creating a message in a chat the user isn't in must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val invitedChatId = GroupChats.create(listOf(adminId))
             val response = errCreateGroupChatInviteMessage(adminId, chatId = 1, invitedChatId = invitedChatId)
             assertEquals(InvalidChatIdException.message, response)
@@ -1022,7 +1016,7 @@ class MutationsTest {
 
         @Test
         fun `Inviting users to a group chat with invites turned off must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val (chatId, invitedChatId) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
             val response = errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId)
             assertEquals(InvalidInvitedChatException.message, response)
@@ -1030,7 +1024,7 @@ class MutationsTest {
 
         @Test
         fun `Using an invalid content message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             val response = errCreateGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId = 1)
@@ -1050,7 +1044,7 @@ class MutationsTest {
 
         @Test
         fun `Using an invalid invite code must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidInviteCodeException.message, errJoinGroupChat(userId, inviteCode = UUID.randomUUID()))
         }
     }
@@ -1059,7 +1053,7 @@ class MutationsTest {
     inner class CreatePollMessage {
         @Test
         fun `A poll message must be created with a context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId)
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
@@ -1072,14 +1066,14 @@ class MutationsTest {
 
         @Test
         fun `Messaging a poll in a chat the user isn't in must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
             assertEquals(InvalidChatIdException.message, errCreatePollMessage(userId, chatId = 1, poll = poll))
         }
 
         @Test
         fun `Creating a poll in response to a nonexistent message must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
             val response = errCreatePollMessage(adminId, chatId, poll, contextMessageId = 1)
@@ -1088,13 +1082,13 @@ class MutationsTest {
 
         @Test
         fun `Using an invalid poll must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = mapOf("title" to "Title", "options" to listOf("option"))
             val response = executeGraphQlViaEngine(
                 CREATE_POLL_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to null),
-                adminId
+                adminId,
             ).errors!![0].message
             assertEquals(InvalidPollException.message, response)
         }
@@ -1104,7 +1098,7 @@ class MutationsTest {
     inner class SetPollVote {
         @Test
         fun `The user's vote must be updated`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val option = MessageText("option 1")
             val poll = PollInput(MessageText("Title"), listOf(option, MessageText("option 2")))
@@ -1115,7 +1109,7 @@ class MutationsTest {
 
         @Test
         fun `Voting on a message which isn't a poll must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId, MessageText("t"))
             val response = errSetPollVote(adminId, messageId, MessageText("option"), vote = true)
@@ -1124,14 +1118,14 @@ class MutationsTest {
 
         @Test
         fun `Voting on a nonexistent poll must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val response = errSetPollVote(adminId, messageId = 1, option = MessageText("option"), vote = true)
             assertEquals(InvalidMessageIdException.message, response)
         }
 
         @Test
         fun `Voting for a nonexistent option must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
@@ -1149,14 +1143,14 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 SET_BROADCAST_QUERY,
                 mapOf("chatId" to chatId, "isBroadcast" to true),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
         fun `The broadcast status must be updated`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isBroadcast = true
             setBroadcast(adminId, chatId, isBroadcast)
@@ -1187,8 +1181,8 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
                 MAKE_GROUP_CHAT_ADMINS_QUERY,
-                mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
-                user.accessToken
+                mapOf("chatId" to chatId, "idList" to listOf<Int>()),
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1201,16 +1195,16 @@ class MutationsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             addGroupChatUsers(adminId, chatId, listOf(adminId, userId, userId))
-            assertEquals(listOf(adminId, userId), GroupChatUsers.readUserIdList(chatId))
+            assertEquals(setOf(adminId, userId), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
         fun `Adding a nonexistent user must do nothing`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val invalidUserId = -1
             addGroupChatUsers(adminId, chatId, listOf(invalidUserId))
-            assertEquals(listOf(adminId), GroupChatUsers.readUserIdList(chatId))
+            assertEquals(setOf(adminId), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
@@ -1219,8 +1213,8 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
             val response = executeGraphQlViaHttp(
                 ADD_GROUP_CHAT_USERS_QUERY,
-                mapOf("chatId" to chatId, "userIdList" to listOf<Int>()),
-                user.accessToken
+                mapOf("chatId" to chatId, "idList" to listOf<Int>()),
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1263,7 +1257,7 @@ class MutationsTest {
     inner class UpdateGroupChatDescription {
         @Test
         fun `The admin must update the description`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val description = GroupChatDescription("New description.")
             updateGroupChatDescription(adminId, chatId, description)
@@ -1277,7 +1271,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_DESCRIPTION_QUERY,
                 mapOf("chatId" to chatId, "description" to "d"),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1287,7 +1281,7 @@ class MutationsTest {
     inner class UpdateGroupChatTitle {
         @Test
         fun `The admin must update the title`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val title = GroupChatTitle("New Title")
             updateGroupChatTitle(adminId, chatId, title)
@@ -1301,7 +1295,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 UPDATE_GROUP_CHAT_TITLE_QUERY,
                 mapOf("chatId" to chatId, "title" to "T"),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1311,7 +1305,7 @@ class MutationsTest {
     inner class DeleteStar {
         @Test
         fun `A message must be starred`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
@@ -1324,11 +1318,11 @@ class MutationsTest {
     inner class Star {
         @Test
         fun `A message must be starred`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             star(adminId, messageId)
-            assertEquals(listOf(messageId), Stargazers.read(adminId))
+            assertEquals(setOf(messageId), Stargazers.read(adminId))
         }
 
         @Test
@@ -1343,7 +1337,7 @@ class MutationsTest {
     @Nested
     inner class SetOnline {
         private fun assertOnlineStatus(isOnline: Boolean) {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             setOnline(userId, isOnline)
             assertEquals(isOnline, Users.read(userId).isOnline)
         }
@@ -1362,7 +1356,7 @@ class MutationsTest {
     @Nested
     inner class SetTyping {
         private fun assertTypingStatus(isTyping: Boolean) {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             setTyping(adminId, chatId, isTyping)
             assertEquals(isTyping, TypingStatuses.read(chatId, adminId))
@@ -1380,7 +1374,7 @@ class MutationsTest {
 
         @Test
         fun `Setting the typing status in a chat the user isn't in must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidChatIdException.message, errSetTyping(userId, chatId = 1, isTyping = true))
         }
     }
@@ -1389,7 +1383,7 @@ class MutationsTest {
     inner class DeleteGroupChatPic {
         @Test
         fun `Deleting the pic must remove it`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
             deleteGroupChatPic(adminId, chatId)
@@ -1403,7 +1397,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 DELETE_GROUP_CHAT_PIC_QUERY,
                 mapOf("chatId" to chatId),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1413,7 +1407,7 @@ class MutationsTest {
     inner class DeleteProfilePic {
         @Test
         fun `The user's profile pic must be deleted`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             Users.updatePic(userId, readPic("76px×57px.jpg"))
             deleteProfilePic(userId)
             assertNull(Users.read(userId).pic)
@@ -1483,10 +1477,10 @@ class MutationsTest {
                 .data!!["createGroupChat"] as Int
             val chats = GroupChats.readUserChats(adminId)
             assertEquals(1, chats.size)
-            assertEquals(chatId, chats[0].id)
-            val participants = chats[0].users.edges.map { it.node.id }.toSet()
+            assertEquals(chatId, chats.first().id)
+            val participants = chats.first().users.edges.map { it.node.id }.toSet()
             assertEquals(setOf(adminId, user1Id, user2Id), participants)
-            assertEquals(listOf(adminId), chats[0].adminIdList)
+            assertEquals(listOf(adminId), chats.first().adminIdList)
         }
 
         private fun create(adminId: Int, userIdList: List<Int>) {
@@ -1504,13 +1498,13 @@ class MutationsTest {
 
         @Test
         fun `A group chat must be created when supplied with an invalid user ID`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             create(adminId, userIdList = listOf(adminId, -1))
         }
 
         @Test
         fun `The chat must be created if the user's ID was passed in the admin ID list but not user ID list`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             create(adminId, userIdList = listOf())
         }
 
@@ -1523,7 +1517,7 @@ class MutationsTest {
                 "userIdList" to listOf<Int>(),
                 "adminIdList" to listOf(user2Id),
                 "isBroadcast" to false,
-                "publicity" to GroupChatPublicity.NOT_INVITABLE
+                "publicity" to GroupChatPublicity.NOT_INVITABLE,
             )
             val response = executeGraphQlViaEngine(CREATE_GROUP_CHAT_QUERY, mapOf("chat" to chat), user1Id)
                 .errors!![0]
@@ -1552,7 +1546,7 @@ class MutationsTest {
 
         @Test
         fun `The message must be created sans context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             createTextMessage(adminId, chatId, MessageText("t"))
             val contexts = Messages.readGroupChat(chatId, userId = adminId).map { it.node.context }
@@ -1561,17 +1555,17 @@ class MutationsTest {
 
         @Test
         fun `The message must be created with a context`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             createTextMessage(adminId, chatId, MessageText("t"), contextMessageId = messageId)
-            val context = Messages.readGroupChat(chatId, userId = adminId)[1].node.context
+            val context = Messages.readGroupChat(chatId, userId = adminId).last().node.context
             assertEquals(MessageContext(hasContext = true, id = messageId), context)
         }
 
         @Test
         fun `Using a nonexistent message context must fail`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val response = errCreateTextMessage(adminId, chatId, MessageText("t"), contextMessageId = 1)
             assertEquals(InvalidMessageIdException.message, response)
@@ -1584,7 +1578,7 @@ class MutationsTest {
             val response = executeGraphQlViaHttp(
                 CREATE_MESSAGE_QUERY,
                 mapOf("chatId" to chatId, "text" to "Hi"),
-                user.accessToken
+                user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
@@ -1596,7 +1590,7 @@ class MutationsTest {
         fun `A chat must be created`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = createPrivateChat(user1Id, user2Id)
-            assertEquals(listOf(chatId), PrivateChats.readIdList(user1Id))
+            assertEquals(setOf(chatId), PrivateChats.readIdList(user1Id))
         }
 
         @Test
@@ -1609,13 +1603,13 @@ class MutationsTest {
 
         @Test
         fun `A chat mustn't be created with a nonexistent user`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidUserIdException.message, errCreatePrivateChat(userId, otherUserId = -1))
         }
 
         @Test
         fun `A chat mustn't be created with the user themselves`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidUserIdException.message, errCreatePrivateChat(userId, userId))
         }
     }
@@ -1638,7 +1632,7 @@ class MutationsTest {
             createStatus(user1Id, messageId, MessageStatus.DELIVERED)
             val statuses = MessageStatuses.read(messageId)
             assertEquals(1, statuses.size)
-            assertEquals(MessageStatus.DELIVERED, statuses[0].status)
+            assertEquals(MessageStatus.DELIVERED, statuses.first().status)
         }
 
         @Test
@@ -1646,7 +1640,8 @@ class MutationsTest {
             val (messageId, userId) = createUtilizedPrivateChat()
             val create = { createStatus(userId, messageId, MessageStatus.DELIVERED) }
             create()
-            val subscriber = messagesNotifier.safelySubscribe(userId)
+            awaitBrokering()
+            val subscriber = messagesNotifier.subscribe(userId).subscribeWith(TestSubscriber())
             create()
             awaitBrokering()
             subscriber.assertNoValues()
@@ -1662,13 +1657,13 @@ class MutationsTest {
         @Test
         fun `Creating a status on a message from a chat the user isn't in must fail`() {
             val (messageId) = createUtilizedPrivateChat()
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidMessageIdException.message, errCreateStatus(userId, messageId, MessageStatus.DELIVERED))
         }
 
         @Test
         fun `Creating a status on a nonexistent message must fail`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             val response = errCreateStatus(userId, messageId = 1, status = MessageStatus.DELIVERED)
             assertEquals(InvalidMessageIdException.message, response)
         }
@@ -1698,7 +1693,7 @@ class MutationsTest {
     inner class DeleteAccount {
         @Test
         fun `An account must be deleted from the auth system`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             deleteAccount(userId)
             assertFalse(Users.exists(userId))
         }
@@ -1727,7 +1722,7 @@ class MutationsTest {
     inner class DeleteMessage {
         @Test
         fun `The user's message must be deleted`() {
-            val adminId = createVerifiedUsers(1)[0].info.id
+            val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             deleteMessage(adminId, messageId)
@@ -1736,7 +1731,7 @@ class MutationsTest {
 
         @Test
         fun `Deleting a nonexistent message must return an error`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidMessageIdException.message, errDeleteMessage(userId, messageId = 0))
         }
 
@@ -1778,7 +1773,7 @@ class MutationsTest {
 
         @Test
         fun `Deleting an invalid chat ID must throw an exception`() {
-            val userId = createVerifiedUsers(1)[0].info.id
+            val userId = createVerifiedUsers(1).first().info.id
             assertEquals(InvalidChatIdException.message, errDeletePrivateChat(userId, chatId = 1))
         }
     }
@@ -1787,7 +1782,7 @@ class MutationsTest {
     inner class EmailPasswordResetCode {
         @Test
         fun `A password reset request must be sent`() {
-            val address = createVerifiedUsers(1)[0].info.emailAddress
+            val address = createVerifiedUsers(1).first().info.emailAddress
             emailPasswordResetCode(address)
         }
 
@@ -1811,13 +1806,13 @@ class MutationsTest {
         fun `Sending a verification email to an unregistered address must throw an exception`() {
             assertEquals(
                 UnregisteredEmailAddressException.message,
-                errEmailEmailAddressVerification("username@example.com")
+                errEmailEmailAddressVerification("username@example.com"),
             )
         }
 
         @Test
         fun `Sending a verification email to a verified address must fail`() {
-            val address = createVerifiedUsers(1)[0].info.emailAddress
+            val address = createVerifiedUsers(1).first().info.emailAddress
             assertEquals(EmailAddressVerifiedException.message, errEmailEmailAddressVerification(address))
         }
     }
@@ -1838,7 +1833,7 @@ class MutationsTest {
 
         @Test
         fun `Only the specified fields must be updated`() {
-            val user = createVerifiedUsers(1)[0].info
+            val user = createVerifiedUsers(1).first().info
             val update =
                 AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = Name("Roger"))
             updateAccount(user.id, update)

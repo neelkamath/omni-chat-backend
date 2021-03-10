@@ -37,6 +37,7 @@ object BlockedUsers : IntIdTable() {
             selectAll()
                 .filter { it[blockerUserId] == userId }
                 .map { AccountEdge.build(it[blockedUserId], it[BlockedUsers.id].value) }
+                .toSet()
         }
         return AccountsConnection.build(edges, pagination)
     }

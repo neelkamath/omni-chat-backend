@@ -18,7 +18,7 @@ fun verifyEmailAddress(env: DataFetchingEnvironment): Boolean {
 
 fun blockUser(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val userId = env.getArgument<Int>("userId")
+    val userId = env.getArgument<Int>("id")
     if (!Users.exists(userId)) throw InvalidUserIdException
     BlockedUsers.create(env.userId!!, userId)
     return Placeholder
@@ -26,7 +26,7 @@ fun blockUser(env: DataFetchingEnvironment): Placeholder {
 
 fun unblockUser(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    BlockedUsers.delete(env.userId!!, env.getArgument("userId"))
+    BlockedUsers.delete(env.userId!!, env.getArgument("id"))
     return Placeholder
 }
 
@@ -48,7 +48,7 @@ fun setOnline(env: DataFetchingEnvironment): Placeholder {
 
 fun createContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<Int>>("userIdList").filter { Users.exists(it) && it != env.userId!! }
+    val userIdList = env.getArgument<List<Int>>("idList").filter { Users.exists(it) && it != env.userId!! }.toSet()
     Contacts.create(env.userId!!, userIdList)
     return Placeholder
 }
@@ -158,7 +158,7 @@ fun deleteAccount(env: DataFetchingEnvironment): Placeholder {
 
 fun deleteContacts(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<Int>>("userIdList")
+    val userIdList = env.getArgument<List<Int>>("idList")
     Contacts.delete(env.userId!!, userIdList)
     return Placeholder
 }
@@ -261,7 +261,7 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("userIdList").filter(Users::exists)
+    val userIdList = env.getArgument<List<Int>>("idList").filter(Users::exists)
     GroupChatUsers.addUsers(chatId, userIdList)
     return Placeholder
 }
@@ -270,7 +270,7 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("userIdList")
+    val userIdList = env.getArgument<List<Int>>("idList").toSet()
     try {
         GroupChatUsers.removeUsers(chatId, userIdList)
     } catch (_: IllegalArgumentException) {
@@ -283,7 +283,7 @@ fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("userIdList").filter { isUserInChat(it, chatId) }
+    val userIdList = env.getArgument<List<Int>>("idList").filter { isUserInChat(it, chatId) }
     GroupChatUsers.makeAdmins(chatId, userIdList)
     return Placeholder
 }

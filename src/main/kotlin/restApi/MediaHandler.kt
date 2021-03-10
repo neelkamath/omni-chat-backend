@@ -58,7 +58,7 @@ inline fun getMediaMessage(
 fun <T> postMediaMessage(
     route: Route,
     messageReader: suspend PipelineContext<Unit, ApplicationCall>.() -> T?,
-    creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit
+    creator: (userId: Int, chatId: Int, message: T, contextMessageId: Int?) -> Unit,
 ): Unit = with(route) {
     post {
         val chatId = call.parameters["chat-id"]!!.toInt()
@@ -67,7 +67,7 @@ fun <T> postMediaMessage(
         when {
             !isUserInChat(call.userId!!, chatId) -> call.respond(
                 HttpStatusCode.BadRequest,
-                InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT)
+                InvalidMediaMessage(InvalidMediaMessage.Reason.USER_NOT_IN_CHAT),
             )
 
             message == null ->
@@ -75,7 +75,7 @@ fun <T> postMediaMessage(
 
             contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
                 HttpStatusCode.BadRequest,
-                InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE)
+                InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )
 
             Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)

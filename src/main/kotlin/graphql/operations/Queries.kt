@@ -30,7 +30,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
     val description: GroupChatDescription
 
     @Suppress("unused")
-    val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id)
+    val adminIdList: List<Int> = GroupChatUsers.readAdminIdList(id).toList()
 
     @Suppress("MemberVisibilityCanBePrivate")
     val inviteCode: UUID?
@@ -43,7 +43,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
             id,
             usersPagination = ForwardPagination(first = 0),
             messagesPagination = BackwardPagination(last = 0),
-            userId = userId
+            userId = userId,
         )
         title = chat.title
         description = chat.description
@@ -89,12 +89,12 @@ sealed class ChatMessagesDto(val chat: ChatDto, private val messageEdges: List<M
 private class SearchGroupChatMessagesDto(
     userId: Int,
     chatId: Int,
-    messageEdges: List<MessageEdge>
+    messageEdges: List<MessageEdge>,
 ) : ChatMessagesDto(GroupChatDto(chatId, userId), messageEdges)
 
 private class SearchPrivateChatMessagesDto(
     chatId: Int,
-    messageEdges: List<MessageEdge>
+    messageEdges: List<MessageEdge>,
 ) : ChatMessagesDto(PrivateChatDto(chatId), messageEdges)
 
 class GroupChatInfoDto(private val inviteCode: UUID) {
@@ -126,6 +126,12 @@ fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
     return userIdList.map {
         with(Users.read(it)) { OnlineStatus(it, isOnline, lastOnline) }
     }
+}
+
+fun readTypingStatuses(env: DataFetchingEnvironment): List<TypingStatus> {
+    env.verifyAuth()
+    val idList = PrivateChats.readUserChatIdList(env.userId!!) + GroupChatUsers.readChatIdList(env.userId!!)
+    return TypingStatuses.readChats(idList, env.userId!!).toList()
 }
 
 fun readAccount(env: DataFetchingEnvironment): Account {
@@ -180,12 +186,13 @@ fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
     val query = env.getArgument<String>("query")
     val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
     if (env.userId == null && GroupChats.isExistentPublicChat(chatId))
-        return Messages.searchGroupChat(chatId, query, pagination)
+        return Messages.searchGroupChat(chatId, query, pagination).toList()
     env.verifyAuth()
     return when (chatId) {
-        in PrivateChats.readIdList(env.userId!!) -> Messages.searchPrivateChat(chatId, env.userId!!, query, pagination)
+        in PrivateChats.readIdList(env.userId!!) ->
+            Messages.searchPrivateChat(chatId, env.userId!!, query, pagination).toList()
         in GroupChatUsers.readChatIdList(env.userId!!) ->
-            Messages.searchGroupChat(chatId, query, pagination, env.userId!!)
+            Messages.searchGroupChat(chatId, query, pagination, env.userId!!).toList()
         else -> throw InvalidChatIdException
     }
 }
@@ -222,10 +229,10 @@ fun searchMessages(env: DataFetchingEnvironment): List<ChatMessagesDto> {
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges) }
+        .map { SearchGroupChatMessagesDto(env.userId!!, it.chatId, it.edges.toList()) }
     val privateChats = PrivateChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges) }
+        .map { SearchPrivateChatMessagesDto(it.chatId, it.edges.toList()) }
     return groupChats + privateChats
 }
 
@@ -252,16 +259,6 @@ fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
     return GroupChats.searchPublicChats(
         query,
         usersPagination = ForwardPagination(first = 0),
-        messagesPagination = BackwardPagination(last = 0)
+        messagesPagination = BackwardPagination(last = 0),
     ).map { GroupChatDto(it.id) }
-}
-
-fun isBlocked(env: DataFetchingEnvironment): Boolean {
-    env.verifyAuth()
-    return BlockedUsers.exists(env.userId!!, env.getArgument("userId"))
-}
-
-fun isContact(env: DataFetchingEnvironment): Boolean {
-    env.verifyAuth()
-    return env.getArgument("userId") in Contacts.readIdList(env.userId!!)
 }

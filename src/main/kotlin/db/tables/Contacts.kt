@@ -22,9 +22,9 @@ object Contacts : IntIdTable() {
      * Saves the [ownerId]'s [contactIdList], ignoring existing contacts. The [ownerId] will be notified of the
      * [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier].
      */
-    fun create(ownerId: Int, contactIdList: Collection<Int>) {
+    fun create(ownerId: Int, contactIdList: Set<Int>) {
         val existingContacts = readIdList(ownerId)
-        val newContacts = contactIdList.filter { it !in existingContacts }.toSet()
+        val newContacts = contactIdList.filter { it !in existingContacts }
         transaction {
             batchInsert(newContacts) {
                 this[contactOwnerId] = ownerId
@@ -35,8 +35,8 @@ object Contacts : IntIdTable() {
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
-    fun readOwners(contactId: Int): List<Int> = transaction {
-        select { Contacts.contactId eq contactId }.map { it[contactOwnerId] }
+    fun readOwners(contactId: Int): Set<Int> = transaction {
+        select { Contacts.contactId eq contactId }.map { it[contactOwnerId] }.toSet()
     }
 
     /**
@@ -49,11 +49,13 @@ object Contacts : IntIdTable() {
     }
 
     /** The [ownerId]'s contacts. */
-    private fun readRows(ownerId: Int): List<AccountEdge> = transaction {
-        select { contactOwnerId eq ownerId }.map {
-            val account = Users.read(it[contactId]).toAccount()
-            AccountEdge(account, cursor = it[Contacts.id].value)
-        }
+    private fun readRows(ownerId: Int): Set<AccountEdge> = transaction {
+        select { contactOwnerId eq ownerId }
+            .map {
+                val account = Users.read(it[contactId]).toAccount()
+                AccountEdge(account, cursor = it[Contacts.id].value)
+            }
+            .toSet()
     }
 
     /** @see [readIdList] */
@@ -64,7 +66,7 @@ object Contacts : IntIdTable() {
      * Case-insensitively [query]s the [ownerId]'s contacts' usernames, first names, last names, and email addresses.
      */
     fun search(ownerId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
-        val rows = readRows(ownerId).filter { it.node.matches(query) }
+        val rows = readRows(ownerId).filter { it.node.matches(query) }.toSet()
         return AccountsConnection.build(rows, pagination)
     }
 
@@ -72,7 +74,7 @@ object Contacts : IntIdTable() {
      * Deletes the [ownerId]'s contacts from the [contactIdList], ignoring nonexistent contacts. The [ownerId] will be
      * notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier].
      */
-    fun delete(ownerId: Int, contactIdList: List<Int>) {
+    fun delete(ownerId: Int, contactIdList: Collection<Int>) {
         val contacts = readIdList(ownerId).intersect(contactIdList)
         transaction {
             deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
