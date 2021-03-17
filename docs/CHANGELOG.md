@@ -8,6 +8,43 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.17.0
 
+### Added
+
+- Add `enum` `MessageState`.
+
+### Changed
+
+- Added the field `state: MessageState!` to the following:
+    - `interface` `BareMessage`
+    - `interface` `Message`
+    - `type` `TextMessage`
+    - `type` `ActionMessage`
+    - `type` `PicMessage`
+    - `type` `PollMessage`
+    - `type` `AudioMessage`
+    - `type` `GroupChatInviteMessage`
+    - `type` `DocMessage`
+    - `type` `VideoMessage`
+    - `interface` `BareChatMessage`
+    - `interface` `StarredMessage`
+    - `type` `StarredTextMessage`
+    - `type` `StarredActionMessage`
+    - `type` `StarredPicMessage`
+    - `type` `StarredPollMessage`
+    - `type` `StarredAudioMessage`
+    - `type` `StarredGroupChatInviteMessage`
+    - `type` `StarredDocMessage`
+    - `type` `StarredVideoMessage`
+    - `interface` `NewMessage`
+    - `type` `NewTextMessage`
+    - `type` `NewActionMessage`
+    - `type` `NewPicMessage`
+    - `type` `NewPollMessage`
+    - `type` `NewAudioMessage`
+    - `type` `NewGroupChatInviteMessage`
+    - `type` `NewDocMessage`
+    - `type` `NewVideoMessage`
+
 ### Fixed
 
 - Fix `Mutation.deleteAccount`.

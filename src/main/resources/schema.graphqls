@@ -919,6 +919,7 @@ type MessageContext {
 interface BareMessage {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -927,6 +928,7 @@ interface BareMessage {
 interface Message implements BareMessage {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -936,6 +938,7 @@ interface Message implements BareMessage {
 type TextMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -946,6 +949,7 @@ type TextMessage implements BareMessage, Message {
 type ActionMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -956,6 +960,7 @@ type ActionMessage implements BareMessage, Message {
 type PicMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -966,6 +971,7 @@ type PicMessage implements BareMessage, Message {
 type PollMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -976,6 +982,7 @@ type PollMessage implements BareMessage, Message {
 type AudioMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -985,6 +992,7 @@ type AudioMessage implements BareMessage, Message {
 type GroupChatInviteMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -995,6 +1003,7 @@ type GroupChatInviteMessage implements BareMessage, Message {
 type DocMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1004,6 +1013,7 @@ type DocMessage implements BareMessage, Message {
 type VideoMessage implements BareMessage, Message {
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1014,6 +1024,7 @@ interface BareChatMessage implements BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1024,6 +1035,7 @@ interface StarredMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1033,6 +1045,7 @@ type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage 
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1043,6 +1056,7 @@ type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessag
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1053,6 +1067,7 @@ type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1063,6 +1078,7 @@ type StarredPollMessage implements StarredMessage, BareChatMessage, BareMessage 
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1073,6 +1089,7 @@ type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1082,6 +1099,7 @@ type StarredGroupChatInviteMessage implements StarredMessage, BareChatMessage, B
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1092,6 +1110,7 @@ type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1101,6 +1120,7 @@ type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1110,6 +1130,7 @@ interface NewMessage implements BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1119,6 +1140,7 @@ type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1129,6 +1151,7 @@ type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1139,6 +1162,7 @@ type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1149,6 +1173,7 @@ type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1159,6 +1184,7 @@ type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1168,6 +1194,7 @@ type NewGroupChatInviteMessage implements NewMessage, BareChatMessage, BareMessa
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1178,6 +1205,7 @@ type NewDocMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1187,6 +1215,7 @@ type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
+    state: MessageState!
     dateTimes: MessageDateTimes!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1257,6 +1286,15 @@ type MessageDateTimeStatus {
     user: Account!
     dateTime: DateTime!
     status: MessageStatus!
+}
+
+enum MessageState {
+    """Each user in the chat hasn't had the message delivered to them yet."""
+    SENT
+    """Each user in the chat has had the message delivered to them but not everyone has read it yet."""
+    DELIVERED
+    """Each user in the chat has read the message."""
+    READ
 }
 
 enum MessageStatus {

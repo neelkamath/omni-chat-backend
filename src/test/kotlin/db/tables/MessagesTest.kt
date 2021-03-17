@@ -20,6 +20,63 @@ class MessagesTest {
     data class CreatedMessage(val creatorId: Int, val message: String)
 
     @Nested
+    inner class ReadState {
+        private fun testPrivateChat(state: MessageState) {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val messageId = Messages.message(user1Id, chatId, MessageText("Hi"))
+            if (state == MessageState.DELIVERED) MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
+            if (state == MessageState.READ) MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
+            assertEquals(state, Messages.readTypedMessage(messageId).message.state)
+        }
+
+        @Test
+        fun `A message not delivered to every user in a private chat must have a 'SENT' status`(): Unit =
+            testPrivateChat(MessageState.SENT)
+
+        @Test
+        fun `A message not read by every user in a private chat must have a 'DELIVERED' status`(): Unit =
+            testPrivateChat(MessageState.DELIVERED)
+
+        @Test
+        fun `A message read by every user in a private chat must have a 'READ' status`(): Unit =
+            testPrivateChat(MessageState.READ)
+
+        private fun testGroupChat(state: MessageState) {
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+            val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
+            when (state) {
+                MessageState.SENT -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
+                MessageState.DELIVERED -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
+                MessageState.READ ->
+                    listOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
+            }
+            assertEquals(state, Messages.readTypedMessage(messageId).message.state)
+        }
+
+        @Test
+        fun `A message not delivered to every user in a group chat must have a 'SENT' status`(): Unit =
+            testGroupChat(MessageState.SENT)
+
+        @Test
+        fun `A message not read by every user in a group chat must have a 'DELIVERED' status`(): Unit =
+            testGroupChat(MessageState.SENT)
+
+        @Test
+        fun `A message read by every user in a group chat must have a 'READ' status`(): Unit =
+            testGroupChat(MessageState.SENT)
+
+        @Test
+        fun `A message in a group chat with a single participant must have a 'READ' status`() {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
+            assertEquals(MessageState.READ, Messages.readTypedMessage(messageId).message.state)
+        }
+    }
+
+    @Nested
     inner class IsInvalidBroadcast {
         @Test
         fun `Messaging in a private chat mustn't count as an invalid broadcast`() {

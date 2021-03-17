@@ -391,12 +391,26 @@ object Messages : IntIdTable() {
         val message = object : BareMessage {
             override val messageId: Int = messageId
             override val sender: Account = Users.read(row[senderId]).toAccount()
+            override val state: MessageState = readState(messageId)
             override val dateTimes: MessageDateTimes =
                 MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList())
             override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
             override val isForwarded: Boolean = row[this@Messages.isForwarded]
         }
         return TypedMessage(row[type], message)
+    }
+
+    private fun readState(messageId: Int): MessageState {
+        val count = readUserIdList(readChatIdFromMessageId(messageId)).size - 1 // Subtract 1 to exclude the sender.
+        val statuses = MessageStatuses.read(messageId)
+        val hasStatus = { status: MessageStatus ->
+            statuses.count { it.status == status } == count
+        }
+        return when {
+            hasStatus(MessageStatus.READ) -> MessageState.READ
+            hasStatus(MessageStatus.DELIVERED) -> MessageState.DELIVERED
+            else -> MessageState.SENT
+        }
     }
 
     /**
