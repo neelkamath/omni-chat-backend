@@ -1,537 +1,22 @@
 package com.neelkamath.omniChat.graphql.operations
 
-import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
+import com.neelkamath.omniChat.DbExtension
+import com.neelkamath.omniChat.buildTokenSet
+import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.toLinkedHashSet
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.component3
+import kotlin.collections.component4
 import kotlin.test.*
-
-private const val READ_TYPING_STATUSES = """
-    query ReadTypingStatuses {
-        readTypingStatuses {
-            $TYPING_STATUS_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadTypingStatuses(userId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(READ_TYPING_STATUSES, userId = userId)
-
-private fun readTypingStatuses(userId: Int): List<TypingStatus> {
-    val data = operateReadTypingStatuses(userId).data!!["readTypingStatuses"] as List<*>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val READ_BLOCKED_USERS_QUERY = """
-    query ReadBlockedUsers(${"$"}first: Int, ${"$"}after: Cursor) {
-        readBlockedUsers(first: ${"$"}first, after: ${"$"}after) {
-            $ACCOUNTS_CONNECTION_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadBlockedUsers(userId: Int, pagination: ForwardPagination? = null): GraphQlResponse =
-    executeGraphQlViaEngine(
-        READ_BLOCKED_USERS_QUERY,
-        mapOf("first" to pagination?.first, "after" to pagination?.after.toString()),
-        userId,
-    )
-
-private fun readBlockedUsers(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
-    val data = operateReadBlockedUsers(userId, pagination).data!!["readBlockedUsers"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val SEARCH_PUBLIC_CHATS_QUERY = """
-    query SearchPublicChats(
-        ${"$"}query: String!
-        ${"$"}groupChat_users_first: Int
-        ${"$"}groupChat_users_after: Cursor
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
-    ) {
-        searchPublicChats(query: ${"$"}query) {
-            $GROUP_CHAT_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchPublicChats(
-    query: String,
-    usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    SEARCH_PUBLIC_CHATS_QUERY,
-    mapOf(
-        "query" to query,
-        "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString(),
-        "groupChat_messages_last" to messagesPagination?.last,
-        "groupChat_messages_before" to messagesPagination?.before?.toString(),
-    )
-)
-
-fun searchPublicChats(
-    query: String,
-    usersPagination: ForwardPagination? = null,
-    messagesPagination: BackwardPagination? = null,
-): List<GroupChat> {
-    val data =
-        operateSearchPublicChats(query, usersPagination, messagesPagination).data!!["searchPublicChats"] as List<*>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val READ_GROUP_CHAT_QUERY = """
-    query ReadGroupChat(
-        ${"$"}inviteCode: Uuid!
-        ${"$"}groupChatInfo_users_first: Int
-        ${"$"}groupChatInfo_users_after: Cursor
-    ) {
-        readGroupChat(inviteCode: ${"$"}inviteCode) {
-            $GROUP_CHAT_INFO_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GraphQlResponse =
-    executeGraphQlViaEngine(
-        READ_GROUP_CHAT_QUERY,
-        mapOf(
-            "inviteCode" to inviteCode.toString(),
-            "groupChatInfo_users_first" to usersPagination?.first,
-            "groupChatInfo_users_after" to usersPagination?.after?.toString(),
-        ),
-    )
-
-fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
-    val data = operateReadGroupChat(inviteCode, usersPagination).data!!["readGroupChat"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-fun errReadGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null): String =
-    operateReadGroupChat(inviteCode, usersPagination).errors!![0].message
-
-private const val READ_STARS_QUERY = """
-    query ReadStars {
-        readStars {
-            $STARRED_MESSAGE_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadStars(userId: Int): GraphQlResponse = executeGraphQlViaEngine(READ_STARS_QUERY, userId = userId)
-
-fun readStars(userId: Int): List<StarredMessage> {
-    val data = operateReadStars(userId).data!!["readStars"] as List<*>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val READ_ONLINE_STATUSES_QUERY = """
-    query ReadOnlineStatuses {
-        readOnlineStatuses {
-            $ONLINE_STATUS_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadOnlineStatuses(userId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(READ_ONLINE_STATUSES_QUERY, userId = userId)
-
-fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
-    val data = operateReadOnlineStatuses(userId).data!!["readOnlineStatuses"] as List<*>
-    return testingObjectMapper.convertValue(data)
-}
-
-const val READ_ACCOUNT_QUERY = """
-    query ReadAccount {
-        readAccount {
-            $ACCOUNT_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadAccount(userId: Int): GraphQlResponse =
-    executeGraphQlViaEngine(READ_ACCOUNT_QUERY, userId = userId)
-
-fun readAccount(userId: Int): Account {
-    val data = operateReadAccount(userId).data!!["readAccount"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-const val READ_CHATS_QUERY = """
-    query ReadChats(
-        ${"$"}privateChat_messages_last: Int
-        ${"$"}privateChat_messages_before: Cursor
-        ${"$"}groupChat_users_first: Int
-        ${"$"}groupChat_users_after: Cursor
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
-    ) {
-        readChats {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadChats(
-    userId: Int,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    READ_CHATS_QUERY,
-    mapOf(
-        "privateChat_messages_last" to privateChatMessagesPagination?.last,
-        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
-        "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString(),
-        "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString(),
-    ),
-    userId,
-)
-
-fun readChats(
-    userId: Int,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): List<Chat> {
-    val chats = operateReadChats(
-        userId,
-        privateChatMessagesPagination,
-        usersPagination,
-        groupChatMessagesPagination,
-    ).data!!["readChats"] as List<*>
-    return testingObjectMapper.convertValue(chats)
-}
-
-const val READ_CHAT_QUERY = """
-    query ReadChat(
-        ${"$"}id: Int!
-        ${"$"}privateChat_messages_last: Int
-        ${"$"}privateChat_messages_before: Cursor
-        ${"$"}groupChat_users_first: Int
-        ${"$"}groupChat_users_after: Cursor
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
-    ) {
-        readChat(id: ${"$"}id) {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadChat(
-    id: Int,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    READ_CHAT_QUERY,
-    mapOf(
-        "id" to id,
-        "privateChat_messages_last" to privateChatMessagesPagination?.last,
-        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
-        "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString(),
-        "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString(),
-    ),
-    userId,
-)
-
-fun readChat(
-    id: Int,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null,
-): Chat {
-    val data = operateReadChat(
-        id,
-        privateChatMessagesPagination,
-        usersPagination,
-        groupChatMessagesPagination,
-        userId,
-    ).data!!["readChat"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-fun errReadChat(
-    id: Int,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-    userId: Int? = null,
-): String = operateReadChat(
-    id,
-    privateChatMessagesPagination,
-    usersPagination,
-    groupChatMessagesPagination,
-    userId,
-).errors!![0].message
-
-private const val READ_CONTACTS_QUERY = """
-    query ReadContacts(${"$"}first: Int, ${"$"}after: Cursor) {
-        readContacts(first: ${"$"}first, after: ${"$"}after) {
-            $ACCOUNTS_CONNECTION_FRAGMENT
-        }
-    }
-"""
-
-private fun operateReadContacts(userId: Int, pagination: ForwardPagination? = null): GraphQlResponse =
-    executeGraphQlViaEngine(
-        READ_CONTACTS_QUERY,
-        mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
-        userId,
-    )
-
-fun readContacts(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
-    val data = operateReadContacts(userId, pagination).data!!["readContacts"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val REFRESH_TOKEN_SET_QUERY = """
-    query RefreshTokenSet(${"$"}refreshToken: ID!) {
-        refreshTokenSet(refreshToken: ${"$"}refreshToken) {
-            $TOKEN_SET_FRAGMENT
-        }
-    }
-"""
-
-private fun operateRefreshTokenSet(refreshToken: String): GraphQlResponse =
-    executeGraphQlViaEngine(REFRESH_TOKEN_SET_QUERY, mapOf("refreshToken" to refreshToken))
-
-fun refreshTokenSet(refreshToken: String): TokenSet {
-    val data = operateRefreshTokenSet(refreshToken).data!!["refreshTokenSet"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-const val REQUEST_TOKEN_SET_QUERY = """
-    query RequestTokenSet(${"$"}login: Login!) {
-        requestTokenSet(login: ${"$"}login) {
-            $TOKEN_SET_FRAGMENT
-        }
-    }
-"""
-
-private fun operateRequestTokenSet(login: Login): GraphQlResponse =
-    executeGraphQlViaEngine(REQUEST_TOKEN_SET_QUERY, mapOf("login" to login))
-
-fun requestTokenSet(login: Login): TokenSet {
-    val data = operateRequestTokenSet(login).data!!["requestTokenSet"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-fun errRequestTokenSet(login: Login): String = operateRequestTokenSet(login).errors!![0].message
-
-private const val SEARCH_CHAT_MESSAGES_QUERY = """
-    query SearchChatMessages(${"$"}chatId: Int!, ${"$"}query: String!, ${"$"}last: Int, ${"$"}before: Cursor) {
-        searchChatMessages(chatId: ${"$"}chatId, query: ${"$"}query, last: ${"$"}last, before: ${"$"}before) {
-            $MESSAGE_EDGE_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchChatMessages(
-    chatId: Int,
-    query: String,
-    pagination: BackwardPagination? = null,
-    userId: Int? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    SEARCH_CHAT_MESSAGES_QUERY,
-    mapOf(
-        "chatId" to chatId,
-        "query" to query,
-        "last" to pagination?.last,
-        "before" to pagination?.before?.toString(),
-    ),
-    userId,
-)
-
-fun searchChatMessages(
-    chatId: Int,
-    query: String,
-    pagination: BackwardPagination? = null,
-    userId: Int? = null,
-): List<MessageEdge> {
-    val data = operateSearchChatMessages(chatId, query, pagination, userId).data!!["searchChatMessages"] as List<*>
-    return testingObjectMapper.convertValue(data)
-}
-
-fun errSearchChatMessages(
-    chatId: Int,
-    query: String,
-    pagination: BackwardPagination? = null,
-    userId: Int? = null,
-): String = operateSearchChatMessages(chatId, query, pagination, userId).errors!![0].message
-
-private const val SEARCH_CHATS_QUERY = """
-    query SearchChats(
-        ${"$"}query: String!
-        ${"$"}privateChat_messages_last: Int
-        ${"$"}privateChat_messages_before: Cursor
-        ${"$"}groupChat_users_first: Int
-        ${"$"}groupChat_users_after: Cursor
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
-    ) {
-        searchChats(query: ${"$"}query) {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchChats(
-    userId: Int,
-    query: String,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    SEARCH_CHATS_QUERY,
-    mapOf(
-        "query" to query,
-        "privateChat_messages_last" to privateChatMessagesPagination?.last,
-        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
-        "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString(),
-        "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
-    ),
-    userId,
-)
-
-fun searchChats(
-    userId: Int,
-    query: String,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): List<Chat> {
-    val chats = operateSearchChats(
-        userId,
-        query,
-        privateChatMessagesPagination,
-        usersPagination,
-        groupChatMessagesPagination
-    ).data!!["searchChats"] as List<*>
-    return testingObjectMapper.convertValue(chats)
-}
-
-private const val SEARCH_CONTACTS_QUERY = """
-    query SearchContacts(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
-        searchContacts(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
-            $ACCOUNTS_CONNECTION_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchContacts(
-    userId: Int,
-    query: String,
-    pagination: ForwardPagination? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    SEARCH_CONTACTS_QUERY,
-    mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
-    userId,
-)
-
-fun searchContacts(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
-    val data = operateSearchContacts(userId, query, pagination).data!!["searchContacts"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
-
-private const val SEARCH_MESSAGES_QUERY = """
-    query SearchMessages(
-        ${"$"}query: String!
-        ${"$"}chatMessages_messages_last: Int
-        ${"$"}chatMessages_messages_before: Cursor
-        ${"$"}privateChat_messages_last: Int
-        ${"$"}privateChat_messages_before: Cursor
-        ${"$"}groupChat_users_first: Int
-        ${"$"}groupChat_users_after: Cursor
-        ${"$"}groupChat_messages_last: Int
-        ${"$"}groupChat_messages_before: Cursor
-    ) {
-        searchMessages(query: ${"$"}query) {
-            $CHAT_MESSAGES_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchMessages(
-    userId: Int,
-    query: String,
-    chatMessagesPagination: BackwardPagination? = null,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): GraphQlResponse = executeGraphQlViaEngine(
-    SEARCH_MESSAGES_QUERY,
-    mapOf(
-        "query" to query,
-        "chatMessages_messages_last" to chatMessagesPagination?.last,
-        "chatMessages_messages_before" to chatMessagesPagination?.before?.toString(),
-        "privateChat_messages_last" to privateChatMessagesPagination?.last,
-        "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
-        "groupChat_users_first" to usersPagination?.first,
-        "groupChat_users_after" to usersPagination?.after?.toString(),
-        "groupChat_messages_last" to groupChatMessagesPagination?.last,
-        "groupChat_messages_before" to groupChatMessagesPagination?.before?.toString()
-    ),
-    userId,
-)
-
-fun searchMessages(
-    userId: Int,
-    query: String,
-    chatMessagesPagination: BackwardPagination? = null,
-    privateChatMessagesPagination: BackwardPagination? = null,
-    usersPagination: ForwardPagination? = null,
-    groupChatMessagesPagination: BackwardPagination? = null,
-): List<ChatMessages> {
-    val messages = operateSearchMessages(
-        userId,
-        query,
-        chatMessagesPagination,
-        privateChatMessagesPagination,
-        usersPagination,
-        groupChatMessagesPagination,
-    ).data!!["searchMessages"] as List<*>
-    return testingObjectMapper.convertValue(messages)
-}
-
-private const val SEARCH_USERS_QUERY = """
-    query SearchUsers(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
-        searchUsers(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
-            $ACCOUNTS_CONNECTION_FRAGMENT
-        }
-    }
-"""
-
-private fun operateSearchUsers(query: String, pagination: ForwardPagination? = null): GraphQlResponse =
-    executeGraphQlViaEngine(
-        SEARCH_USERS_QUERY,
-        mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
-    )
-
-fun searchUsers(query: String, pagination: ForwardPagination? = null): AccountsConnection {
-    val data = operateSearchUsers(query, pagination).data!!["searchUsers"] as Map<*, *>
-    return testingObjectMapper.convertValue(data)
-}
 
 @ExtendWith(DbExtension::class)
 class ChatMessagesDtoTest {
@@ -546,9 +31,8 @@ class ChatMessagesDtoTest {
         }
 
         @Test
-        fun `Reading a chat using a nonexistent invite code must fail`() {
-            assertEquals(InvalidInviteCodeException.message, errReadGroupChat(UUID.randomUUID()))
-        }
+        fun `Reading a chat using a nonexistent invite code must fail`(): Unit =
+            assertTrue(readGroupChat(UUID.randomUUID()) is InvalidInviteCode)
     }
 
     /** Data on a group chat having only ever contained an admin. */
@@ -708,14 +192,14 @@ class QueriesTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            readChat(chatId, userId = user1Id)
+            assertEquals(PrivateChats.read(chatId, user1Id), readChat(chatId, userId = user1Id))
         }
 
         @Test
         fun `Reading a public chat mustn't require an access token`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            readChat(chatId)
+            assertEquals(GroupChats.readChat(chatId), readChat(chatId))
         }
 
         @Test
@@ -731,7 +215,7 @@ class QueriesTest {
         @Test
         fun `Requesting a chat using an invalid ID must return an error`() {
             val userId = createVerifiedUsers(1).first().info.id
-            assertEquals(InvalidChatIdException.message, errReadChat(id = 1, userId = userId))
+            assertTrue(readChat(id = 1, userId = userId) is InvalidChatId)
         }
 
         @Test
@@ -782,29 +266,29 @@ class QueriesTest {
         @Test
         fun `The access token must work`() {
             val login = createVerifiedUsers(1).first().login
-            val token = requestTokenSet(login).accessToken
-            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = token)
+            val tokenSet = requestTokenSet(login) as TokenSet
+            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = tokenSet.accessToken)
             assertNotEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
         fun `A nonexistent user must cause an exception to be thrown`() {
             val login = Login(Username("u"), Password("p"))
-            assertEquals(NonexistentUserException.message, errRequestTokenSet(login))
+            assertTrue(requestTokenSet(login) is NonexistentUser)
         }
 
         @Test
         fun `A user who hasn't verified their email must cause an exception to be thrown`() {
             val login = Login(Username("u"), Password("p"))
             Users.create(AccountInput(login.username, login.password, "username@example.com"))
-            assertEquals(UnverifiedEmailAddressException.message, errRequestTokenSet(login))
+            assertTrue(requestTokenSet(login) is UnverifiedEmailAddress)
         }
 
         @Test
         fun `An incorrect password must cause an exception to be thrown`() {
             val login = createVerifiedUsers(1).first().login
             val invalidLogin = login.copy(password = Password("incorrect password"))
-            assertEquals(IncorrectPasswordException.message, errRequestTokenSet(invalidLogin))
+            assertTrue(requestTokenSet(invalidLogin) is IncorrectPassword)
         }
     }
 
@@ -817,15 +301,15 @@ class QueriesTest {
             Messages.create(user1Id, chatId, MessageText("Hey!"))
             Messages.create(user2Id, chatId, MessageText(":) hey"))
             Messages.create(user1Id, chatId, MessageText("How are you?"))
-            val messages = searchChatMessages(chatId, "hey", userId = user1Id)
-            assertEquals(Messages.readPrivateChat(user1Id, chatId).toList().dropLast(1), messages)
+            val edges = searchChatMessages(chatId, "hey", userId = user1Id) as MessageEdges
+            assertEquals(Messages.readPrivateChat(user1Id, chatId).toList().dropLast(1), edges.edges)
         }
 
         @Test
         fun `Searching in a non-public chat the user isn't in must return an error`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = PrivateChats.create(user2Id, user3Id)
-            assertEquals(InvalidChatIdException.message, errSearchChatMessages(chatId, "query", userId = user1Id))
+            assertTrue(searchChatMessages(chatId, "query", userId = user1Id) is InvalidChatId)
         }
 
         @Test
@@ -834,7 +318,8 @@ class QueriesTest {
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val text = "text"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
-            assertEquals(listOf(messageId), searchChatMessages(chatId, text).map { it.node.messageId })
+            val edges = searchChatMessages(chatId, text) as MessageEdges
+            assertEquals(listOf(messageId), edges.edges.map { it.node.messageId })
         }
 
         @Test
@@ -844,7 +329,8 @@ class QueriesTest {
             val text = "t"
             val messageId = Messages.message(adminId, chatId, MessageText(text))
             Stargazers.create(adminId, messageId)
-            assertEquals(listOf(true), searchChatMessages(chatId, text, userId = adminId).map { it.node.hasStar })
+            val edges = searchChatMessages(chatId, text, userId = adminId) as MessageEdges
+            assertEquals(listOf(true), edges.edges.map { it.node.hasStar })
         }
 
         @Test
@@ -993,13 +479,18 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
     val cursorIndex = 3
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
     val messages = when (operation) {
-        MessagesOperationName.SEARCH_CHAT_MESSAGES -> searchChatMessages(chatId, text.value, pagination, adminId)
+        MessagesOperationName.SEARCH_CHAT_MESSAGES -> {
+            val edges = searchChatMessages(chatId, text.value, pagination, adminId) as MessageEdges
+            edges.edges
+        }
         MessagesOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text.value, chatMessagesPagination = pagination).flatMap { it.messages }
         MessagesOperationName.READ_CHATS ->
             readChats(adminId, groupChatMessagesPagination = pagination)[0].messages.edges
-        MessagesOperationName.READ_CHAT ->
-            readChat(chatId, groupChatMessagesPagination = pagination, userId = adminId).messages.edges
+        MessagesOperationName.READ_CHAT -> {
+            val chat = readChat(chatId, groupChatMessagesPagination = pagination, userId = adminId) as GroupChat
+            chat.messages.edges
+        }
         MessagesOperationName.SEARCH_CHATS -> {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value
             searchChats(adminId, title, groupChatMessagesPagination = pagination)[0].messages.edges
@@ -1060,7 +551,8 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
     val index = 5
     val pagination = ForwardPagination(first, after = userCursors.elementAt(index))
     val chat = when (operationName) {
-        GroupChatUsersOperationName.READ_CHAT -> readChat(chatId, usersPagination = pagination, userId = adminId)
+        GroupChatUsersOperationName.READ_CHAT ->
+            readChat(chatId, usersPagination = pagination, userId = adminId) as GroupChat
         GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination)[0]
         GroupChatUsersOperationName.SEARCH_CHATS -> {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value

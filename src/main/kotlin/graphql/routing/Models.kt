@@ -56,6 +56,124 @@ data class Password(val value: String) {
 
 object Placeholder
 
+object NonexistentUser : RequestTokenSetResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object UnverifiedEmailAddress : RequestTokenSetResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+data class CreatedChatId(val id: Int) : CreateGroupChatResult, CreatePrivateChatResult
+
+object EmailAddressVerified : EmailEmailAddressVerificationResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object UsernameTaken : UpdateAccountResult, CreateAccountResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object IncorrectPassword : RequestTokenSetResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object EmailAddressTaken : UpdateAccountResult, CreateAccountResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidChatId :
+    SearchChatMessagesResult,
+    ReadChatResult,
+    CreateTextMessageResult,
+    CreateActionMessageResult,
+    CreateGroupChatInviteMessageResult,
+    CreatePollMessageResult,
+    ForwardMessageResult {
+
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidAdminId : CreateGroupChatResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidVerificationCode : VerifyEmailAddressResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object UnregisteredEmailAddress : VerifyEmailAddressResult, ResetPasswordResult, EmailEmailAddressVerificationResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidPasswordResetCode : ResetPasswordResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidUserId : CreatePrivateChatResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidMessageId :
+    CreateTextMessageResult,
+    CreateActionMessageResult,
+    CreateGroupChatInviteMessageResult,
+    CreatePollMessageResult,
+    ForwardMessageResult,
+    TriggerActionResult,
+    SetPollVoteResult {
+
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object CannotDeleteAccount {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidPoll : CreatePollMessageResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object NonexistentOption : SetPollVoteResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidInviteCode : ReadGroupChatResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidInvitedChat : CreateGroupChatInviteMessageResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidDomain : CreateAccountResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
+object InvalidAction : CreateActionMessageResult, TriggerActionResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
 data class GraphQlRequest(
     /** GraphQL document (e.g., a mutation). */
     val query: String,
@@ -69,7 +187,7 @@ data class GraphQlResponseError(val message: String)
 
 data class Login(val username: Username, val password: Password)
 
-data class TokenSet(val accessToken: String, val refreshToken: String)
+data class TokenSet(val accessToken: String, val refreshToken: String) : RequestTokenSetResult
 
 data class AccountInput(
     val username: Username,
@@ -388,7 +506,7 @@ data class PrivateChat(
     override val id: Int,
     val user: Account,
     override val messages: MessagesConnection,
-) : Chat
+) : Chat, ReadChatResult
 
 interface BareGroupChat {
     val title: GroupChatTitle
@@ -406,7 +524,7 @@ data class GroupChatInfo(
     override val description: GroupChatDescription,
     override val isBroadcast: Boolean,
     override val publicity: GroupChatPublicity,
-) : BareGroupChat
+) : BareGroupChat, ReadGroupChatResult
 
 data class GroupChat(
     override val id: Int,
@@ -418,7 +536,7 @@ data class GroupChat(
     override val isBroadcast: Boolean,
     override val publicity: GroupChatPublicity,
     val inviteCode: UUID?
-) : Chat, BareGroupChat
+) : Chat, BareGroupChat, ReadChatResult
 
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
@@ -1177,3 +1295,41 @@ data class ActionMessageInput(val text: MessageText, val actions: List<MessageTe
 }
 
 data class TriggeredAction(val messageId: Int, val action: MessageText, val triggeredBy: Account) : MessagesSubscription
+
+interface SearchChatMessagesResult
+
+interface ReadChatResult
+
+interface ReadGroupChatResult
+
+interface RequestTokenSetResult
+
+interface VerifyEmailAddressResult
+
+interface ResetPasswordResult
+
+interface UpdateAccountResult
+
+interface CreateAccountResult
+
+interface EmailEmailAddressVerificationResult
+
+interface CreateGroupChatResult
+
+interface CreatePrivateChatResult
+
+interface CreateTextMessageResult
+
+interface CreateActionMessageResult
+
+interface CreateGroupChatInviteMessageResult
+
+interface CreatePollMessageResult
+
+interface ForwardMessageResult
+
+interface TriggerActionResult
+
+interface SetPollVoteResult
+
+data class MessageEdges(val edges: List<MessageEdge>) : SearchChatMessagesResult

@@ -10,52 +10,122 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Added
 
-- Add `enum` `MessageState`.
+- `enum MessageState`
+- `type NonexistentUser`
+- `type UnverifiedEmailAddress`
+- `type EmailAddressVerified`
+- `type UsernameTaken`
+- `type IncorrectPassword`
+- `type EmailAddressTaken`
+- `type InvalidChatId`
+- `type InvalidAdminId`
+- `type UnregisteredEmailAddress`
+- `type InvalidUserId`
+- `type InvalidMessageId`
+- `type CannotDeleteAccount`
+- `type InvalidPoll`
+- `type NonexistentOption`
+- `type InvalidInviteCode`
+- `type InvalidInvitedChat`
+- `type InvalidDomain`
+- `type InvalidAction`
+- `type MessageEdges`
+- `type InvalidVerificationCode`
+- `type InvalidPasswordResetCode`
+- `type CreatedChatId`
+- `union SearchChatMessagesResult`
+- `union ReadChatResult`
+- `union ReadGroupChatResult`
+- `union RequestTokenSetResult`
+- `union VerifyEmailAddressResult`
+- `union ResetPasswordResult`
+- `union UpdateAccountResult`
+- `union CreateAccountResult`
+- `union EmailEmailAddressVerificationResult`
+- `union CreateGroupChatResult`
+- `union CreatePrivateChatResult`
+- `union CreateTextMessageResult`
+- `union CreateActionMessageResult`
+- `union CreateGroupChatInviteMessageResult`
+- `union CreatePollMessageResult`
+- `union ForwardMessageResult`
+- `union TriggerActionResult`
+- `union SetPollVoteResult`
 
 ### Changed
 
 - Added the field `state: MessageState!` to the following:
-    - `interface` `BareMessage`
-    - `interface` `Message`
-    - `type` `TextMessage`
-    - `type` `ActionMessage`
-    - `type` `PicMessage`
-    - `type` `PollMessage`
-    - `type` `AudioMessage`
-    - `type` `GroupChatInviteMessage`
-    - `type` `DocMessage`
-    - `type` `VideoMessage`
-    - `interface` `BareChatMessage`
-    - `interface` `StarredMessage`
-    - `type` `StarredTextMessage`
-    - `type` `StarredActionMessage`
-    - `type` `StarredPicMessage`
-    - `type` `StarredPollMessage`
-    - `type` `StarredAudioMessage`
-    - `type` `StarredGroupChatInviteMessage`
-    - `type` `StarredDocMessage`
-    - `type` `StarredVideoMessage`
-    - `interface` `NewMessage`
-    - `type` `NewTextMessage`
-    - `type` `NewActionMessage`
-    - `type` `NewPicMessage`
-    - `type` `NewPollMessage`
-    - `type` `NewAudioMessage`
-    - `type` `NewGroupChatInviteMessage`
-    - `type` `NewDocMessage`
-    - `type` `NewVideoMessage`
+    - `interface BareMessage`
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface BareChatMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
+    - `interface NewMessage`
+    - `type NewTextMessage`
+    - `type NewActionMessage`
+    - `type NewPicMessage`
+    - `type NewPollMessage`
+    - `type NewAudioMessage`
+    - `type NewGroupChatInviteMessage`
+    - `type NewDocMessage`
+    - `type NewVideoMessage`
+- Previously, GraphQL operations returned results regarding invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead, and are now done so. The following operations have had their return types updated accordingly:
+    - `Query.searchChatMessages`
+    - `Query.readChat`
+    - `Query.readGroupChat`
+    - `Query.requestTokenSet`
+    - `Mutation.blockUser`
+    - `Mutation.deleteAccount`
+    - `Mutation.verifyEmailAddress`
+    - `Mutation.resetPassword`
+    - `Mutation.star`
+    - `Mutation.setTyping`
+    - `Mutation.createStatus`
+    - `Mutation.updateAccount`
+    - `Mutation.createAccount`
+    - `Mutation.emailEmailAddressVerification`
+    - `Mutation.emailPasswordResetCode`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.createGroupChat`
+    - `Mutation.setInvitability`
+    - `Mutation.joinGroupChat`
+    - `Mutation.deletePrivateChat`
+    - `Mutation.createPrivateChat`
+    - `Mutation.createTextMessage`
+    - `Mutation.createActionMessage`
+    - `Mutation.createGroupChatInviteMessage`
+    - `Mutation.createPollMessage`
+    - `Mutation.forwardMessage`
+    - `Mutation.triggerAction`
+    - `Mutation.setPollVote`
+    - `Mutation.deleteMessage`
 
 ### Fixed
 
-- Fix `Mutation.deleteAccount`.
+- `Mutation.deleteAccount`
 
 ## [0.16.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.16.0) - 2021-03-10
 
 ### Added
 
 - `Query.readTypingStatuses`
-- `UpdatedProfilePic` `type`
-- `UpdatedGroupChatPic` `type`
+- `type UpdatedProfilePic`
+- `type UpdatedGroupChatPic`
 
 ### Changed
 
@@ -67,26 +137,26 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.deleteContacts`
 - `Mutation.createContacts`
 - Send back an `ExitedUser` over `Subscription.subscribeToGroupChats` if the user themselves left the chat.
-- `UpdatedAccount` `type`
-- `UpdatedGroupChat` `type`
-- `UpdatedOnlineStatus` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedActionMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
-- `UpdatedGroupChatInviteMessage` `type`
-- `UpdatedDocMessage` `type`
-- `UpdatedVideoMessage` `type`
-- `TextMessage` `type`
-- `ActionMessage` `type`
-- `NewTextMessage` `type`
-- `NewActionMessage` `type`
-- `StarredTextMessage` `type`
-- `StarredActionMessage` `type`
-- `GroupChatsSubscription` `union`
-- `AccountsSubscription` `union`
+- `type UpdatedAccount`
+- `type UpdatedGroupChat`
+- `type UpdatedOnlineStatus`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedActionMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
+- `type UpdatedGroupChatInviteMessage`
+- `type UpdatedDocMessage`
+- `type UpdatedVideoMessage`
+- `type TextMessage`
+- `type ActionMessage`
+- `type NewTextMessage`
+- `type NewActionMessage`
+- `type StarredTextMessage`
+- `type StarredActionMessage`
+- `union GroupChatsSubscription`
+- `union AccountsSubscription`
 - Return the messages from `Query.searchChatMessages` in chronological order.
 - Return the messages from `Query.searchMessages` in chronological order.
 
@@ -98,7 +168,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Fixed
 
 - Fix some notifications not being sent back to clients over WebSockets.
-- Fix `NewActionMessage` `type`, etc. not being supported in `Subscription`s.
+- Fix `type NewActionMessage`, etc. not being supported in `Subscription`s.
 - `Query.searchChatMessages` works now.
 - `Query.searchMessages` works now.
 
@@ -134,10 +204,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- `ActionMessage` `type`
-- `StarredActionMessage` `type`
-- `NewActionMessage` `type`
-- `UpdatedActionMessage` `type`
+- `type ActionMessage`
+- `type StarredActionMessage`
+- `type NewActionMessage`
+- `type UpdatedActionMessage`
 - `/pic-message`
 - `/audio-message`
 - `/video-message`
@@ -154,15 +224,15 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- `BlockedAccount` `type`
-- `UnblockedAccount` `type`
+- `type BlockedAccount`
+- `type UnblockedAccount`
 
 ## [0.11.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.11.0) - 2021-01-29
 
 ### Fixed
 
-- Send back the `__typename` for the `CreatedSubscription` `type` for `Subscription`s.
-- Send back the `BlockedAccount` and `UnblockedAccount` `type`s in `Subscription.subscribeToAccounts`.
+- Send back the `__typename` for the `type CreatedSubscription` for `Subscription`s.
+- Send back the `BlockedAccount` and `type UnblockedAccount`s in `Subscription.subscribeToAccounts`.
 
 ## [0.10.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.10.0) - 2021-01-29
 
@@ -178,12 +248,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Query.readBlockedUsers`
 - `Mutation.blockUser`
 - `Mutation.unblockUser`
-- `BlockedAccount` `type`
-- `UnblockedAccount` `type`
+- `type BlockedAccount`
+- `type UnblockedAccount`
 
 ### Changed
 
-- `AccountsSubscription` `union`
+- `union AccountsSubscription`
 - `/profile-pic`
 - `/group-chat-pic`
 - `/pic-message`
@@ -246,7 +316,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Added
 
 - Docker `db` service
-- `Name` `scalar`
+- `scalar Name`
 - `Mutation.verifyEmailAddress`
 - `Mutation.emailPasswordResetCode`
 
@@ -255,12 +325,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `.env` file
 - `Mutation.updateAccount`
 - Rename `Mutation.sendEmailAddressVerification` to `Mutation.emailEmailAddressVerification`
-- `UpdatedAccount` `type`
-- `AccountData` `interface`
-- `Account` `type`
-- `NewContact` `type`
-- `AccountInput` `input`
-- `AccountUpdate` `input`
+- `type UpdatedAccount`
+- `interface AccountData`
+- `type Account`
+- `type NewContact`
+- `input AccountInput`
+- `input AccountUpdate`
 
 ### Removed
 
@@ -274,20 +344,20 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.createActionMessage`
 - `Mutation.triggerAction`
-- `TriggeredAction` `type`
-- `ActionMessageInput` `input`
-- `ActionableMessage` `type`
-- `ActionMessage` `type`
-- `StarredActionMessage` `type`
-- `NewActionMessage` `type`
-- `UpdatedActionMessage` `type`
+- `type TriggeredAction`
+- `input ActionMessageInput`
+- `type ActionableMessage`
+- `type ActionMessage`
+- `type StarredActionMessage`
+- `type NewActionMessage`
+- `type UpdatedActionMessage`
 
 ### Changed
 
 - `Query.searchChatMessages`
 - `Query.searchMessages`
 - `Mutation.setPollVote`
-- `MessagesSubscription` `union`
+- `union MessagesSubscription`
 
 ### Fixed
 
@@ -316,28 +386,28 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Subscription.subscribeToAccounts`
 - `Subscription.subscribeToGroupChats`
-- `AccountsSubscription` `union`
-- `GroupChatsSubscription` `union`
-- `GroupChatPublicity` `enum`
+- `union AccountsSubscription`
+- `union GroupChatsSubscription`
+- `enum GroupChatPublicity`
 
 ### Changed
 
 - `Mutation.createAccount`
-- `UpdatedOnlineStatus` `type`
-- `BareGroupChat` `interface`
-- `GroupChatInfo` `type`
-- `GroupChat` `type`
-- `GroupChatInput` `input`
+- `type UpdatedOnlineStatus`
+- `interface BareGroupChat`
+- `type GroupChatInfo`
+- `type GroupChat`
+- `input GroupChatInput`
 
 ### Removed
 
 - `Subscription.subscribeToContacts`
 - `Subscription.subscribeToUpdatedChats`
 - `Subscription.subscribeToNewGroupChats`
-- `ContactsSubscription` `union`
-- `UpdatedChatsSubscription` `union`
-- `NewGroupChatsSubscription` `union`
-- `UpdatedContact` `type`
+- `union ContactsSubscription`
+- `union UpdatedChatsSubscription`
+- `union NewGroupChatsSubscription`
+- `type UpdatedContact`
 
 ### Fixed
 
@@ -348,24 +418,24 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Added
 
-- `Uuid` `scalar`
-- `VideoMessage` `type`
-- `StarredVideoMessage` `type`
-- `NewVideoMessage` `type`
-- `UpdatedVideoMessage` `type`
-- `DocMessage` `type`
-- `StarredDocMessage` `type`
-- `NewDocMessage` `type`
-- `UpdatedDocMessage` `type`
+- `scalar Uuid`
+- `type VideoMessage`
+- `type StarredVideoMessage`
+- `type NewVideoMessage`
+- `type UpdatedVideoMessage`
+- `type DocMessage`
+- `type StarredDocMessage`
+- `type NewDocMessage`
+- `type UpdatedDocMessage`
 - `Query.readGroupChat`
 - `Mutation.joinGroupChat`
 - `Mutation.createGroupChatInviteMessage`
-- `GroupChatInfo` `type`
-- `BareGroupChat` `interface`
-- `GroupChatInviteMessage` `type`
-- `StarredGroupChatInviteMessage` `type`
-- `NewGroupChatInviteMessage` `type`
-- `UpdatedGroupChatInviteMessage` `type`
+- `type GroupChatInfo`
+- `interface BareGroupChat`
+- `type GroupChatInviteMessage`
+- `type StarredGroupChatInviteMessage`
+- `type NewGroupChatInviteMessage`
+- `type UpdatedGroupChatInviteMessage`
 - `Query.searchPublicChats`
 - `Mutation.setInvitability`
 - `Mutation.forwardMessage`
@@ -374,32 +444,32 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- `TextMessage` `type`
-- `PicMessage` `type`
-- `PollMessage` `type`
-- `AudioMessage` `type`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `StarredTextMessage` `type`
-- `StarredPicMessage` `type`
-- `StarredPollMessage` `type`
-- `StarredAudioMessage` `type`
-- `NewMessage` `interface`
-- `NewTextMessage` `type`
-- `NewPicMessage` `type`
-- `NewPollMessage` `type`
-- `NewAudioMessage` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
-- `GroupChatInput` `input`
-- `MessagesSubscription` `union`
-- `BareMessage` `interface`
-- `BareChatMessage` `interface`
-- `StarredMessage` `interface`
-- `Message` `interface`
+- `type TextMessage`
+- `type PicMessage`
+- `type PollMessage`
+- `type AudioMessage`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `type StarredTextMessage`
+- `type StarredPicMessage`
+- `type StarredPollMessage`
+- `type StarredAudioMessage`
+- `interface NewMessage`
+- `type NewTextMessage`
+- `type NewPicMessage`
+- `type NewPollMessage`
+- `type NewAudioMessage`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
+- `input GroupChatInput`
+- `union MessagesSubscription`
+- `interface BareMessage`
+- `interface BareChatMessage`
+- `interface StarredMessage`
+- `interface Message`
 - `Query.searchChatMessages`
 - `Query.readChat`
 - `/group-chat-pic`
@@ -427,52 +497,52 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.createTextMessage`
 - `Mutation.createPollMessage`
 - `Mutation.setPollVote`
-- `Message` `interface`
-- `MessageText` `scalar`
-- `PollInput` `input`
-- `PollOption` `type`
-- `Poll` `type`
-- `TextMessage` `type`
-- `PicMessage` `type`
-- `PollMessage` `type`
-- `AudioMessage` `type`
-- `BareChatMessage` `interface`
-- `StarredMessage` `interface`
-- `StarredTextMessage` `type`
-- `StarredPicMessage` `type`
-- `StarredPollMessage` `type`
-- `StarredAudioMessage` `type`
-- `NewMessage` `interface`
-- `NewTextMessage` `type`
-- `NewPicMessage` `type`
-- `NewPollMessage` `type`
-- `NewAudioMessage` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
+- `interface Message`
+- `scalar MessageText`
+- `input PollInput`
+- `type PollOption`
+- `type Poll`
+- `type TextMessage`
+- `type PicMessage`
+- `type PollMessage`
+- `type AudioMessage`
+- `interface BareChatMessage`
+- `interface StarredMessage`
+- `type StarredTextMessage`
+- `type StarredPicMessage`
+- `type StarredPollMessage`
+- `type StarredAudioMessage`
+- `interface NewMessage`
+- `type NewTextMessage`
+- `type NewPicMessage`
+- `type NewPollMessage`
+- `type NewAudioMessage`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
 - `/audio-message`
 - `/pic-message`
 
 ### Changed
 
-- `MessagesSubscription` `union`
+- `union MessagesSubscription`
 - `Query.searchChatMessages`
 - `Query.searchMessages`
-- `BareMessage` `interface`
+- `interface BareMessage`
 - `/profile-pic`
 - `/group-chat-pic`
 
 ### Removed
 
 - `Mutation.createMessage`
-- `MessageData` `interface`
-- `NewMessage` `type`
-- `StarredMessage` `type`
-- `TextMessage` `scalar`
-- `Message` `type`
-- `UpdatedMessage` `type`
+- `interface MessageData`
+- `type NewMessage`
+- `type StarredMessage`
+- `scalar TextMessage`
+- `type Message`
+- `type UpdatedMessage`
 
 ## [0.2.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.2.1) - 2020-07-26
 
@@ -483,9 +553,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Changed
 
 - `Mutation.createMessage`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `GroupChatInput` `input`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `input GroupChatInput`
 
 ## [0.2.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.2.0) - 2020-07-25
 
@@ -496,27 +566,27 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.addGroupChatUsers`
 - `Mutation.removeGroupChatUsers`
 - `Mutation.makeGroupChatAdmins`
-- `AccountInput` `input`
-- `GroupChatInput` `input`
+- `input AccountInput`
+- `input GroupChatInput`
 
 ### Changed
 
 - `Mutation.createGroupChat`
 - `Mutation.createMessage`
-- `BareMessage` `interface`
-- `Message` `type`
-- `MessageData` `interface`
-- `StarredMessage` `type`
-- `NewMessage` `type`
-- `UpdatedMessage` `type`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `GroupChatUpdate` `input`
-- `GroupChatInput` `input`
-- `NewGroupChatsSubscription` `union`
-- `Bio` `scalar`
-- `GroupChatDescription` `scalar`
-- `TextMessage` `scalar`
+- `interface BareMessage`
+- `type Message`
+- `interface MessageData`
+- `type StarredMessage`
+- `type NewMessage`
+- `type UpdatedMessage`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `input GroupChatUpdate`
+- `input GroupChatInput`
+- `union NewGroupChatsSubscription`
+- `scalar Bio`
+- `scalar GroupChatDescription`
+- `scalar TextMessage`
 - `/profile-pic`
 - `/group-chat-pic`
 
@@ -524,8 +594,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.leaveGroupChat`
 - `Mutation.updateGroupChat`
-- `NewAccount` `input`
-- `NewGroupChat` `input`
+- `input NewAccount`
+- `input NewGroupChat`
 
 ## [0.1.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.1.1) - 2020-07-21
 
@@ -537,8 +607,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- `Message` `type`
-- `UpdatedMessage` `type`
+- `type Message`
+- `type UpdatedMessage`
 
 ### Fixed
 

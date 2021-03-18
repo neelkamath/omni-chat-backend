@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.buildTokenSet
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChat.graphql.engine.UnauthorizedException
 import com.neelkamath.omniChat.graphql.engine.parseArgument
 import com.neelkamath.omniChat.graphql.engine.verifyAuth
 import com.neelkamath.omniChat.graphql.routing.*
@@ -20,7 +21,7 @@ interface ChatDto {
 }
 
 /** The chat as seen by the [userId], or an anonymous user if there's no [userId]. */
-class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
+class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto, ReadChatResult {
     override val id: Int = chatId
 
     @Suppress("MemberVisibilityCanBePrivate")
@@ -62,7 +63,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto {
     }
 }
 
-class PrivateChatDto(chatId: Int) : ChatDto {
+class PrivateChatDto(chatId: Int) : ChatDto, ReadChatResult {
     override val id: Int = chatId
 
     @Suppress("unused")
@@ -97,7 +98,7 @@ private class SearchPrivateChatMessagesDto(
     messageEdges: List<MessageEdge>,
 ) : ChatMessagesDto(PrivateChatDto(chatId), messageEdges)
 
-class GroupChatInfoDto(private val inviteCode: UUID) {
+class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
     val adminIdList: List<Int>
     val title: GroupChatTitle
     val description: GroupChatDescription
@@ -139,14 +140,14 @@ fun readAccount(env: DataFetchingEnvironment): Account {
     return Users.read(env.userId!!).toAccount()
 }
 
-fun readChat(env: DataFetchingEnvironment): ChatDto {
+fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     val chatId = env.getArgument<Int>("id")
     if (env.userId == null && GroupChats.isExistentPublicChat(chatId)) return GroupChatDto(chatId)
     env.verifyAuth()
     return when (chatId) {
         in PrivateChats.readIdList(env.userId!!) -> PrivateChatDto(chatId)
         in GroupChatUsers.readChatIdList(env.userId!!) -> GroupChatDto(chatId, env.userId!!)
-        else -> throw InvalidChatIdException
+        else -> InvalidChatId
     }
 }
 
@@ -162,12 +163,12 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
     return Contacts.read(env.userId!!, pagination)
 }
 
-fun requestTokenSet(env: DataFetchingEnvironment): TokenSet {
+fun requestTokenSet(env: DataFetchingEnvironment): RequestTokenSetResult {
     val login = env.parseArgument<Login>("login")
-    if (!Users.isUsernameTaken(login.username)) throw NonexistentUserException
+    if (!Users.isUsernameTaken(login.username)) return NonexistentUser
     val userId = Users.read(login.username).id
-    if (!Users.read(userId).hasVerifiedEmailAddress) throw UnverifiedEmailAddressException
-    if (!Users.isValidLogin(login)) throw IncorrectPasswordException
+    if (!Users.read(userId).hasVerifiedEmailAddress) return UnverifiedEmailAddress
+    if (!Users.isValidLogin(login)) return IncorrectPassword
     return buildTokenSet(userId)
 }
 
@@ -181,20 +182,23 @@ fun refreshTokenSet(env: DataFetchingEnvironment): TokenSet {
     return buildTokenSet(userId)
 }
 
-fun searchChatMessages(env: DataFetchingEnvironment): List<MessageEdge> {
+fun searchChatMessages(env: DataFetchingEnvironment): SearchChatMessagesResult {
     val chatId = env.getArgument<Int>("chatId")
     val query = env.getArgument<String>("query")
     val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
-    if (env.userId == null && GroupChats.isExistentPublicChat(chatId))
-        return Messages.searchGroupChat(chatId, query, pagination).toList()
-    env.verifyAuth()
-    return when (chatId) {
-        in PrivateChats.readIdList(env.userId!!) ->
-            Messages.searchPrivateChat(chatId, env.userId!!, query, pagination).toList()
-        in GroupChatUsers.readChatIdList(env.userId!!) ->
-            Messages.searchGroupChat(chatId, query, pagination, env.userId!!).toList()
-        else -> throw InvalidChatIdException
+    val edges = if (env.userId == null && GroupChats.isExistentPublicChat(chatId))
+        Messages.searchGroupChat(chatId, query, pagination).toList()
+    else {
+        env.verifyAuth()
+        when (chatId) {
+            in PrivateChats.readIdList(env.userId!!) ->
+                Messages.searchPrivateChat(chatId, env.userId!!, query, pagination).toList()
+            in GroupChatUsers.readChatIdList(env.userId!!) ->
+                Messages.searchGroupChat(chatId, query, pagination, env.userId!!).toList()
+            else -> return InvalidChatId
+        }
     }
+    return MessageEdges(edges)
 }
 
 fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
@@ -248,10 +252,9 @@ fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
     return BlockedUsers.read(env.userId!!, pagination)
 }
 
-fun readGroupChat(env: DataFetchingEnvironment): GroupChatInfoDto {
+fun readGroupChat(env: DataFetchingEnvironment): ReadGroupChatResult {
     val inviteCode = env.getArgument<UUID>("inviteCode")
-    if (!GroupChats.isExistentInviteCode(inviteCode)) throw InvalidInviteCodeException
-    return GroupChatInfoDto(inviteCode)
+    return if (GroupChats.isExistentInviteCode(inviteCode)) GroupChatInfoDto(inviteCode) else InvalidInviteCode
 }
 
 fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {

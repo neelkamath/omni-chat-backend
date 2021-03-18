@@ -44,7 +44,7 @@ fun executeGraphQlSubscriptionViaWebSocket(
 suspend inline fun <reified T> parseFrameData(channel: ReceiveChannel<Frame>): T {
     for (frame in channel)
         if (frame is Frame.Text) {
-            val response = testingObjectMapper.readValue<GraphQlResponse>(frame.readText()).data as Map<*, *>
+            val response = testingObjectMapper.readValue<GraphQlResponse>(frame.readText()).data!!
             return testingObjectMapper.convertValue(response.values.first()!!)
         }
     throw Exception("There was no text frame to be read.")

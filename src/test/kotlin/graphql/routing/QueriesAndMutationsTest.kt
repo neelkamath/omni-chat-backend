@@ -26,7 +26,7 @@ class QueriesAndMutationsTest {
         fun `The GraphQL engine must be queried via the HTTP interface`() {
             val user = createVerifiedUsers(1).first()
             val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
-            val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"] as Map<*, *>
+            val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"]!!
             assertEquals(user.info, testingObjectMapper.convertValue(data))
         }
 
