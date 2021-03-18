@@ -10,19 +10,27 @@ scalar Username
 """A name must neither contain whitespace nor exceed 30 characters."""
 scalar Name
 
-"""A user's bio which cannot exceed 2,500 characters, and uses CommonMark."""
+"""
+A user's bio which cannot exceed 2,500 characters, and uses CommonMark. Leading and trailing whitespace is disallowed.
+"""
 scalar Bio
 
 """A password which contains non-whitespace characters."""
 scalar Password
 
-"""1-70 characters, of which at least one isn't whitespace."""
+"""1-70 characters, of which at least one isn't whitespace. Leading and trailing whitespace is disallowed."""
 scalar GroupChatTitle
 
-"""At most 1,000 characters, and uses CommonMark. An empty string corresponds to no description."""
+"""
+At most 1,000 characters, and uses CommonMark. An empty string corresponds to no description. Leading and trailing
+whitespace is disallowed.
+"""
 scalar GroupChatDescription
 
-"""1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark."""
+"""
+1-10,000 characters, of which at least one isn't whitespace. Uses CommonMark. Leading and trailing whitespace is
+disallowed.
+"""
 scalar MessageText
 
 scalar Uuid

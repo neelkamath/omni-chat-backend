@@ -35,11 +35,16 @@ data class Name(val value: String) {
     }
 }
 
-/** An [IllegalArgumentException] will be thrown if the [value] exceeds [Bio.MAX_LENGTH] */
+/**
+ * An [IllegalArgumentException] will be thrown if the [value] exceeds [Bio.MAX_LENGTH], contains leading whitespace, or
+ * contains trailing whitespace.
+ */
 data class Bio(val value: String) {
     init {
         if (value.length > MAX_LENGTH)
             throw IllegalArgumentException("The value ($value) cannot exceed $MAX_LENGTH characters.")
+        if (value.trim() != value)
+            throw IllegalArgumentException("The value ($value) can neither contain leading nor trailing whitespace.")
     }
 
     companion object {
@@ -383,7 +388,7 @@ data class GroupChatInput(
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[MessageText.MAX_LENGTH] characters with at least
- * one non-whitespace.
+ * one non-whitespace character, or it contains leading/trailing whitespace.
  */
 data class MessageText(val value: String) {
     init {
@@ -391,6 +396,8 @@ data class MessageText(val value: String) {
             throw IllegalArgumentException(
                 "The text must be 1-$MAX_LENGTH characters, with at least one non-whitespace.",
             )
+        if (value.trim() != value)
+            throw IllegalArgumentException("The value ($value) mustn't contain leading or trailing whitespace.")
     }
 
     companion object {
@@ -399,8 +406,9 @@ data class MessageText(val value: String) {
 }
 
 /**
- * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[GroupChatTitle.MAX_LENGTH] characters, of which
- * at least one isn't whitespace.
+ * An [IllegalArgumentException] will be thrown in the following cases:
+ * - The [value] isn't 1-[GroupChatTitle.MAX_LENGTH] characters, of which at least one isn't whitespace.
+ * - The [value] contains leading or trailing whitespace.
  */
 data class GroupChatTitle(val value: String) {
     init {
@@ -411,6 +419,8 @@ data class GroupChatTitle(val value: String) {
                 non-whitespace character.
                 """.trimIndent(),
             )
+        if (value.trim() != value)
+            throw IllegalArgumentException("The value ($value) cannot contain leading or trailing whitespace.")
     }
 
     companion object {
@@ -420,14 +430,14 @@ data class GroupChatTitle(val value: String) {
 
 /**
  * An [IllegalArgumentException] will be thrown if the [value] isn't at most [GroupChatDescription.MAX_LENGTH]
- * characters.
+ * characters, or it contains leading/trailing whitespace.
  */
 data class GroupChatDescription(val value: String) {
     init {
         if (value.length > MAX_LENGTH)
-            throw IllegalArgumentException(
-                """The description ("$value") must be at most $MAX_LENGTH characters""",
-            )
+            throw IllegalArgumentException("""The description ("$value") must be at most $MAX_LENGTH characters""")
+        if (value.trim() != value)
+            throw IllegalArgumentException("The value ($value) mustn't contain leading or trailing whitespace.")
     }
 
     companion object {

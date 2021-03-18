@@ -54,7 +54,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Added the field `state: MessageState!` to the following:
+- Add the field `state: MessageState!` to the following:
     - `interface BareMessage`
     - `interface Message`
     - `type TextMessage`
@@ -84,7 +84,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type NewGroupChatInviteMessage`
     - `type NewDocMessage`
     - `type NewVideoMessage`
-- Previously, GraphQL operations returned results regarding invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead, and are now done so. The following operations have had their return types updated accordingly:
+- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types:
     - `Query.searchChatMessages`
     - `Query.readChat`
     - `Query.readGroupChat`
@@ -114,6 +114,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `Mutation.triggerAction`
     - `Mutation.setPollVote`
     - `Mutation.deleteMessage`
+- Disallow leading and trailing whitespace in the following `scalar`s:
+    - `Bio`
+    - `GroupChatTitle`
+    - `GroupChatDescription`
+    - `MessageText`
 
 ### Fixed
 
