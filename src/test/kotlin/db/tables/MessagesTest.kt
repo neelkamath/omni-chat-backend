@@ -43,12 +43,15 @@ class MessagesTest {
             testPrivateChat(MessageState.READ)
 
         private fun testGroupChat(state: MessageState) {
-            val (adminId, user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
             when (state) {
                 MessageState.SENT -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
-                MessageState.DELIVERED -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
+                MessageState.DELIVERED -> {
+                    MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
+                    MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
+                }
                 MessageState.READ ->
                     listOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
             }
@@ -61,11 +64,11 @@ class MessagesTest {
 
         @Test
         fun `A message not read by every user in a group chat must have a 'DELIVERED' status`(): Unit =
-            testGroupChat(MessageState.SENT)
+            testGroupChat(MessageState.DELIVERED)
 
         @Test
         fun `A message read by every user in a group chat must have a 'READ' status`(): Unit =
-            testGroupChat(MessageState.SENT)
+            testGroupChat(MessageState.READ)
 
         @Test
         fun `A message in a group chat with a single participant must have a 'READ' status`() {

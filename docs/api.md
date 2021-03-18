@@ -57,22 +57,6 @@ Here's an example:
 }
 ```
 
-### Schema
-
-The schema contains sentences similar to ```Returned `errors[0].message`s could be `"INVALID_CHAT_ID"`.```. `errors[0].message` refers to the `message` key of the first error returned. Such explicitly documented error messages mostly exist to help the client react to invalid operation states at runtime. For example, when the `"NONEXISTENT_USER"` error message gets returned, the client can politely notify the user that they're attempting to log in with an incorrect username, and that they should either fix a typo in it, or sign up for a new account. Here's an example GraphQL document containing the `"NONEXISTENT_USER"` error message:
-
-```json
-{
-  "errors": [
-    {
-      "message": "NONEXISTENT_USER"
-    }
-  ]
-}
-```
-
-There is one error message which every operation can return which isn't explicitly documented because it'd be repetitive and irrelevant. This is the `"INTERNAL_SERVER_ERROR"` `errors[0].message`. It indicates a server-side bug. A client would be unable to do anything about this besides potentially telling the user something similar to "Something went wrong. Please try again.".
-
 ### Pagination
 
 [Pagination](https://graphql.org/learn/pagination/) follows [Relay](https://relay.dev)'s [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm) with the exception that fields are nullable based on what's more logical. The following explanation clarifies the parts Relay's spec isn't clear on.
