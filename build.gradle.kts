@@ -2,10 +2,9 @@ plugins {
     application
     kotlin("jvm") version "1.4.31"
     id("com.github.johnrengelman.shadow") version "6.1.0"
-    id("com.github.breadmoirai.github-release") version "2.2.12"
 }
 
-version = "0.16.0"
+version = "0.17.0"
 application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories { jcenter() }
@@ -52,12 +51,3 @@ tasks {
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }
-
-if (gradle.startParameter.taskNames.contains("githubRelease"))
-    githubRelease {
-        token(property("GITHUB_TOKEN") as String)
-        owner("neelkamath")
-        overwrite(true)
-        prerelease((project.version as String).startsWith("0"))
-        releaseAssets("rest-api.html")
-    }

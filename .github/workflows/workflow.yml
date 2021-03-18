@@ -46,16 +46,20 @@ jobs:
         with:
           name: server-test-results
           path: build/reports/tests/test/
-  create-github-release:
+  github-release:
     if: github.ref == 'refs/heads/master'
-    needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
+    # needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build REST API docs
-        run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat' -o rest-api.html
+        run: npx redoc-cli bundle docs/openapi.yaml --title 'Omni Chat Backend' -o rest-api.html
+      - name: Set $VERSION
+        run: echo "VERSION=$(./gradlew -q printVersion)" >> $GITHUB_ENV
       - name: Release
-        run: ./gradlew githubRelease -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create v$VERSION rest-api.html -t v$VERSION $([[ $VERSION = 0* ]] && echo '-p')
   docker-hub-push:
     if: github.ref == 'refs/heads/master'
     needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
