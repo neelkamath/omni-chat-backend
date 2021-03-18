@@ -47,8 +47,8 @@ jobs:
           name: server-test-results
           path: build/reports/tests/test/
   github-release:
-    # if: github.ref == 'refs/heads/master'
-    # needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
+    if: github.ref == 'refs/heads/master'
+    needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
