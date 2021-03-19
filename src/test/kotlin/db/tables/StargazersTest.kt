@@ -90,6 +90,7 @@ class StargazersTest {
             val (user1Subscriber, user2Subscriber) =
                 listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, user1Id)
+            awaitBrokering()
             user1Subscriber.assertValue(UnstarredChat(chatId))
             user2Subscriber.assertNoValues()
         }

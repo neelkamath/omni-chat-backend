@@ -1,6 +1,8 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.isUserInChat
+import com.neelkamath.omniChat.db.messagesNotifier
+import com.neelkamath.omniChat.graphql.routing.UnstarredChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.`java-time`.datetime
@@ -28,12 +30,15 @@ object PrivateChatDeletions : IntIdTable() {
      * they've deleted it, the [chatId] is deleted from [PrivateChats], [PrivateChatDeletions] [Messages],
      * [MessageStatuses], and [TypingStatuses].
      *
+     * The [userId] will be notified of the [UnstarredChat] via [messagesNotifier].
+     *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: Int) {
         if (!isUserInChat(userId, chatId))
             throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
         insert(chatId, userId)
+        Stargazers.deleteUserChat(userId, chatId)
         deleteUnusedChatData(chatId, userId)
     }
 

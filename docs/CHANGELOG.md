@@ -139,6 +139,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Fixed
 
 - `Mutation.deleteAccount`
+- Unstar any messages the user starred in the chat they've left when calling `Mutation.deletePrivateChat` `Mutation.leaveGroupChat`, or `Mutation.removeGroupChatUsers`.
 
 ### Removed
 

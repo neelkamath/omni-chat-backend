@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.count
+import com.neelkamath.omniChat.graphql.routing.MessageText
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
@@ -66,6 +67,16 @@ class PrivateChatDeletionsTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             repeat(2) { PrivateChatDeletions.create(chatId, user1Id) }
+        }
+
+        @Test
+        fun `Deleting the chat must unstar messages for the user even if the chat still exists`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val messageId = Messages.message(user1Id, chatId, MessageText("t"))
+            Stargazers.create(user1Id, messageId)
+            PrivateChatDeletions.create(chatId, user1Id)
+            assertTrue(Stargazers.read(user1Id).isEmpty())
         }
     }
 
