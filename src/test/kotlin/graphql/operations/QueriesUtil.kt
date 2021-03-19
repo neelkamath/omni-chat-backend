@@ -8,16 +8,16 @@ import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.testingObjectMapper
 import java.util.*
 
-const val READ_TYPING_STATUSES = """
-    query ReadTypingStatuses {
-        readTypingStatuses {
-            $TYPING_STATUS_FRAGMENT
+const val READ_TYPING_USERS_QUERY = """
+    query ReadTypingUsers {
+        readTypingUsers {
+            $TYPING_USERS_FRAGMENT
         }
     }
 """
 
-fun readTypingStatuses(userId: Int): List<TypingStatus> {
-    val data = executeGraphQlViaEngine(READ_TYPING_STATUSES, userId = userId).data!!["readTypingStatuses"]!!
+fun readTypingUsers(userId: Int): List<TypingUsers> {
+    val data = executeGraphQlViaEngine(READ_TYPING_USERS_QUERY, userId = userId).data!!["readTypingUsers"]!!
     return testingObjectMapper.convertValue(data)
 }
 

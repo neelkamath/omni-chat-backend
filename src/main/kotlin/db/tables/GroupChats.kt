@@ -139,7 +139,7 @@ object GroupChats : Table() {
     fun updatePic(chatId: Int, pic: Pic?) {
         transaction {
             val op = GroupChats.id eq chatId
-            update({ op }) { it[this.picId] = null }
+            update({ op }) { it[picId] = null }
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }

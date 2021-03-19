@@ -124,7 +124,7 @@ fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     return if (Users.exists(userId)) Users.readOnlineStatus(userId) else InvalidUserId
 }
 
-fun readTypingStatuses(env: DataFetchingEnvironment): List<TypingStatus> {
+fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
     env.verifyAuth()
     val idList = PrivateChats.readUserChatIdList(env.userId!!) + GroupChatUsers.readChatIdList(env.userId!!)
     return TypingStatuses.readChats(idList, env.userId!!).toList()

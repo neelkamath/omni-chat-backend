@@ -98,7 +98,7 @@ fun setTyping(env: DataFetchingEnvironment): InvalidChatId? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) return InvalidChatId
-    TypingStatuses.set(chatId, env.userId!!, env.getArgument("isTyping"))
+    TypingStatuses.update(chatId, env.userId!!, env.getArgument("isTyping"))
     return null
 }
 

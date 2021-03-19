@@ -199,7 +199,7 @@ object Users : IntIdTable() {
     fun updatePic(userId: Int, pic: Pic?) {
         transaction {
             val op = Users.id eq userId
-            update({ op }) { it[this.picId] = null }
+            update({ op }) { it[picId] = null }
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }

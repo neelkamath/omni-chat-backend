@@ -7,7 +7,7 @@ import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
 import com.neelkamath.omniChat.graphql.operations.STARRED_MESSAGE_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.TYPING_STATUS_FRAGMENT
+import com.neelkamath.omniChat.graphql.operations.TYPING_USERS_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import io.ktor.application.*
 import io.ktor.http.*
@@ -40,9 +40,9 @@ class QueriesAndMutationsTest {
                             }
                         }
                         
-                        query ReadTypingStatuses {
-                            readTypingStatuses {
-                                $TYPING_STATUS_FRAGMENT
+                        query ReadTypingUsers {
+                            readTypingUsers {
+                                $TYPING_USERS_FRAGMENT
                             }
                         }
                     """

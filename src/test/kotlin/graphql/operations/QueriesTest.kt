@@ -88,17 +88,18 @@ class ChatMessagesDtoTest {
 @ExtendWith(DbExtension::class)
 class QueriesTest {
     @Nested
-    inner class ReadTypingStatuses {
+    inner class ReadTypingUsers {
         @Test
         fun `Typing statuses from the user's chats must be read excluding the user's own`() {
             val (adminId, participant1Id, participant2Id, nonParticipantId) = createVerifiedUsers(4).map { it.info.id }
             val groupChatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
             val privateChatId = PrivateChats.create(participant2Id, nonParticipantId)
-            TypingStatuses.set(groupChatId, adminId, isTyping = true)
-            TypingStatuses.set(groupChatId, participant1Id, isTyping = true)
-            TypingStatuses.set(privateChatId, nonParticipantId, isTyping = true)
-            val expected = listOf(TypingStatus(groupChatId, participant1Id, isTyping = true))
-            assertEquals(expected, readTypingStatuses(adminId))
+            TypingStatuses.update(groupChatId, adminId, isTyping = true)
+            TypingStatuses.update(groupChatId, participant1Id, isTyping = true)
+            TypingStatuses.update(privateChatId, nonParticipantId, isTyping = true)
+            val users = listOf(Users.read(participant1Id).toAccount())
+            val expected = listOf(TypingUsers(groupChatId, users))
+            assertEquals(expected, readTypingUsers(adminId))
         }
     }
 

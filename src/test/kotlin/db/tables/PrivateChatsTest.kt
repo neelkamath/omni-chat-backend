@@ -29,7 +29,7 @@ class PrivateChatsTest {
         fun `Deleting the chat must wipe it from the DB`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            TypingStatuses.set(chatId, user1Id, isTyping = true)
+            TypingStatuses.update(chatId, user1Id, isTyping = true)
             val messageId = Messages.message(user2Id, chatId)
             MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
             Stargazers.create(user1Id, messageId)

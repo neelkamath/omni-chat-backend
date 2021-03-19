@@ -69,11 +69,11 @@ type Query {
     readOnlineStatus(userId: Int!): ReadOnlineStatusResult!
 
     """
-    The statuses of users who are typing in a chat the user is in. The user's own status won't be returned.
+    The users who are typing in a chat the user is in. The user's own status won't be returned.
 
     An access token must be sent with this request.
     """
-    readTypingStatuses: [TypingStatus!]!
+    readTypingUsers: [TypingUsers!]!
 
     """
     Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
@@ -639,6 +639,12 @@ type TypingStatus {
     chatId: Int!
     userId: Int!
     isTyping: Boolean!
+}
+
+"""The `users` who are typing in the `chatId`."""
+type TypingUsers {
+    chatId: Int!
+    users: [Account!]!
 }
 
 type GroupChatId {

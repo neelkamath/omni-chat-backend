@@ -11,6 +11,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Added
 
 - `enum MessageState`
+- `type TypingUsers`
 - `type NonexistentUser`
 - `type UnverifiedEmailAddress`
 - `type EmailAddressVerified`
@@ -138,6 +139,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type UnstarredChat`
 - Replace `type ExitedUser` with `type ExitedUsers`.
 - Replace `type UpdatedOnlineStatus` with `type OnlineStatus` in `union OnlineStatusesSubscription`.
+- Replaced `Query.readTypingStatuses` with `Query.readTypingUsers`.
 
 ### Fixed
 

@@ -6,6 +6,7 @@ import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
+import com.neelkamath.omniChat.graphql.routing.TypingUsers
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -17,7 +18,7 @@ import kotlin.test.assertFalse
 @ExtendWith(DbExtension::class)
 class TypingStatusesTest {
     @Nested
-    inner class Set {
+    inner class Update {
         @Test
         fun `Only subscribers in the chat must be notified of the status`() {
             runBlocking {
@@ -26,7 +27,7 @@ class TypingStatusesTest {
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
                     .map { typingStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 val isTyping = true
-                TypingStatuses.set(chatId, user1Id, isTyping)
+                TypingStatuses.update(chatId, user1Id, isTyping)
                 awaitBrokering()
                 listOf(user1Subscriber, user3Subscriber).forEach { it.assertNoValues() }
                 user2Subscriber.assertValue(TypingStatus(chatId, user1Id, isTyping))
@@ -37,7 +38,7 @@ class TypingStatusesTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             repeat(repetitions) {
-                TypingStatuses.set(chatId, adminId, isTyping = true)
+                TypingStatuses.update(chatId, adminId, isTyping = true)
                 assertEquals(1, TypingStatuses.count())
             }
         }
@@ -60,7 +61,7 @@ class TypingStatusesTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val isTyping = true
-            TypingStatuses.set(chatId, adminId, isTyping)
+            TypingStatuses.update(chatId, adminId, isTyping)
             assertEquals(isTyping, TypingStatuses.read(chatId, adminId))
         }
 
@@ -76,9 +77,10 @@ class TypingStatusesTest {
         fun `Only users who are typing must be returned excluding the user themselves`() {
             val (adminId, participant1Id, participant2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
-            TypingStatuses.set(chatId, adminId, isTyping = true)
-            TypingStatuses.set(chatId, participant1Id, isTyping = true)
-            val expected = setOf(TypingStatus(chatId, participant1Id, isTyping = true))
+            TypingStatuses.update(chatId, adminId, isTyping = true)
+            TypingStatuses.update(chatId, participant1Id, isTyping = true)
+            val users = listOf(Users.read(participant1Id).toAccount())
+            val expected = setOf(TypingUsers(chatId, users))
             val actual = TypingStatuses.readChats(setOf(chatId), adminId)
             assertEquals(expected, actual)
         }

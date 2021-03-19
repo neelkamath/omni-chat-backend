@@ -477,12 +477,13 @@ const val CREATED_SUBSCRIPTION_FRAGMENT = """
     }
 """
 
-const val TYPING_STATUS_FRAGMENT = """
-    ... on TypingStatus {
+const val TYPING_USERS_FRAGMENT = """
+    ... on TypingUsers {
         __typename
         chatId
-        userId
-        isTyping
+        users {
+            $ACCOUNT_FRAGMENT
+        }
     }
 """
 

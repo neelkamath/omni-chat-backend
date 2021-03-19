@@ -352,6 +352,8 @@ data class NewContact(
 
 interface OnlineStatusesSubscription
 
+data class TypingUsers(val chatId: Int, val users: List<Account>)
+
 data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?) :
     ReadOnlineStatusResult,
     OnlineStatusesSubscription
