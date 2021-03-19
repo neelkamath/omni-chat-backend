@@ -51,6 +51,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(ForwardMessageResultDeserializer)
     .register(TriggerActionResultDeserializer)
     .register(SetPollVoteResultDeserializer)
+    .register(LeaveGroupChatResultDeserializer)
     .register(EmailEmailAddressVerificationResultDeserializer)
 
 private object PlaceholderDeserializer : JsonDeserializer<Placeholder>() {
@@ -495,6 +496,18 @@ private object SetPollVoteResultDeserializer : JsonDeserializer<SetPollVoteResul
         val clazz: KClass<out SetPollVoteResult> = when (val type = node["__typename"].asText()) {
             "NonexistentOption" -> NonexistentOption::class
             "InvalidMessageId" -> InvalidMessageId::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object LeaveGroupChatResultDeserializer : JsonDeserializer<LeaveGroupChatResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): LeaveGroupChatResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out LeaveGroupChatResult> = when (val type = node["__typename"].asText()) {
+            "InvalidChatId" -> InvalidChatId::class
+            "CannotLeaveChat" -> CannotLeaveChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

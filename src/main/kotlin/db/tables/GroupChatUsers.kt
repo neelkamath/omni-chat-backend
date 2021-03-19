@@ -17,7 +17,7 @@ object GroupChatUsers : IntIdTable() {
     private val isAdmin: Column<Boolean> = bool("is_admin")
 
     private fun isUserInChat(userId: Int, chatId: Int): Boolean = transaction {
-        !select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty()
+        select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty().not()
     }
 
     /**
@@ -113,7 +113,7 @@ object GroupChatUsers : IntIdTable() {
         return supplied == existing || (existing - supplied).any { isAdmin(it, chatId) }
     }
 
-    private fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())
+    fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())
 
     /**
      * Removes users in the [userIdList] from the [chatId]. An [IllegalArgumentException] will be thrown if not

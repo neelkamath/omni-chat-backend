@@ -51,7 +51,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ForwardMessageResult`
 - `union TriggerActionResult`
 - `union SetPollVoteResult`
+- `type CannotLeaveChat`
+- `union LeaveGroupChatResult`
 - `Mutation.joinPublicChat`
+- `Mutation.leaveGroupChat`
 
 ### Changed
 
@@ -85,7 +88,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type NewGroupChatInviteMessage`
     - `type NewDocMessage`
     - `type NewVideoMessage`
-- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types:
+- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types accordingly:
     - `Query.searchChatMessages`
     - `Query.readChat`
     - `Query.readGroupChat`

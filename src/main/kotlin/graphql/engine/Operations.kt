@@ -43,6 +43,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("updateGroupChatDescription", ::updateGroupChatDescription)
     .dataFetcher("addGroupChatUsers", ::addGroupChatUsers)
     .dataFetcher("removeGroupChatUsers", ::removeGroupChatUsers)
+    .dataFetcher("leaveGroupChat", ::leaveGroupChat)
     .dataFetcher("makeGroupChatAdmins", ::makeGroupChatAdmins)
     .dataFetcher("createPollMessage", ::createPollMessage)
     .dataFetcher("setPollVote", ::setPollVote)

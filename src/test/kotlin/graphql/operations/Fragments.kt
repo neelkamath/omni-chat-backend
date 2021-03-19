@@ -49,6 +49,13 @@ const val INVALID_CHAT_ID_FRAGMENT = """
     }
 """
 
+const val CANNOT_LEAVE_CHAT_FRAGMENT = """
+    ... on CannotLeaveChat {
+        __typename
+        placeholder
+    }
+"""
+
 const val INVALID_ADMIN_ID_FRAGMENT = """
     ... on InvalidAdminId {
         __typename
@@ -875,4 +882,9 @@ const val TRIGGER_ACTION_RESULT_FRAGMENT = """
 const val SET_POLL_VOTE_RESULT_FRAGMENT = """
     $INVALID_MESSAGE_ID_FRAGMENT
     $NONEXISTENT_OPTION_FRAGMENT
+"""
+
+const val LEAVE_GROUP_CHAT_RESULT_FRAGMENT = """
+    $CANNOT_LEAVE_CHAT_FRAGMENT
+    $INVALID_CHAT_ID_FRAGMENT
 """

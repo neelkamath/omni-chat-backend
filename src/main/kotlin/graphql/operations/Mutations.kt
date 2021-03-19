@@ -272,7 +272,7 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun removeGroupChatUsers(env: DataFetchingEnvironment): InvalidUserId? {
+fun removeGroupChatUsers(env: DataFetchingEnvironment): CannotLeaveChat? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
@@ -280,8 +280,17 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): InvalidUserId? {
     try {
         GroupChatUsers.removeUsers(chatId, userIdList)
     } catch (_: IllegalArgumentException) {
-        return InvalidUserId
+        return CannotLeaveChat
     }
+    return null
+}
+
+fun leaveGroupChat(env: DataFetchingEnvironment): LeaveGroupChatResult? {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) return InvalidChatId
+    if (!GroupChatUsers.canUsersLeave(chatId, env.userId!!)) return CannotLeaveChat
+    GroupChatUsers.removeUsers(chatId, env.userId!!)
     return null
 }
 

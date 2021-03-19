@@ -321,15 +321,19 @@ type Mutation {
 
     """
     Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
-    chat will be ignored.
-
-    `null` will be returned if the operation succeeded. An `InvalidUserId` will be returned if the user attempted to
-    leave the chat but they must first appoint another user as an admin because they're the last admin of an otherwise
-    nonempty chat.
+    chat will be ignored. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, idList: [Int!]!): InvalidUserId
+    removeGroupChatUsers(chatId: Int!, idList: [Int!]!): CannotLeaveChat
+
+    """
+    Leaves the chat the user is in. Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if
+    the user isn't the specified group chat.
+
+    An access token must be sent with this request.
+    """
+    leaveGroupChat(chatId: Int!): LeaveGroupChatResult
 
     """
     Makes every user in the `idList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
@@ -1441,6 +1445,14 @@ type CreatedChatId {
     id: Int!
 }
 
+"""
+The user attempted to leave the chat but they must first appoint another user as an admin because they're the last admin
+of an otherwise nonempty chat.
+"""
+type CannotLeaveChat {
+    placeholder: Placeholder!
+}
+
 union SearchChatMessagesResult = MessageEdges | InvalidChatId
 
 union ReadChatResult = PrivateChat | GroupChat | InvalidChatId
@@ -1476,3 +1488,5 @@ union ForwardMessageResult = InvalidChatId | InvalidMessageId
 union TriggerActionResult = InvalidMessageId | InvalidAction
 
 union SetPollVoteResult = InvalidMessageId | NonexistentOption
+
+union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat

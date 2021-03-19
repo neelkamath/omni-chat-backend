@@ -6,6 +6,20 @@ import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.testingObjectMapper
 import java.util.*
 
+const val LEAVE_GROUP_CHAT_QUERY = """
+    mutation LeaveGroupChat(${"$"}chatId: Int!) {
+        leaveGroupChat(chatId: ${"$"}chatId) {
+            $LEAVE_GROUP_CHAT_RESULT_FRAGMENT
+        }
+    }
+"""
+
+fun leaveGroupChat(userId: Int, chatId: Int): LeaveGroupChatResult? {
+    val data =
+        executeGraphQlViaEngine(LEAVE_GROUP_CHAT_QUERY, mapOf("chatId" to chatId), userId).data!!["leaveGroupChat"]
+    return if (data == null) data else testingObjectMapper.convertValue(data)
+}
+
 const val JOIN_PUBLIC_CHAT_QUERY = """
     mutation JoinPublicChat(${"$"}chatId: Int!) {
         joinPublicChat(chatId: ${"$"}chatId) {
@@ -145,12 +159,12 @@ fun forwardMessage(userId: Int, chatId: Int, messageId: Int, contextMessageId: I
 const val REMOVE_GROUP_CHAT_USERS_QUERY = """
     mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}idList: [Int!]!) {
         removeGroupChatUsers(chatId: ${"$"}chatId, idList: ${"$"}idList) {
-            $INVALID_USER_ID_FRAGMENT
+            $CANNOT_LEAVE_CHAT_FRAGMENT
         }
     }
 """
 
-fun removeGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): InvalidUserId? {
+fun removeGroupChatUsers(userId: Int, chatId: Int, idList: List<Int>): CannotLeaveChat? {
     val data = executeGraphQlViaEngine(
         REMOVE_GROUP_CHAT_USERS_QUERY,
         mapOf("chatId" to chatId, "idList" to idList),

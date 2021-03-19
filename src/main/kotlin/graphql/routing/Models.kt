@@ -66,6 +66,11 @@ object NonexistentUser : RequestTokenSetResult {
     val placeholder = Placeholder
 }
 
+object CannotLeaveChat : LeaveGroupChatResult {
+    @Suppress("unused")
+    val placeholder = Placeholder
+}
+
 object UnverifiedEmailAddress : RequestTokenSetResult {
     @Suppress("unused")
     val placeholder = Placeholder
@@ -100,7 +105,8 @@ object InvalidChatId :
     CreateActionMessageResult,
     CreateGroupChatInviteMessageResult,
     CreatePollMessageResult,
-    ForwardMessageResult {
+    ForwardMessageResult,
+    LeaveGroupChatResult {
 
     @Suppress("unused")
     val placeholder = Placeholder
@@ -1341,5 +1347,7 @@ interface ForwardMessageResult
 interface TriggerActionResult
 
 interface SetPollVoteResult
+
+interface LeaveGroupChatResult
 
 data class MessageEdges(val edges: List<MessageEdge>) : SearchChatMessagesResult

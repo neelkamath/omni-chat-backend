@@ -40,6 +40,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("ForwardMessageResult") { wireType(it, ::readForwardMessageResult) }
     .type("TriggerActionResult") { wireType(it, ::readTriggerActionResult) }
     .type("SetPollVoteResult") { wireType(it, ::readSetPollVoteResult) }
+    .type("LeaveGroupChatResult") { wireType(it, ::readLeaveGroupChatResult) }
 
 private inline fun wireType(
     builder: TypeRuntimeWiring.Builder,
@@ -196,6 +197,12 @@ private fun readForwardMessageResult(obj: Any): String = when (obj) {
 private fun readTriggerActionResult(obj: Any): String = when (obj) {
     is InvalidMessageId -> "InvalidMessageId"
     is InvalidAction -> "InvalidAction"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readLeaveGroupChatResult(obj: Any): String = when (obj) {
+    is InvalidChatId -> "InvalidChatId"
+    is CannotLeaveChat -> "CannotLeaveChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

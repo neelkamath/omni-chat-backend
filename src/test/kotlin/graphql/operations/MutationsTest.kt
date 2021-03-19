@@ -34,7 +34,7 @@ class MutationsTest {
         @Test
         fun `'null' must be returned once the user gets blocked`() {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
-            assertEquals(null, blockUser(blockerId, blockedId))
+            assertNull(blockUser(blockerId, blockedId))
             val userId = BlockedUsers.read(blockerId).edges[0].node.id
             assertEquals(blockedId, userId)
         }
@@ -54,7 +54,7 @@ class MutationsTest {
             Users.create(account)
             val user = Users.read(account.username)
             val password = Password("new")
-            assertEquals(null, resetPassword(user.emailAddress, user.passwordResetCode, password))
+            assertNull(resetPassword(user.emailAddress, user.passwordResetCode, password))
             val login = Login(account.username, password)
             assertTrue(Users.isValidLogin(login))
         }
@@ -83,7 +83,7 @@ class MutationsTest {
             val account = AccountInput(Username("username"), Password("p"), "john.doe@example.com")
             Users.create(account)
             val user = Users.read(account.username)
-            assertEquals(null, verifyEmailAddress(user.emailAddress, user.emailAddressVerificationCode))
+            assertNull(verifyEmailAddress(user.emailAddress, user.emailAddressVerificationCode))
             assertTrue(Users.read(account.username).hasVerifiedEmailAddress)
         }
 
@@ -114,7 +114,7 @@ class MutationsTest {
             )
             awaitBrokering()
             val subscriber = messagesNotifier.subscribe(admin.id).subscribeWith(TestSubscriber())
-            assertEquals(null, triggerAction(admin.id, messageId, action))
+            assertNull(triggerAction(admin.id, messageId, action))
             awaitBrokering()
             subscriber.assertValue(TriggeredAction(messageId, action, admin))
         }
@@ -150,7 +150,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
             val message = ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
-            assertEquals(null, createActionMessage(adminId, chatId, message, contextMessageId))
+            assertNull(createActionMessage(adminId, chatId, message, contextMessageId))
             val node = Messages.readGroupChatConnection(chatId).edges.last().node
             assertEquals(node.context.id, contextMessageId)
             assertEquals(message.toActionableMessage(), ActionMessages.read(node.messageId))
@@ -217,7 +217,7 @@ class MutationsTest {
         fun `The public chat must be joined`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            assertEquals(null, joinPublicChat(userId, chatId))
+            assertNull(joinPublicChat(userId, chatId))
             assertEquals(chatId, GroupChats.readUserChats(userId).first().id)
         }
 
@@ -230,6 +230,30 @@ class MutationsTest {
     }
 
     @Nested
+    inner class LeaveGroupChat {
+        @Test
+        fun `The user mustn't be able to leave a chat they aren't in`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            assertTrue(leaveGroupChat(userId, chatId) is InvalidChatId)
+        }
+
+        @Test
+        fun `The last admin of an otherwise nonempty chat mustn't be able to leave`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            assertTrue(leaveGroupChat(adminId, chatId) is CannotLeaveChat)
+        }
+
+        @Test
+        fun `The user must be able to leave the chat`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            assertNull(leaveGroupChat(userId, chatId))
+        }
+    }
+
+    @Nested
     inner class ForwardMessage {
         @Test
         fun `The message must be forwarded with a context`() {
@@ -237,7 +261,7 @@ class MutationsTest {
             val (chat1Id, chat2Id) = listOf(1, 2).map { GroupChats.create(listOf(adminId)) }
             val messageId = Messages.message(adminId, chat1Id)
             val contextMessageId = Messages.message(adminId, chat2Id)
-            assertEquals(null, forwardMessage(adminId, chat2Id, messageId, contextMessageId))
+            assertNull(forwardMessage(adminId, chat2Id, messageId, contextMessageId))
             val node = Messages.readGroupChat(chat2Id).last().node
             assertEquals(contextMessageId, node.context.id)
             assertTrue(node.isForwarded)
@@ -295,7 +319,7 @@ class MutationsTest {
         fun `The chat's invitability must be updated`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            assertEquals(null, setInvitability(adminId, chatId, isInvitable = true))
+            assertNull(setInvitability(adminId, chatId, isInvitable = true))
             assertEquals(GroupChatPublicity.INVITABLE, GroupChats.readChat(chatId).publicity)
         }
 
@@ -327,7 +351,7 @@ class MutationsTest {
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
             val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
-            assertEquals(null, createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId))
+            assertNull(createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId))
             assertEquals(1, GroupChatInviteMessages.count())
         }
 
@@ -391,7 +415,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             repeat(2) {
                 val result = joinGroupChat(userId, GroupChats.readInviteCode(chatId))
-                assertEquals(null, result)
+                assertNull(result)
             }
             assertEquals(setOf(adminId, userId), GroupChatUsers.readUserIdList(chatId).toSet())
         }
@@ -412,7 +436,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId)
             val poll = PollInput(MessageText("Title"), listOf(MessageText("option 1"), MessageText("option 2")))
-            assertEquals(null, createPollMessage(adminId, chatId, poll, contextMessageId))
+            assertNull(createPollMessage(adminId, chatId, poll, contextMessageId))
             val message = Messages.readGroupChat(chatId, userId = adminId).last().node
             assertEquals(contextMessageId, message.context.id)
             val options = poll.options.map { PollOption(it, votes = listOf()) }
@@ -458,7 +482,7 @@ class MutationsTest {
             val option = MessageText("option 1")
             val poll = PollInput(MessageText("Title"), listOf(option, MessageText("option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
-            assertEquals(null, setPollVote(adminId, messageId, option, vote = true))
+            assertNull(setPollVote(adminId, messageId, option, vote = true))
             assertEquals(listOf(adminId), PollMessages.read(messageId).options.first { it.option == option }.votes)
         }
 
@@ -582,7 +606,7 @@ class MutationsTest {
             val (admin1Id, admin2Id, userId) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id, admin2Id), listOf(userId))
             val result = removeGroupChatUsers(admin1Id, chatId, listOf(admin1Id, userId))
-            assertEquals(null, result)
+            assertNull(result)
             assertEquals(listOf(admin2Id), GroupChats.readChat(chatId).users.edges.map { it.node.id })
         }
 
@@ -591,7 +615,7 @@ class MutationsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val result = removeGroupChatUsers(adminId, chatId, listOf(adminId, userId))
-            assertEquals(null, result)
+            assertNull(result)
             assertEquals(0, GroupChats.count())
         }
 
@@ -600,7 +624,7 @@ class MutationsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val result = removeGroupChatUsers(adminId, chatId, listOf(adminId))
-            assertTrue(result is InvalidUserId)
+            assertTrue(result is CannotLeaveChat)
         }
 
         @Test
@@ -608,7 +632,7 @@ class MutationsTest {
             val (adminId, userNotInChatId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
             val result = removeGroupChatUsers(adminId, chatId, listOf(-1, userNotInChatId))
-            assertEquals(null, result)
+            assertNull(result)
         }
     }
 
@@ -680,7 +704,7 @@ class MutationsTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertEquals(null, star(adminId, messageId))
+            assertNull(star(adminId, messageId))
             assertEquals(setOf(messageId), Stargazers.read(adminId))
         }
 
@@ -717,7 +741,7 @@ class MutationsTest {
         private fun assertTypingStatus(isTyping: Boolean) {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            assertEquals(null, setTyping(adminId, chatId, isTyping))
+            assertNull(setTyping(adminId, chatId, isTyping))
             assertEquals(isTyping, TypingStatuses.read(chatId, adminId))
         }
 
@@ -778,7 +802,7 @@ class MutationsTest {
         @Test
         fun `Creating an account must save it to the auth system, and the DB`() {
             val account = AccountInput(Username("u"), Password("p"), "username@example.com")
-            assertEquals(null, createAccount(account))
+            assertNull(createAccount(account))
             with(Users.read(account.username)) {
                 assertEquals(account.username, username)
                 assertEquals(account.emailAddress, emailAddress)
@@ -894,7 +918,7 @@ class MutationsTest {
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
             val result = createTextMessage(user1Id, chatId, MessageText("t"))
-            assertEquals(null, result)
+            assertNull(result)
         }
 
         @Test
@@ -991,7 +1015,7 @@ class MutationsTest {
         @Test
         fun `A status must be created`() {
             val (messageId, user1Id) = createUtilizedPrivateChat()
-            assertEquals(null, createStatus(user1Id, messageId, MessageStatus.DELIVERED))
+            assertNull(createStatus(user1Id, messageId, MessageStatus.DELIVERED))
             val statuses = MessageStatuses.read(messageId)
             assertEquals(1, statuses.size)
             assertEquals(MessageStatus.DELIVERED, statuses.first().status)
@@ -1055,7 +1079,7 @@ class MutationsTest {
         @Test
         fun `'null' must be returned when an account gets deleted from the auth system`() {
             val userId = createVerifiedUsers(1).first().info.id
-            assertEquals(null, deleteAccount(userId))
+            assertNull(deleteAccount(userId))
             assertFalse(Users.exists(userId))
         }
 
@@ -1086,7 +1110,7 @@ class MutationsTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertEquals(null, deleteMessage(adminId, messageId))
+            assertNull(deleteMessage(adminId, messageId))
             assertTrue(Messages.readGroupChat(chatId, userId = adminId).isEmpty())
         }
 
@@ -1128,7 +1152,7 @@ class MutationsTest {
         fun `A chat must be deleted`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            assertEquals(null, deletePrivateChat(user1Id, chatId))
+            assertNull(deletePrivateChat(user1Id, chatId))
             assertTrue(PrivateChatDeletions.isDeleted(user1Id, chatId))
         }
 
@@ -1144,7 +1168,7 @@ class MutationsTest {
         @Test
         fun `A password reset request must be sent`() {
             val address = createVerifiedUsers(1).first().info.emailAddress
-            assertEquals(null, emailPasswordResetCode(address))
+            assertNull(emailPasswordResetCode(address))
         }
 
         @Test
@@ -1159,7 +1183,7 @@ class MutationsTest {
             val address = "username@example.com"
             val account = AccountInput(Username("u"), Password("p"), address)
             Users.create(account)
-            assertEquals(null, emailEmailAddressVerification(address))
+            assertNull(emailEmailAddressVerification(address))
         }
 
         @Test
@@ -1192,7 +1216,7 @@ class MutationsTest {
             val user = createVerifiedUsers(1).first().info
             val update =
                 AccountUpdate(Username("john_roger"), emailAddress = "john.roger@example.com", lastName = Name("Roger"))
-            assertEquals(null, updateAccount(user.id, update))
+            assertNull(updateAccount(user.id, update))
             testAccount(user, update)
         }
 
