@@ -101,6 +101,7 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - An operation which is a subscription must return a `union` named using the format `<UPDATE>Subscription`, and includes the type `CreatedSubscription` (e.g., `union MessagesSubscription = CreatedSubscription | NewMessage`).
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
+- A `union` returned by a `Query` or `Mutation` must be the operation's name suffixed with `Result` (e.g., the `union` returned by `Query.searchChatMessages` is named `SearchChatMessagesResult`).
 
 Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.kt) for GraphQL types:
 
@@ -135,7 +136,7 @@ Here's a diagram of how the service works. The client application isn't included
 ## Releasing
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in [`docker-compose.yml`](docker-compose.yml).
-1. Ensure the [API docs **Operations** section](api.md#operations), [`Types.kt`](src/main/kotlin/graphql/engine/Types.kt), [`AppUtil.kt`](src/test/kotlin/AppUtil.kt), and [`Fragments.kt`](src/test/kotlin/graphql/operations/Fragments.kt) are up-to-date.
+1. Ensure the [API docs **Operations** section](api.md#operations), [`Types.kt`](../src/main/kotlin/graphql/engine/Types.kt), [`AppUtil.kt`](../src/test/kotlin/AppUtil.kt), and [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) are up-to-date.
 1. Add a [changelog](CHANGELOG.md) entry.
 1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
 1. Update [`cloud.md`](cloud.md).

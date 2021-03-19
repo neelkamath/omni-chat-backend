@@ -2,7 +2,9 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.graphql.routing.MessageText
+import com.neelkamath.omniChat.graphql.routing.Poll
+import com.neelkamath.omniChat.graphql.routing.PollInput
 import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -48,7 +50,7 @@ object PollMessages : IntIdTable() {
         val optionId = PollOptions.readId(readId(messageId), option)
         if (vote) PollVotes.create(userId, optionId) else PollVotes.deleteVote(userId, optionId)
         val updates = readUserIdList(Messages.readChatIdFromMessageId(messageId))
-            .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
+            .associateWith { Messages.readMessage(it, messageId).toUpdatedMessage() }
         messagesNotifier.publish(updates)
     }
 

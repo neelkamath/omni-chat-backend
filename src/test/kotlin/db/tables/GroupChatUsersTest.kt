@@ -5,8 +5,9 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.graphql.routing.ExitedUser
+import com.neelkamath.omniChat.graphql.routing.ExitedUsers
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
+import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -75,35 +76,35 @@ class GroupChatUsersTest {
         fun `Checking if users who aren't in the chat can leave must return true`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId))
-            GroupChatUsers.removeUsers(chatId, userId)
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, userId))
         }
 
         @Test
         fun `The users must be able to leave if the chat will be empty`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.removeUsers(chatId, adminId, userId)
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, adminId, userId))
         }
 
         @Test
         fun `The users mustn't be able to leave if the chat will have users sans admins`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            assertFailsWith<IllegalArgumentException> { GroupChatUsers.removeUsers(chatId, adminId) }
+            assertFalse(GroupChatUsers.canUsersLeave(chatId, adminId))
         }
 
         @Test
         fun `A non-admin must be able to leave`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            GroupChatUsers.removeUsers(chatId, userId)
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, userId))
         }
 
         @Test
         fun `An admin must be able to leave if there's another admin`() {
             val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = GroupChats.create(listOf(admin1Id, admin2Id))
-            GroupChatUsers.removeUsers(chatId, admin1Id)
+            assertTrue(GroupChatUsers.canUsersLeave(chatId, admin1Id))
         }
     }
 
@@ -170,7 +171,8 @@ class GroupChatUsersTest {
                 listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId, userId)
             awaitBrokering()
-            listOf(adminSubscriber, userSubscriber).forEach { it.assertValue(ExitedUser(userId, chatId)) }
+            val exitedUsers = ExitedUsers(chatId, listOf(userId))
+            listOf(adminSubscriber, userSubscriber).forEach { it.assertValue(exitedUsers) }
         }
 
         @Test
@@ -190,6 +192,16 @@ class GroupChatUsersTest {
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             assertTrue(GroupChatUsers.removeUsers(chatId, adminId, userId))
             assertEquals(0, GroupChats.count())
+        }
+
+        @Test
+        fun `Messages the removed user had starred in the chat must be unstarred for them`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val messageId = Messages.message(userId, chatId, MessageText("t"))
+            Stargazers.create(userId, messageId)
+            GroupChatUsers.removeUsers(chatId, userId)
+            assertFalse(Stargazers.hasStar(userId, messageId))
         }
     }
 

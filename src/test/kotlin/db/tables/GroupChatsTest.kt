@@ -123,7 +123,7 @@ class GroupChatsTest {
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
             MessageStatuses.create(userId, messageId, MessageStatus.READ)
-            TypingStatuses.set(chatId, adminId, isTyping = true)
+            TypingStatuses.update(chatId, adminId, isTyping = true)
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
             listOf(Chats, GroupChats, GroupChatUsers, Messages, MessageStatuses, Stargazers, TypingStatuses)

@@ -1,9 +1,7 @@
 package com.neelkamath.omniChat.graphql.engine
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.graphql.routing.GraphQlDocDataException
 import com.neelkamath.omniChat.graphql.routing.GraphQlRequest
-import com.neelkamath.omniChat.graphql.routing.UnauthorizedException
 import com.neelkamath.omniChat.objectMapper
 import com.neelkamath.omniChat.userId
 import graphql.*
@@ -13,6 +11,9 @@ import graphql.schema.idl.RuntimeWiring.newRuntimeWiring
 import graphql.schema.idl.SchemaGenerator
 import graphql.schema.idl.SchemaParser
 import java.lang.ClassLoader.getSystemClassLoader
+
+object UnauthorizedException :
+    Exception("The user didn't supply an auth token, supplied an invalid one, or lacks the required permissions.")
 
 val graphQl: GraphQL = run {
     val schema = getSystemClassLoader().getResource("schema.graphqls")!!.readText()
@@ -66,12 +67,10 @@ fun buildSpecification(result: ExecutionResult): Map<String, Any> = result.toSpe
  */
 private fun maskError(error: GraphQLError): Map<String, Any> {
     val result = error.toSpecification()
-    result["message"] = if (error is ExceptionWhileDataFetching) {
-        when (error.exception) {
-            is UnauthorizedException -> throw UnauthorizedException
-            is GraphQlDocDataException -> error.exception.message
-            else -> "INTERNAL_SERVER_ERROR"
-        }
-    } else error.message
+    result["message"] = when {
+        error is ExceptionWhileDataFetching && error.exception is UnauthorizedException -> throw UnauthorizedException
+        error is ExceptionWhileDataFetching -> "INTERNAL_SERVER_ERROR"
+        else -> error.message
+    }
     return result
 }

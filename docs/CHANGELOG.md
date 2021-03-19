@@ -6,18 +6,172 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## [0.17.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.17.0) - 2021-03-19
+
+### Added
+
+- `enum MessageState`
+- `type TypingUsers`
+- `type NonexistentUser`
+- `type UnverifiedEmailAddress`
+- `type EmailAddressVerified`
+- `type UsernameTaken`
+- `type IncorrectPassword`
+- `type EmailAddressTaken`
+- `type InvalidChatId`
+- `type InvalidAdminId`
+- `type UnregisteredEmailAddress`
+- `type InvalidUserId`
+- `type InvalidMessageId`
+- `type CannotDeleteAccount`
+- `type InvalidPoll`
+- `type NonexistentOption`
+- `type InvalidInviteCode`
+- `type InvalidInvitedChat`
+- `type InvalidDomain`
+- `type InvalidAction`
+- `type MessageEdges`
+- `type InvalidVerificationCode`
+- `type InvalidPasswordResetCode`
+- `type CreatedChatId`
+- `union SearchChatMessagesResult`
+- `union ReadChatResult`
+- `union ReadGroupChatResult`
+- `union RequestTokenSetResult`
+- `union VerifyEmailAddressResult`
+- `union ResetPasswordResult`
+- `union UpdateAccountResult`
+- `union CreateAccountResult`
+- `union EmailEmailAddressVerificationResult`
+- `union CreateGroupChatResult`
+- `union CreatePrivateChatResult`
+- `union CreateTextMessageResult`
+- `union CreateActionMessageResult`
+- `union CreateGroupChatInviteMessageResult`
+- `union CreatePollMessageResult`
+- `union ForwardMessageResult`
+- `union TriggerActionResult`
+- `union SetPollVoteResult`
+- `type CannotLeaveChat`
+- `type UnstarredChat`
+- `union LeaveGroupChatResult`
+- `Query.readOnlineStatus`
+- `Mutation.joinPublicChat`
+- `Mutation.leaveGroupChat`
+- `type UpdatedMessage`
+
+### Changed
+
+- Renamed `Mutation.deleteStar` to `Mutation.unstar`.
+- Add the field `state: MessageState!` to the following:
+    - `interface BareMessage`
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface BareChatMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
+    - `interface NewMessage`
+    - `type NewTextMessage`
+    - `type NewActionMessage`
+    - `type NewPicMessage`
+    - `type NewPollMessage`
+    - `type NewAudioMessage`
+    - `type NewGroupChatInviteMessage`
+    - `type NewDocMessage`
+    - `type NewVideoMessage`
+- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types accordingly:
+    - `Query.searchChatMessages`
+    - `Query.readChat`
+    - `Query.readGroupChat`
+    - `Query.requestTokenSet`
+    - `Mutation.blockUser`
+    - `Mutation.deleteAccount`
+    - `Mutation.verifyEmailAddress`
+    - `Mutation.resetPassword`
+    - `Mutation.star`
+    - `Mutation.setTyping`
+    - `Mutation.createStatus`
+    - `Mutation.updateAccount`
+    - `Mutation.createAccount`
+    - `Mutation.emailEmailAddressVerification`
+    - `Mutation.emailPasswordResetCode`
+    - `Mutation.removeGroupChatUsers`
+    - `Mutation.createGroupChat`
+    - `Mutation.setInvitability`
+    - `Mutation.joinGroupChat`
+    - `Mutation.deletePrivateChat`
+    - `Mutation.createPrivateChat`
+    - `Mutation.createTextMessage`
+    - `Mutation.createActionMessage`
+    - `Mutation.createGroupChatInviteMessage`
+    - `Mutation.createPollMessage`
+    - `Mutation.forwardMessage`
+    - `Mutation.triggerAction`
+    - `Mutation.setPollVote`
+    - `Mutation.deleteMessage`
+- Disallow leading and trailing whitespace in the following `scalar`s:
+    - `Bio`
+    - `GroupChatTitle`
+    - `GroupChatDescription`
+    - `MessageText`
+- Add `type UpdatedMessage` to `union MessagesSubscription`, and remove the following:
+    - `type UpdatedTextMessage`
+    - `type UpdatedActionMessage`
+    - `type UpdatedPicMessage`
+    - `type UpdatedAudioMessage`
+    - `type UpdatedGroupChatInviteMessage`
+    - `type UpdatedDocMessage`
+    - `type UpdatedVideoMessage`
+    - `type UpdatedPollMessage`
+    - `type UnstarredChat`
+- Replace `type ExitedUser` with `type ExitedUsers`.
+- Replace `type UpdatedOnlineStatus` with `type OnlineStatus` in `union OnlineStatusesSubscription`.
+- Replace `Query.readTypingStatuses` with `Query.readTypingUsers`.
+
+### Fixed
+
+- `Mutation.deleteAccount`
+- Unstar any messages the user starred in the chat they've left when calling `Mutation.deletePrivateChat`, `Mutation.leaveGroupChat`, or `Mutation.removeGroupChatUsers`.
+
+### Removed
+
+- Remove `type UpdatedOnlineStatus` in favor of `type OnlineStatus`.
+- Remove `Query.readOnlineStatuses` in favor of `Query.readOnlineStatus`.
+- Remove the following in favor of `type UpdatedMessage`:
+    - `interface UpdatedMessage`
+    - `type UpdatedTextMessage`
+    - `type UpdatedAudioMessage`
+    - `type UpdatedPicMessage`
+    - `type UpdatedPollMessage`
+    - `type UpdatedVideoMessage`
+    - `type UpdatedActionMessage`
+    - `type UpdatedDocMessage`
+    - `type UpdatedGroupChatInviteMessage`
+
 ## [0.16.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.16.0) - 2021-03-10
 
 ### Added
 
 - `Query.readTypingStatuses`
-- `UpdatedProfilePic` `type`
-- `UpdatedGroupChatPic` `type`
+- `type UpdatedProfilePic`
+- `type UpdatedGroupChatPic`
 
-### Updated
+### Changed
 
-- `Query.isBlocked`
-- `Query.isContact`
 - `Mutation.blockUser`
 - `Mutation.unblockUser`
 - `Mutation.addGroupChatUsers`
@@ -25,27 +179,29 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.makeGroupChatAdmins`
 - `Mutation.deleteContacts`
 - `Mutation.createContacts`
-- `Subscription.subscribeToGroupChats` now sends back an `ExitedUser` if the user themselves left the chat.
-- `UpdatedAccount` `type`
-- `UpdatedGroupChat` `type`
-- `UpdatedOnlineStatus` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedActionMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
-- `UpdatedGroupChatInviteMessage` `type`
-- `UpdatedDocMessage` `type`
-- `UpdatedVideoMessage` `type`
-- `TextMessage` `type`
-- `ActionMessage` `type`
-- `NewTextMessage` `type`
-- `NewActionMessage` `type`
-- `StarredTextMessage` `type`
-- `StarredActionMessage` `type`
-- `Query.searchChatMessages` now returns messages in chronological order.
-- `Query.searchMessages` now returns messages in chronological order.
+- Send back an `ExitedUser` over `Subscription.subscribeToGroupChats` if the user themselves left the chat.
+- `type UpdatedAccount`
+- `type UpdatedGroupChat`
+- `type UpdatedOnlineStatus`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedActionMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
+- `type UpdatedGroupChatInviteMessage`
+- `type UpdatedDocMessage`
+- `type UpdatedVideoMessage`
+- `type TextMessage`
+- `type ActionMessage`
+- `type NewTextMessage`
+- `type NewActionMessage`
+- `type StarredTextMessage`
+- `type StarredActionMessage`
+- `union GroupChatsSubscription`
+- `union AccountsSubscription`
+- Return the messages from `Query.searchChatMessages` in chronological order.
+- Return the messages from `Query.searchMessages` in chronological order.
 
 ### Removed
 
@@ -54,8 +210,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- Fixed an issue where some notifications weren't sent back to clients over WebSockets.
-- Fixed `NewActionMessage` `type`, etc. not being supported in `Subscription`s.
+- Fix some notifications not being sent back to clients over WebSockets.
+- Fix `type NewActionMessage`, etc. not being supported in `Subscription`s.
 - `Query.searchChatMessages` works now.
 - `Query.searchMessages` works now.
 
@@ -66,7 +222,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.setOnline`
 - `Mutation.setBroadcast`
 
-### Updated
+### Changed
 
 - `Mutation.createStatus`
 - `Mutation.addGroupChatUsers`
@@ -91,10 +247,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- `ActionMessage` `type`
-- `StarredActionMessage` `type`
-- `NewActionMessage` `type`
-- `UpdatedActionMessage` `type`
+- `type ActionMessage`
+- `type StarredActionMessage`
+- `type NewActionMessage`
+- `type UpdatedActionMessage`
 - `/pic-message`
 - `/audio-message`
 - `/video-message`
@@ -103,23 +259,23 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.13.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.13.0) - 2021-01-31
 
-### Updated
+### Changed
 
 - `Mutation.createPrivateChat`
 
 ## [0.12.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.12.0) - 2021-01-30
 
-### Updated
+### Changed
 
-- `BlockedAccount` `type`
-- `UnblockedAccount` `type`
+- `type BlockedAccount`
+- `type UnblockedAccount`
 
 ## [0.11.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.11.0) - 2021-01-29
 
 ### Fixed
 
-- `Subscription`s now send back the `__typename` for the `CreatedSubscription` `type`.
-- `Subscription.subscribeToAccounts` now sends back the `BlockedAccount` and `UnblockedAccount` `type`s.
+- Send back the `__typename` for the `type CreatedSubscription` for `Subscription`s.
+- Send back the `BlockedAccount` and `type UnblockedAccount`s in `Subscription.subscribeToAccounts`.
 
 ## [0.10.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.10.0) - 2021-01-29
 
@@ -135,12 +291,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Query.readBlockedUsers`
 - `Mutation.blockUser`
 - `Mutation.unblockUser`
-- `BlockedAccount` `type`
-- `UnblockedAccount` `type`
+- `type BlockedAccount`
+- `type UnblockedAccount`
 
-### Updated
+### Changed
 
-- `AccountsSubscription` `union`
+- `union AccountsSubscription`
 - `/profile-pic`
 - `/group-chat-pic`
 - `/pic-message`
@@ -152,31 +308,31 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- HTTP PATCH requests now work.
+- Fix HTTP PATCH requests.
 
 ## [0.8.2](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.2) - 2020-12-31
 
 ### Fixed
 
-- Fixed memory leaks.
+- Fix memory leaks.
 
 ## [0.8.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.1) - 2020-10-26
 
-### Updated
+### Changed
 
-- Renamed `DB_PASSWORD` to `POSTGRES_PASSWORD`.
+- Rename `DB_PASSWORD` to `POSTGRES_PASSWORD`.
 
 ### Fixed
 
-- The `docker-compose.yml` works.
+- Fix `docker-compose.yml`.
 
 ## [0.8.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.8.0) - 2020-10-18
 
-### Updated
+### Changed
 
 - Docker `message-broker` service's `image`
-- Renamed the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
-- The `/audio-message` endpoint now handles MP4 audio as well.
+- Rename the `ALLOWED_DOMAINS` environment variable to `ALLOWED_EMAIL_DOMAINS`.
+- Handle MP4 audio on the `/audio-message` endpoint.
 
 ### Removed
 
@@ -185,9 +341,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Fixed
 
-- `Mutation.emailEmailAddressVerification` now returns an error when supplied a verified email address.
-- `Subscription`s used to have the access token sent in the URL, which was insecure. Now, they're sent after the connection opens as a text event.
-- Uploading files with capital letters in the file extension works now.
+- Return an error when `Mutation.emailEmailAddressVerification` is supplied a verified email address.
+- Fix file uploads with capital letters in the file extension.
+
+### Security
+
+- Send access tokens as a text event instead of in the URL for `Subscription`s.
 
 ## [0.7.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.7.1) - 2020-09-13
 
@@ -200,21 +359,21 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Added
 
 - Docker `db` service
-- `Name` `scalar`
+- `scalar Name`
 - `Mutation.verifyEmailAddress`
 - `Mutation.emailPasswordResetCode`
 
-### Updated
+### Changed
 
 - `.env` file
 - `Mutation.updateAccount`
-- `Mutation.sendEmailAddressVerification` renamed to `Mutation.emailEmailAddressVerification`
-- `UpdatedAccount` `type`
-- `AccountData` `interface`
-- `Account` `type`
-- `NewContact` `type`
-- `AccountInput` `input`
-- `AccountUpdate` `input`
+- Rename `Mutation.sendEmailAddressVerification` to `Mutation.emailEmailAddressVerification`
+- `type UpdatedAccount`
+- `interface AccountData`
+- `type Account`
+- `type NewContact`
+- `input AccountInput`
+- `input AccountUpdate`
 
 ### Removed
 
@@ -228,29 +387,29 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.createActionMessage`
 - `Mutation.triggerAction`
-- `TriggeredAction` `type`
-- `ActionMessageInput` `input`
-- `ActionableMessage` `type`
-- `ActionMessage` `type`
-- `StarredActionMessage` `type`
-- `NewActionMessage` `type`
-- `UpdatedActionMessage` `type`
+- `type TriggeredAction`
+- `input ActionMessageInput`
+- `type ActionableMessage`
+- `type ActionMessage`
+- `type StarredActionMessage`
+- `type NewActionMessage`
+- `type UpdatedActionMessage`
 
-### Updated
+### Changed
 
 - `Query.searchChatMessages`
 - `Query.searchMessages`
 - `Mutation.setPollVote`
-- `MessagesSubscription` `union`
+- `union MessagesSubscription`
 
 ### Fixed
 
-- The example Docker Compose file now works for Windows users.
-- `Subscription`s no longer give back GraphQL documents with `null` `errors` keys.
+- Fix the example Docker Compose file for Windows users.
+- Don't give back `null` `errors` keys in GraphQL documents send back over `Subscription`s.
 
 ## [0.6.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.6.0) - 2020-08-31
 
-### Updated
+### Changed
 
 - Docker `auth` service's `image`
 - Docker `auth-db` service's `image`
@@ -270,28 +429,28 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Subscription.subscribeToAccounts`
 - `Subscription.subscribeToGroupChats`
-- `AccountsSubscription` `union`
-- `GroupChatsSubscription` `union`
-- `GroupChatPublicity` `enum`
+- `union AccountsSubscription`
+- `union GroupChatsSubscription`
+- `enum GroupChatPublicity`
 
-### Updated
+### Changed
 
 - `Mutation.createAccount`
-- `UpdatedOnlineStatus` `type`
-- `BareGroupChat` `interface`
-- `GroupChatInfo` `type`
-- `GroupChat` `type`
-- `GroupChatInput` `input`
+- `type UpdatedOnlineStatus`
+- `interface BareGroupChat`
+- `type GroupChatInfo`
+- `type GroupChat`
+- `input GroupChatInput`
 
 ### Removed
 
 - `Subscription.subscribeToContacts`
 - `Subscription.subscribeToUpdatedChats`
 - `Subscription.subscribeToNewGroupChats`
-- `ContactsSubscription` `union`
-- `UpdatedChatsSubscription` `union`
-- `NewGroupChatsSubscription` `union`
-- `UpdatedContact` `type`
+- `union ContactsSubscription`
+- `union UpdatedChatsSubscription`
+- `union NewGroupChatsSubscription`
+- `type UpdatedContact`
 
 ### Fixed
 
@@ -302,58 +461,58 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Added
 
-- `Uuid` `scalar`
-- `VideoMessage` `type`
-- `StarredVideoMessage` `type`
-- `NewVideoMessage` `type`
-- `UpdatedVideoMessage` `type`
-- `DocMessage` `type`
-- `StarredDocMessage` `type`
-- `NewDocMessage` `type`
-- `UpdatedDocMessage` `type`
+- `scalar Uuid`
+- `type VideoMessage`
+- `type StarredVideoMessage`
+- `type NewVideoMessage`
+- `type UpdatedVideoMessage`
+- `type DocMessage`
+- `type StarredDocMessage`
+- `type NewDocMessage`
+- `type UpdatedDocMessage`
 - `Query.readGroupChat`
 - `Mutation.joinGroupChat`
 - `Mutation.createGroupChatInviteMessage`
-- `GroupChatInfo` `type`
-- `BareGroupChat` `interface`
-- `GroupChatInviteMessage` `type`
-- `StarredGroupChatInviteMessage` `type`
-- `NewGroupChatInviteMessage` `type`
-- `UpdatedGroupChatInviteMessage` `type`
+- `type GroupChatInfo`
+- `interface BareGroupChat`
+- `type GroupChatInviteMessage`
+- `type StarredGroupChatInviteMessage`
+- `type NewGroupChatInviteMessage`
+- `type UpdatedGroupChatInviteMessage`
 - `Query.searchPublicChats`
 - `Mutation.setInvitability`
 - `Mutation.forwardMessage`
 - `/video-message`
 - `/doc-message`
 
-### Updated
+### Changed
 
-- `TextMessage` `type`
-- `PicMessage` `type`
-- `PollMessage` `type`
-- `AudioMessage` `type`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `StarredTextMessage` `type`
-- `StarredPicMessage` `type`
-- `StarredPollMessage` `type`
-- `StarredAudioMessage` `type`
-- `NewMessage` `interface`
-- `NewTextMessage` `type`
-- `NewPicMessage` `type`
-- `NewPollMessage` `type`
-- `NewAudioMessage` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
-- `GroupChatInput` `input`
-- `MessagesSubscription` `union`
-- `BareMessage` `interface`
-- `BareChatMessage` `interface`
-- `StarredMessage` `interface`
-- `Message` `interface`
+- `type TextMessage`
+- `type PicMessage`
+- `type PollMessage`
+- `type AudioMessage`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `type StarredTextMessage`
+- `type StarredPicMessage`
+- `type StarredPollMessage`
+- `type StarredAudioMessage`
+- `interface NewMessage`
+- `type NewTextMessage`
+- `type NewPicMessage`
+- `type NewPollMessage`
+- `type NewAudioMessage`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
+- `input GroupChatInput`
+- `union MessagesSubscription`
+- `interface BareMessage`
+- `interface BareChatMessage`
+- `interface StarredMessage`
+- `interface Message`
 - `Query.searchChatMessages`
 - `Query.readChat`
 - `/group-chat-pic`
@@ -381,52 +540,52 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.createTextMessage`
 - `Mutation.createPollMessage`
 - `Mutation.setPollVote`
-- `Message` `interface`
-- `MessageText` `scalar`
-- `PollInput` `input`
-- `PollOption` `type`
-- `Poll` `type`
-- `TextMessage` `type`
-- `PicMessage` `type`
-- `PollMessage` `type`
-- `AudioMessage` `type`
-- `BareChatMessage` `interface`
-- `StarredMessage` `interface`
-- `StarredTextMessage` `type`
-- `StarredPicMessage` `type`
-- `StarredPollMessage` `type`
-- `StarredAudioMessage` `type`
-- `NewMessage` `interface`
-- `NewTextMessage` `type`
-- `NewPicMessage` `type`
-- `NewPollMessage` `type`
-- `NewAudioMessage` `type`
-- `UpdatedMessage` `interface`
-- `UpdatedTextMessage` `type`
-- `UpdatedPicMessage` `type`
-- `UpdatedPollMessage` `type`
-- `UpdatedAudioMessage` `type`
+- `interface Message`
+- `scalar MessageText`
+- `input PollInput`
+- `type PollOption`
+- `type Poll`
+- `type TextMessage`
+- `type PicMessage`
+- `type PollMessage`
+- `type AudioMessage`
+- `interface BareChatMessage`
+- `interface StarredMessage`
+- `type StarredTextMessage`
+- `type StarredPicMessage`
+- `type StarredPollMessage`
+- `type StarredAudioMessage`
+- `interface NewMessage`
+- `type NewTextMessage`
+- `type NewPicMessage`
+- `type NewPollMessage`
+- `type NewAudioMessage`
+- `interface UpdatedMessage`
+- `type UpdatedTextMessage`
+- `type UpdatedPicMessage`
+- `type UpdatedPollMessage`
+- `type UpdatedAudioMessage`
 - `/audio-message`
 - `/pic-message`
 
-### Updated
+### Changed
 
-- `MessagesSubscription` `union`
+- `union MessagesSubscription`
 - `Query.searchChatMessages`
 - `Query.searchMessages`
-- `BareMessage` `interface`
+- `interface BareMessage`
 - `/profile-pic`
 - `/group-chat-pic`
 
 ### Removed
 
 - `Mutation.createMessage`
-- `MessageData` `interface`
-- `NewMessage` `type`
-- `StarredMessage` `type`
-- `TextMessage` `scalar`
-- `Message` `type`
-- `UpdatedMessage` `type`
+- `interface MessageData`
+- `type NewMessage`
+- `type StarredMessage`
+- `scalar TextMessage`
+- `type Message`
+- `type UpdatedMessage`
 
 ## [0.2.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.2.1) - 2020-07-26
 
@@ -434,12 +593,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.setBroadcastStatus`
 
-### Updated
+### Changed
 
 - `Mutation.createMessage`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `GroupChatInput` `input`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `input GroupChatInput`
 
 ## [0.2.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.2.0) - 2020-07-25
 
@@ -450,27 +609,27 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.addGroupChatUsers`
 - `Mutation.removeGroupChatUsers`
 - `Mutation.makeGroupChatAdmins`
-- `AccountInput` `input`
-- `GroupChatInput` `input`
+- `input AccountInput`
+- `input GroupChatInput`
 
-### Updated
+### Changed
 
 - `Mutation.createGroupChat`
 - `Mutation.createMessage`
-- `BareMessage` `interface`
-- `Message` `type`
-- `MessageData` `interface`
-- `StarredMessage` `type`
-- `NewMessage` `type`
-- `UpdatedMessage` `type`
-- `UpdatedGroupChat` `type`
-- `GroupChat` `type`
-- `GroupChatUpdate` `input`
-- `GroupChatInput` `input`
-- `NewGroupChatsSubscription` `union`
-- `Bio` `scalar`
-- `GroupChatDescription` `scalar`
-- `TextMessage` `scalar`
+- `interface BareMessage`
+- `type Message`
+- `interface MessageData`
+- `type StarredMessage`
+- `type NewMessage`
+- `type UpdatedMessage`
+- `type UpdatedGroupChat`
+- `type GroupChat`
+- `input GroupChatUpdate`
+- `input GroupChatInput`
+- `union NewGroupChatsSubscription`
+- `scalar Bio`
+- `scalar GroupChatDescription`
+- `scalar TextMessage`
 - `/profile-pic`
 - `/group-chat-pic`
 
@@ -478,8 +637,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - `Mutation.leaveGroupChat`
 - `Mutation.updateGroupChat`
-- `NewAccount` `input`
-- `NewGroupChat` `input`
+- `input NewAccount`
+- `input NewGroupChat`
 
 ## [0.1.1](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.1.1) - 2020-07-21
 
@@ -491,8 +650,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- `Message` `type`
-- `UpdatedMessage` `type`
+- `type Message`
+- `type UpdatedMessage`
 
 ### Fixed
 

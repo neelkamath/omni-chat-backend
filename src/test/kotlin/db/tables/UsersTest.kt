@@ -43,7 +43,7 @@ class UsersTest {
                 listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
                 listOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach {
                     val lastOnline = Users.read(updaterId).lastOnline
-                    it.assertValue(UpdatedOnlineStatus(updaterId, status, lastOnline))
+                    it.assertValue(OnlineStatus(updaterId, status, lastOnline))
                 }
             }
     }

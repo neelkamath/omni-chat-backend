@@ -47,12 +47,22 @@ class BioTest {
             val value = CharArray(Bio.MAX_LENGTH + 1) { 'a' }.joinToString("")
             assertFailsWith<IllegalArgumentException> { Bio(value) }
         }
+
+        @Test
+        fun `An exception must be thrown if leading or trailing whitespace exists`() {
+            assertFailsWith<IllegalArgumentException> { Bio(" Dev ") }
+        }
     }
 }
 
 class MessageTextTest {
     @Nested
     inner class Init {
+        @Test
+        fun `An exception must be thrown if the value contains leading or trailing whitespace`() {
+            assertFailsWith<IllegalArgumentException> { MessageText(" text ") }
+        }
+
         @Test
         fun `An exception must be thrown if the value is too short`() {
             assertFailsWith<IllegalArgumentException> { MessageText("") }
@@ -75,6 +85,11 @@ class GroupChatTitleTest {
     @Nested
     inner class Init {
         @Test
+        fun `An exception must be thrown if the value contains leading or trailing whitespace`() {
+            assertFailsWith<IllegalArgumentException> { GroupChatTitle(" T ") }
+        }
+
+        @Test
         fun `An exception must be thrown if the title is only whitespace`() {
             assertFailsWith<IllegalArgumentException> { GroupChatTitle("  ") }
         }
@@ -95,6 +110,11 @@ class GroupChatTitleTest {
 class GroupChatDescriptionTest {
     @Nested
     inner class Init {
+        @Test
+        fun `An exception must be thrown if the value contains trailing whitespace`() {
+            assertFailsWith<IllegalArgumentException> { GroupChatDescription(" description ") }
+        }
+
         @Test
         fun `An exception must be thrown if the description is too long`() {
             val description = CharArray(GroupChatDescription.MAX_LENGTH + 1) { 'a' }.joinToString("")

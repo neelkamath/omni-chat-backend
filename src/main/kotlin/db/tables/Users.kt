@@ -108,6 +108,13 @@ object Users : IntIdTable() {
         select { Users.emailAddress eq emailAddress }.first()
     }.toUser()
 
+    fun readOnlineStatus(userId: Int): OnlineStatus {
+        val user = transaction {
+            select { Users.id eq userId }.first()
+        }
+        return OnlineStatus(userId, user[isOnline], user[lastOnline])
+    }
+
     private fun ResultRow.toUser(): User = User(
         this[id].value,
         Username(this[username]),
@@ -132,9 +139,7 @@ object Users : IntIdTable() {
         Bio(this[bio]),
     )
 
-    /**
-     * Notifies subscribers of the [UpdatedOnlineStatus] only if [isOnline] differs from the [userId]'s current status.
-     */
+    /** Notifies subscribers of the [OnlineStatus] only if [isOnline] differs from the [userId]'s current status. */
     fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
         if (select { Users.id eq userId }.first()[Users.isOnline] == isOnline) return@transaction
         update({ Users.id eq userId }) {
@@ -142,7 +147,7 @@ object Users : IntIdTable() {
             it[lastOnline] = LocalDateTime.now()
         }
         val subscribers = Contacts.readOwners(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
+        onlineStatusesNotifier.publish(OnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
     }
 
     /**
@@ -194,7 +199,7 @@ object Users : IntIdTable() {
     fun updatePic(userId: Int, pic: Pic?) {
         transaction {
             val op = Users.id eq userId
-            update({ op }) { it[this.picId] = null }
+            update({ op }) { it[picId] = null }
             val picId = select(op).first()[picId]
             update({ op }) { it[this.picId] = Pics.update(picId, pic) }
         }

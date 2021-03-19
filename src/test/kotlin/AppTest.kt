@@ -6,7 +6,10 @@ import com.neelkamath.omniChat.graphql.operations.READ_CHATS_QUERY
 import com.neelkamath.omniChat.graphql.operations.READ_CHAT_QUERY
 import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
 import com.neelkamath.omniChat.graphql.operations.createTextMessage
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChat.graphql.routing.AccountUpdate
+import com.neelkamath.omniChat.graphql.routing.MessageText
+import com.neelkamath.omniChat.graphql.routing.executeGraphQlViaHttp
+import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -72,22 +75,21 @@ class EncodingTest {
  * data the client receives to be non-compliant with the spec:
  * 1. The GraphQL library returns `null` values for the `"data"` and `"errors"` keys. The spec mandates that these keys
  * keys either be non-`null` or not be returned at all.
- * 1. Data is serialized as JSON using the [testingObjectMapper]. The [testingObjectMapper] which may remove `null` fields if
- * incorrectly configured. The spec mandates that requested fields be returned even if they're `null`.
+ * 1. Data is serialized as JSON using the [testingObjectMapper]. The [testingObjectMapper] which may remove `null`
+ * fields if incorrectly configured. The spec mandates that requested fields be returned even if they're `null`.
  */
 @ExtendWith(DbExtension::class)
 class SpecComplianceTest {
     @Test
     fun `The data key mustn't be returned if there was no data to be received`() {
-        val login = Login(Username("u"), Password("p"))
-        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
+        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, mapOf("login" to "invalid data")).keys
         assertTrue("data" !in keys)
     }
 
     @Test
     fun `The errors key mustn't be returned if there were no errors`() {
         val login = createVerifiedUsers(1).first().login
-        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, variables = mapOf("login" to login)).keys
+        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, mapOf("login" to login)).keys
         assertTrue("errors" !in keys)
     }
 

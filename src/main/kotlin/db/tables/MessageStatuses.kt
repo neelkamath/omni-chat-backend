@@ -76,7 +76,7 @@ object MessageStatuses : Table() {
             }
         }
         val updates = readUserIdList(Messages.readChatIdFromMessageId(messageId))
-            .associateWith { UpdatedMessage.build(it, messageId) as MessagesSubscription }
+            .associateWith { Messages.readMessage(it, messageId).toUpdatedMessage() }
         messagesNotifier.publish(updates)
     }
 

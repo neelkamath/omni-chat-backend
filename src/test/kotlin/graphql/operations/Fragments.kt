@@ -1,5 +1,159 @@
 package com.neelkamath.omniChat.graphql.operations
 
+const val NONEXISTENT_USER_FRAGMENT = """
+    ... on NonexistentUser {
+        __typename
+        placeholder
+    }
+"""
+
+const val UNVERIFIED_EMAIL_ADDRESS_FRAGMENT = """
+    ... on UnverifiedEmailAddress {
+        __typename
+        placeholder
+    }
+"""
+
+const val EMAIL_ADDRESS_VERIFIED_FRAGMENT = """
+    ... on EmailAddressVerified {
+        __typename
+        placeholder
+    }
+"""
+
+const val USERNAME_TAKEN_FRAGMENT = """
+    ... on UsernameTaken {
+        __typename
+        placeholder
+    }
+"""
+
+const val INCORRECT_PASSWORD_FRAGMENT = """
+    ... on IncorrectPassword {
+        __typename
+        placeholder
+    }
+"""
+
+const val EMAIL_ADDRESS_TAKEN_FRAGMENT = """
+    ... on EmailAddressTaken {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_CHAT_ID_FRAGMENT = """
+    ... on InvalidChatId {
+        __typename
+        placeholder
+    }
+"""
+
+const val CANNOT_LEAVE_CHAT_FRAGMENT = """
+    ... on CannotLeaveChat {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_ADMIN_ID_FRAGMENT = """
+    ... on InvalidAdminId {
+        __typename
+        placeholder
+    }
+"""
+
+const val UNREGISTERED_EMAIL_ADDRESS_FRAGMENT = """
+    ... on UnregisteredEmailAddress {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_USER_ID_FRAGMENT = """
+    ... on InvalidUserId {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_MESSAGE_ID_FRAGMENT = """
+    ... on InvalidMessageId {
+        __typename
+        placeholder
+    }
+"""
+
+const val CANNOT_DELETE_ACCOUNT_FRAGMENT = """
+    ... on CannotDeleteAccount {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_POLL_FRAGMENT = """
+    ... on InvalidPoll {
+        __typename
+        placeholder
+    }
+"""
+
+const val NONEXISTENT_OPTION_FRAGMENT = """
+    ... on NonexistentOption {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_INVITE_CODE_FRAGMENT = """
+    ... on InvalidInviteCode {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_INVITED_CHAT_FRAGMENT = """
+    ... on InvalidInvitedChat {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_DOMAIN_FRAGMENT = """
+    ... on InvalidDomain {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_ACTION_FRAGMENT = """
+    ... on InvalidAction {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_VERIFICATION_CODE_FRAGMENT = """
+    ... on InvalidVerificationCode {
+        __typename
+        placeholder
+    }
+"""
+
+const val INVALID_PASSWORD_RESET_CODE_FRAGMENT = """
+    ... on InvalidPasswordResetCode {
+        __typename
+        placeholder
+    }
+"""
+
+const val CREATED_CHAT_ID_FRAGMENT = """
+    ... on CreatedChatId {
+        __typename
+        id
+    }
+"""
+
 const val POLL_OPTION_FRAGMENT = """
     ... on PollOption {
         __typename
@@ -107,6 +261,7 @@ const val TEXT_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -126,6 +281,7 @@ const val AUDIO_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -144,6 +300,7 @@ const val GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -177,6 +334,7 @@ const val DOC_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -195,6 +353,7 @@ const val VIDEO_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -213,6 +372,7 @@ const val PIC_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -232,6 +392,7 @@ const val POLL_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -261,6 +422,7 @@ const val ACTION_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -315,12 +477,13 @@ const val CREATED_SUBSCRIPTION_FRAGMENT = """
     }
 """
 
-const val TYPING_STATUS_FRAGMENT = """
-    ... on TypingStatus {
+const val TYPING_USERS_FRAGMENT = """
+    ... on TypingUsers {
         __typename
         chatId
-        userId
-        isTyping
+        users {
+            $ACCOUNT_FRAGMENT
+        }
     }
 """
 
@@ -416,6 +579,7 @@ const val STARRED_TEXT_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -435,6 +599,7 @@ const val STARRED_PIC_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -454,6 +619,7 @@ const val STARRED_AUDIO_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -472,6 +638,7 @@ const val STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -491,6 +658,7 @@ const val STARRED_DOC_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -509,6 +677,7 @@ const val STARRED_VIDEO_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -527,6 +696,7 @@ const val STARRED_POLL_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -548,6 +718,7 @@ const val STARRED_ACTION_MESSAGE_FRAGMENT = """
         sender {
             $ACCOUNT_FRAGMENT
         }
+        state
         dateTimes {
             $MESSAGE_DATE_TIMES_FRAGMENT
         }
@@ -606,4 +777,120 @@ const val ACCOUNTS_SUBSCRIPTION_FRAGMENT = """
     $DELETED_CONTACT_FRAGMENT
     $BLOCKED_ACCOUNT_FRAGMENT
     $UNBLOCKED_ACCOUNT_FRAGMENT
+"""
+
+const val MESSAGE_EDGES_FRAGMENT = """
+    ... on MessageEdges {
+        __typename
+        edges {
+            $MESSAGE_EDGE_FRAGMENT
+        }
+    }
+"""
+
+const val SEARCH_CHAT_MESSAGES_RESULT_FRAGMENT = """
+    $MESSAGE_EDGES_FRAGMENT
+    $INVALID_CHAT_ID_FRAGMENT
+"""
+
+const val READ_CHAT_RESULT_FRAGMENT = """
+    $PRIVATE_CHAT_FRAGMENT
+    $GROUP_CHAT_FRAGMENT
+    $INVALID_CHAT_ID_FRAGMENT
+"""
+
+const val READ_GROUP_CHAT_RESULT_FRAGMENT = """
+    $GROUP_CHAT_INFO_FRAGMENT
+    $INVALID_INVITE_CODE_FRAGMENT
+"""
+
+const val REQUEST_TOKEN_SET_RESULT_FRAGMENT = """
+    $TOKEN_SET_FRAGMENT
+    $NONEXISTENT_USER_FRAGMENT
+    $UNVERIFIED_EMAIL_ADDRESS_FRAGMENT
+    $INCORRECT_PASSWORD_FRAGMENT
+"""
+
+const val READ_ONLINE_STATUS_FRAGMENT = """
+    $INVALID_USER_ID_FRAGMENT
+    $ONLINE_STATUS_FRAGMENT
+"""
+
+const val VERIFY_EMAIL_ADDRESS_RESULT_FRAGMENT = """
+    $INVALID_VERIFICATION_CODE_FRAGMENT
+    $UNREGISTERED_EMAIL_ADDRESS_FRAGMENT
+"""
+
+const val RESET_PASSWORD_RESULT_FRAGMENT = """
+    $INVALID_PASSWORD_RESET_CODE_FRAGMENT
+    $UNREGISTERED_EMAIL_ADDRESS_FRAGMENT
+"""
+
+const val UPDATE_ACCOUNT_RESULT_FRAGMENT = """
+    $USERNAME_TAKEN_FRAGMENT
+    $EMAIL_ADDRESS_TAKEN_FRAGMENT
+"""
+
+const val CREATE_ACCOUNT_RESULT_FRAGMENT = """
+    $USERNAME_TAKEN_FRAGMENT
+    $EMAIL_ADDRESS_TAKEN_FRAGMENT
+    $INVALID_DOMAIN_FRAGMENT
+"""
+
+const val EMAIL_EMAIL_ADDRESS_VERIFICATION_RESULT_FRAGMENT = """
+    $UNREGISTERED_EMAIL_ADDRESS_FRAGMENT
+    $EMAIL_ADDRESS_VERIFIED_FRAGMENT
+"""
+
+const val CREATE_GROUP_CHAT_RESULT_FRAGMENT = """
+    $CREATED_CHAT_ID_FRAGMENT
+    $INVALID_ADMIN_ID_FRAGMENT
+"""
+
+const val CREATE_PRIVATE_CHAT_RESULT_FRAGMENT = """
+    $CREATED_CHAT_ID_FRAGMENT
+    $INVALID_USER_ID_FRAGMENT
+"""
+
+const val CREATE_TEXT_MESSAGE_RESULT_FRAGMENT = """
+    $INVALID_CHAT_ID_FRAGMENT
+    $INVALID_MESSAGE_ID_FRAGMENT
+"""
+
+const val CREATE_ACTION_MESSAGE_RESULT_FRAGMENT = """
+    $INVALID_CHAT_ID_FRAGMENT
+    $INVALID_ACTION_FRAGMENT
+    $INVALID_MESSAGE_ID_FRAGMENT
+"""
+
+const val CREATE_GROUP_CHAT_INVITE_MESSAGE_RESULT_FRAGMENT = """
+    $INVALID_CHAT_ID_FRAGMENT
+    $INVALID_INVITED_CHAT_FRAGMENT
+    $INVALID_MESSAGE_ID_FRAGMENT
+"""
+
+const val CREATE_POLL_MESSAGE_RESULT_FRAGMENT = """
+    $INVALID_CHAT_ID_FRAGMENT
+    $INVALID_MESSAGE_ID_FRAGMENT
+    $INVALID_POLL_FRAGMENT
+"""
+
+const val FORWARD_MESSAGE_RESULT_FRAGMENT = """
+    $INVALID_CHAT_ID_FRAGMENT
+    $INVALID_MESSAGE_ID_FRAGMENT
+"""
+
+const val TRIGGER_ACTION_RESULT_FRAGMENT = """
+    $INVALID_MESSAGE_ID_FRAGMENT
+    $INVALID_ACTION_FRAGMENT
+"""
+
+const val SET_POLL_VOTE_RESULT_FRAGMENT = """
+    $INVALID_MESSAGE_ID_FRAGMENT
+    $NONEXISTENT_OPTION_FRAGMENT
+"""
+
+const val LEAVE_GROUP_CHAT_RESULT_FRAGMENT = """
+    $CANNOT_LEAVE_CHAT_FRAGMENT
+    $INVALID_CHAT_ID_FRAGMENT
 """

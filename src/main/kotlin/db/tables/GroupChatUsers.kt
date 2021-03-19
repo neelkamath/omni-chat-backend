@@ -2,6 +2,7 @@ package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.groupChatsNotifier
+import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.dao.id.IntIdTable
@@ -17,7 +18,7 @@ object GroupChatUsers : IntIdTable() {
     private val isAdmin: Column<Boolean> = bool("is_admin")
 
     private fun isUserInChat(userId: Int, chatId: Int): Boolean = transaction {
-        !select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty()
+        select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty().not()
     }
 
     /**
@@ -113,23 +114,26 @@ object GroupChatUsers : IntIdTable() {
         return supplied == existing || (existing - supplied).any { isAdmin(it, chatId) }
     }
 
-    private fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())
+    fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())
 
     /**
-     * Removes users in the [userIdList] from the [chatId]. An [IllegalArgumentException] will be thrown if not
-     * [canUsersLeave]. If every user is removed, the [chatId] will be [GroupChats.delete]d. Returns whether the chat
-     * was deleted.
+     * Removes users in the [userIdList] from the [chatId]. Users who aren't in the chat are ignored. An
+     * [IllegalArgumentException] will be thrown if not [canUsersLeave]. If every user is removed, the [chatId] will be
+     * [GroupChats.delete]d. Returns whether the chat was deleted.
      *
-     * Subscribers (including the [userIdList]) will be notified of the [ExitedUser]s via [groupChatsNotifier].
+     * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
+     * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
             throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
+        val originalIdList = readUserIdList(chatId)
+        val removedIdList = originalIdList.intersect(userIdList).toList()
         transaction {
-            deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
+            deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
-        for (userId in userIdList)
-            groupChatsNotifier.publish(ExitedUser(userId, chatId), readUserIdList(chatId) + userIdList)
+        removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
+        groupChatsNotifier.publish(ExitedUsers(chatId, removedIdList), originalIdList)
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

@@ -4,7 +4,6 @@ import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.operations.triggerAction
 import com.neelkamath.omniChat.graphql.routing.ActionMessageInput
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.TriggeredAction
@@ -50,7 +49,7 @@ class ActionMessagesTest {
             awaitBrokering()
             val (adminSubscriber, userSubscriber) =
                 listOf(admin.id, user.id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
-            triggerAction(user.id, messageId, action)
+            ActionMessages.trigger(user.id, messageId, action)
             awaitBrokering()
             adminSubscriber.assertValue(TriggeredAction(messageId, action, user))
             userSubscriber.assertNoValues()

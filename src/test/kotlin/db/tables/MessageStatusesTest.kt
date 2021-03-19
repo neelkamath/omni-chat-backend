@@ -78,7 +78,7 @@ class MessageStatusesTest {
                 MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
                 mapOf(user1Subscriber to user1Id, user2Subscriber to user2Id).forEach { (subscriber, userId) ->
-                    Messages.readMessage(userId, messageId).toUpdatedTextMessage().let(subscriber::assertValue)
+                    Messages.readMessage(userId, messageId).toUpdatedMessage().let(subscriber::assertValue)
                 }
                 user3Subscriber.assertNoValues()
             }
