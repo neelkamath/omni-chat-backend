@@ -212,6 +212,24 @@ class MutationsTest {
     }
 
     @Nested
+    inner class JoinPublicChat {
+        @Test
+        fun `The public chat must be joined`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            assertEquals(null, joinPublicChat(userId, chatId))
+            assertEquals(chatId, GroupChats.readUserChats(userId).first().id)
+        }
+
+        @Test
+        fun `A non-public chat mustn't be joined`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.info.id }
+            val chatId = GroupChats.create(listOf(adminId))
+            assertTrue(joinPublicChat(userId, chatId) is InvalidChatId)
+        }
+    }
+
+    @Nested
     inner class ForwardMessage {
         @Test
         fun `The message must be forwarded with a context`() {

@@ -51,6 +51,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ForwardMessageResult`
 - `union TriggerActionResult`
 - `union SetPollVoteResult`
+- `Mutation.joinPublicChat`
 
 ### Changed
 

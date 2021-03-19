@@ -377,6 +377,14 @@ type Mutation {
     joinGroupChat(inviteCode: Uuid!): InvalidInviteCode
 
     """
+    Joins the specified public chat. Nothing will happen if the user is already in the chat. `null` will be returned if
+    the operation succeeded. An `InvalidChatId` will be returned if there's no such public chat.
+
+    An access token must be sent with this request.
+    """
+    joinPublicChat(chatId: Int!): InvalidChatId
+
+    """
     Deletes a private chat.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the

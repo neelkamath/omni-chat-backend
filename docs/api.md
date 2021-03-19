@@ -226,6 +226,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `setBroadcast`
     - `setInvitability`
     - `joinGroupChat`
+    - `joinPublicChat`
     - `deletePrivateChat`
     - `createPrivateChat`
 - `Subscription`

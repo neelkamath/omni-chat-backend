@@ -329,6 +329,14 @@ fun joinGroupChat(env: DataFetchingEnvironment): InvalidInviteCode? {
     return null
 }
 
+fun joinPublicChat(env: DataFetchingEnvironment): InvalidChatId? {
+    env.verifyAuth()
+    val chatId = env.getArgument<Int>("chatId")
+    if (!GroupChats.isExistentPublicChat(chatId)) return InvalidChatId
+    GroupChatUsers.addUsers(chatId, env.userId!!)
+    return null
+}
+
 fun createGroupChatInviteMessage(env: DataFetchingEnvironment): CreateGroupChatInviteMessageResult? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")

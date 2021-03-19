@@ -6,6 +6,20 @@ import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.testingObjectMapper
 import java.util.*
 
+const val JOIN_PUBLIC_CHAT_QUERY = """
+    mutation JoinPublicChat(${"$"}chatId: Int!) {
+        joinPublicChat(chatId: ${"$"}chatId) {
+            $INVALID_CHAT_ID_FRAGMENT
+        }
+    }
+"""
+
+fun joinPublicChat(userId: Int, chatId: Int): InvalidChatId? {
+    val data =
+        executeGraphQlViaEngine(JOIN_PUBLIC_CHAT_QUERY, mapOf("chatId" to chatId), userId).data!!["joinPublicChat"]
+    return if (data == null) data else testingObjectMapper.convertValue(data)
+}
+
 const val UNBLOCK_USER_QUERY = """
     mutation UnblockUser(${"$"}id: Int!) {
         unblockUser(id: ${"$"}id)
