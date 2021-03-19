@@ -685,14 +685,14 @@ class MutationsTest {
     }
 
     @Nested
-    inner class DeleteStar {
+    inner class Unstar {
         @Test
         fun `A message must be starred`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
-            deleteStar(adminId, messageId)
+            unstar(adminId, messageId)
             assertFalse(Stargazers.hasStar(adminId, messageId))
         }
     }

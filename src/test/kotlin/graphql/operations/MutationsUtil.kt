@@ -344,15 +344,14 @@ fun updateGroupChatTitle(userId: Int, chatId: Int, title: GroupChatTitle): Place
     return testingObjectMapper.convertValue(data)
 }
 
-const val DELETE_STAR_QUERY = """
-    mutation DeleteStar(${"$"}messageId: Int!) {
-        deleteStar(messageId: ${"$"}messageId)
+const val UNSTAR_QUERY = """
+    mutation Unstar(${"$"}messageId: Int!) {
+        unstar(messageId: ${"$"}messageId)
     }
 """
 
-fun deleteStar(userId: Int, messageId: Int): Placeholder {
-    val data = executeGraphQlViaEngine(DELETE_STAR_QUERY, mapOf("messageId" to messageId), userId)
-        .data!!["deleteStar"]!!
+fun unstar(userId: Int, messageId: Int): Placeholder {
+    val data = executeGraphQlViaEngine(UNSTAR_QUERY, mapOf("messageId" to messageId), userId).data!!["unstar"]!!
     return testingObjectMapper.convertValue(data)
 }
 

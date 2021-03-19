@@ -69,7 +69,7 @@ fun createStatus(env: DataFetchingEnvironment): InvalidMessageId? {
     return null
 }
 
-fun deleteStar(env: DataFetchingEnvironment): Placeholder {
+fun unstar(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     Stargazers.deleteUserStar(env.userId!!, env.getArgument("messageId"))
     return Placeholder

@@ -112,7 +112,10 @@ type Query {
     """An access token must be sent with this request if the chat being read isn't a public chat."""
     readChat(id: Int!): ReadChatResult!
 
-    """Returns the `GroupChatInfo` the `inviteCode` is for."""
+    """
+    Returns the `GroupChatInfo` the `inviteCode` is for. This could be used to display a chat the user isn't in but was
+    invited to, so that they can check whether they'd like to join.
+    """
     readGroupChat(inviteCode: Uuid!): ReadGroupChatResult!
 
     """
@@ -213,7 +216,7 @@ type Mutation {
 
     An access token must be sent with this request.
     """
-    deleteStar(messageId: Int!): Placeholder!
+    unstar(messageId: Int!): Placeholder!
 
     """
     Sets the current user's status to `isOnline`.
@@ -431,7 +434,7 @@ type Mutation {
     broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
     when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
     message being replied to. A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead
-    display the `GroupChatInfo`.
+    display the `GroupChatInfo` returned by `Query.readGroupChat`.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     `chatId`. An `InvalidInvitedChat` will be returned if the `invitedChatId` isn't a group chat, or the chat has
