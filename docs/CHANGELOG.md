@@ -54,6 +54,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `type CannotLeaveChat`
 - `type UnstarredChat`
 - `union LeaveGroupChatResult`
+- `Query.readOnlineStatus`
 - `Mutation.joinPublicChat`
 - `Mutation.leaveGroupChat`
 - Add `type UpdatedMessage` in favor of `interface UpdatedMessage`.
@@ -144,6 +145,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Removed
 
+- Remove `Query.readOnlineStatuses` in favor of `Query.readOnlineStatus`.
 - Remove the following in favor of `type UpdatedMessage`:
     - `interface UpdatedMessage`
     - `type UpdatedTextMessage`

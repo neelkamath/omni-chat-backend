@@ -108,6 +108,13 @@ object Users : IntIdTable() {
         select { Users.emailAddress eq emailAddress }.first()
     }.toUser()
 
+    fun readOnlineStatus(userId: Int): OnlineStatus {
+        val user = transaction {
+            select { Users.id eq userId }.first()
+        }
+        return OnlineStatus(userId, user[isOnline], user[lastOnline])
+    }
+
     private fun ResultRow.toUser(): User = User(
         this[id].value,
         Username(this[username]),

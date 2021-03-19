@@ -169,7 +169,7 @@ Since there are many operations, we've categorized each of them below. The same 
 
 - `Query`
     - `readAccount`
-    - `readOnlineStatuses`
+    - `readOnlineStatus`
     - `readTypingStatuses`
     - `searchUsers`
 - `Subscription`
@@ -196,7 +196,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Query`
     - `readContacts`
     - `searchContacts`
-    - `readOnlineStatuses`
+    - `readOnlineStatus`
 - `Mutation`
     - `deleteContacts`
     - `createContacts`
@@ -214,7 +214,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `readGroupChat`
     - `searchChats`
     - `searchPublicChats`
-    - `readOnlineStatuses`
+    - `readOnlineStatus`
 - `Mutation`
     - `deleteGroupChatPic`
     - `updateGroupChatTitle`

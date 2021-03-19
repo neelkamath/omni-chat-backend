@@ -132,7 +132,7 @@ object InvalidPasswordResetCode : ResetPasswordResult {
     val placeholder = Placeholder
 }
 
-object InvalidUserId : CreatePrivateChatResult {
+object InvalidUserId : CreatePrivateChatResult, ReadOnlineStatusResult {
     @Suppress("unused")
     val placeholder = Placeholder
 }
@@ -358,7 +358,7 @@ data class UpdatedOnlineStatus(
     val lastOnline: LocalDateTime?,
 ) : OnlineStatusesSubscription
 
-data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?)
+data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?) : ReadOnlineStatusResult
 
 data class DeletedContact(val id: Int) : AccountsSubscription
 
@@ -1131,6 +1131,8 @@ data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesS
 data class ExitedUsers(val chatId: Int, val userIdList: List<Int>) : GroupChatsSubscription
 
 interface GroupChatsSubscription
+
+interface ReadOnlineStatusResult
 
 data class GroupChatId(val id: Int) : GroupChatsSubscription
 

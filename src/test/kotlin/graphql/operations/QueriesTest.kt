@@ -144,14 +144,16 @@ class QueriesTest {
     }
 
     @Nested
-    inner class ReadOnlineStatuses {
+    inner class ReadOnlineStatus {
         @Test
-        fun `Reading online statuses must only retrieve users the user has in their contacts, or has a chat with`() {
-            val (contactOwnerId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
-            Contacts.create(contactOwnerId, setOf(contactId))
-            PrivateChats.create(contactOwnerId, chatSharerId)
-            assertEquals(setOf(contactId, chatSharerId), readOnlineStatuses(contactOwnerId).map { it.userId }.toSet())
+        fun `The online status must be read`() {
+            val userId = createVerifiedUsers(1).first().info.id
+            assertEquals(Users.readOnlineStatus(userId), readOnlineStatus(userId))
         }
+
+        @Test
+        fun `Reading the online status of a nonexistent user must fail`(): Unit =
+            assertTrue(readOnlineStatus(userId = -1) is InvalidUserId)
     }
 
     @Nested

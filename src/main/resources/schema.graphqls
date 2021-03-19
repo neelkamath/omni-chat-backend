@@ -63,11 +63,10 @@ type Query {
     readBlockedUsers(first: Int, after: Cursor): AccountsConnection!
 
     """
-    The online statuses of users the user has in their contacts, or has a chat with.
-
-    An access token must be sent with this request.
+    Whether the `userId` is online. If the `userId` exists, an `OnlineStatus` will be returned. Otherwise, an
+    `InvalidUserId` will be returned.
     """
-    readOnlineStatuses: [OnlineStatus!]!
+    readOnlineStatus(userId: Int!): ReadOnlineStatusResult!
 
     """
     The statuses of users who are typing in a chat the user is in. The user's own status won't be returned.
@@ -1433,3 +1432,5 @@ union TriggerActionResult = InvalidMessageId | InvalidAction
 union SetPollVoteResult = InvalidMessageId | NonexistentOption
 
 union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat
+
+union ReadOnlineStatusResult = OnlineStatus | InvalidUserId

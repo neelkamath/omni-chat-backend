@@ -9,8 +9,8 @@ fun wireGraphQlOperations(builder: RuntimeWiring.Builder): RuntimeWiring.Builder
     builder.type("Query", ::wireQuery).type("Mutation", ::wireMutation).type("Subscription", ::wireSubscription)
 
 private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
-    .dataFetcher("readOnlineStatuses", ::readOnlineStatuses)
     .dataFetcher("readTypingStatuses", ::readTypingStatuses)
+    .dataFetcher("readOnlineStatus", ::readOnlineStatus)
     .dataFetcher("readAccount", ::readAccount)
     .dataFetcher("readChat", ::readChat)
     .dataFetcher("readChats", ::readChats)

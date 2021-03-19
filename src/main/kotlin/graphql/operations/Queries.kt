@@ -119,14 +119,9 @@ class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
         GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
 }
 
-fun readOnlineStatuses(env: DataFetchingEnvironment): List<OnlineStatus> {
-    env.verifyAuth()
-    val userIdList = Contacts.readIdList(env.userId!!) +
-            PrivateChats.readOtherUserIdList(env.userId!!) +
-            GroupChatUsers.readFellowParticipants(env.userId!!)
-    return userIdList.map {
-        with(Users.read(it)) { OnlineStatus(it, isOnline, lastOnline) }
-    }
+fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
+    val userId = env.getArgument<Int>("userId")
+    return if (Users.exists(userId)) Users.readOnlineStatus(userId) else InvalidUserId
 }
 
 fun readTypingStatuses(env: DataFetchingEnvironment): List<TypingStatus> {

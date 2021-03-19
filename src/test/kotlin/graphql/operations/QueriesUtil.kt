@@ -108,17 +108,17 @@ fun readStars(userId: Int): List<StarredMessage> {
     return testingObjectMapper.convertValue(data)
 }
 
-const val READ_ONLINE_STATUSES_QUERY = """
-    query ReadOnlineStatuses {
-        readOnlineStatuses {
-            $ONLINE_STATUS_FRAGMENT
+const val READ_ONLINE_STATUS_QUERY = """
+    query ReadOnlineStatus(${"$"}userId: Int!) {
+        readOnlineStatus(userId: ${"$"}userId) {
+            $READ_ONLINE_STATUS_FRAGMENT
         }
     }
 """
 
-fun readOnlineStatuses(userId: Int): List<OnlineStatus> {
-    val data = executeGraphQlViaEngine(READ_ONLINE_STATUSES_QUERY, userId = userId)
-        .data!!["readOnlineStatuses"]!!
+fun readOnlineStatus(userId: Int): ReadOnlineStatusResult {
+    val data = executeGraphQlViaEngine(READ_ONLINE_STATUS_QUERY, mapOf("userId" to userId))
+        .data!!["readOnlineStatus"]!!
     return testingObjectMapper.convertValue(data)
 }
 
