@@ -609,9 +609,9 @@ type UpdatedProfilePic {
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-If the subscriber leaves the chat, they will receive their own `ExitedUser` message.
+If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
 """
-union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUser
+union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUsers
 
 """The `id` of the group chat whose pic was updated."""
 type UpdatedGroupChatPic {
@@ -653,10 +653,10 @@ type GroupChatId {
     id: Int!
 }
 
-"""The user who left the group chat."""
-type ExitedUser {
+"""The users who left the group chat."""
+type ExitedUsers {
     chatId: Int!
-    userId: Int!
+    userIdList: [Int!]!
 }
 
 """null fields correspond to the field not existing. This will not be sent if the profile pic was updated."""

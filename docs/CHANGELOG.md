@@ -135,6 +135,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type UpdatedVideoMessage`
     - `type UpdatedPollMessage`
     - `type UnstarredChat`
+- Replace `type ExitedUser` with `type ExitedUsers`.
 
 ### Fixed
 

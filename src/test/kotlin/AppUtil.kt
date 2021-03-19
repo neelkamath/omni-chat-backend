@@ -224,7 +224,7 @@ private object GroupChatsSubscriptionDeserializer : JsonDeserializer<GroupChatsS
             "GroupChatId" -> GroupChatId::class
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
-            "ExitedUser" -> ExitedUser::class
+            "ExitedUsers" -> ExitedUsers::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

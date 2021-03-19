@@ -1128,7 +1128,7 @@ data class MessageDeletionPoint(val chatId: Int, val until: LocalDateTime) : Mes
 
 data class UserChatMessagesRemoval(val chatId: Int, val userId: Int) : MessagesSubscription
 
-data class ExitedUser(val userId: Int, val chatId: Int) : GroupChatsSubscription
+data class ExitedUsers(val chatId: Int, val userIdList: List<Int>) : GroupChatsSubscription
 
 interface GroupChatsSubscription
 

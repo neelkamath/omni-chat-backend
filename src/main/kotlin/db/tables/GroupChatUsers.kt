@@ -121,18 +121,19 @@ object GroupChatUsers : IntIdTable() {
      * [IllegalArgumentException] will be thrown if not [canUsersLeave]. If every user is removed, the [chatId] will be
      * [GroupChats.delete]d. Returns whether the chat was deleted.
      *
-     * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUser]s via
+     * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
      * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         if (!canUsersLeave(chatId, userIdList))
             throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
-        val originalUserIdList = readUserIdList(chatId)
+        val originalIdList = readUserIdList(chatId)
+        val removedIdList = originalIdList.intersect(userIdList).toList()
         transaction {
-            deleteWhere { (groupChatId eq chatId) and (userId inList userIdList) }
+            deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
-        originalUserIdList.intersect(userIdList).forEach { Stargazers.deleteUserChat(it, chatId) }
-        originalUserIdList.forEach { groupChatsNotifier.publish(ExitedUser(it, chatId), originalUserIdList) }
+        removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
+        groupChatsNotifier.publish(ExitedUsers(chatId, removedIdList), originalIdList)
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
             return true

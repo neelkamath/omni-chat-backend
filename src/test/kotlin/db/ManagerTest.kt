@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
-import com.neelkamath.omniChat.graphql.routing.ExitedUser
+import com.neelkamath.omniChat.graphql.routing.ExitedUsers
 import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -63,7 +63,8 @@ class DbTest {
                     listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
-                adminSubscriber.assertValue(ExitedUser(userId, chatId))
+                val exitedUsers = ExitedUsers(chatId, listOf(userId))
+                adminSubscriber.assertValue(exitedUsers)
                 userSubscriber.assertComplete()
             }
         }

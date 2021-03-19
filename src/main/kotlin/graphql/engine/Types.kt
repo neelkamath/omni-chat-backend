@@ -79,7 +79,7 @@ private fun readGroupChatsSubscription(obj: Any): String = when (obj) {
     is GroupChatId -> "GroupChatId"
     is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
     is UpdatedGroupChat -> "UpdatedGroupChat"
-    is ExitedUser -> "ExitedUser"
+    is ExitedUsers -> "ExitedUsers"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

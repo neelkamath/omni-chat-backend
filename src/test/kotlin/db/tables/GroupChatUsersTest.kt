@@ -5,7 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.count
 import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.graphql.routing.ExitedUser
+import com.neelkamath.omniChat.graphql.routing.ExitedUsers
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
@@ -171,7 +171,8 @@ class GroupChatUsersTest {
                 listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId, userId)
             awaitBrokering()
-            listOf(adminSubscriber, userSubscriber).forEach { it.assertValue(ExitedUser(userId, chatId)) }
+            val exitedUsers = ExitedUsers(chatId, listOf(userId))
+            listOf(adminSubscriber, userSubscriber).forEach { it.assertValue(exitedUsers) }
         }
 
         @Test
