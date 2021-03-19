@@ -58,7 +58,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Query.readOnlineStatus`
 - `Mutation.joinPublicChat`
 - `Mutation.leaveGroupChat`
-- Add `type UpdatedMessage` in favor of `interface UpdatedMessage`.
+- `type UpdatedMessage`
 
 ### Changed
 
@@ -140,16 +140,16 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type UnstarredChat`
 - Replace `type ExitedUser` with `type ExitedUsers`.
 - Replace `type UpdatedOnlineStatus` with `type OnlineStatus` in `union OnlineStatusesSubscription`.
-- Replaced `Query.readTypingStatuses` with `Query.readTypingUsers`.
+- Replace `Query.readTypingStatuses` with `Query.readTypingUsers`.
 
 ### Fixed
 
 - `Mutation.deleteAccount`
-- Unstar any messages the user starred in the chat they've left when calling `Mutation.deletePrivateChat` `Mutation.leaveGroupChat`, or `Mutation.removeGroupChatUsers`.
+- Unstar any messages the user starred in the chat they've left when calling `Mutation.deletePrivateChat`, `Mutation.leaveGroupChat`, or `Mutation.removeGroupChatUsers`.
 
 ### Removed
 
-- `type UpdatedOnlineStatus`
+- Remove `type UpdatedOnlineStatus` in favor of `type OnlineStatus`.
 - Remove `Query.readOnlineStatuses` in favor of `Query.readOnlineStatus`.
 - Remove the following in favor of `type UpdatedMessage`:
     - `interface UpdatedMessage`
