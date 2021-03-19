@@ -23,7 +23,6 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(BareChatMessageDeserializer)
     .register(StarredMessageDeserializer)
     .register(NewMessageDeserializer)
-    .register(UpdatedMessageDeserializer)
     .register(UsernameDeserializer, UsernameSerializer)
     .register(NameDeserializer, NameSerializer)
     .register(PasswordDeserializer, PasswordSerializer)
@@ -267,24 +266,6 @@ private object NewMessageDeserializer : JsonDeserializer<NewMessage>() {
     }
 }
 
-private object UpdatedMessageDeserializer : JsonDeserializer<UpdatedMessage>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): UpdatedMessage {
-        val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz: KClass<out UpdatedMessage> = when (val type = node["__typename"].asText()) {
-            "UpdatedTextMessage" -> UpdatedTextMessage::class
-            "UpdatedActionMessage" -> UpdatedActionMessage::class
-            "UpdatedPicMessage" -> UpdatedPicMessage::class
-            "UpdatedPollMessage" -> UpdatedPollMessage::class
-            "UpdatedAudioMessage" -> UpdatedAudioMessage::class
-            "UpdatedGroupChatInviteMessage" -> UpdatedGroupChatInviteMessage::class
-            "UpdatedDocMessage" -> UpdatedDocMessage::class
-            "UpdatedVideoMessage" -> UpdatedVideoMessage::class
-            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
-        }
-        return parser.codec.treeToValue(node, clazz.java)
-    }
-}
-
 private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubscription>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): MessagesSubscription {
         val node = parser.codec.readTree<JsonNode>(parser)
@@ -298,14 +279,7 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
             "NewVideoMessage" -> NewVideoMessage::class
-            "UpdatedTextMessage" -> UpdatedTextMessage::class
-            "UpdatedActionMessage" -> UpdatedActionMessage::class
-            "UpdatedPicMessage" -> UpdatedPicMessage::class
-            "UpdatedPollMessage" -> UpdatedPollMessage::class
-            "UpdatedAudioMessage" -> UpdatedAudioMessage::class
-            "UpdatedGroupChatInviteMessage" -> UpdatedGroupChatInviteMessage::class
-            "UpdatedDocMessage" -> UpdatedDocMessage::class
-            "UpdatedVideoMessage" -> UpdatedVideoMessage::class
+            "UpdatedMessage" -> UpdatedMessage::class
             "TriggeredAction" -> TriggeredAction::class
             "DeletedMessage" -> DeletedMessage::class
             "MessageDeletionPoint" -> MessageDeletionPoint::class

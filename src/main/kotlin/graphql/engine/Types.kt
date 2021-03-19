@@ -15,7 +15,6 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("BareChatMessage") { wireType(it, ::readBareChatMessage) }
     .type("StarredMessage") { wireType(it, ::readStarredMessage) }
     .type("NewMessage") { wireType(it, ::readNewMessage) }
-    .type("UpdatedMessage") { wireType(it, ::readUpdatedMessage) }
     .type("Message") { wireType(it, ::readMessage) }
     .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
     .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
@@ -66,14 +65,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is NewDocMessage -> "NewDocMessage"
     is NewVideoMessage -> "NewVideoMessage"
     is NewPollMessage -> "NewPollMessage"
-    is UpdatedTextMessage -> "UpdatedTextMessage"
-    is UpdatedActionMessage -> "UpdatedActionMessage"
-    is UpdatedPicMessage -> "UpdatedPicMessage"
-    is UpdatedAudioMessage -> "UpdatedAudioMessage"
-    is UpdatedGroupChatInviteMessage -> "UpdatedGroupChatInviteMessage"
-    is UpdatedDocMessage -> "UpdatedDocMessage"
-    is UpdatedVideoMessage -> "UpdatedVideoMessage"
-    is UpdatedPollMessage -> "UpdatedPollMessage"
+    is UpdatedMessage -> "UpdatedMessage"
     is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
     is MessageDeletionPoint -> "MessageDeletionPoint"
@@ -329,17 +321,5 @@ private fun readNewMessage(obj: Any): String = when (obj) {
     is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
     is NewDocMessage -> "NewDocMessage"
     is NewVideoMessage -> "NewVideoMessage"
-    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
-}
-
-private fun readUpdatedMessage(obj: Any): String = when (obj) {
-    is UpdatedTextMessage -> "UpdatedTextMessage"
-    is UpdatedActionMessage -> "UpdatedActionMessage"
-    is UpdatedPicMessage -> "UpdatedPicMessage"
-    is UpdatedPollMessage -> "UpdatedPollMessage"
-    is UpdatedAudioMessage -> "UpdatedAudioMessage"
-    is UpdatedGroupChatInviteMessage -> "UpdatedGroupChatInviteMessage"
-    is UpdatedDocMessage -> "UpdatedDocMessage"
-    is UpdatedVideoMessage -> "UpdatedVideoMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }

@@ -30,7 +30,7 @@ class PollMessagesTest {
                     .map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 PollMessages.setVote(adminId, messageId, option1, vote = true)
                 awaitBrokering()
-                adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedPollMessage())
+                adminSubscriber.assertValue(Messages.readMessage(adminId, messageId).toUpdatedMessage())
                 nonParticipantSubscriber.assertNoValues()
             }
         }

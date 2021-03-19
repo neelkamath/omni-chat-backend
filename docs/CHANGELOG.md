@@ -52,9 +52,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union TriggerActionResult`
 - `union SetPollVoteResult`
 - `type CannotLeaveChat`
+- `type UnstarredChat`
 - `union LeaveGroupChatResult`
 - `Mutation.joinPublicChat`
 - `Mutation.leaveGroupChat`
+- Add `type UpdatedMessage` in favor of `interface UpdatedMessage`.
 
 ### Changed
 
@@ -123,10 +125,33 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `GroupChatTitle`
     - `GroupChatDescription`
     - `MessageText`
+- Add `type UpdatedMessage` to `union MessagesSubscription`, and remove the following:
+    - `type UpdatedTextMessage`
+    - `type UpdatedActionMessage`
+    - `type UpdatedPicMessage`
+    - `type UpdatedAudioMessage`
+    - `type UpdatedGroupChatInviteMessage`
+    - `type UpdatedDocMessage`
+    - `type UpdatedVideoMessage`
+    - `type UpdatedPollMessage`
+    - `type UnstarredChat`
 
 ### Fixed
 
 - `Mutation.deleteAccount`
+
+### Removed
+
+- Remove the following in favor of `type UpdatedMessage`:
+    - `interface UpdatedMessage`
+    - `type UpdatedTextMessage`
+    - `type UpdatedAudioMessage`
+    - `type UpdatedPicMessage`
+    - `type UpdatedPollMessage`
+    - `type UpdatedVideoMessage`
+    - `type UpdatedActionMessage`
+    - `type UpdatedDocMessage`
+    - `type UpdatedGroupChatInviteMessage`
 
 ## [0.16.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.16.0) - 2021-03-10
 

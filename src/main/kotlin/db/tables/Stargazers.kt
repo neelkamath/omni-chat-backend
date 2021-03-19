@@ -1,12 +1,12 @@
 package com.neelkamath.omniChat.db.tables
 
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
+import com.neelkamath.omniChat.graphql.routing.UnstarredChat
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** Users who have starred [Messages]. */
+/** Users' starred [Messages]. */
 object Stargazers : Table() {
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
@@ -23,7 +23,7 @@ object Stargazers : Table() {
                 it[this.messageId] = messageId
             }
         }
-        val message = UpdatedMessage.build(userId, messageId) as MessagesSubscription
+        val message = Messages.readMessage(userId, messageId).toUpdatedMessage()
         messagesNotifier.publish(message, userId)
     }
 
@@ -54,7 +54,7 @@ object Stargazers : Table() {
             deleteWhere { Stargazers.messageId eq messageId }
         }
         stargazers.forEach {
-            val notification = UpdatedMessage.build(it, messageId) as MessagesSubscription
+            val notification = Messages.readMessage(it, messageId).toUpdatedMessage()
             messagesNotifier.publish(it to notification)
         }
     }
@@ -70,15 +70,27 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }
         }
-        messagesNotifier.publish(UpdatedMessage.build(userId, messageId) as MessagesSubscription, userId)
+        messagesNotifier.publish(Messages.readMessage(userId, messageId).toUpdatedMessage(), userId)
     }
 
     /**
      * Deletes every star from the [messageIdList].
      *
      * @see [deleteStar]
+     * @see [deleteUserChat]
      */
     fun deleteStars(messageIdList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
+    }
+
+    /**
+     * Unstars every message the [userId] starred in the [chatId]. Notifies the [userId] of the [UnstarredChat] via
+     * [messagesNotifier]. It's assumed the [userId] is in the [chatId].
+     */
+    fun deleteUserChat(userId: Int, chatId: Int) {
+        transaction {
+            deleteWhere { (Stargazers.userId eq userId) and (messageId inList Messages.readIdList(chatId)) }
+        }
+        messagesNotifier.publish(UnstarredChat(chatId), userId)
     }
 }

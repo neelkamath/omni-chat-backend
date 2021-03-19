@@ -558,6 +558,8 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
+data class UnstarredChat(val chatId: Int) : MessagesSubscription
+
 interface BareChatMessage : BareMessage {
     val chatId: Int
     override val messageId: Int
@@ -577,29 +579,8 @@ interface Message : BareMessage {
     override val isForwarded: Boolean
     val hasStar: Boolean
 
-    fun toUpdatedTextMessage(): UpdatedTextMessage =
-        UpdatedTextMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedActionMessage(): UpdatedActionMessage =
-        UpdatedActionMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedPicMessage(): UpdatedPicMessage =
-        UpdatedPicMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedAudioMessage(): UpdatedAudioMessage =
-        UpdatedAudioMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedGroupChatInviteMessage(): UpdatedGroupChatInviteMessage =
-        UpdatedGroupChatInviteMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedDocMessage(): UpdatedDocMessage =
-        UpdatedDocMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedVideoMessage(): UpdatedVideoMessage =
-        UpdatedVideoMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
-
-    fun toUpdatedPollMessage(): UpdatedPollMessage =
-        UpdatedPollMessage(Messages.readChatIdFromMessageId(messageId), messageId, dateTimes.statuses)
+    fun toUpdatedMessage(): UpdatedMessage =
+        UpdatedMessage(Messages.readChatIdFromMessageId(messageId), messageId, state, dateTimes.statuses, hasStar)
 
     fun toStarredTextMessage(): StarredTextMessage = StarredTextMessage(
         Messages.readChatIdFromMessageId(messageId),
@@ -1125,75 +1106,13 @@ data class NewVideoMessage(
     override val isForwarded: Boolean,
 ) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
 
-interface UpdatedMessage {
-    val chatId: Int
-    val messageId: Int
-    val statuses: List<MessageDateTimeStatus>
-
-    companion object {
-        /** Returns a concrete class for the [messageId] as seen by the [userId]. */
-        fun build(userId: Int, messageId: Int): UpdatedMessage =
-            when (val message = Messages.readMessage(userId, messageId)) {
-                is TextMessage -> message.toUpdatedTextMessage()
-                is ActionMessage -> message.toUpdatedActionMessage()
-                is PicMessage -> message.toUpdatedPicMessage()
-                is AudioMessage -> message.toUpdatedAudioMessage()
-                is GroupChatInviteMessage -> message.toUpdatedGroupChatInviteMessage()
-                is DocMessage -> message.toUpdatedDocMessage()
-                is VideoMessage -> message.toUpdatedVideoMessage()
-                is PollMessage -> message.toUpdatedPollMessage()
-                else -> throw IllegalArgumentException("$message didn't match a concrete class.")
-            }
-    }
-}
-
-data class UpdatedTextMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedActionMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedPicMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedPollMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedAudioMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedGroupChatInviteMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedDocMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
-
-data class UpdatedVideoMessage(
-    override val chatId: Int,
-    override val messageId: Int,
-    override val statuses: List<MessageDateTimeStatus>,
-) : UpdatedMessage, MessagesSubscription
+data class UpdatedMessage(
+    val chatId: Int,
+    val messageId: Int,
+    val state: MessageState,
+    val statuses: List<MessageDateTimeStatus>,
+    val hasStar: Boolean,
+) : MessagesSubscription
 
 data class MessageDateTimes(val sent: LocalDateTime, val statuses: List<MessageDateTimeStatus>)
 

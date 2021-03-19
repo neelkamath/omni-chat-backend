@@ -164,9 +164,8 @@ type Query {
 
 type Mutation {
     """
-    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves.
-
-    `null` will be returned if the operation succeeded.
+    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves. `null` will
+    be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
@@ -203,8 +202,8 @@ type Mutation {
 
     """
     Stars the `messageId`. The user can star their own messages. Starring an already starred message will do nothing.
-
-    `null` will be returned if the operation succeeded.
+    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if the message doesn't
+    exist.
 
     An access token must be sent with this request.
     """
@@ -225,12 +224,11 @@ type Mutation {
     setOnline(isOnline: Boolean!): Placeholder!
 
     """
-    Sets whether the user `isTyping` in the `chatId`.
+    Sets whether the user `isTyping` in the `chatId`. `null` will be returned if the operation succeeded. An
+    `InvalidChatId` will be returned if the user isn't in the chat.
 
     Let's consider an example use case. Once the user starts typing, the other users in the chat will see a typing
     status on the user. Once the user stops typing for more than two seconds, the typing status will be removed.
-
-    `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
@@ -255,8 +253,8 @@ type Mutation {
     `MessageStatus.DELIVERED` record, the delivery status will be created. Nothing will happen if the status was already
     created.
 
-    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if the message doesn't
-    exist in a chat the user is in, or the message is the user's own.
+    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if either the message
+    doesn't exist in a chat the user is in or the message is the user's own.
 
     An access token must be sent with this request.
     """
@@ -266,7 +264,7 @@ type Mutation {
     Updates the user's account. Only the non-null fields will be updated. None of the updates will take place if even
     one of the fields were invalid. If the user updates their email address to something other than their current
     address, they must be loged out because the current access token will be invalid until they verify their new email
-    address.
+    address. `null` will be returned if the operation succeeded.
 
     If the user updates their email address, they'll be required to verify it before their next login via an email which
     is sent to it. This means they'll be locked out of their account if they provide an invalid address, and will have
@@ -274,35 +272,29 @@ type Mutation {
     confirm their address. For example, a UI could require the user to enter their email address twice if they're
     updating it, and only allow the update to take place if both the entered addresses match.
 
-    `null` will be returned if the operation succeeded.
-
     An access token must be sent with this request.
     """
     updateAccount(update: AccountUpdate!): UpdateAccountResult
 
     """
     Creates an account, and sends the user a verification email. The user will not be allowed to log in until they
-    verify their email address. Use `Mutation.verifyEmailAddress` to verify the user's email address.
-
-    `null` will be returned if the operation succeeded.
+    verify their email address. Use `Mutation.verifyEmailAddress` to verify the user's email address. `null` will be
+    returned if the operation succeeded.
     """
     createAccount(account: AccountInput!): CreateAccountResult
 
     """
     Sends the user an email to verify their `emailAddress`. An example use case for this operation is when the user
     created an account (which caused an email address verification email to be sent) but accidentally deleted the email,
-    and therefore requires it to be resent.
-
-    `null` will be returned if the operation succeeded.
+    and therefore requires it to be resent. `null` will be returned if the operation succeeded.
     """
     emailEmailAddressVerification(emailAddress: String!): EmailEmailAddressVerificationResult
 
     """
     Sends a password reset email to the supplied `emailAddress`. The email will contain a password reset code which must
     then be passed to `Mutation.resetPassword`. If the user is logged in (i.e., an access token is present), and wants
-    to update their password, `Mutation.updateAccount` should be used instead.
-
-    `null` will be returned if the operation succeeded.
+    to update their password, `Mutation.updateAccount` should be used instead. `null` will be returned if the operation
+    succeeded.
     """
     emailPasswordResetCode(emailAddress: String!): UnregisteredEmailAddress
 
@@ -321,15 +313,18 @@ type Mutation {
 
     """
     Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
-    chat will be ignored. `null` will be returned if the operation succeeded.
+    chat will be ignored. Every message a removed user had starred in the specified chat will be unstarred for them.
+    `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
     removeGroupChatUsers(chatId: Int!, idList: [Int!]!): CannotLeaveChat
 
     """
-    Leaves the chat the user is in. Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if
-    the user isn't the specified group chat.
+    Leaves the chat the user is in. Every message the user has starred in the specified chat will be unstarred for them.
+
+    Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified group
+    chat.
 
     An access token must be sent with this request.
     """
@@ -362,19 +357,16 @@ type Mutation {
     setBroadcast(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    The user must be an admin to perform this operation.
-
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if  the chat isn't a group
     chat, or the chat is a public chat.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. The user must be an admin to perform this operation.
     """
     setInvitability(chatId: Int!, isInvitable: Boolean!): InvalidChatId
 
     """
-    Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat.
-
-    `null` will be returned if the operation succeeded.
+    Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat. `null` will be
+    returned if the operation succeeded. You can easily join a public chat using `Mutation.joinPublicChat`.
 
     An access token must be sent with this request.
     """
@@ -389,10 +381,8 @@ type Mutation {
     joinPublicChat(chatId: Int!): InvalidChatId
 
     """
-    Deletes a private chat.
-
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    chat.
+    Deletes a private chat. `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if
+    the user isn't in the chat.
 
     An access token must be sent with this request.
     """
@@ -425,13 +415,13 @@ type Mutation {
     admin to message. The user might want to give their message a context, such as when replying to a message sent
     several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
 
-    A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
-    meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be
-    notified when `Mutation.triggerAction` gets called.
-
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidAction` will be returned if either there were zero `actions` or the `actions` weren't unique. An
     `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+
+    A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
+    meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be
+    notified when `Mutation.triggerAction` gets called.
 
     An access token must be sent with this request.
     """
@@ -580,19 +570,18 @@ union MessagesSubscription =
     | NewDocMessage
     | NewVideoMessage
     | NewPollMessage
-    | UpdatedTextMessage
-    | UpdatedActionMessage
-    | UpdatedPicMessage
-    | UpdatedAudioMessage
-    | UpdatedGroupChatInviteMessage
-    | UpdatedDocMessage
-    | UpdatedVideoMessage
-    | UpdatedPollMessage
+    | UpdatedMessage
     | TriggeredAction
     | DeletedMessage
     | MessageDeletionPoint
     | DeletionOfEveryMessage
     | UserChatMessagesRemoval
+    | UnstarredChat
+
+"""Every message in the chat has been unstarred by the user."""
+type UnstarredChat {
+    chatId: Int!
+}
 
 union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
 
@@ -1220,59 +1209,13 @@ type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which had its `statuses` updated."""
-interface UpdatedMessage {
+"""An existing `messageId` in the `chatId` which has been updated."""
+type UpdatedMessage {
     chatId: Int!
     messageId: Int!
+    state: MessageState!
     statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedTextMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedActionMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedPicMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedPollMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedAudioMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedGroupChatInviteMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedDocMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
-}
-
-type UpdatedVideoMessage implements UpdatedMessage {
-    chatId: Int!
-    messageId: Int!
-    statuses: [MessageDateTimeStatus!]!
+    hasStar: Boolean!
 }
 
 type MessageDateTimes {
