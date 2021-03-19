@@ -352,13 +352,9 @@ data class NewContact(
 
 interface OnlineStatusesSubscription
 
-data class UpdatedOnlineStatus(
-    val userId: Int,
-    val isOnline: Boolean,
-    val lastOnline: LocalDateTime?,
-) : OnlineStatusesSubscription
-
-data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?) : ReadOnlineStatusResult
+data class OnlineStatus(val userId: Int, val isOnline: Boolean, val lastOnline: LocalDateTime?) :
+    ReadOnlineStatusResult,
+    OnlineStatusesSubscription
 
 data class DeletedContact(val id: Int) : AccountsSubscription
 

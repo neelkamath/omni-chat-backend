@@ -137,6 +137,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type UpdatedPollMessage`
     - `type UnstarredChat`
 - Replace `type ExitedUser` with `type ExitedUsers`.
+- Replace `type UpdatedOnlineStatus` with `type OnlineStatus` in `union OnlineStatusesSubscription`.
 
 ### Fixed
 
@@ -145,6 +146,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Removed
 
+- `type UpdatedOnlineStatus`
 - Remove `Query.readOnlineStatuses` in favor of `Query.readOnlineStatus`.
 - Remove the following in favor of `type UpdatedMessage`:
     - `interface UpdatedMessage`

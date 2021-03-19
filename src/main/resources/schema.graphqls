@@ -582,7 +582,7 @@ type UnstarredChat {
     chatId: Int!
 }
 
-union OnlineStatusesSubscription = CreatedSubscription | UpdatedOnlineStatus
+union OnlineStatusesSubscription = CreatedSubscription | OnlineStatus
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
@@ -625,13 +625,6 @@ type TriggeredAction {
     messageId: Int!
     action: MessageText!
     triggeredBy: Account!
-}
-
-type UpdatedOnlineStatus {
-    userId: Int!
-    isOnline: Boolean!
-    """`null` if the `userId` has never set an online status."""
-    lastOnline: DateTime
 }
 
 type OnlineStatus {

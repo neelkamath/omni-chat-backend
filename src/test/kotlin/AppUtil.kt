@@ -210,7 +210,7 @@ private object OnlineStatusesSubscriptionDeserializer : JsonDeserializer<OnlineS
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
-            "UpdatedOnlineStatus" -> UpdatedOnlineStatus::class
+            "OnlineStatus" -> OnlineStatus::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

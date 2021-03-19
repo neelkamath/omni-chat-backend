@@ -139,9 +139,7 @@ object Users : IntIdTable() {
         Bio(this[bio]),
     )
 
-    /**
-     * Notifies subscribers of the [UpdatedOnlineStatus] only if [isOnline] differs from the [userId]'s current status.
-     */
+    /** Notifies subscribers of the [OnlineStatus] only if [isOnline] differs from the [userId]'s current status. */
     fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
         if (select { Users.id eq userId }.first()[Users.isOnline] == isOnline) return@transaction
         update({ Users.id eq userId }) {
@@ -149,7 +147,7 @@ object Users : IntIdTable() {
             it[lastOnline] = LocalDateTime.now()
         }
         val subscribers = Contacts.readOwners(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(UpdatedOnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
+        onlineStatusesNotifier.publish(OnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
     }
 
     /**

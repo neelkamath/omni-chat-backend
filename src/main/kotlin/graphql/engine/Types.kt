@@ -219,7 +219,7 @@ private fun readTypingStatusesSubscription(obj: Any): String = when (obj) {
 
 private fun readOnlineStatusesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
-    is UpdatedOnlineStatus -> "UpdatedOnlineStatus"
+    is OnlineStatus -> "OnlineStatus"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
