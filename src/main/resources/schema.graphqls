@@ -359,7 +359,7 @@ type Mutation {
     setBroadcast(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if  the chat isn't a group
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the chat isn't a group
     chat, or the chat is a public chat.
 
     An access token must be sent with this request. The user must be an admin to perform this operation.
@@ -383,17 +383,18 @@ type Mutation {
     joinPublicChat(chatId: Int!): InvalidChatId
 
     """
-    Deletes a private chat. `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if
-    the user isn't in the chat.
+    Deletes a private chat.  Any messages the user starred in the chat will be unstarred.
+
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
+    chat.
 
     An access token must be sent with this request.
     """
     deletePrivateChat(chatId: Int!): InvalidChatId
 
     """
-    Creates a private chat with the `userId` if the chat doesn't exist. Returns the chat's ID.
-
-    A returned `InvalidUserId` indicates that the specified user doesn't exist.
+    Creates a private chat with the `userId` unless the chat already exists. In either case, the chat's ID will be
+    returned. A returned `InvalidUserId` indicates that the specified user doesn't exist.
 
     An access token must be sent with this request.
     """

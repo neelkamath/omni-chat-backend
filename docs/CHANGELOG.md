@@ -94,7 +94,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type NewGroupChatInviteMessage`
     - `type NewDocMessage`
     - `type NewVideoMessage`
-- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types accordingly:
+- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `data` value instead. Change the following operations' return types accordingly:
     - `Query.searchChatMessages`
     - `Query.readChat`
     - `Query.readGroupChat`
@@ -129,7 +129,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `GroupChatTitle`
     - `GroupChatDescription`
     - `MessageText`
-- Add `type UpdatedMessage` to `union MessagesSubscription`, and remove the following:
+- Add the following to `union MessagesSubscription`:
+    - `type UnstarredChat`
+    - `type UpdatedMessage`
+- Remove the following from `union MessagesSubscription`:
     - `type UpdatedTextMessage`
     - `type UpdatedActionMessage`
     - `type UpdatedPicMessage`
