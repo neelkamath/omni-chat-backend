@@ -52,9 +52,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ForwardMessageResult`
 - `union TriggerActionResult`
 - `union SetPollVoteResult`
-- `type CannotLeaveChat`
-- `type UnstarredChat`
 - `union LeaveGroupChatResult`
+- `union ReadOnlineStatusResult`
+- `type UnstarredChat`
+- `type CannotLeaveChat`
 - `Query.readOnlineStatus`
 - `Mutation.joinPublicChat`
 - `Mutation.leaveGroupChat`
