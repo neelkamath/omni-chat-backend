@@ -23,6 +23,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("refreshTokenSet", ::refreshTokenSet)
     .dataFetcher("searchChatMessages", ::searchChatMessages)
     .dataFetcher("searchUsers", ::searchUsers)
+    .dataFetcher("searchBlockedUsers", ::searchBlockedUsers)
     .dataFetcher("readBlockedUsers", ::readBlockedUsers)
     .dataFetcher("readGroupChat", ::readGroupChat)
     .dataFetcher("searchPublicChats", ::searchPublicChats)

@@ -115,6 +115,10 @@ object Users : IntIdTable() {
         return OnlineStatus(userId, user[isOnline], user[lastOnline])
     }
 
+    fun readList(idList: Collection<Int>): Set<User> = transaction {
+        select { Users.id inList idList }.map { it.toUser() }.toSet()
+    }
+
     private fun ResultRow.toUser(): User = User(
         this[id].value,
         Username(this[username]),

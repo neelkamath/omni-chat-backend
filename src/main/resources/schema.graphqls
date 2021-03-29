@@ -159,6 +159,14 @@ type Query {
     and last names. Returns the users found.
     """
     searchUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
+
+    """
+    Searches blocked users. The `query` is case-insensitively matched against users' usernames, email addresses, first
+    names, and last names. Returns the users found.
+
+    An access token must be sent with this request.
+    """
+    searchBlockedUsers(query: String!, first: Int, after: Cursor): AccountsConnection!
 }
 
 type Mutation {

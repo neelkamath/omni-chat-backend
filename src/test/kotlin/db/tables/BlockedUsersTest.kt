@@ -17,6 +17,26 @@ import kotlin.test.assertEquals
 @ExtendWith(DbExtension::class)
 class BlockedUsersTest {
     @Nested
+    inner class Search {
+        @Test
+        fun `Only blocked users must be searched`() {
+            // Create three users instead of two to verify that the user who isn't blocked doesn't get searched.
+            val (blockerId, blockedId) = createVerifiedUsers(3).map { it.info.id }
+            BlockedUsers.create(blockerId, blockedId)
+            val actual = BlockedUsers.search(blockerId, query = "").edges.map { it.node.id }
+            assertEquals(listOf(blockedId), actual)
+        }
+
+        @Test
+        fun `Only matching users must be found`() {
+            val (blocker, blocked1, blocked2) = createVerifiedUsers(3).map { it.info }
+            listOf(blocked1, blocked2).forEach { BlockedUsers.create(blocker.id, it.id) }
+            val actual = BlockedUsers.search(blocker.id, query = blocked1.username.value).edges.map { it.node.id }
+            assertEquals(listOf(blocked1.id), actual)
+        }
+    }
+
+    @Nested
     inner class Create {
         @Test
         fun `The user must be blocked`() {

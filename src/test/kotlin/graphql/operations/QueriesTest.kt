@@ -88,6 +88,21 @@ class ChatMessagesDtoTest {
 @ExtendWith(DbExtension::class)
 class QueriesTest {
     @Nested
+    inner class SearchBlockedUsers {
+        @Test
+        fun `Blocked users must be searched`() {
+            val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
+            BlockedUsers.create(blockerId, blockedId)
+            val actual = searchBlockedUsers(blockerId, query = "").edges.map { it.node.id }
+            assertEquals(listOf(blockedId), actual)
+        }
+
+        @Test
+        fun `Results must be paginated`(): Unit =
+            testBlockedUsersPagination(BlockedUsersOperationName.SEARCH_BLOCKED_USERS)
+    }
+
+    @Nested
     inner class ReadTypingUsers {
         @Test
         fun `Typing statuses from the user's chats must be read excluding the user's own`() {
@@ -106,17 +121,8 @@ class QueriesTest {
     @Nested
     inner class ReadBlockedUsers {
         @Test
-        fun `Blocked users must be paginated`() {
-            val blockerId = createVerifiedUsers(1).first().info.id
-            val userIdList = createVerifiedUsers(10).map { it.info.id }
-            userIdList.forEach { BlockedUsers.create(blockerId, it) }
-            val index = 5
-            val cursor = BlockedUsers.read(blockerId).edges[index].cursor
-            val first = 3
-            val expected = userIdList.subList(index + 1, index + 1 + first)
-            val actual = readBlockedUsers(blockerId, ForwardPagination(first, cursor)).edges.map { it.node.id }
-            assertEquals(expected, actual)
-        }
+        fun `Blocked users must be paginated`(): Unit =
+            testBlockedUsersPagination(BlockedUsersOperationName.READ_BLOCKED_USERS)
     }
 
     @Nested
@@ -454,6 +460,35 @@ class QueriesTest {
     }
 }
 
+/** The name of a GraphQL operation which is concerned with the pagination of blocked users. */
+private enum class BlockedUsersOperationName {
+    /** Represents `Query.readBlockedUsers`. */
+    READ_BLOCKED_USERS,
+
+    /** Represents `Query.searchBlockedUsers`. */
+    SEARCH_BLOCKED_USERS,
+}
+
+private fun testBlockedUsersPagination(operation: BlockedUsersOperationName) {
+    val blockerId = createVerifiedUsers(1).first().info.id
+    val userIdList = createVerifiedUsers(10).map { it.info.id }
+    userIdList.forEach { BlockedUsers.create(blockerId, it) }
+    val index = 5
+    val first = 3
+    val expected = userIdList.subList(index + 1, index + 1 + first)
+    val actual = when (operation) {
+        BlockedUsersOperationName.READ_BLOCKED_USERS -> {
+            val cursor = BlockedUsers.read(blockerId).edges[index].cursor
+            readBlockedUsers(blockerId, ForwardPagination(first, cursor))
+        }
+        BlockedUsersOperationName.SEARCH_BLOCKED_USERS -> {
+            val cursor = BlockedUsers.search(blockerId, query = "").edges[index].cursor
+            searchBlockedUsers(blockerId, query = "", ForwardPagination(first, cursor))
+        }
+    }
+    assertEquals(expected, actual.edges.map { it.node.id })
+}
+
 /** The name of a GraphQL operation which is concerned with the pagination of messages. */
 private enum class MessagesOperationName {
     /** Represents `Query.searchChatMessages`. */
@@ -483,8 +518,8 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
     val pagination = BackwardPagination(last, before = messageIdList[cursorIndex])
     val messages = when (operation) {
         MessagesOperationName.SEARCH_CHAT_MESSAGES -> {
-            val edges = searchChatMessages(chatId, text.value, pagination, adminId) as MessageEdges
-            edges.edges
+            val messages = searchChatMessages(chatId, text.value, pagination, adminId) as MessageEdges
+            messages.edges
         }
         MessagesOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text.value, chatMessagesPagination = pagination).flatMap { it.messages }

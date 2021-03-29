@@ -241,6 +241,13 @@ fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     return Users.search(query, pagination)
 }
 
+fun searchBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
+    env.verifyAuth()
+    val query = env.getArgument<String>("query")
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    return BlockedUsers.search(env.userId!!, query, pagination)
+}
+
 fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))

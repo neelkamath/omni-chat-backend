@@ -8,6 +8,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.18.0
 
+### Added
+
+- `Query.searchBlockedUsers`
+
 ### Changed
 
 - Renamed `chatId` to `id` in `type UnstarredChat`.

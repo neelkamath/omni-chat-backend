@@ -8,6 +8,23 @@ import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.testingObjectMapper
 import java.util.*
 
+const val SEARCH_BLOCKED_USERS_QUERY = """
+    query SearchBlockedUsers(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
+        searchBlockedUsers(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
+            $ACCOUNTS_CONNECTION_FRAGMENT
+        }
+    }
+"""
+
+fun searchBlockedUsers(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
+    val data = executeGraphQlViaEngine(
+        SEARCH_BLOCKED_USERS_QUERY,
+        mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
+        userId,
+    ).data!!["searchBlockedUsers"]
+    return testingObjectMapper.convertValue(data!!)
+}
+
 const val READ_TYPING_USERS_QUERY = """
     query ReadTypingUsers {
         readTypingUsers {
@@ -33,7 +50,7 @@ const val READ_BLOCKED_USERS_QUERY = """
 fun readBlockedUsers(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
     val data = executeGraphQlViaEngine(
         READ_BLOCKED_USERS_QUERY,
-        mapOf("first" to pagination?.first, "after" to pagination?.after.toString()),
+        mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
         userId,
     ).data!!["readBlockedUsers"]!!
     return testingObjectMapper.convertValue(data)

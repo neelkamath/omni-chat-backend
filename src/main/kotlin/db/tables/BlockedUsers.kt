@@ -37,9 +37,27 @@ object BlockedUsers : IntIdTable() {
             selectAll()
                 .filter { it[blockerUserId] == userId }
                 .map { AccountEdge.build(it[blockedUserId], it[BlockedUsers.id].value) }
-                .toSet()
         }
-        return AccountsConnection.build(edges, pagination)
+        return AccountsConnection.build(edges.toSet(), pagination)
+    }
+
+    /**
+     * Case-insensitively [query]s each user's username, first name, last name, and email address which the [userId]
+     * has blocked.
+     */
+    fun search(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
+        val edges = transaction {
+            select { blockerUserId eq userId }.map { it[blockedUserId] }
+        }
+            .let(Users::readList)
+            .filter {
+                it.username.value.contains(query, ignoreCase = true) ||
+                        it.firstName.value.contains(query, ignoreCase = true) ||
+                        it.lastName.value.contains(query, ignoreCase = true) ||
+                        it.emailAddress.contains(query, ignoreCase = true)
+            }
+            .map { AccountEdge(it.toAccount(), it.id) }
+        return AccountsConnection.build(edges.toSet(), pagination)
     }
 
     /** Whether the [blockerUserId] has blocked the [blockedUserId]. */
