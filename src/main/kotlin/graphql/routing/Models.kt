@@ -9,15 +9,20 @@ import java.util.*
 typealias Cursor = Int
 
 /**
- * An [IllegalArgumentException] will be thrown if it contains whitespace, isn't lowercase, or exceeds
- * [Users.MAX_NAME_LENGTH] characters.
+ * An [IllegalArgumentException] will be thrown if the following criteria aren't met:
+ * - Must be 1-30 characters.
+ * - Must contain only lowercase English letters (a-z), English numbers (0-9), periods, and underscores.
  */
 data class Username(val value: String) {
     init {
-        if (value != value.toLowerCase()) throw IllegalArgumentException("The username ($value) must be lowercase.")
-        if (value.contains(Regex("""\s""")))
-            throw IllegalArgumentException("""The username ("$value") cannot contain whitespace.""")
-        if (value.length !in 1..Users.MAX_NAME_LENGTH)
+        if (value.contains(Regex("""[^a-z0-9._]""")))
+            throw IllegalArgumentException(
+                """
+                The username ("$value") must only contain lowercase English letters, English numbers, periods, and 
+                underscores.
+                """.trimIndent()
+            )
+        if (value.length !in 1..30)
             throw IllegalArgumentException("The username ($value) must be 1-${Users.MAX_NAME_LENGTH} characters long.")
     }
 }

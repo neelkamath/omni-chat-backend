@@ -4,7 +4,10 @@ scalar DateTime
 """A cursor for pagination."""
 scalar Cursor
 
-"""A username must not contain whitespace, must be lowercase, and must be 1-30 characters long."""
+"""
+A username must be 1-30 characters long. Only lowercase English letters (a-z), English numbers (0-9), periods, and
+underscores are allowed.
+"""
 scalar Username
 
 """A name must neither contain whitespace nor exceed 30 characters."""

@@ -1,8 +1,10 @@
 package com.neelkamath.omniChat.graphql.routing
 
+import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.Users
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
@@ -159,8 +161,23 @@ class UsernameTest {
 
         @Test
         fun `An exception must be thrown for a username which is too long`() {
-            val value = CharArray(Users.MAX_NAME_LENGTH + 1) { 'a' }.joinToString("")
+            val value = CharArray(31) { 'a' }.joinToString("")
             assertFailsWith<IllegalArgumentException> { Username(value) }
+        }
+
+        @Test
+        fun `Lowercase English letters (a-z), English numbers (0-9), periods, and underscores must be allowed`() {
+            Username("a0._")
+        }
+
+        @Test
+        fun `Non-English characters mustn't be allowed`() {
+            assertFailsWith<IllegalArgumentException> { Username("诶") }
+        }
+
+        @Test
+        fun `Emoji mustn't be allowed`() {
+            assertFailsWith<IllegalArgumentException> { Username("\uD83D\uDE00") }
         }
     }
 }
@@ -175,6 +192,7 @@ class PasswordTest {
     }
 }
 
+@ExtendWith(DbExtension::class)
 class UpdatedGroupChatTest {
     @Nested
     inner class Init {
