@@ -129,7 +129,7 @@ We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update`
 
 ## Diagram
 
-Here's a diagram of how the service works. The client application isn't included in this repo but are in the diagram for the purpose of explanation. PostgreSQL and Redis may be set up as clusters similar to the API server.
+Here's a diagram of how the service works. The client application isn't included in this repo but is included in the diagram for the purpose of explanation. PostgreSQL and Redis may be set up as clusters similar to the API server.
 
 ![Diagram](diagram.svg)
 

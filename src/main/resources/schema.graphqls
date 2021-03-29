@@ -21,10 +21,7 @@ scalar Password
 """1-70 characters, of which at least one isn't whitespace. Leading and trailing whitespace is disallowed."""
 scalar GroupChatTitle
 
-"""
-At most 1,000 characters, and uses CommonMark. An empty string corresponds to no description. Leading and trailing
-whitespace is disallowed.
-"""
+"""At most 1,000 characters, and uses CommonMark. Leading and trailing whitespace is disallowed."""
 scalar GroupChatDescription
 
 """
@@ -583,7 +580,7 @@ union MessagesSubscription =
 
 """Every message in the chat has been unstarred by the user."""
 type UnstarredChat {
-    chatId: Int!
+    id: Int!
 }
 
 union OnlineStatusesSubscription = CreatedSubscription | OnlineStatus

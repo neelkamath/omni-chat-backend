@@ -556,7 +556,7 @@ data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageIn
 
 data class MessageEdge(val node: Message, val cursor: Cursor)
 
-data class UnstarredChat(val chatId: Int) : MessagesSubscription
+data class UnstarredChat(val id: Int) : MessagesSubscription
 
 interface BareChatMessage : BareMessage {
     val chatId: Int
