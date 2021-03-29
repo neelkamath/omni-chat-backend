@@ -231,6 +231,7 @@ private fun readAccountsSubscription(obj: Any): String = when (obj) {
     is DeletedContact -> "DeletedContact"
     is BlockedAccount -> "BlockedAccount"
     is UnblockedAccount -> "UnblockedAccount"
+    is DeletedAccount -> "DeletedAccount"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

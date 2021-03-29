@@ -5,6 +5,7 @@ import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.AccountEdge
 import com.neelkamath.omniChat.graphql.routing.AccountsConnection
+import com.neelkamath.omniChat.graphql.routing.DeletedAccount
 import com.neelkamath.omniChat.graphql.routing.ExitedUsers
 import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
@@ -35,7 +36,7 @@ class DbTest {
         }
 
         @Test
-        fun `A private chat must be deleted for the other other if the user deleted it before deleting their data`() {
+        fun `A private chat must be deleted for the other user if the user deleted it before deleting their data`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
@@ -77,6 +78,20 @@ class DbTest {
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
+        }
+
+        @Test
+        fun `Contacts and chat sharers must be notified of the deleted user`(): Unit = runBlocking {
+            val (userId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
+            Contacts.create(contactId, setOf(userId))
+            PrivateChats.create(userId, chatSharerId)
+            awaitBrokering()
+            val (contactSubscriber, chatSharerSubscriber) =
+                listOf(contactId, chatSharerId).map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+            deleteUser(userId)
+            awaitBrokering()
+            val account = DeletedAccount(userId)
+            listOf(contactSubscriber, chatSharerSubscriber).forEach { assertTrue(it.values().contains(account)) }
         }
     }
 

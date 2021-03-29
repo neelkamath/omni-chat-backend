@@ -611,6 +611,12 @@ union AccountsSubscription =
     | DeletedContact
     | BlockedAccount
     | UnblockedAccount
+    | DeletedAccount
+
+"""The `id` of the user who deleted their account."""
+type DeletedAccount {
+    id: Int!
+}
 
 """The `id` of the user who updated their profile pic."""
 type UpdatedProfilePic {

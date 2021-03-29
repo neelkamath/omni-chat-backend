@@ -27,6 +27,8 @@ data class Username(val value: String) {
     }
 }
 
+data class DeletedAccount(val id: Int) : AccountsSubscription
+
 /**
  * An [IllegalArgumentException] will be thrown if it contains whitespace, or exceeds [Users.MAX_NAME_LENGTH]
  * characters.

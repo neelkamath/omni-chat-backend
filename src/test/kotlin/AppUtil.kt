@@ -243,6 +243,7 @@ private object AccountsSubscriptionDeserializer : JsonDeserializer<AccountsSubsc
             "DeletedContact" -> DeletedContact::class
             "BlockedAccount" -> BlockedAccount::class
             "UnblockedAccount" -> UnblockedAccount::class
+            "DeletedAccount" -> DeletedAccount::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.DeletedContact
-import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
-import com.neelkamath.omniChat.graphql.routing.MessageEdge
-import com.neelkamath.omniChat.graphql.routing.UserChatMessagesRemoval
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.LikeOp
@@ -76,6 +73,7 @@ fun readChatSharers(userId: Int): Set<Int> =
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
+ * - Users who have the [userId] in their contacts or chats will be notified of the [DeletedAccount].
  * - Clients who have [Notifier.subscribe]d via [groupChatsNotifier] will be [Notifier.unsubscribe]d.
  *
  * ## Blocked Users
@@ -121,6 +119,7 @@ fun deleteUser(userId: Int) {
             users.
             """,
         )
+    accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwners(userId) + readChatSharers(userId))
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.removeUser(userId)
