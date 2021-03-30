@@ -68,13 +68,22 @@ object BlockedUsers : IntIdTable() {
     }
 
     /**
-     * Has the [blockerUserId] unblock the [blockedUserId]. Does nothing if the user wasn't blocked. The [blockerUserId]
-     * will be notified of the [UnblockedAccount] via [accountsNotifier].
+     * Has the [blockerUserId] unblock the [blockedUserId].
+     *
+     * If the user either wasn't blocked or doesn't exist, then `false` will be returned. Otherwise, the [blockerUserId]
+     * will be notified of the [UnblockedAccount] via [accountsNotifier], and `true` will be returned.
      */
-    fun delete(blockerUserId: Int, blockedUserId: Int): Unit = transaction {
-        deleteWhere { (BlockedUsers.blockerUserId eq blockerUserId) and (BlockedUsers.blockedUserId eq blockedUserId) }
-            .takeIf { it == 1 }
-            ?.let { accountsNotifier.publish(blockerUserId to UnblockedAccount(blockedUserId)) }
+    fun delete(blockerUserId: Int, blockedUserId: Int): Boolean {
+        val count = transaction {
+            deleteWhere {
+                (BlockedUsers.blockerUserId eq blockerUserId) and (BlockedUsers.blockedUserId eq blockedUserId)
+            }
+        }
+        return if (count == 0) false
+        else {
+            accountsNotifier.publish(blockerUserId to UnblockedAccount(blockedUserId))
+            true
+        }
     }
 
     /** Deletes every entry where the [userId] has either blocked or been blocked. */

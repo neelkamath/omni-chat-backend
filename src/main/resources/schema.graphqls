@@ -174,7 +174,7 @@ type Query {
 
 type Mutation {
     """
-    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves. `null` will
+    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves.`null` will
     be returned if the operation succeeded.
 
     An access token must be sent with this request.
@@ -182,11 +182,12 @@ type Mutation {
     blockUser(id: Int!): InvalidUserId
 
     """
-    Unblocks the `id`. Does nothing if the user wasn't blocked.
+    Unblocks the `id`. Returns `true` if the user got unblocked. Returns `false` if either the user wasn't blocked or
+    the `id` doesn't exist.
 
     An access token must be sent with this request.
     """
-    unblockUser(id: Int!): Placeholder!
+    unblockUser(id: Int!): Boolean!
 
     """
     Deletes the user's account. All the user's data will be wiped from the system. This means that users in private

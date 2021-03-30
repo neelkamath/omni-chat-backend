@@ -27,10 +27,9 @@ fun blockUser(env: DataFetchingEnvironment): InvalidUserId? {
     return null
 }
 
-fun unblockUser(env: DataFetchingEnvironment): Placeholder {
+fun unblockUser(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    BlockedUsers.delete(env.userId!!, env.getArgument("id"))
-    return Placeholder
+    return BlockedUsers.delete(env.userId!!, env.getArgument("id"))
 }
 
 fun createAccount(env: DataFetchingEnvironment): CreateAccountResult? {

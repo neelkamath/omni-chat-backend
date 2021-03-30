@@ -18,6 +18,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Rename `chatId` to `id` in `type UnstarredChat`.
 - `scalar Username`
 - Add `type DeletedAccount` to `union AccountsSubscription`.
+- Return a `Boolean!` instead of a `Placeholder!` from `Mutation.unblockUser` to indicate whether the user got unblocked.
 
 ## [0.17.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.17.0) - 2021-03-19
 

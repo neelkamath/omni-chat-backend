@@ -24,8 +24,20 @@ class MutationsTest {
         fun `The user must be unblocked`() {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             BlockedUsers.create(blockerId, blockedId)
-            unblockUser(blockerId, blockedId)
+            assertTrue(unblockUser(blockerId, blockedId))
             assertEquals(0, BlockedUsers.count())
+        }
+
+        @Test
+        fun `Unblocking a user who wasn't blocked must return 'false'`() {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
+            assertFalse(unblockUser(user1Id, user2Id))
+        }
+
+        @Test
+        fun `Unblocking a user who doesn't exist must return 'false'`() {
+            val userId = createVerifiedUsers(1).first().info.id
+            assertFalse(unblockUser(userId, blockedUserId = -1))
         }
     }
 

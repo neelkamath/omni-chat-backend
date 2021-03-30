@@ -40,7 +40,7 @@ const val UNBLOCK_USER_QUERY = """
     }
 """
 
-fun unblockUser(userId: Int, blockedUserId: Int): Placeholder {
+fun unblockUser(userId: Int, blockedUserId: Int): Boolean {
     val data = executeGraphQlViaEngine(UNBLOCK_USER_QUERY, mapOf("id" to blockedUserId), userId)
         .data!!["unblockUser"]!!
     return testingObjectMapper.convertValue(data)
