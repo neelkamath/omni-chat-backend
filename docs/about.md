@@ -59,7 +59,7 @@ Here are Omni Chat's features:
 - Every message has the date and time it was sent, delivered, and read by each user.
 - Messages can be deleted.
 - Messages can be starred (this is similar to bookmarking a webpage).
-- Messages are formatted using Markdown. This allows the average user to easily bolden or italicize words, and technical users to format code snippets, etc. For example, writing "`**Announcement**: College is closed tomorrow`" gets displayed as "**Announcement**: College is closed tomorrow”.
+- Messages are formatted using GitHub Flavored Markdown. This allows the average user to easily bolden or italicize words, and technical users to format code snippets, etc. For example, writing "`**Announcement**: College is closed tomorrow`" gets displayed as "**Announcement**: College is closed tomorrow”.
 - Messages can be replied to in order to prevent context loss.
 - Users can be blocked and unblocked without them knowing.
 - The following message types are supported:
