@@ -9,6 +9,7 @@ import com.neelkamath.omniChat.graphql.routing.DeletedContact
 import com.neelkamath.omniChat.graphql.routing.NewContact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object Contacts : IntIdTable() {
@@ -38,12 +39,12 @@ object Contacts : IntIdTable() {
     }
 
     private fun hasContact(ownerId: Int, contactId: Int): Boolean = transaction {
-        select { (contactOwnerId eq ownerId) and (Contacts.contactId eq contactId) }.empty().not()
+        select((contactOwnerId eq ownerId) and (Contacts.contactId eq contactId)).empty().not()
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
     fun readOwners(contactId: Int): Set<Int> = transaction {
-        select { Contacts.contactId eq contactId }.map { it[contactOwnerId] }.toSet()
+        select(Contacts.contactId eq contactId).map { it[contactOwnerId] }.toSet()
     }
 
     /**
@@ -52,12 +53,12 @@ object Contacts : IntIdTable() {
      * @see [read]
      */
     fun readIdList(ownerId: Int): Set<Int> = transaction {
-        select { contactOwnerId eq ownerId }.map { it[contactId] }.toSet()
+        select(contactOwnerId eq ownerId).map { it[contactId] }.toSet()
     }
 
     /** The [ownerId]'s contacts. */
     private fun readRows(ownerId: Int): Set<AccountEdge> = transaction {
-        select { contactOwnerId eq ownerId }
+        select(contactOwnerId eq ownerId)
             .map {
                 val account = Users.read(it[contactId]).toAccount()
                 AccountEdge(account, cursor = it[Contacts.id].value)

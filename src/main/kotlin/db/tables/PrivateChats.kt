@@ -31,9 +31,7 @@ object PrivateChats : Table() {
         return insert(user1Id, user2Id)
     }
 
-    fun isExisting(chatId: Int): Boolean = transaction {
-        select { PrivateChats.id eq chatId }.empty().not()
-    }
+    fun isExisting(chatId: Int): Boolean = transaction { select(PrivateChats.id eq chatId).empty().not() }
 
     /** Records in the DB that [user1Id] and [user2Id] are in a chat with each other, and returns the chat's ID. */
     private fun insert(user1Id: Int, user2Id: Int): Int = transaction {
@@ -75,14 +73,15 @@ object PrivateChats : Table() {
      * deletion.
      */
     private fun readUserChatsRows(userId: Int): Set<ResultRow> = transaction {
-        select { (user1Id eq userId) or (user2Id eq userId) }
+        select((user1Id eq userId) or (user2Id eq userId))
             .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
             .toSet()
     }
 
-    fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat = transaction {
-        select { PrivateChats.id eq id }.first()
-    }.let { buildPrivateChat(it, userId, pagination) }
+    fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat {
+        val row = transaction { select(PrivateChats.id eq id).first() }
+        return buildPrivateChat(row, userId, pagination)
+    }
 
     private fun buildPrivateChat(
         row: ResultRow,
@@ -102,9 +101,8 @@ object PrivateChats : Table() {
      *
      * @see [readUserChats]
      */
-    fun readIdList(userId: Int): Set<Int> = transaction {
-        select { (user1Id eq userId) or (user2Id eq userId) }.map { it[PrivateChats.id] }.toSet()
-    }
+    fun readIdList(userId: Int): Set<Int> =
+        transaction { select((user1Id eq userId) or (user2Id eq userId)).map { it[PrivateChats.id] }.toSet() }
 
     /**
      * Case-insensitively [query]s the messages in the chats the [userId] is in, excluding ones the [userId] deleted.
@@ -120,7 +118,7 @@ object PrivateChats : Table() {
     /** Whether there exists a chat between [user1Id] and [user2Id]. */
     fun isExisting(user1Id: Int, user2Id: Int): Boolean = transaction {
         val where = { userId: Int -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
-        !select { where(user1Id) and where(user2Id) }.empty()
+        select(where(user1Id) and where(user2Id)).empty().not()
     }
 
     /**
@@ -157,7 +155,7 @@ object PrivateChats : Table() {
      * @see [readOtherUserId]
      */
     fun readUserIdList(chatId: Int): Set<Int> = transaction {
-        val row = select { PrivateChats.id eq chatId }.first()
+        val row = select(PrivateChats.id eq chatId).first()
         listOf(row[user1Id], row[user2Id]).toSet()
     }
 

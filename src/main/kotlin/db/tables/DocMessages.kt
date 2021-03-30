@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.annotation.processing.Generated
 
@@ -47,9 +48,7 @@ object DocMessages : Table() {
         }
     }
 
-    fun read(id: Int): Doc = transaction {
-        select { messageId eq id }.first()[doc].let(::Doc)
-    }
+    fun read(id: Int): Doc = transaction { select(messageId eq id).first()[doc].let(::Doc) }
 
     fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }

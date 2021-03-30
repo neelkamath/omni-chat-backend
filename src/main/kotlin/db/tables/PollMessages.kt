@@ -8,6 +8,8 @@ import com.neelkamath.omniChat.graphql.routing.PollInput
 import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
@@ -30,14 +32,10 @@ object PollMessages : IntIdTable() {
         PollOptions.create(pollId, poll.options.toLinkedHashSet())
     }
 
-    fun isExisting(messageId: Int): Boolean = transaction {
-        select { PollMessages.messageId eq messageId }.empty().not()
-    }
+    fun isExisting(messageId: Int): Boolean = transaction { select(PollMessages.messageId eq messageId).empty().not() }
 
     fun read(messageId: Int): Poll {
-        val row = transaction {
-            select { PollMessages.messageId eq messageId }.first()
-        }
+        val row = transaction { select(PollMessages.messageId eq messageId).first() }
         val options = PollOptions.read(row[id].value)
         return Poll(MessageText(row[title]), options.toList())
     }
@@ -57,19 +55,18 @@ object PollMessages : IntIdTable() {
     /** Whether the [messageId] has the [option]. */
     fun hasOption(messageId: Int, option: MessageText): Boolean {
         val pollId = transaction {
-            select { PollMessages.messageId eq messageId }.first()[PollMessages.id].value
+            select(PollMessages.messageId eq messageId).first()[PollMessages.id].value
         }
         return PollOptions.read(pollId).any { it.option == option }
     }
 
     /** Returns the poll ID of the [messageId]. */
-    private fun readId(messageId: Int): Int = transaction {
-        select { PollMessages.messageId eq messageId }.first()[PollMessages.id].value
-    }
+    private fun readId(messageId: Int): Int =
+        transaction { select(PollMessages.messageId eq messageId).first()[PollMessages.id].value }
 
     /** Returns the ID of every poll message in the [messageIdList]. */
     private fun readIdList(messageIdList: Collection<Int>): Set<Int> = transaction {
-        select { messageId inList messageIdList }.map { it[PollMessages.id].value }.toSet()
+        select(messageId inList messageIdList).map { it[PollMessages.id].value }.toSet()
     }
 
     fun delete(messageIdList: Collection<Int>) {

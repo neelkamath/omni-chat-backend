@@ -135,7 +135,7 @@ class MutationsTest {
         fun `Triggering a message which isn't an action message must fail`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageId = Messages.message(adminId, chatId, MessageText("t"))
+            val messageId = Messages.message(adminId, chatId)
             val result = triggerAction(adminId, messageId, MessageText("action"))
             assertTrue(result is InvalidMessageId)
         }
@@ -160,7 +160,7 @@ class MutationsTest {
         fun `The message must be created with the context`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
+            val contextMessageId = Messages.message(adminId, chatId)
             val message = ActionMessageInput(MessageText("Do you code?"), listOf(MessageText("Yes"), MessageText("No")))
             assertNull(createActionMessage(adminId, chatId, message, contextMessageId))
             val node = Messages.readGroupChatConnection(chatId).edges.last().node
@@ -362,7 +362,7 @@ class MutationsTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val (chatId, invitedChatId) = listOf(1, 2)
                 .map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
-            val contextMessageId = Messages.message(adminId, chatId, MessageText("t"))
+            val contextMessageId = Messages.message(adminId, chatId)
             assertNull(createGroupChatInviteMessage(adminId, chatId, invitedChatId, contextMessageId))
             assertEquals(1, GroupChatInviteMessages.count())
         }
@@ -502,7 +502,7 @@ class MutationsTest {
         fun `Voting on a message which isn't a poll must fail`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageId = Messages.message(adminId, chatId, MessageText("t"))
+            val messageId = Messages.message(adminId, chatId)
             val result = setPollVote(adminId, messageId, MessageText("option"), vote = true)
             assertTrue(result is InvalidMessageId)
         }
@@ -717,7 +717,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertNull(star(adminId, messageId))
-            assertEquals(setOf(messageId), Stargazers.read(adminId))
+            assertEquals(listOf(messageId), Stargazers.read(adminId).edges.map { it.node.messageId })
         }
 
         @Test

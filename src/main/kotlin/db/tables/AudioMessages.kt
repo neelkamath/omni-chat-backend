@@ -3,6 +3,7 @@ package com.neelkamath.omniChat.db.tables
 import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.PostgresEnum
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** @see [Messages] */
@@ -27,9 +28,7 @@ object AudioMessages : Table() {
     }
 
     fun read(id: Int): Audio {
-        val row = transaction {
-            select { messageId eq id }.first()
-        }
+        val row = transaction { select(messageId eq id).first() }
         return Audio(row[audio], row[type])
     }
 

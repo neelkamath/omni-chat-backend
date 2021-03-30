@@ -26,9 +26,9 @@ data class ChatEdges(
     val edges: LinkedHashSet<MessageEdge>,
 )
 
-data class ForwardPagination(val first: Int? = null, val after: Int? = null)
+data class ForwardPagination(val first: Int? = null, val after: Cursor? = null)
 
-data class BackwardPagination(val last: Int? = null, val before: Int? = null)
+data class BackwardPagination(val last: Int? = null, val before: Cursor? = null)
 
 enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 

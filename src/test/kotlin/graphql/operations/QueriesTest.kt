@@ -146,7 +146,19 @@ class QueriesTest {
             val chatId = PrivateChats.create(user1Id, user2Id)
             val (message1Id, message2Id) = (1..3).map { Messages.message(user1Id, chatId) }
             listOf(message1Id, message2Id).forEach { Stargazers.create(user1Id, it) }
-            assertEquals(listOf(message1Id, message2Id).map { StarredMessage.build(user1Id, it) }, readStars(user1Id))
+            assertEquals(listOf(message1Id, message2Id), readStars(user1Id).edges.map { it.node.messageId })
+        }
+
+        @Test
+        fun `Messages must be paginated`() {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
+            val first = 3
+            val index = 5
+            val pagination = ForwardPagination(first, after = messageIdList[index])
+            val actual = readStars(adminId, pagination).edges.map { it.node.messageId }
+            assertEquals(messageIdList.slice(index + 1..index + first), actual)
         }
     }
 

@@ -5,6 +5,9 @@ import com.neelkamath.omniChat.db.typingStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.TypingStatus
 import com.neelkamath.omniChat.graphql.routing.TypingUsers
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Whether the user is typing in a chat. */
@@ -22,9 +25,8 @@ object TypingStatuses : Table() {
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */
-    private fun isExisting(chatId: Int, userId: Int): Boolean = transaction {
-        !select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }.empty()
-    }
+    private fun isExisting(chatId: Int, userId: Int): Boolean =
+        transaction { select((TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId)).empty().not() }
 
     /** Updates the existing record in the table. */
     private fun updateRecord(chatId: Int, userId: Int, isTyping: Boolean): Unit = transaction {
@@ -44,14 +46,14 @@ object TypingStatuses : Table() {
 
     /** Whether the [userId] is typing in the [chatId]. */
     fun read(chatId: Int, userId: Int): Boolean = transaction {
-        select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }
+        select((TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId))
             .firstOrNull()
             ?.get(isTyping) ?: false
     }
 
     /** Returns the statuses of users who are typing in the chat [idList] excluding the [userId]'s. */
     fun readChats(idList: Collection<Int>, userId: Int): Set<TypingUsers> = transaction {
-        select { (chatId inList idList) and isTyping and (TypingStatuses.userId neq userId) }
+        select((chatId inList idList) and isTyping and (TypingStatuses.userId neq userId))
             .groupBy { it[chatId] }
             .map { (chatId, rows) ->
                 val users = rows.map { Users.read(it[TypingStatuses.userId]).toAccount() }

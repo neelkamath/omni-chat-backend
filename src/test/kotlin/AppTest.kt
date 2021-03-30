@@ -97,7 +97,7 @@ class SpecComplianceTest {
     fun `null fields in the data key must be returned`() {
         val admin = createVerifiedUsers(1).first()
         val chatId = GroupChats.create(listOf(admin.info.id))
-        Messages.message(admin.info.id, chatId, MessageText("t"))
+        Messages.message(admin.info.id, chatId)
         val response = readGraphQlHttpResponse(
             READ_CHAT_QUERY,
             mapOf(

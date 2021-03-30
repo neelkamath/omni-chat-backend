@@ -812,6 +812,28 @@ const val READ_GROUP_CHAT_RESULT_FRAGMENT = """
     $INVALID_INVITE_CODE_FRAGMENT
 """
 
+const val STARRED_MESSAGE_EDGE_FRAGMENT = """
+    ... on StarredMessageEdge {
+        __typename
+        node {
+            $STARRED_MESSAGE_FRAGMENT
+        }
+        cursor
+    }
+"""
+
+const val STARRED_MESSAGES_CONNECTION_FRAGMENT = """
+    ... on StarredMessagesConnection {
+        __typename
+        edges {
+            $STARRED_MESSAGE_EDGE_FRAGMENT
+        }
+        pageInfo {
+            $PAGE_INFO_FRAGMENT
+        }
+    }
+"""
+
 const val REQUEST_TOKEN_SET_RESULT_FRAGMENT = """
     $TOKEN_SET_FRAGMENT
     $NONEXISTENT_USER_FRAGMENT

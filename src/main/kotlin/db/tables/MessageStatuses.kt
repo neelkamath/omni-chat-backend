@@ -9,6 +9,7 @@ import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
@@ -82,11 +83,11 @@ object MessageStatuses : Table() {
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
     fun isExisting(messageId: Int, userId: Int, status: MessageStatus): Boolean = transaction {
-        select {
+        select(
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
                     (MessageStatuses.status eq status)
-        }.empty().not()
+        ).empty().not()
     }
 
     /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
@@ -109,7 +110,7 @@ object MessageStatuses : Table() {
 
     /** [messageId]'s [MessageDateTimeStatus]es. */
     fun read(messageId: Int): Set<MessageDateTimeStatus> = transaction {
-        select { MessageStatuses.messageId eq messageId }
+        select(MessageStatuses.messageId eq messageId)
             .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
             .toSet()
     }

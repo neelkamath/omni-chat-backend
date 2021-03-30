@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -246,9 +247,7 @@ object Messages : IntIdTable() {
         }
     }
 
-    private fun readType(messageId: Int): MessageType = transaction {
-        select { Messages.id eq messageId }.first()[type]
-    }
+    private fun readType(messageId: Int): MessageType = transaction { select(Messages.id eq messageId).first()[type] }
 
     /**
      * Case-insensitively [query]s the [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if no
@@ -352,14 +351,12 @@ object Messages : IntIdTable() {
 
     /** The message IDs in the [chatId] in order of creation. */
     fun readIdList(chatId: Int): LinkedHashSet<Int> = transaction {
-        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
+        select(Messages.chatId eq chatId).orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
     }
 
     /** Returns a concrete class for the [messageId] as seen by the [userId]. */
     fun readMessage(userId: Int, messageId: Int): Message {
-        val row = transaction {
-            select { Messages.id eq messageId }.first()
-        }
+        val row = transaction { select(Messages.id eq messageId).first() }
         return buildMessage(row, userId)
     }
 
@@ -385,9 +382,7 @@ object Messages : IntIdTable() {
 
     /** @see [readMessage] */
     fun readTypedMessage(messageId: Int): TypedMessage {
-        val row = transaction {
-            select { Messages.id eq messageId }.first()
-        }
+        val row = transaction { select(Messages.id eq messageId).first() }
         val message = object : BareMessage {
             override val messageId: Int = messageId
             override val sender: Account = Users.read(row[senderId]).toAccount()
@@ -418,9 +413,8 @@ object Messages : IntIdTable() {
      *
      * @see [Messages.isExistingFrom]
      */
-    fun readChatIdFromMessageId(messageId: Int): Int = transaction {
-        select { Messages.id eq messageId }.first()[chatId]
-    }
+    fun readChatIdFromMessageId(messageId: Int): Int =
+        transaction { select(Messages.id eq messageId).first()[chatId] }
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: Collection<Int>) {
@@ -497,13 +491,12 @@ object Messages : IntIdTable() {
      * the [userId] doesn't exist.
      */
     private fun readChatMessages(userId: Int): Set<ChatAndMessageId> = transaction {
-        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }.toSet()
+        select(senderId eq userId).map { ChatAndMessageId(it[chatId], it[Messages.id].value) }.toSet()
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
-    fun isExistingFrom(chatId: Int, from: LocalDateTime): Boolean = transaction {
-        !select { (Messages.chatId eq chatId) and (sent greaterEq from) }.empty()
-    }
+    fun isExistingFrom(chatId: Int, from: LocalDateTime): Boolean =
+        transaction { select((Messages.chatId eq chatId) and (sent greaterEq from)).empty().not() }
 
     /** The [id] list for the [chatId]. */
     private fun readMessageIdList(chatId: Int, filter: Filter = null): Set<Int> = transaction {
@@ -512,9 +505,7 @@ object Messages : IntIdTable() {
         select(op).map { it[Messages.id].value }.toSet()
     }
 
-    fun isExisting(id: Int): Boolean = transaction {
-        select { Messages.id eq id }.empty().not()
-    }
+    fun isExisting(id: Int): Boolean = transaction { select(Messages.id eq id).empty().not() }
 
     /** The [MessagesConnection] as seen by the [userId], or an anonymous user if there's no [userId]. */
     fun readGroupChatConnection(
@@ -558,9 +549,7 @@ object Messages : IntIdTable() {
             Chronology.AFTER -> Messages.id greater messageId
         }
         filter?.let { op = op and it }
-        return transaction {
-            select { (Messages.chatId eq chatId) and op }.empty().not()
-        }
+        return transaction { select((Messages.chatId eq chatId) and op).empty().not() }
     }
 
     /** The ID of the [type] of message in the [chatId], or `null` if there are no messages. */

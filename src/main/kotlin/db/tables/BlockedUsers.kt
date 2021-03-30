@@ -8,6 +8,7 @@ import com.neelkamath.omniChat.graphql.routing.BlockedAccount
 import com.neelkamath.omniChat.graphql.routing.UnblockedAccount
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** The users each user has blocked. */
@@ -34,9 +35,7 @@ object BlockedUsers : IntIdTable() {
     /** Reads the list of users the [userId] has blocked. */
     fun read(userId: Int, pagination: ForwardPagination? = null): AccountsConnection {
         val edges = transaction {
-            selectAll()
-                .filter { it[blockerUserId] == userId }
-                .map { AccountEdge.build(it[blockedUserId], it[BlockedUsers.id].value) }
+            select(blockerUserId eq userId).map { AccountEdge.build(it[blockedUserId], it[BlockedUsers.id].value) }
         }
         return AccountsConnection.build(edges.toSet(), pagination)
     }
@@ -47,7 +46,7 @@ object BlockedUsers : IntIdTable() {
      */
     fun search(userId: Int, query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val edges = transaction {
-            select { blockerUserId eq userId }.map { it[blockedUserId] }
+            select(blockerUserId eq userId).map { it[blockedUserId] }
         }
             .let(Users::readList)
             .filter {
@@ -61,8 +60,8 @@ object BlockedUsers : IntIdTable() {
     }
 
     /** Whether the [blockerUserId] has blocked the [blockedUserId]. */
-    fun isBlocked(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
-        select { (BlockedUsers.blockedUserId eq blockedUserId) and (BlockedUsers.blockerUserId eq blockerUserId) }
+    private fun isBlocked(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
+        select((BlockedUsers.blockedUserId eq blockedUserId) and (BlockedUsers.blockerUserId eq blockerUserId))
             .empty()
             .not()
     }

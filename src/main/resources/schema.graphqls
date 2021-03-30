@@ -54,7 +54,7 @@ type Query {
 
     An access token must be sent with this request.
     """
-    readStars: [StarredMessage!]!
+    readStars(first: Int, after: Cursor): StarredMessagesConnection!
 
     """
     Returns users blocked by this user.
@@ -128,7 +128,7 @@ type Query {
     """
     searchChats(query: String!): [Chat!]!
 
-    """Case-insensitively searches chats by case-insensitively `query`ing their titles."""
+    """Searches chats by case-insensitively `query`ing their titles."""
     searchPublicChats(query: String!): [GroupChat!]!
 
     """
@@ -857,6 +857,16 @@ interface Chat {
 type MessagesConnection {
     edges: [MessageEdge!]!
     pageInfo: PageInfo!
+}
+
+type StarredMessagesConnection {
+    edges: [StarredMessageEdge!]!
+    pageInfo: PageInfo!
+}
+
+type StarredMessageEdge {
+    node: StarredMessage!
+    cursor: Cursor!
 }
 
 type MessageEdge {

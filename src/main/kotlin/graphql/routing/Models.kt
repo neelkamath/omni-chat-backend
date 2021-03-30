@@ -357,6 +357,10 @@ data class NewContact(
     }
 }
 
+data class StarredMessagesConnection(val edges: List<StarredMessageEdge>, val pageInfo: PageInfo)
+
+data class StarredMessageEdge(val node: StarredMessage, val cursor: Cursor)
+
 interface OnlineStatusesSubscription
 
 data class TypingUsers(val chatId: Int, val users: List<Account>)

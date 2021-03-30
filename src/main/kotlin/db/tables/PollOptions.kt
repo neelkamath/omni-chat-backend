@@ -5,6 +5,8 @@ import com.neelkamath.omniChat.graphql.routing.PollOption
 import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** @see [PollMessages] */
@@ -21,7 +23,7 @@ object PollOptions : IntIdTable() {
     }
 
     fun read(pollId: Int): LinkedHashSet<PollOption> = transaction {
-        select { PollOptions.pollId eq pollId }
+        select(PollOptions.pollId eq pollId)
             .orderBy(PollOptions.id)
             .map {
                 val votes = PollVotes.read(it[PollOptions.id].value)
@@ -32,12 +34,12 @@ object PollOptions : IntIdTable() {
 
     /** Returns the option ID of the [pollId]'s [option]. */
     fun readId(pollId: Int, option: MessageText): Int = transaction {
-        select { (PollOptions.pollId eq pollId) and (PollOptions.option eq option.value) }.first()[PollOptions.id].value
+        select((PollOptions.pollId eq pollId) and (PollOptions.option eq option.value)).first()[PollOptions.id].value
     }
 
     /** Returns the IDs of all [PollOptions] every poll in the [pollIdList] has. */
     private fun readIdList(pollIdList: Collection<Int>): Set<Int> = transaction {
-        select { pollId inList pollIdList }.map { it[PollOptions.id].value }.toSet()
+        select(pollId inList pollIdList).map { it[PollOptions.id].value }.toSet()
     }
 
     fun delete(pollIdList: Collection<Int>) {

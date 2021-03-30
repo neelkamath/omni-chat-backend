@@ -24,7 +24,7 @@ class MessagesTest {
         private fun testPrivateChat(state: MessageState) {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId, MessageText("Hi"))
+            val messageId = Messages.message(user1Id, chatId)
             if (state == MessageState.DELIVERED) MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
             if (state == MessageState.READ) MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
             assertEquals(state, Messages.readTypedMessage(messageId).message.state)
@@ -45,7 +45,7 @@ class MessagesTest {
         private fun testGroupChat(state: MessageState) {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
-            val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
+            val messageId = Messages.message(adminId, chatId)
             when (state) {
                 MessageState.SENT -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
                 MessageState.DELIVERED -> {
@@ -74,7 +74,7 @@ class MessagesTest {
         fun `A message in a group chat with a single participant must have a 'READ' status`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
+            val messageId = Messages.message(adminId, chatId)
             assertEquals(MessageState.READ, Messages.readTypedMessage(messageId).message.state)
         }
     }
@@ -475,6 +475,8 @@ class MessagesTest {
         }
     }
 
+    private data class PaginatedChat(val adminId: Int, val chatId: Int, val messageIdList: List<Int>)
+
     @Nested
     inner class ReadChat {
         @Test
@@ -495,32 +497,33 @@ class MessagesTest {
             assertEquals(messagesIdList, Messages.readGroupChat(chatId, userId = adminId).map { it.cursor })
         }
 
-        @Test
-        fun `Every message must be retrieved if neither the cursor nor the limit are supplied`() {
+        private fun createPaginatedChat(messages: Int = 10): PaginatedChat {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..3).map { Messages.message(adminId, chatId) }
+            val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }
+            return PaginatedChat(adminId, chatId, messageIdList)
+        }
+
+        @Test
+        fun `Every message must be retrieved if neither the cursor nor the limit are supplied`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
             assertEquals(messageIdList, Messages.readGroupChat(chatId, userId = adminId).map { it.cursor })
         }
 
         @Test
         fun `The number of messages specified by the limit must be retrieved from before the cursor`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
             val last = 3
             val cursorIndex = 7
             val cursors = Messages
                 .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]), adminId)
                 .map { it.cursor }
-            assertEquals(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last), cursors)
+            assertEquals(messageIdList.subList(cursorIndex - last, cursorIndex), cursors)
         }
 
         @Test
         fun `A limited number of messages from the last message must be retrieved when there's no cursor`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
             val last = 3
             val cursors = Messages.readGroupChat(chatId, BackwardPagination(last), adminId).map { it.cursor }
             assertEquals(messageIdList.takeLast(last), cursors)
@@ -528,21 +531,16 @@ class MessagesTest {
 
         @Test
         fun `Every message before the cursor must be retrieved when there's no limit`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messages = 5
-            val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
             val index = 3
             val cursor = messageIdList[index]
             val cursors = Messages.readGroupChat(chatId, BackwardPagination(before = cursor), adminId).map { it.cursor }
-            assertEquals(messageIdList.dropLast(messages - index), cursors)
+            assertEquals(messageIdList.dropLast(messageIdList.size - index), cursors)
         }
 
         @Test
         fun `Using a deleted message's cursor mustn't cause pagination to behave differently`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
             val index = 5
             val deletedMessageId = messageIdList[index]
             Messages.delete(deletedMessageId)

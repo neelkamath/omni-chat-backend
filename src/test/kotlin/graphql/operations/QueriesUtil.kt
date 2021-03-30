@@ -113,15 +113,18 @@ fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null):
 }
 
 const val READ_STARS_QUERY = """
-    query ReadStars {
-        readStars {
-            $STARRED_MESSAGE_FRAGMENT
+    query ReadStars(${"$"}first: Int, ${"$"}after: Int) {
+        readStars(first: ${"$"}first, after: ${"$"}after) {
+            $STARRED_MESSAGES_CONNECTION_FRAGMENT
         }
     }
 """
 
-fun readStars(userId: Int): List<StarredMessage> {
-    val data = executeGraphQlViaEngine(READ_STARS_QUERY, userId = userId).data!!["readStars"]!!
+fun readStars(userId: Int, pagination: ForwardPagination? = null): StarredMessagesConnection {
+    val data = executeGraphQlViaEngine(
+        READ_STARS_QUERY, mapOf("first" to pagination?.first, "after" to pagination?.after),
+        userId,
+    ).data!!["readStars"]!!
     return testingObjectMapper.convertValue(data)
 }
 

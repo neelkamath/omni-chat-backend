@@ -212,9 +212,10 @@ fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
     return groupChats + privateChats
 }
 
-fun readStars(env: DataFetchingEnvironment): List<StarredMessage> {
+fun readStars(env: DataFetchingEnvironment): StarredMessagesConnection {
     env.verifyAuth()
-    return Stargazers.read(env.userId!!).map { StarredMessage.build(env.userId!!, it) }
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    return Stargazers.read(env.userId!!, pagination)
 }
 
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {

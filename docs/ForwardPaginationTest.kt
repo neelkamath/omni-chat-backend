@@ -1,51 +1,51 @@
 class ForwardPaginationTest {
     @Test
-    fun `Every item should be retrieved if neither cursor nor limit get supplied`() {
+    fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
 
     }
 
     @Test
-    fun `Using a deleted item's cursor should cause pagination to work as if the item still exists`() {
+    fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
 
     }
 
     @Test
-    fun `Retrieving the first of many items should cause the page info to state there are only items after it`() {
+    fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
 
     }
 
     @Test
-    fun `Retrieving the last of many items should cause the page info to state there are only items before it`() {
+    fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
 
     }
 
     @Test
-    fun `The start and end cursors should be null if there are no items`() {
+    fun `If there are no items, the page info must indicate such`() {
 
     }
 
     @Test
-    fun `The start and end cursors should be the same if there's only one item`() {
+    fun `If there's one item, the page info must indicate such`() {
 
     }
 
     @Test
-    fun `The first and last cursors should be the first and last items respectively`() {
+    fun `The first and last cursors must be the first and last items respectively`() {
 
     }
 
     @Test
-    fun `The number of items specified by the limit should be returned from after the cursor`() {
+    fun `The number of items specified by the limit must be returned from after the cursor`() {
 
     }
 
     @Test
-    fun `The number of items specified by the limit from the first item should be retrieved when there's no cursor`() {
+    fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
 
     }
 
     @Test
-    fun `Every item after the cursor should be retrieved when there's no limit`() {
+    fun `Every item after the cursor must be retrieved when there's no limit`() {
 
     }
 }
