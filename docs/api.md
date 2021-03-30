@@ -199,7 +199,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `searchContacts`
     - `readOnlineStatus`
 - `Mutation`
-    - `deleteContacts`
+    - `deleteContact`
     - `createContact`
 - `Subscription`
     - `subscribeToOnlineStatuses`

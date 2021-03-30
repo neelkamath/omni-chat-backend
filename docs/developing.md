@@ -116,7 +116,7 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 
 ## Naming Conventions
 
-We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (e.g., `deleteAccount`), `is` (e.g., `isUsernameTaken`), and `search` (e.g., `searchAccounts`) to name functions. Don't use `get`, `set`, etc. unless needed.
+We use `create` (e.g., `createAccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (e.g., `deleteAccount`), `is` (e.g., `isUsernameTaken`), and `search` (e.g., `searchAccounts`) to name functions. Don't use `get`, `set`, etc. unless needed.
 
 ## Writing Tests
 

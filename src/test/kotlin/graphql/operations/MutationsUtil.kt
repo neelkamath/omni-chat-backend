@@ -513,15 +513,14 @@ fun deleteAccount(userId: Int): CannotDeleteAccount? {
     return if (data == null) data else testingObjectMapper.convertValue(data)
 }
 
-const val DELETE_CONTACTS_QUERY = """
-    mutation DeleteContacts(${"$"}idList: [Int!]!) {
-        deleteContacts(idList: ${"$"}idList)
+const val DELETE_CONTACT_QUERY = """
+    mutation DeleteContact(${"$"}id: Int!) {
+        deleteContact(id: ${"$"}id)
     }
 """
 
-fun deleteContacts(userId: Int, idList: List<Int>): Placeholder {
-    val data = executeGraphQlViaEngine(DELETE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
-        .data!!["deleteContacts"]!!
+fun deleteContact(userId: Int, id: Int): Boolean {
+    val data = executeGraphQlViaEngine(DELETE_CONTACT_QUERY, mapOf("id" to id), userId).data!!["deleteContact"]!!
     return testingObjectMapper.convertValue(data)
 }
 

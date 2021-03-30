@@ -515,14 +515,15 @@ type Mutation {
     deleteMessage(id: Int!): InvalidMessageId
 
     """
-    Remove saved contacts. Invalid contacts (e.g., invalid user IDs, unsaved contacts) will be ignored.
+    Deletes the specified user from the user's contacts. Returns `true` if the contact got deleted. Returns `false` if
+    the `id` was either not a contact or a nonexistent user ID.
 
     An access token must be sent with this request.
     """
-    deleteContacts(idList: [Int!]!): Placeholder!
+    deleteContact(id: Int!): Boolean!
 
     """
-    Saves the `id` as a contact. Returns `true` if the contact got saved. Returns `false` if either the `id` was a
+    Saves the `id` as a contact. Returns `true` if the contact got saved. Returns `false` if the `id` was either a
     preexisting contact or a nonexistent user ID.
 
     An access token must be sent with this request.

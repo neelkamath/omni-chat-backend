@@ -13,6 +13,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Query.searchBlockedUsers`
 - `type DeletedAccount`
 - `Mutation.createContact`
+- `Mutation.deleteContact`
 
 ### Changed
 
@@ -24,6 +25,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Removed
 
 - Remove `Mutation.createContacts` in favor of `Mutation.createContact`.
+- Remove `Mutation.deleteContacts` in favor of `Mutation.deleteContact`.
 
 ## [0.17.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.17.0) - 2021-03-19
 
@@ -82,7 +84,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Renamed `Mutation.deleteStar` to `Mutation.unstar`.
+- Rename `Mutation.deleteStar` to `Mutation.unstar`.
 - Add the field `state: MessageState!` to the following:
     - `interface BareMessage`
     - `interface Message`

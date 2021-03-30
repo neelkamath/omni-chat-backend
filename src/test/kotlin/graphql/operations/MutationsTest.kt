@@ -1094,18 +1094,6 @@ class MutationsTest {
     }
 
     @Nested
-    inner class DeleteContacts {
-        @Test
-        fun `Contacts must be deleted, ignoring invalid ones`() {
-            val (ownerId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
-            val userIdList = listOf(user1Id, user2Id)
-            Contacts.createAll(ownerId, userIdList.toSet())
-            deleteContacts(ownerId, userIdList + -1)
-            assertTrue(Contacts.readIdList(ownerId).isEmpty())
-        }
-    }
-
-    @Nested
     inner class CreateContact {
         @Test
         fun `The contact must be saved`() {
@@ -1125,6 +1113,29 @@ class MutationsTest {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
             createContact(ownerId, contactId)
             assertFalse(createContact(ownerId, contactId))
+        }
+    }
+
+    @Nested
+    inner class DeleteContact {
+        @Test
+        fun `The contact must be deleted`() {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            Contacts.create(ownerId, contactId)
+            assertTrue(deleteContact(ownerId, contactId))
+            assertTrue(Contacts.readIdList(ownerId).isEmpty())
+        }
+
+        @Test
+        fun `Attempting to delete a nonexistent user from the user's contacts must return 'false'`() {
+            val userId = createVerifiedUsers(1).first().info.id
+            assertFalse(deleteContact(userId, id = -1))
+        }
+
+        @Test
+        fun `Attempting to delete a contact which isn't saved must return 'false'`() {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            assertFalse(deleteContact(ownerId, contactId))
         }
     }
 

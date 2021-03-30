@@ -55,16 +55,23 @@ class ContactsTest {
     @Nested
     inner class Delete {
         @Test
-        fun `Only one notification must be sent for each deleted saved contact`() {
-            runBlocking {
-                val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.createAll(ownerId, setOf(contact1Id, contact2Id))
-                awaitBrokering()
-                val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
-                Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, -1))
-                awaitBrokering()
-                subscriber.assertValues(DeletedContact(contact1Id), DeletedContact(contact2Id))
-            }
+        fun `Deleting a contact must notify subscribers`(): Unit = runBlocking {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            Contacts.create(ownerId, contactId)
+            awaitBrokering()
+            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            Contacts.delete(ownerId, contactId)
+            awaitBrokering()
+            subscriber.assertValue(DeletedContact(contactId))
+        }
+
+        @Test
+        fun `Deleting a nonexistent contact mustn't notify subscribers`(): Unit = runBlocking {
+            val userId = createVerifiedUsers(1).first().info.id
+            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            Contacts.delete(userId, contactId = -1)
+            awaitBrokering()
+            subscriber.assertNoValues()
         }
     }
 

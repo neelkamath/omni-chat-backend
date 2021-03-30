@@ -78,15 +78,21 @@ object Contacts : IntIdTable() {
     }
 
     /**
-     * Deletes the [ownerId]'s contacts from the [contactIdList], ignoring nonexistent contacts. The [ownerId] will be
-     * notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier].
+     * Deletes the [ownerId]'s [contactId].
+     *
+     * If the [contactId] either wasn't saved or is a nonexistent user, then `false` will be returned. Otherwise, the
+     * [ownerId] will be notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier], and
+     * `true` will be returned.
      */
-    fun delete(ownerId: Int, contactIdList: Collection<Int>) {
-        val contacts = readIdList(ownerId).intersect(contactIdList)
-        transaction {
-            deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
+    fun delete(ownerId: Int, contactId: Int): Boolean {
+        val count = transaction {
+            deleteWhere { (contactOwnerId eq ownerId) and (Contacts.contactId eq contactId) }
         }
-        for (contact in contacts) accountsNotifier.publish(DeletedContact(contact), ownerId)
+        return if (count == 0) false
+        else {
+            accountsNotifier.publish(DeletedContact(contactId), ownerId)
+            true
+        }
     }
 
     /**

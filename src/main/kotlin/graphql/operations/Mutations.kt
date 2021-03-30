@@ -159,11 +159,9 @@ fun deleteAccount(env: DataFetchingEnvironment): CannotDeleteAccount? {
     return null
 }
 
-fun deleteContacts(env: DataFetchingEnvironment): Placeholder {
+fun deleteContact(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<Int>>("idList")
-    Contacts.delete(env.userId!!, userIdList)
-    return Placeholder
+    return Contacts.delete(env.userId!!, env.getArgument("id"))
 }
 
 fun deleteMessage(env: DataFetchingEnvironment): InvalidMessageId? {
