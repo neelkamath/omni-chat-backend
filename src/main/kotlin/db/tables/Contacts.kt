@@ -19,19 +19,26 @@ object Contacts : IntIdTable() {
     private val contactId: Column<Int> = integer("contact_id").references(Users.id)
 
     /**
-     * Saves the [ownerId]'s [contactIdList], ignoring existing contacts. The [ownerId] will be notified of the
-     * [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier].
+     * Saves the [ownerId]'s [contactId].
+     *
+     * If the [contactId] was either previously saved or a nonexistent user, then `false` will be returned. Otherwise,
+     * the [ownerId] will be notified of the [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier], and
+     * `true` will be returned.
      */
-    fun create(ownerId: Int, contactIdList: Set<Int>) {
-        val existingContacts = readIdList(ownerId)
-        val newContacts = contactIdList.filter { it !in existingContacts }
+    fun create(ownerId: Int, contactId: Int): Boolean {
+        if (hasContact(ownerId, contactId)) return false
         transaction {
-            batchInsert(newContacts) {
-                this[contactOwnerId] = ownerId
-                this[contactId] = it
+            insert {
+                it[contactOwnerId] = ownerId
+                it[this.contactId] = contactId
             }
         }
-        for (newContact in newContacts) accountsNotifier.publish(NewContact.build(newContact), ownerId)
+        accountsNotifier.publish(NewContact.build(contactId), ownerId)
+        return true
+    }
+
+    private fun hasContact(ownerId: Int, contactId: Int): Boolean = transaction {
+        select { (contactOwnerId eq ownerId) and (Contacts.contactId eq contactId) }.empty().not()
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
@@ -44,8 +51,8 @@ object Contacts : IntIdTable() {
      *
      * @see [read]
      */
-    fun readIdList(ownerId: Int): List<Int> = transaction {
-        select { contactOwnerId eq ownerId }.map { it[contactId] }
+    fun readIdList(ownerId: Int): Set<Int> = transaction {
+        select { contactOwnerId eq ownerId }.map { it[contactId] }.toSet()
     }
 
     /** The [ownerId]'s contacts. */

@@ -846,16 +846,6 @@ class MutationsTest {
     }
 
     @Nested
-    inner class CreateContacts {
-        @Test
-        fun `The user's own contact, and nonexistent users must be ignored`() {
-            val (ownerId, userId) = createVerifiedUsers(2).map { it.info.id }
-            createContacts(ownerId, listOf(ownerId, userId, -1))
-            assertEquals(listOf(userId), Contacts.readIdList(ownerId))
-        }
-    }
-
-    @Nested
     inner class CreateGroupChat {
         @Test
         fun `A group chat must be created automatically including the creator as a user and admin`() {
@@ -1092,7 +1082,7 @@ class MutationsTest {
         fun `'null' must be returned when an account gets deleted from the auth system`() {
             val userId = createVerifiedUsers(1).first().info.id
             assertNull(deleteAccount(userId))
-            assertFalse(Users.exists(userId))
+            assertFalse(Users.isExisting(userId))
         }
 
         @Test
@@ -1109,9 +1099,32 @@ class MutationsTest {
         fun `Contacts must be deleted, ignoring invalid ones`() {
             val (ownerId, user1Id, user2Id) = createVerifiedUsers(3).map { it.info.id }
             val userIdList = listOf(user1Id, user2Id)
-            Contacts.create(ownerId, userIdList.toSet())
+            Contacts.createAll(ownerId, userIdList.toSet())
             deleteContacts(ownerId, userIdList + -1)
             assertTrue(Contacts.readIdList(ownerId).isEmpty())
+        }
+    }
+
+    @Nested
+    inner class CreateContact {
+        @Test
+        fun `The contact must be saved`() {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            assertTrue(createContact(ownerId, contactId))
+            assertEquals(setOf(contactId), Contacts.readIdList(ownerId))
+        }
+
+        @Test
+        fun `A nonexistent user mustn't be saved as a contact`() {
+            val userId = createVerifiedUsers(1).first().info.id
+            assertFalse(createContact(userId, id = -1))
+        }
+
+        @Test
+        fun `A previously saved contact mustn't be saved`() {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            createContact(ownerId, contactId)
+            assertFalse(createContact(ownerId, contactId))
         }
     }
 

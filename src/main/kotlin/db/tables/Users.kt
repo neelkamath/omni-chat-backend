@@ -92,7 +92,7 @@ object Users : IntIdTable() {
         select { Users.emailAddress eq emailAddress }.empty().not()
     }
 
-    fun exists(userId: Int): Boolean = transaction {
+    fun isExisting(userId: Int): Boolean = transaction {
         select { Users.id eq userId }.empty().not()
     }
 

@@ -21,7 +21,7 @@ object BlockedUsers : IntIdTable() {
      * of the [BlockedAccount] via [accountsNotifier]. Does nothing if the [blockerUserId] is the [blockedUserId].
      */
     fun create(blockerUserId: Int, blockedUserId: Int) {
-        if (blockerUserId == blockedUserId || exists(blockerUserId, blockedUserId)) return
+        if (blockerUserId == blockedUserId || isBlocked(blockerUserId, blockedUserId)) return
         transaction {
             insert {
                 it[this.blockerUserId] = blockerUserId
@@ -61,7 +61,7 @@ object BlockedUsers : IntIdTable() {
     }
 
     /** Whether the [blockerUserId] has blocked the [blockedUserId]. */
-    fun exists(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
+    fun isBlocked(blockerUserId: Int, blockedUserId: Int): Boolean = transaction {
         select { (BlockedUsers.blockedUserId eq blockedUserId) and (BlockedUsers.blockerUserId eq blockerUserId) }
             .empty()
             .not()

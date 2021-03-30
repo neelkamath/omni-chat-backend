@@ -59,7 +59,7 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 fun readUserIdList(chatId: Int): Set<Int> =
-    if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
+    if (PrivateChats.isExisting(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
 
 /** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
 fun readChatSharers(userId: Int): Set<Int> =

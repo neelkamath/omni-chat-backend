@@ -66,7 +66,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("setBroadcast", ::setBroadcast)
     .dataFetcher("star", ::star)
     .dataFetcher("deleteContacts", ::deleteContacts)
-    .dataFetcher("createContacts", ::createContacts)
+    .dataFetcher("createContact", ::createContact)
     .dataFetcher("deleteMessage", ::deleteMessage)
 
 private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder

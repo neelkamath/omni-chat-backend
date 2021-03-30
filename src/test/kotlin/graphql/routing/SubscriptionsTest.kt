@@ -96,7 +96,7 @@ class SubscriptionsTest {
             subscribeToAccounts(user.accessToken) { incoming ->
                 awaitBrokering()
                 parseFrameData<CreatedSubscription>(incoming)
-                Contacts.create(user.info.id, setOf(contact.info.id))
+                Contacts.create(user.info.id, contact.info.id)
                 awaitBrokering()
                 assertNotNull(incoming.poll())
                 assertNull(incoming.poll())

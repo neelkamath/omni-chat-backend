@@ -107,7 +107,7 @@ object PrivateChatDeletions : IntIdTable() {
         val deletions = select { (PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId) }
         if (deletions.empty()) return@transaction false
         val lastDeletion = deletions.last { it[PrivateChatDeletions.userId] == userId }
-        !Messages.existsFrom(chatId, lastDeletion[dateTime])
+        !Messages.isExistingFrom(chatId, lastDeletion[dateTime])
     }
 
     /** Deletes every record of chat deletions for the [chatId]. */

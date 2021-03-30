@@ -121,7 +121,7 @@ class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
 
 fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     val userId = env.getArgument<Int>("userId")
-    return if (Users.exists(userId)) Users.readOnlineStatus(userId) else InvalidUserId
+    return if (Users.isExisting(userId)) Users.readOnlineStatus(userId) else InvalidUserId
 }
 
 fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {

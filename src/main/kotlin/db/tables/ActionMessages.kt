@@ -30,7 +30,7 @@ object ActionMessages : IntIdTable() {
         ActionMessageActions.create(actionMessageId, message.actions.toLinkedHashSet())
     }
 
-    fun exists(messageId: Int): Boolean = transaction {
+    fun isExisting(messageId: Int): Boolean = transaction {
         select { ActionMessages.messageId eq messageId }.empty().not()
     }
 

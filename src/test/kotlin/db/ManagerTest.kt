@@ -83,7 +83,7 @@ class DbTest {
         @Test
         fun `Contacts and chat sharers must be notified of the deleted user`(): Unit = runBlocking {
             val (userId, contactId, chatSharerId) = createVerifiedUsers(3).map { it.info.id }
-            Contacts.create(contactId, setOf(userId))
+            Contacts.create(contactId, userId)
             PrivateChats.create(userId, chatSharerId)
             awaitBrokering()
             val (contactSubscriber, chatSharerSubscriber) =

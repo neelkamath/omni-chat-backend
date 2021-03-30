@@ -30,7 +30,7 @@ object PollMessages : IntIdTable() {
         PollOptions.create(pollId, poll.options.toLinkedHashSet())
     }
 
-    fun exists(messageId: Int): Boolean = transaction {
+    fun isExisting(messageId: Int): Boolean = transaction {
         select { PollMessages.messageId eq messageId }.empty().not()
     }
 

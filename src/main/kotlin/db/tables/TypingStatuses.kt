@@ -16,13 +16,13 @@ object TypingStatuses : Table() {
 
     /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier]. */
     fun update(chatId: Int, userId: Int, isTyping: Boolean) {
-        if (exists(chatId, userId)) updateRecord(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
+        if (isExisting(chatId, userId)) updateRecord(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
         val subscribers = readUserIdList(chatId).minus(userId)
         typingStatusesNotifier.publish(TypingStatus(chatId, userId, isTyping), subscribers)
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */
-    private fun exists(chatId: Int, userId: Int): Boolean = transaction {
+    private fun isExisting(chatId: Int, userId: Int): Boolean = transaction {
         !select { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }.empty()
     }
 

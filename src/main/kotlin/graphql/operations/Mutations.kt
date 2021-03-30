@@ -22,7 +22,7 @@ fun verifyEmailAddress(env: DataFetchingEnvironment): VerifyEmailAddressResult? 
 fun blockUser(env: DataFetchingEnvironment): InvalidUserId? {
     env.verifyAuth()
     val userId = env.getArgument<Int>("id")
-    if (!Users.exists(userId)) return InvalidUserId
+    if (!Users.isExisting(userId)) return InvalidUserId
     BlockedUsers.create(env.userId!!, userId)
     return null
 }
@@ -48,18 +48,17 @@ fun setOnline(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun createContacts(env: DataFetchingEnvironment): Placeholder {
+fun createContact(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
-    val userIdList = env.getArgument<List<Int>>("idList").filter { Users.exists(it) && it != env.userId!! }.toSet()
-    Contacts.create(env.userId!!, userIdList)
-    return Placeholder
+    val userId = env.getArgument<Int>("id")
+    return if (Users.isExisting(userId)) Contacts.create(env.userId!!, userId) else false
 }
 
 fun createStatus(env: DataFetchingEnvironment): InvalidMessageId? {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
     val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
-    if (MessageStatuses.exists(messageId, env.userId!!, status)) return null
+    if (MessageStatuses.isExisting(messageId, env.userId!!, status)) return null
     try {
         MessageStatuses.create(env.userId!!, messageId, status)
     } catch (_: IllegalArgumentException) {
@@ -79,7 +78,7 @@ fun createGroupChat(env: DataFetchingEnvironment): CreateGroupChatResult {
     val args = env.getArgument<Map<*, *>>("chat")
 
     @Suppress("UNCHECKED_CAST")
-    val userIdList = (args["userIdList"] as List<Int>).filter(Users::exists) + env.userId!!
+    val userIdList = (args["userIdList"] as List<Int>).filter(Users::isExisting) + env.userId!!
     @Suppress("UNCHECKED_CAST") val adminIdList = (args["adminIdList"] as List<Int>) + env.userId!!
     if (!userIdList.containsAll(adminIdList)) return InvalidAdminId
     val chat = GroupChatInput(
@@ -146,9 +145,10 @@ fun star(env: DataFetchingEnvironment): InvalidMessageId? {
 fun createPrivateChat(env: DataFetchingEnvironment): CreatePrivateChatResult {
     env.verifyAuth()
     val invitedUserId = env.getArgument<Int>("userId")
-    if (!Users.exists(invitedUserId) || invitedUserId == env.userId!!) return InvalidUserId
-    val id = if (PrivateChats.exists(env.userId!!, invitedUserId)) PrivateChats.readChatId(invitedUserId, env.userId!!)
-    else PrivateChats.create(env.userId!!, invitedUserId)
+    if (!Users.isExisting(invitedUserId) || invitedUserId == env.userId!!) return InvalidUserId
+    val id =
+        if (PrivateChats.isExisting(env.userId!!, invitedUserId)) PrivateChats.readChatId(invitedUserId, env.userId!!)
+        else PrivateChats.create(env.userId!!, invitedUserId)
     return CreatedChatId(id)
 }
 
@@ -169,7 +169,7 @@ fun deleteContacts(env: DataFetchingEnvironment): Placeholder {
 fun deleteMessage(env: DataFetchingEnvironment): InvalidMessageId? {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("id")
-    if (!Messages.exists(messageId)) return InvalidMessageId
+    if (!Messages.isExisting(messageId)) return InvalidMessageId
     val chatId = Messages.readChatIdFromMessageId(messageId)
     if (!isUserInChat(env.userId!!, chatId) ||
         Messages.readMessage(env.userId!!, messageId).sender.id != env.userId!! ||
@@ -266,7 +266,7 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
-    val userIdList = env.getArgument<List<Int>>("idList").filter(Users::exists)
+    val userIdList = env.getArgument<List<Int>>("idList").filter(Users::isExisting)
     GroupChatUsers.addUsers(chatId, userIdList)
     return Placeholder
 }
@@ -321,7 +321,7 @@ fun createPollMessage(env: DataFetchingEnvironment): CreatePollMessageResult? {
 fun setPollVote(env: DataFetchingEnvironment): SetPollVoteResult? {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
-    if (!Messages.isVisible(env.userId!!, messageId) || !PollMessages.exists(messageId)) return InvalidMessageId
+    if (!Messages.isVisible(env.userId!!, messageId) || !PollMessages.isExisting(messageId)) return InvalidMessageId
     val option = env.getArgument<MessageText>("option")
     if (!PollMessages.hasOption(messageId, option)) return NonexistentOption
     val vote = env.getArgument<Boolean>("vote")
@@ -386,7 +386,7 @@ fun createActionMessage(env: DataFetchingEnvironment): CreateActionMessageResult
 fun triggerAction(env: DataFetchingEnvironment): TriggerActionResult? {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
-    if (!Messages.isVisible(env.userId!!, messageId) || !ActionMessages.exists(messageId))
+    if (!Messages.isVisible(env.userId!!, messageId) || !ActionMessages.isExisting(messageId))
         return InvalidMessageId
     val action = env.getArgument<MessageText>("action")
     if (!ActionMessages.hasAction(messageId, action)) return InvalidAction

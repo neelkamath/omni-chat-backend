@@ -18,7 +18,7 @@ object Chats : IntIdTable() {
         deleteWhere { Chats.id eq id }
     }
 
-    fun exists(id: Int): Boolean = transaction {
+    fun isExisting(id: Int): Boolean = transaction {
         select { Chats.id eq id }.empty().not()
     }
 }

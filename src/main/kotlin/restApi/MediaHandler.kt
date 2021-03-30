@@ -73,7 +73,7 @@ fun <T> postMediaMessage(
             message == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE))
 
-            contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
+            contextMessageId != null && !Messages.isExisting(contextMessageId) -> call.respond(
                 HttpStatusCode.BadRequest,
                 InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )

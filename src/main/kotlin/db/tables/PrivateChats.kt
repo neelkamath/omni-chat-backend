@@ -26,12 +26,12 @@ object PrivateChats : Table() {
      * An [IllegalArgumentException] will be thrown if the chat exists.
      */
     fun create(user1Id: Int, user2Id: Int): Int {
-        if (exists(user1Id, user2Id))
+        if (isExisting(user1Id, user2Id))
             throw IllegalArgumentException("The chat between user 1 (ID: $user1Id) and user 2 (ID: $user2Id) exists.")
         return insert(user1Id, user2Id)
     }
 
-    fun exists(chatId: Int): Boolean = transaction {
+    fun isExisting(chatId: Int): Boolean = transaction {
         select { PrivateChats.id eq chatId }.empty().not()
     }
 
@@ -46,7 +46,7 @@ object PrivateChats : Table() {
 
     /**
      * Returns the ID of the chat between the [participantId] (is in the chat) and [userId] (may be in the chat). You
-     * can check if the [PrivateChats.exists].
+     * can check if the [PrivateChats.isExisting].
      */
     fun readChatId(participantId: Int, userId: Int): Int =
         readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
@@ -118,7 +118,7 @@ object PrivateChats : Table() {
         .toSet()
 
     /** Whether there exists a chat between [user1Id] and [user2Id]. */
-    fun exists(user1Id: Int, user2Id: Int): Boolean = transaction {
+    fun isExisting(user1Id: Int, user2Id: Int): Boolean = transaction {
         val where = { userId: Int -> (PrivateChats.user1Id eq userId) or (PrivateChats.user2Id eq userId) }
         !select { where(user1Id) and where(user2Id) }.empty()
     }

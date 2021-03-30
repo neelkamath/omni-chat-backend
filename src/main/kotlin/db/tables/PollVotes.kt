@@ -11,7 +11,7 @@ object PollVotes : Table() {
 
     /** Creates a vote for the [userId] on the [optionId] if they haven't already. */
     fun create(userId: Int, optionId: Int) {
-        if (!exists(userId, optionId))
+        if (!isExisting(userId, optionId))
             transaction {
                 insert {
                     it[this.userId] = userId
@@ -20,7 +20,7 @@ object PollVotes : Table() {
             }
     }
 
-    private fun exists(userId: Int, optionId: Int): Boolean = transaction {
+    private fun isExisting(userId: Int, optionId: Int): Boolean = transaction {
         select { (PollVotes.userId eq userId) and (PollVotes.optionId eq optionId) }.empty().not()
     }
 

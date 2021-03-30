@@ -23,7 +23,7 @@ private fun getGroupChatPic(route: Route): Unit = with(route) {
         val type = PicType.valueOf(call.parameters["pic-type"]!!)
         val isAuthorizedParticipant = call.userId != null && call.userId in readUserIdList(chatId)
         when {
-            !GroupChats.exists(chatId) -> call.respond(HttpStatusCode.BadRequest)
+            !GroupChats.isExisting(chatId) -> call.respond(HttpStatusCode.BadRequest)
             GroupChats.isExistentPublicChat(chatId) || isAuthorizedParticipant -> {
                 val pic = GroupChats.readPic(chatId)
                 if (pic == null) call.respond(HttpStatusCode.NoContent)

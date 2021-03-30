@@ -454,10 +454,10 @@ class MessagesTest {
         fun `Searching for messages sent after a particular time must be found`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            assertFalse(Messages.existsFrom(chatId, LocalDateTime.now()))
+            assertFalse(Messages.isExistingFrom(chatId, LocalDateTime.now()))
             val now = LocalDateTime.now()
             Messages.create(adminId, chatId)
-            assertTrue(Messages.existsFrom(chatId, now))
+            assertTrue(Messages.isExistingFrom(chatId, now))
         }
     }
 

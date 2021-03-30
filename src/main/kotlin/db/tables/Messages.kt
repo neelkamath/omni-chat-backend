@@ -416,7 +416,7 @@ object Messages : IntIdTable() {
     /**
      * The ID of the chat which contains the [messageId].
      *
-     * @see [Messages.exists]
+     * @see [Messages.isExistingFrom]
      */
     fun readChatIdFromMessageId(messageId: Int): Int = transaction {
         select { Messages.id eq messageId }.first()[chatId]
@@ -501,7 +501,7 @@ object Messages : IntIdTable() {
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
-    fun existsFrom(chatId: Int, from: LocalDateTime): Boolean = transaction {
+    fun isExistingFrom(chatId: Int, from: LocalDateTime): Boolean = transaction {
         !select { (Messages.chatId eq chatId) and (sent greaterEq from) }.empty()
     }
 
@@ -512,7 +512,7 @@ object Messages : IntIdTable() {
         select(op).map { it[Messages.id].value }.toSet()
     }
 
-    fun exists(id: Int): Boolean = transaction {
+    fun isExisting(id: Int): Boolean = transaction {
         select { Messages.id eq id }.empty().not()
     }
 
@@ -587,7 +587,7 @@ object Messages : IntIdTable() {
      * - `false` if the [messageId] was sent before the [userId] deleted the private chat.
      */
     fun isVisible(userId: Int?, messageId: Int): Boolean {
-        if (!exists(messageId)) return false
+        if (!isExisting(messageId)) return false
         val chatId = readChatIdFromMessageId(messageId)
         if (GroupChats.isExistentPublicChat(chatId)) return true
         if (userId == null) return false

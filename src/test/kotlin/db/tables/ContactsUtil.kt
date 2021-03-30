@@ -8,3 +8,5 @@ import org.jetbrains.exposed.sql.transactions.transaction
 fun Contacts.read(): LinkedHashSet<Int> = transaction {
     selectAll().orderBy(Contacts.id).map { it[Contacts.id].value }.toLinkedHashSet()
 }
+
+fun Contacts.createAll(ownerId: Int, contactIdList: Set<Int>): Unit = contactIdList.forEach { create(ownerId, it) }

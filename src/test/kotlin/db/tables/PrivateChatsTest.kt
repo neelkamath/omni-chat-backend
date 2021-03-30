@@ -72,8 +72,8 @@ class PrivateChatsTest {
         fun `A chat between two users must be said to exist`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
-            assertTrue(PrivateChats.exists(user1Id, user2Id))
-            assertTrue(PrivateChats.exists(user2Id, user1Id))
+            assertTrue(PrivateChats.isExisting(user1Id, user2Id))
+            assertTrue(PrivateChats.isExisting(user2Id, user1Id))
         }
 
         @Test
@@ -81,8 +81,8 @@ class PrivateChatsTest {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             PrivateChats.create(user1Id, user2Id)
             PrivateChats.create(user2Id, user3Id)
-            assertFalse(PrivateChats.exists(user1Id, user3Id))
-            assertFalse(PrivateChats.exists(user3Id, user1Id))
+            assertFalse(PrivateChats.isExisting(user1Id, user3Id))
+            assertFalse(PrivateChats.isExisting(user3Id, user1Id))
         }
     }
 

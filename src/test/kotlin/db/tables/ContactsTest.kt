@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
@@ -19,24 +20,23 @@ class ContactsTest {
     @Nested
     inner class Create {
         @Test
-        fun `Saving contacts must ignore existing contacts`() {
-            val (userId, contact1Id, contact2Id, contact3Id) = createVerifiedUsers(4).map { it.info.id }
-            Contacts.create(userId, setOf(contact1Id, contact2Id))
-            Contacts.create(userId, setOf(contact1Id, contact2Id, contact3Id))
-            assertEquals(listOf(contact1Id, contact2Id, contact3Id), Contacts.readIdList(userId))
+        fun `Saving a contact must notify subscribers`(): Unit = runBlocking {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            assertTrue(Contacts.create(ownerId, contactId))
+            awaitBrokering()
+            subscriber.assertValue(NewContact.build(contactId))
         }
 
         @Test
-        fun `When the subscriber saves new and old contacts, they must only be notified of the new ones`() {
-            runBlocking {
-                val (ownerId, user2Id, user3Id, user4Id) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.create(ownerId, setOf(user2Id, user3Id))
-                awaitBrokering()
-                val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
-                Contacts.create(ownerId, setOf(user3Id, user4Id))
-                awaitBrokering()
-                subscriber.assertValue(NewContact.build(user4Id))
-            }
+        fun `Saving a previously saved contact mustn't notify subscribers`(): Unit = runBlocking {
+            val (ownerId, contactId) = createVerifiedUsers(2).map { it.info.id }
+            Contacts.create(ownerId, contactId)
+            awaitBrokering()
+            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            assertFalse(Contacts.create(ownerId, contactId))
+            awaitBrokering()
+            subscriber.assertNoValues()
         }
     }
 
@@ -46,7 +46,7 @@ class ContactsTest {
         fun `Every contact owner must be read`() {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
             val owners = listOf(user2Id, user3Id).toSet()
-            owners.forEach { Contacts.create(it, setOf(user1Id)) }
+            owners.forEach { Contacts.create(it, user1Id) }
             assertEquals(owners, Contacts.readOwners(user1Id))
             owners.forEach { assertTrue(Contacts.readOwners(it).isEmpty()) }
         }
@@ -58,7 +58,7 @@ class ContactsTest {
         fun `Only one notification must be sent for each deleted saved contact`() {
             runBlocking {
                 val (ownerId, contact1Id, contact2Id, unsavedContactId) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.create(ownerId, setOf(contact1Id, contact2Id))
+                Contacts.createAll(ownerId, setOf(contact1Id, contact2Id))
                 awaitBrokering()
                 val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
                 Contacts.delete(ownerId, listOf(contact1Id, contact1Id, contact2Id, unsavedContactId, -1))
@@ -73,7 +73,7 @@ class ContactsTest {
         @Test
         fun `Deleting a user must notify only users who have them in their contacts`(): Unit = runBlocking {
             val (ownerId, contactId, userId) = createVerifiedUsers(3).map { it.info.id }
-            Contacts.create(ownerId, setOf(contactId))
+            Contacts.create(ownerId, contactId)
             awaitBrokering()
             val (ownerSubscriber, contactSubscriber, userSubscriber) = listOf(ownerId, contactId, userId)
                 .map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }

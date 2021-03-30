@@ -243,7 +243,7 @@ class QueriesTest {
         @Test
         fun `Contacts must be read`() {
             val (owner, contact1, contact2) = createVerifiedUsers(3).map { it.info }
-            Contacts.create(owner.id, setOf(contact1.id, contact2.id))
+            Contacts.createAll(owner.id, setOf(contact1.id, contact2.id))
             assertEquals(listOf(contact1, contact2), readContacts(owner.id).edges.map { it.node })
         }
 
@@ -383,7 +383,7 @@ class QueriesTest {
                 it.toAccount()
             }
             val userId = createVerifiedUsers(1).first().info.id
-            Contacts.create(userId, accounts.map { it.id }.toSet())
+            Contacts.createAll(userId, accounts.map { it.id }.toSet())
             val testContacts = { query: String, accountList: List<Account> ->
                 assertEquals(accountList, searchContacts(userId, query).edges.map { it.node })
             }
@@ -549,7 +549,7 @@ private enum class ContactsOperationName {
 private fun testContactsPagination(operation: ContactsOperationName) {
     val ownerId = createVerifiedUsers(1).first().info.id
     val userList = createVerifiedUsers(10).map { it.info }
-    Contacts.create(ownerId, userList.map { it.id }.toSet())
+    Contacts.createAll(ownerId, userList.map { it.id }.toSet())
     val index = 5
     val cursor = Contacts.read(ownerId).edges[index].cursor
     val first = 3

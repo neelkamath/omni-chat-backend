@@ -32,7 +32,7 @@ class UsersTest {
         fun `Updating the user's status must only notify users who have them in their contacts or chats`(): Unit =
             runBlocking {
                 val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.create(contactOwnerId, setOf(updaterId))
+                Contacts.create(contactOwnerId, updaterId)
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                     listOf(updaterId, contactOwnerId, privateChatSharerId, userId)

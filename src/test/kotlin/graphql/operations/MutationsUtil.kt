@@ -431,15 +431,14 @@ fun createAccount(account: AccountInput): CreateAccountResult? {
     return if (data == null) data else testingObjectMapper.convertValue(data)
 }
 
-const val CREATE_CONTACTS_QUERY = """
-    mutation CreateContacts(${"$"}idList: [Int!]!) {
-        createContacts(idList: ${"$"}idList)
+const val CREATE_CONTACT_QUERY = """
+    mutation CreateContact(${"$"}id: Int!) {
+        createContact(id: ${"$"}id)
     }
 """
 
-fun createContacts(userId: Int, idList: List<Int>): Placeholder {
-    val data = executeGraphQlViaEngine(CREATE_CONTACTS_QUERY, mapOf("idList" to idList), userId)
-        .data!!["createContacts"]!!
+fun createContact(userId: Int, id: Int): Boolean {
+    val data = executeGraphQlViaEngine(CREATE_CONTACT_QUERY, mapOf("id" to id), userId).data!!["createContact"]!!
     return testingObjectMapper.convertValue(data)
 }
 

@@ -49,12 +49,12 @@ object GroupChats : Table() {
         return chatId
     }
 
-    fun exists(chatId: Int): Boolean = transaction {
+    fun isExisting(chatId: Int): Boolean = transaction {
         select { GroupChats.id eq chatId }.empty().not()
     }
 
     /** Whether the [chatId] exists, and it's public. */
-    fun isExistentPublicChat(chatId: Int): Boolean = exists(chatId) &&
+    fun isExistentPublicChat(chatId: Int): Boolean = isExisting(chatId) &&
             readChatInfo(chatId, usersPagination = ForwardPagination(first = 0)).publicity == GroupChatPublicity.PUBLIC
 
     /**

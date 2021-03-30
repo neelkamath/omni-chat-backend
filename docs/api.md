@@ -200,7 +200,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `readOnlineStatus`
 - `Mutation`
     - `deleteContacts`
-    - `createContacts`
+    - `createContact`
 - `Subscription`
     - `subscribeToOnlineStatuses`
     - `subscribeToAccounts`

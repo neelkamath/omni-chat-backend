@@ -89,14 +89,6 @@ class BlockedUsersTest {
     @Nested
     inner class Delete {
         @Test
-        fun `The user must be unblocked`() {
-            val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
-            BlockedUsers.create(blockerId, blockedId)
-            assertTrue(BlockedUsers.delete(blockerId, blockedId))
-            assertEquals(0, BlockedUsers.count())
-        }
-
-        @Test
         fun `The user must be notified of the unblocked user`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             BlockedUsers.create(blockerId, blockedId)

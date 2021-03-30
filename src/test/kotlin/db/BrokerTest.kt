@@ -19,7 +19,7 @@ class BrokerTest {
             runBlocking {
                 val (userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer) =
                     createVerifiedUsers(5).map { it.info.id }
-                Contacts.create(contactOwnerId, setOf(userId))
+                Contacts.create(contactOwnerId, userId)
                 val chatId = PrivateChats.create(userId, deletedPrivateChatSharer)
                 PrivateChatDeletions.create(chatId, userId)
                 PrivateChats.create(userId, privateChatSharer)

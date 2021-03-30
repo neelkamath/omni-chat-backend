@@ -522,11 +522,12 @@ type Mutation {
     deleteContacts(idList: [Int!]!): Placeholder!
 
     """
-    Saves contacts. Previously saved contacts, nonexistent users, and the user's own ID will be ignored.
+    Saves the `id` as a contact. Returns `true` if the contact got saved. Returns `false` if either the `id` was a
+    preexisting contact or a nonexistent user ID.
 
     An access token must be sent with this request.
     """
-    createContacts(idList: [Int!]!): Placeholder!
+    createContact(id: Int!): Boolean!
 }
 
 type Subscription {
