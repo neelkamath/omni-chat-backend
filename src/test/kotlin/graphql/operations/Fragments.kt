@@ -519,8 +519,8 @@ const val PRIVATE_CHAT_FRAGMENT = """
     }
 """
 
-const val CHAT_MESSAGES_EDGE_FRAGMENT = """
-    ... on ChatMessagesEdge {
+const val CHAT_MESSAGES_FRAGMENT = """
+    ... on ChatMessages {
         __typename
         chat {
             $PRIVATE_CHAT_FRAGMENT
@@ -529,6 +529,16 @@ const val CHAT_MESSAGES_EDGE_FRAGMENT = """
         messages(last: ${"$"}chatMessages_messages_last, before: ${"$"}chatMessages_messages_before) {
             $MESSAGE_EDGE_FRAGMENT
         }
+    }
+"""
+
+const val CHAT_MESSAGES_EDGE_FRAGMENT = """
+    ... on ChatMessagesEdge {
+        __typename
+        node {
+            $CHAT_MESSAGES_FRAGMENT
+        }
+        cursor
     }
 """
 

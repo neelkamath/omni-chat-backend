@@ -1160,7 +1160,9 @@ object CreatedSubscription :
 
 data class ChatMessagesConnection(val edges: List<ChatMessagesEdge>, val pageInfo: PageInfo)
 
-data class ChatMessagesEdge(val chat: Chat, val messages: List<MessageEdge>)
+data class ChatMessagesEdge(val node: ChatMessages, val cursor: Cursor)
+
+data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
 data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {
     companion object {

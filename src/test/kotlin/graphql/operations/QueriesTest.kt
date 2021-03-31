@@ -480,7 +480,7 @@ class ChatMessagesEdgeDtoTest {
                 adminId,
                 queryText.value,
                 chatMessagesPagination = BackwardPagination(last, before = messageIdList.elementAt(index)),
-            ).edges.flatMap { it.messages }.map { it.cursor }
+            ).edges.flatMap { it.node.messages }.map { it.cursor }
             assertEquals(messageIdList.take(index).takeLast(last), cursors)
         }
 
@@ -495,7 +495,7 @@ class ChatMessagesEdgeDtoTest {
         @Test
         fun `If neither cursor nor limit are supplied, every message must be retrieved`() {
             val (adminId, queryText, messageIdList) = createUtilizedChat()
-            val cursors = searchMessages(adminId, queryText.value).edges.flatMap { it.messages }.map { it.cursor }
+            val cursors = searchMessages(adminId, queryText.value).edges.flatMap { it.node.messages }.map { it.cursor }
             assertEquals(messageIdList, cursors.toSet())
         }
     }
@@ -854,7 +854,7 @@ class QueriesTest {
             val first = 3
             val index = 5
             val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, "", pagination).edges.map { it.chat.id }
+            val actual = searchMessages(adminId, "", pagination).edges.map { it.node.chat.id }
             assertEquals(chatIdList.slice(index + 1..index + first), actual)
         }
     }
@@ -878,7 +878,8 @@ class QueriesTest {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
             val (adminId, chatIdList) = createChats()
-            assertEquals(chatIdList, searchMessages(adminId, query = "").edges.map { it.chat.id }.toLinkedHashSet())
+            val actual = searchMessages(adminId, query = "").edges.map { it.node.chat.id }.toLinkedHashSet()
+            assertEquals(chatIdList, actual)
         }
 
         @Test
@@ -887,8 +888,8 @@ class QueriesTest {
             val index = 5
             val chatId = chatIdList.elementAt(index)
             GroupChatUsers.removeUsers(chatId, adminId)
-            val actual = searchMessages(adminId, query = "", ForwardPagination(after = chatId)).edges.map { it.chat.id }
-            assertEquals(chatIdList.drop(index + 1), actual)
+            val edges = searchMessages(adminId, query = "", ForwardPagination(after = chatId)).edges
+            assertEquals(chatIdList.drop(index + 1), edges.map { it.node.chat.id })
         }
 
         @Test
@@ -939,7 +940,7 @@ class QueriesTest {
             val first = 3
             val index = 5
             val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.chat.id }
+            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
             assertEquals(chatIdList.slice(index + 1..index + first), actual)
         }
 
@@ -947,7 +948,7 @@ class QueriesTest {
         fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
             val (adminId, chatIdList) = createChats()
             val first = 3
-            val actual = searchMessages(adminId, query = "", ForwardPagination(first)).edges.map { it.chat.id }
+            val actual = searchMessages(adminId, query = "", ForwardPagination(first)).edges.map { it.node.chat.id }
             assertEquals(chatIdList.take(first), actual)
         }
 
@@ -956,7 +957,7 @@ class QueriesTest {
             val (adminId, chatIdList) = createChats()
             val index = 5
             val pagination = ForwardPagination(after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.chat.id }
+            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
             assertEquals(chatIdList.drop(index + 1), actual)
         }
     }
@@ -1067,7 +1068,7 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
             messages.edges
         }
         MessagesOperationName.SEARCH_MESSAGES ->
-            searchMessages(adminId, text.value, chatMessagesPagination = pagination).edges.flatMap { it.messages }
+            searchMessages(adminId, text.value, chatMessagesPagination = pagination).edges.flatMap { it.node.messages }
         MessagesOperationName.READ_CHATS ->
             readChats(adminId, groupChatMessagesPagination = pagination)[0].messages.edges
         MessagesOperationName.READ_CHAT -> {
@@ -1142,7 +1143,7 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
             searchChats(adminId, title, usersPagination = pagination)[0]
         }
         GroupChatUsersOperationName.SEARCH_MESSAGES ->
-            searchMessages(adminId, text, usersPagination = pagination).edges[0].chat
+            searchMessages(adminId, text, usersPagination = pagination).edges[0].node.chat
     } as GroupChat
     val expected = userCursors.toList().subList(index + 1, index + 1 + first).map { it }
     assertEquals(expected, chat.users.edges.map { it.cursor })

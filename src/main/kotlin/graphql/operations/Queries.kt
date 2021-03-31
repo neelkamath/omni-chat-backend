@@ -44,7 +44,7 @@ class GroupChatDto(chatId: Int, private val userId: Int? = null) : ChatDto, Read
             id,
             usersPagination = ForwardPagination(first = 0),
             messagesPagination = BackwardPagination(last = 0),
-            userId = userId,
+            userId,
         )
         title = chat.title
         description = chat.description
@@ -76,7 +76,12 @@ class PrivateChatDto(chatId: Int) : ChatDto, ReadChatResult {
     }
 }
 
-sealed class ChatMessagesEdgeDto(val chat: ChatDto, private val messageEdges: List<MessageEdge>) {
+class ChatMessagesEdgeDto(chat: ChatDto, messageEdges: List<MessageEdge>) {
+    val node: ChatMessagesDto = ChatMessagesDto(chat, messageEdges)
+    val cursor: Cursor = chat.id
+}
+
+class ChatMessagesDto(val chat: ChatDto, private val messageEdges: List<MessageEdge>) {
     @Suppress("unused")
     fun getMessages(env: DataFetchingEnvironment): List<MessageEdge> {
         val last = env.getArgument<Int?>("last")
@@ -85,18 +90,6 @@ sealed class ChatMessagesEdgeDto(val chat: ChatDto, private val messageEdges: Li
         return edges.takeLast(last ?: messageEdges.size)
     }
 }
-
-/** The [userId] searching. */
-private class SearchGroupChatMessagesEdgeDto(
-    userId: Int,
-    chatId: Int,
-    messageEdges: List<MessageEdge>,
-) : ChatMessagesEdgeDto(GroupChatDto(chatId, userId), messageEdges)
-
-private class SearchPrivateChatMessagesEdgeDto(
-    chatId: Int,
-    messageEdges: List<MessageEdge>,
-) : ChatMessagesEdgeDto(PrivateChatDto(chatId), messageEdges)
 
 class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
     val adminIdList: List<Int>
@@ -231,10 +224,10 @@ fun searchMessages(env: DataFetchingEnvironment): ChatMessagesDtoConnection {
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchGroupChatMessagesEdgeDto(env.userId!!, it.chatId, it.edges.toList()) }
+        .map { ChatMessagesEdgeDto(GroupChatDto(it.chatId, env.userId!!), it.edges.toList()) }
     val privateChats = PrivateChats
         .queryUserChatEdges(env.userId!!, query)
-        .map { SearchPrivateChatMessagesEdgeDto(it.chatId, it.edges.toList()) }
+        .map { ChatMessagesEdgeDto(PrivateChatDto(it.chatId), it.edges.toList()) }
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
     return paginateSearchMessages(groupChats + privateChats, pagination)
 }
@@ -243,15 +236,15 @@ private fun paginateSearchMessages(
     chats: List<ChatMessagesEdgeDto>,
     pagination: ForwardPagination,
 ): ChatMessagesDtoConnection {
-    val sorted = chats.sortedBy { it.chat.id }
+    val sorted = chats.sortedBy { it.node.chat.id }
     var edges = sorted
-    if (pagination.after != null) edges = edges.filter { it.chat.id > pagination.after }
+    if (pagination.after != null) edges = edges.filter { it.cursor > pagination.after }
     if (pagination.first != null) edges = edges.take(pagination.first)
-    val startCursor = if (sorted.isEmpty()) null else sorted[0].chat.id
-    val endCursor = if (sorted.isEmpty()) null else sorted.last().chat.id
+    val startCursor = if (sorted.isEmpty()) null else sorted[0].cursor
+    val endCursor = if (sorted.isEmpty()) null else sorted.last().cursor
     val pageInfo = PageInfo(
-        hasNextPage = if (endCursor == null) false else endCursor > edges.last().chat.id,
-        hasPreviousPage = if (startCursor == null) false else startCursor < edges[0].chat.id,
+        hasNextPage = if (endCursor == null) false else endCursor > edges.last().cursor,
+        hasPreviousPage = if (startCursor == null) false else startCursor < edges[0].cursor,
         startCursor,
         endCursor,
     )

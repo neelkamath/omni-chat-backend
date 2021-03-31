@@ -850,6 +850,11 @@ type ChatMessagesConnection {
 }
 
 type ChatMessagesEdge {
+    node: ChatMessages!
+    cursor: Cursor!
+}
+
+type ChatMessages {
     chat: Chat!
     messages(last: Int, before: Cursor): [MessageEdge!]!
 }

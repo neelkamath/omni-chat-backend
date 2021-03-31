@@ -16,6 +16,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Mutation.deleteContact`
 - `type StarredMessagesConnection`
 - `type StarredMessageEdge`
+- `type ChatMessagesConnection`
+- `type ChatMessagesEdge`
 
 ### Changed
 
