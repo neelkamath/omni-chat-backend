@@ -8,11 +8,22 @@ import com.neelkamath.omniChat.db.groupChatsNotifier
 import com.neelkamath.omniChat.graphql.routing.ExitedUsers
 import com.neelkamath.omniChat.graphql.routing.GroupChatId
 import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
+import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
+
+/** Returns the primary keys in order of their creation. */
+fun GroupChatUsers.read(): LinkedHashSet<Int> = transaction {
+    selectAll().orderBy(GroupChatUsers.id).map { it[GroupChatUsers.id].value }.toLinkedHashSet()
+}
+
+private fun GroupChatUsers.makeAdmins(chatId: Int, vararg userIdList: Int): Unit =
+    makeAdmins(chatId, userIdList.toList())
 
 @ExtendWith(DbExtension::class)
 class GroupChatUsersTest {

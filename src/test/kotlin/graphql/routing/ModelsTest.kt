@@ -8,6 +8,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
+fun AccountInput.toAccount(): Account =
+    Account(Users.read(username).id, username, emailAddress, firstName, lastName, bio)
+
+fun ActionMessageInput.toActionableMessage(): ActionableMessage = ActionableMessage(text, actions)
+
 class GroupChatInputTest {
     @Nested
     inner class Init {

@@ -6,9 +6,20 @@ import com.neelkamath.omniChat.db.tables.*
 import com.neelkamath.omniChat.graphql.routing.UpdatedAccount
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.time.delay
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
+import java.time.Duration
 import kotlin.test.Test
+
+/**
+ * Makes up for the message broker's latency.
+ *
+ * There's a delay between messages being [Notifier.publish]ed and [Notifier.notify]d. This causes messages
+ * [Notifier.publish]ed before a subscription to be received, and messages [Notifier.publish]ed after a subscription to
+ * be missed.
+ */
+suspend fun awaitBrokering(): Unit = delay(Duration.ofMillis(250))
 
 @ExtendWith(DbExtension::class)
 class BrokerTest {

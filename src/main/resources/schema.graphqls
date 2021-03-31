@@ -87,14 +87,14 @@ type Query {
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): SearchChatMessagesResult!
 
     """
-    Case-insensitively `query`s every text messages, poll message title and options, action message text and actions,
-    and pic message captions in every chat the user is in. Each item in the returned `ChatMessages` will be for a
+    Case-insensitively `query`s every text message, poll message's title and options, action message's text and actions,
+    and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be for a
     particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's messages
     are chronologically ordered.
 
     An access token must be sent with this request.
     """
-    searchMessages(query: String!): [ChatMessages!]!
+    searchMessages(query: String!, first: Int, after: Cursor): ChatMessagesConnection!
 
     """
     Returns the user's account info.
@@ -844,7 +844,12 @@ input AccountInput {
     bio: Bio! = ""
 }
 
-type ChatMessages {
+type ChatMessagesConnection {
+    edges: [ChatMessagesEdge!]!
+    pageInfo: PageInfo!
+}
+
+type ChatMessagesEdge {
     chat: Chat!
     messages(last: Int, before: Cursor): [MessageEdge!]!
 }

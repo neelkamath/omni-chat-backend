@@ -7,11 +7,19 @@ import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
+import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
+
+/** Every user's cursor (ID) in their order of creation. */
+fun Users.read(): LinkedHashSet<Int> = transaction {
+    selectAll().orderBy(Users.id).map { it[Users.id].value }.toLinkedHashSet()
+}
 
 @ExtendWith(DbExtension::class)
 class UsersTest {
