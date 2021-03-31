@@ -122,7 +122,7 @@ fun readGroupChat(inviteCode: UUID, usersPagination: ForwardPagination? = null):
 }
 
 const val READ_STARS_QUERY = """
-    query ReadStars(${"$"}first: Int, ${"$"}after: Int) {
+    query ReadStars(${"$"}first: Int, ${"$"}after: Cursor) {
         readStars(first: ${"$"}first, after: ${"$"}after) {
             $STARRED_MESSAGES_CONNECTION_FRAGMENT
         }
@@ -131,7 +131,7 @@ const val READ_STARS_QUERY = """
 
 fun readStars(userId: Int, pagination: ForwardPagination? = null): StarredMessagesConnection {
     val data = executeGraphQlViaEngine(
-        READ_STARS_QUERY, mapOf("first" to pagination?.first, "after" to pagination?.after),
+        READ_STARS_QUERY, mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
         userId,
     ).data!!["readStars"]!!
     return testingObjectMapper.convertValue(data)
@@ -569,7 +569,9 @@ class QueriesTest {
         fun `Messages must be paginated`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
+            val messageIdList = (1..10).map {
+                Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
+            }
             val first = 3
             val index = 5
             val pagination = ForwardPagination(first, after = messageIdList[index])
@@ -884,7 +886,7 @@ class QueriesTest {
             val (adminId, chatIdList) = createChats()
             val index = 5
             val chatId = chatIdList.elementAt(index)
-            GroupChats.delete(chatId)
+            GroupChatUsers.removeUsers(chatId, adminId)
             val actual = searchMessages(adminId, query = "", ForwardPagination(after = chatId)).edges.map { it.chat.id }
             assertEquals(chatIdList.drop(index + 1), actual)
         }
