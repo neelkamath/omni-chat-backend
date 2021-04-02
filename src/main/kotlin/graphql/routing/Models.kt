@@ -1162,6 +1162,10 @@ data class ChatMessagesConnection(val edges: List<ChatMessagesEdge>, val pageInf
 
 data class ChatMessagesEdge(val node: ChatMessages, val cursor: Cursor)
 
+data class ChatsConnection(val edges: List<ChatEdge>, val pageInfo: PageInfo)
+
+data class ChatEdge(val node: Chat, val cursor: Cursor)
+
 data class ChatMessages(val chat: Chat, val messages: List<MessageEdge>)
 
 data class AccountsConnection(val edges: List<AccountEdge>, val pageInfo: PageInfo) {

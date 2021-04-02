@@ -3,16 +3,16 @@ package com.neelkamath.omniChat.db
 import com.neelkamath.omniChat.DbExtension
 import com.neelkamath.omniChat.createVerifiedUsers
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.AccountEdge
-import com.neelkamath.omniChat.graphql.routing.AccountsConnection
 import com.neelkamath.omniChat.graphql.routing.DeletedAccount
 import com.neelkamath.omniChat.graphql.routing.ExitedUsers
-import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
 class DbTest {
@@ -92,115 +92,6 @@ class DbTest {
             awaitBrokering()
             val account = DeletedAccount(userId)
             listOf(contactSubscriber, chatSharerSubscriber).forEach { assertTrue(it.values().contains(account)) }
-        }
-    }
-
-    @Nested
-    @Suppress("ClassName")
-    inner class AccountsConnection_build {
-        /** Creates [count] users. */
-        private fun createAccountEdges(count: Int = 3): LinkedHashSet<AccountEdge> = createVerifiedUsers(count)
-            .zip(Users.read())
-            .map { (user, cursor) -> AccountEdge(user.info, cursor) }
-            .toLinkedHashSet()
-
-        @Test
-        fun `Every user must be retrieved if neither cursor nor limit get supplied`() {
-            val edges = createAccountEdges()
-            assertEquals(edges, AccountsConnection.build(edges).edges.toSet())
-        }
-
-        @Test
-        fun `Using a deleted user's cursor must cause pagination to work as if the user still exists`() {
-            val edges = createAccountEdges(10)
-            val index = 5
-            val deletedUser = edges.elementAt(index)
-            Users.delete(deletedUser.node.id)
-            val first = 3
-            assertEquals(
-                edges.toList().subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges,
-            )
-        }
-
-        @Test
-        fun `When retrieving the first of many users, the page info must state that there are only users after`() {
-            AccountsConnection.build(createAccountEdges(), ForwardPagination(first = 1)).pageInfo.run {
-                assertTrue(hasNextPage)
-                assertFalse(hasPreviousPage)
-            }
-        }
-
-        @Test
-        fun `Retrieving the last user must cause the page info to state there are only users before`() {
-            val edges = createAccountEdges()
-            AccountsConnection.build(edges, ForwardPagination(after = edges.elementAt(1).cursor)).pageInfo.run {
-                assertFalse(hasNextPage)
-                assertTrue(hasPreviousPage)
-            }
-        }
-
-        @Test
-        fun `The start and end cursors must be null if there are no users`() {
-            AccountsConnection.build(accountEdges = setOf()).pageInfo.run {
-                assertNull(startCursor)
-                assertNull(endCursor)
-            }
-        }
-
-        @Test
-        fun `The start and end cursors must be the same if there's only one user`() {
-            AccountsConnection.build(createAccountEdges(1)).pageInfo.run { assertEquals(endCursor, startCursor) }
-        }
-
-        @Test
-        fun `The first and last cursors must be the first and last users respectively`() {
-            val edges = createAccountEdges()
-            AccountsConnection.build(edges).pageInfo.run {
-                assertEquals(edges.first().cursor, startCursor)
-                assertEquals(edges.last().cursor, endCursor)
-            }
-        }
-
-        @Test
-        fun `Only the number of users specified by the limit must be returned from after the cursor`() {
-            val edges = createAccountEdges(10)
-            val first = 3
-            val index = 5
-            assertEquals(
-                edges.toList().subList(index + 1, index + 1 + first),
-                AccountsConnection.build(edges, ForwardPagination(first, edges.elementAt(index).cursor)).edges,
-            )
-        }
-
-        @Test
-        fun `The specified number of users must be retrieved from the first user when there's no cursor`() {
-            val edges = createAccountEdges(5)
-            val first = 3
-            val actual = AccountsConnection.build(edges, ForwardPagination(first)).edges
-            assertEquals(edges.toList().subList(0, first), actual)
-        }
-
-        @Test
-        fun `Every user after the cursor must be retrieved when there's no limit`() {
-            val edges = createAccountEdges(10)
-            val index = 5
-            assertEquals(
-                edges.drop(index + 1),
-                AccountsConnection.build(edges, ForwardPagination(after = edges.elementAt(index).cursor)).edges,
-            )
-        }
-
-        @Test
-        fun `Supplying unsorted rows mustn't affect pagination`() {
-            val edges = createVerifiedUsers(10)
-                .zip(Users.read())
-                .map { (user, cursor) -> AccountEdge(user.info, cursor) }
-            val first = 3
-            val index = 5
-            val actual =
-                AccountsConnection.build(edges.shuffled().toSet(), ForwardPagination(first, edges[index].cursor)).edges
-            assertEquals(edges.subList(index + 1, index + 1 + first), actual)
         }
     }
 }

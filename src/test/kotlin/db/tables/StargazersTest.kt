@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
@@ -129,6 +130,15 @@ class StargazersTest {
         }
 
         @Test
+        fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
+            val (adminId, messageIdList) = createStarredChat()
+            val (hasNextPage, hasPreviousPage) =
+                Stargazers.read(adminId, ForwardPagination(after = messageIdList[0])).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
         fun `Every item after the cursor must be retrieved when there's no limit`() {
             val (adminId, messageIdList) = createStarredChat()
             val index = 5
@@ -136,10 +146,54 @@ class StargazersTest {
             val actual = Stargazers.read(adminId, pagination).edges.map { it.node.messageId }
             assertEquals(messageIdList.drop(index + 1), actual)
         }
+
+        @Test
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
+            val (adminId, messageIdList) = createStarredChat()
+            Messages.delete(messageIdList[3])
+            val edges = Stargazers.read(adminId, ForwardPagination(first = 3, after = messageIdList[1])).edges
+            assertEquals(listOf(messageIdList[2], messageIdList[4], messageIdList[5]), edges.map { it.node.messageId })
+        }
     }
 
     @Nested
     inner class BuildPageInfo {
+        @Test
+        fun `When requesting zero items sans cursor, the page info must indicate such`() {
+            val (adminId) = createStarredChat()
+            val (hasNextPage, hasPreviousPage) = Stargazers.read(adminId, ForwardPagination(first = 0)).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items after the end cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, messageIdList) = createStarredChat()
+            val pagination = ForwardPagination(first = 0, after = messageIdList.last())
+            val (hasNextPage, hasPreviousPage) = Stargazers.read(adminId, pagination).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10, when requesting zero items after item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, messageIdList) = createStarredChat()
+            val pagination = ForwardPagination(first = 0, after = messageIdList[4])
+            val (hasNextPage, hasPreviousPage) = Stargazers.read(adminId, pagination).pageInfo
+            assertTrue(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the last item's cursor`() {
+            val (adminId, messageIdList) = createStarredChat()
+            val pagination = ForwardPagination(after = messageIdList.last())
+            val (edges, pageInfo) = Stargazers.read(adminId, pagination)
+            assertEquals(0, edges.size)
+            assertEquals(false, pageInfo.hasNextPage)
+            assertEquals(true, pageInfo.hasPreviousPage)
+        }
+
         @Test
         fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
             val (adminId, messageIdList) = createStarredChat()
@@ -155,7 +209,7 @@ class StargazersTest {
         }
 
         @Test
-        fun `If there are no items, the page info must indicate such`() {
+        fun `If there are zero items, the page info must indicate such`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val expected = PageInfo(hasNextPage = false, hasPreviousPage = false, startCursor = null, endCursor = null)
             assertEquals(expected, Stargazers.read(adminId).pageInfo)

@@ -18,6 +18,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `type StarredMessageEdge`
 - `type ChatMessagesConnection`
 - `type ChatMessagesEdge`
+- `type ChatsConnection`
+- `type ChatEdge`
 
 ### Changed
 
@@ -28,11 +30,16 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Use GitHub Flavored Markdown instead of CommonMark (update `scalar Bio`, `scalar GroupChatDescription`, and `scalar MessageText` accordingly).
 - Paginate `Query.readStars`.
 - Paginate `Query.searchMessages`.
+- Paginate `Query.readChats`.
 
 ### Removed
 
 - Remove `Mutation.createContacts` in favor of `Mutation.createContact`.
 - Remove `Mutation.deleteContacts` in favor of `Mutation.deleteContact`.
+
+### Fixed
+
+- Fix pagination bugs.
 
 ## [0.17.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.17.0) - 2021-03-19
 

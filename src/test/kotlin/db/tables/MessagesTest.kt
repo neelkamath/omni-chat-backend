@@ -1,13 +1,11 @@
 package com.neelkamath.omniChat.db.tables
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
+import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.Audio
 import com.neelkamath.omniChat.db.BackwardPagination
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.messagesNotifier
 import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.readPic
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -539,7 +537,8 @@ class MessagesTest {
         }
     }
 
-    private data class PaginatedChat(val adminId: Int, val chatId: Int, val messageIdList: List<Int>)
+    /** A group [chatId] and the [messageIdList] sent by the [adminId] in chronological order. */
+    private data class PaginatedChat(val adminId: Int, val chatId: Int, val messageIdList: LinkedHashSet<Int>)
 
     @Nested
     inner class ReadChat {
@@ -564,14 +563,15 @@ class MessagesTest {
         private fun createPaginatedChat(messages: Int = 10): PaginatedChat {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }
+            val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }.toLinkedHashSet()
             return PaginatedChat(adminId, chatId, messageIdList)
         }
 
         @Test
         fun `Every message must be retrieved if neither the cursor nor the limit are supplied`() {
             val (adminId, chatId, messageIdList) = createPaginatedChat()
-            assertEquals(messageIdList, Messages.readGroupChat(chatId, userId = adminId).map { it.cursor })
+            val actual = Messages.readGroupChat(chatId, userId = adminId).map { it.cursor }.toLinkedHashSet()
+            assertEquals(messageIdList, actual)
         }
 
         @Test
@@ -579,40 +579,149 @@ class MessagesTest {
             val (adminId, chatId, messageIdList) = createPaginatedChat()
             val last = 3
             val cursorIndex = 7
-            val cursors = Messages
-                .readGroupChat(chatId, BackwardPagination(last, before = messageIdList[cursorIndex]), adminId)
-                .map { it.cursor }
-            assertEquals(messageIdList.subList(cursorIndex - last, cursorIndex), cursors)
+            val pagination = BackwardPagination(last, before = messageIdList.elementAt(cursorIndex))
+            val actual = Messages.readGroupChat(chatId, pagination, adminId).map { it.cursor }.toLinkedHashSet()
+            assertEquals(messageIdList.subList(cursorIndex - last, cursorIndex), actual)
         }
 
         @Test
         fun `A limited number of messages from the last message must be retrieved when there's no cursor`() {
             val (adminId, chatId, messageIdList) = createPaginatedChat()
             val last = 3
-            val cursors = Messages.readGroupChat(chatId, BackwardPagination(last), adminId).map { it.cursor }
-            assertEquals(messageIdList.takeLast(last), cursors)
+            val actual =
+                Messages.readGroupChat(chatId, BackwardPagination(last), adminId).map { it.cursor }.toLinkedHashSet()
+            assertEquals(messageIdList.takeLast(last), actual)
+        }
+
+        @Test
+        fun `When requesting items before the end cursor, 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            val pagination = BackwardPagination(before = messageIdList.last())
+            val (hasNextPage, hasPreviousPage) = Messages.readGroupChatConnection(chatId, pagination, adminId).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
         }
 
         @Test
         fun `Every message before the cursor must be retrieved when there's no limit`() {
             val (adminId, chatId, messageIdList) = createPaginatedChat()
             val index = 3
-            val cursor = messageIdList[index]
-            val cursors = Messages.readGroupChat(chatId, BackwardPagination(before = cursor), adminId).map { it.cursor }
-            assertEquals(messageIdList.dropLast(messageIdList.size - index), cursors)
+            val cursor = messageIdList.elementAt(index)
+            val actual = Messages
+                .readGroupChat(chatId, BackwardPagination(before = cursor), adminId)
+                .map { it.cursor }
+                .toLinkedHashSet()
+            assertEquals(messageIdList.dropLast(messageIdList.size - index), actual)
+        }
+
+        @Test
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the last three items before item 6, then items 2, 3, and 5 must be retrieved`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            Messages.delete(messageIdList.elementAt(3))
+            val expected = listOf(messageIdList.elementAt(1), messageIdList.elementAt(2), messageIdList.elementAt(4))
+            val pagination = BackwardPagination(last = 3, before = messageIdList.elementAt(5))
+            val actual = Messages.readGroupChatConnection(chatId, pagination, adminId).edges.map { it.node.messageId }
+            assertEquals(expected, actual)
         }
 
         @Test
         fun `Using a deleted message's cursor mustn't cause pagination to behave differently`() {
             val (adminId, chatId, messageIdList) = createPaginatedChat()
             val index = 5
-            val deletedMessageId = messageIdList[index]
+            val deletedMessageId = messageIdList.elementAt(index)
             Messages.delete(deletedMessageId)
             val last = 3
             val cursors = Messages
                 .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId), adminId)
                 .map { it.cursor }
+                .toLinkedHashSet()
             assertEquals(messageIdList.subList(index - last, index), cursors)
+        }
+
+        @Test
+        fun `When requesting zero items sans cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatId) = createPaginatedChat()
+            val (hasNextPage, hasPreviousPage) =
+                Messages.readGroupChatConnection(chatId, BackwardPagination(last = 0), adminId).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items before the start cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            val pagination = BackwardPagination(last = 0, before = messageIdList.first())
+            val (hasNextPage, hasPreviousPage) = Messages.readGroupChatConnection(chatId, pagination, adminId).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10, when requesting zero items before item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            val pagination = BackwardPagination(last = 0, before = messageIdList.elementAt(4))
+            val (hasNextPage, hasPreviousPage) = Messages.readGroupChatConnection(chatId, pagination, adminId).pageInfo
+            assertTrue(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `If there are zero items, the page info must indicate such`() {
+            val (adminId, chatId) = createPaginatedChat(messages = 0)
+            val expected = PageInfo(hasNextPage = false, hasPreviousPage = false, startCursor = null, endCursor = null)
+            val actual = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
+            assertEquals(expected, actual)
+        }
+
+        @Test
+        fun `If there's one item, the page info must indicate such`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat(messages = 1)
+            val expected = PageInfo(
+                hasNextPage = false,
+                hasPreviousPage = false,
+                startCursor = messageIdList.first(),
+                endCursor = messageIdList.last(),
+            )
+            val actual = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
+            assertEquals(expected, actual)
+        }
+
+        @Test
+        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the first item's cursor`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            val pagination = BackwardPagination(before = messageIdList.first())
+            val (edges, pageInfo) = Messages.readGroupChatConnection(chatId, pagination, adminId)
+            assertEquals(0, edges.size)
+            assertTrue(pageInfo.hasNextPage)
+            assertFalse(pageInfo.hasPreviousPage)
+        }
+
+        @Test
+        fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
+            val (adminId, chatId, messageIdList) = createPaginatedChat()
+            val pagination = BackwardPagination(before = messageIdList.elementAt(3))
+            val (hasNextPage, hasPreviousPage) = Messages.readGroupChatConnection(chatId, pagination, adminId).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
+            val (adminId, chatId) = createPaginatedChat()
+            val (hasNextPage, hasPreviousPage) =
+                Messages.readGroupChatConnection(chatId, BackwardPagination(last = 3), adminId).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `The first and last message IDs must be retrieved for the start and end cursors respectively`() {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val chatId = GroupChats.create(listOf(adminId))
+            val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
+            val pageInfo = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
+            assertEquals(messageIdList.first(), pageInfo.startCursor)
+            assertEquals(messageIdList.last(), pageInfo.endCursor)
         }
     }
 
@@ -630,90 +739,6 @@ class MessagesTest {
             }
             assert(user1Id, listOf(message2Id))
             assert(user2Id, listOf(message1Id, message2Id))
-        }
-    }
-
-    data class CreatedChat(val adminId: Int, val chatId: Int, val firstMessageId: Int, val secondMessageId: Int)
-
-    @Nested
-    inner class HasMessages {
-        private fun createChat(): CreatedChat {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val message = { Messages.message(adminId, chatId) }
-            return CreatedChat(adminId, chatId, firstMessageId = message(), secondMessageId = message())
-        }
-
-        @Test
-        fun `There mustn't be messages before the first message`() {
-            val (adminId, chatId, firstMessageId) = createChat()
-            val hasPreviousPage = Messages
-                .readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
-                .pageInfo
-                .hasPreviousPage
-            assertFalse(hasPreviousPage)
-        }
-
-        @Test
-        fun `There mustn't be messages after the last message`() {
-            val (adminId, chatId, _, lastMessageId) = createChat()
-            val hasNextPage = Messages
-                .readGroupChatConnection(chatId, BackwardPagination(before = lastMessageId), adminId)
-                .pageInfo
-                .hasNextPage
-            assertFalse(hasNextPage)
-        }
-
-        @Test
-        fun `There must be messages before the last message`() {
-            val (adminId, chatId, _, lastMessageId) = createChat()
-            val hasPreviousPage = Messages
-                .readGroupChatConnection(chatId, BackwardPagination(last = 0, before = lastMessageId), adminId)
-                .pageInfo
-                .hasPreviousPage
-            assertTrue(hasPreviousPage)
-        }
-
-        @Test
-        fun `There must be messages after the first message`() {
-            val (adminId, chatId, firstMessageId) = createChat()
-            val hasNextPage = Messages
-                .readGroupChatConnection(chatId, BackwardPagination(before = firstMessageId), adminId)
-                .pageInfo
-                .hasNextPage
-            assertTrue(hasNextPage)
-        }
-    }
-
-    @Nested
-    inner class ReadCursor {
-        private fun assertCursor(hasMessage: Boolean) {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messageId = if (hasMessage) Messages.message(adminId, chatId) else null
-            val pageInfo = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
-            assertEquals(messageId, pageInfo.startCursor)
-            assertEquals(messageId, pageInfo.endCursor)
-        }
-
-        @Test
-        fun `Cursors must be null if there are no messages`() {
-            assertCursor(hasMessage = false)
-        }
-
-        @Test
-        fun `The cursor must be the same for both cursor types if there's only one message`() {
-            assertCursor(hasMessage = true)
-        }
-
-        @Test
-        fun `The first and last message IDs must be retrieved for the start and end cursors respectively`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..5).map { Messages.message(adminId, chatId) }
-            val pageInfo = Messages.readGroupChatConnection(chatId, userId = adminId).pageInfo
-            assertEquals(messageIdList.first(), pageInfo.startCursor)
-            assertEquals(messageIdList.last(), pageInfo.endCursor)
         }
     }
 }

@@ -32,6 +32,14 @@ data class BackwardPagination(val last: Int? = null, val before: Cursor? = null)
 
 enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
+enum class CursorType {
+    /** First message's cursor. */
+    START,
+
+    /** Last message's cursor. */
+    END,
+}
+
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
  * assumed that all enum values are lowercase in the DB.

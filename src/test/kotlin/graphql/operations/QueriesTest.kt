@@ -166,6 +166,8 @@ fun readAccount(userId: Int): Account {
 
 const val READ_CHATS_QUERY = """
     query ReadChats(
+        ${"$"}first: Int,
+        ${"$"}after: Cursor,
         ${"$"}privateChat_messages_last: Int
         ${"$"}privateChat_messages_before: Cursor
         ${"$"}groupChat_users_first: Int
@@ -173,22 +175,24 @@ const val READ_CHATS_QUERY = """
         ${"$"}groupChat_messages_last: Int
         ${"$"}groupChat_messages_before: Cursor
     ) {
-        readChats {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
+        readChats(first: ${"$"}first, after: ${"$"}after) {
+            $CHATS_CONNECTION_FRAGMENT
         }
     }
 """
 
 fun readChats(
     userId: Int,
+    pagination: ForwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null,
-): List<Chat> {
+): ChatsConnection {
     val chats = executeGraphQlViaEngine(
         READ_CHATS_QUERY,
         mapOf(
+            "first" to pagination?.first,
+            "after" to pagination?.after?.toString(),
             "privateChat_messages_last" to privateChatMessagesPagination?.last,
             "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
             "groupChat_users_first" to usersPagination?.first,
@@ -602,6 +606,8 @@ class QueriesTest {
         }
     }
 
+    private data class ReadableChats(val adminId: Int, val chatIdList: LinkedHashSet<Int>)
+
     @Nested
     inner class ReadChats {
         @Test
@@ -609,18 +615,162 @@ class QueriesTest {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
             val chatId = PrivateChats.create(user1Id, user2Id)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertTrue(readChats(user1Id).isEmpty())
-            assertFalse(readChats(user2Id).isEmpty())
+            assertTrue(readChats(user1Id).edges.isEmpty())
+            assertFalse(readChats(user2Id).edges.isEmpty())
         }
 
         @Test
-        fun `Messages must be paginated`() {
-            testMessagesPagination(MessagesOperationName.READ_CHATS)
-        }
+        fun `Messages must be paginated`(): Unit = testMessagesPagination(MessagesOperationName.READ_CHATS)
 
         @Test
-        fun `Group chat users must be paginated`() {
+        fun `Group chat users must be paginated`(): Unit =
             testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHATS)
+    }
+
+    @Nested
+    inner class PaginateReadChats {
+        private fun createReadableChats(count: Int = 10): ReadableChats {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val chatIdList = (1..count).map { GroupChats.create(listOf(adminId)) }.toLinkedHashSet()
+            return ReadableChats(adminId, chatIdList)
+        }
+
+        @Test
+        fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val pagination = ForwardPagination(after = chatIdList.first())
+            val (hasNextPage, hasPreviousPage) = readChats(adminId, pagination).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
+            val (adminId, chatIdList) = createReadableChats()
+            assertEquals(chatIdList, readChats(adminId).edges.map { it.node.id }.toLinkedHashSet())
+        }
+
+        @Test
+        fun `The number of items specified by the limit must be returned from after the cursor`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val first = 3
+            val index = 5
+            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
+            val actual = readChats(adminId, pagination).edges.map { it.node.id }.toLinkedHashSet()
+            assertEquals(chatIdList.slice(index + 1..index + first), actual)
+        }
+
+        @Test
+        fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val first = 3
+            val actual = readChats(adminId, ForwardPagination(first)).edges.map { it.node.id }
+            assertEquals(chatIdList.take(first), actual)
+        }
+
+        @Test
+        fun `Every item after the cursor must be retrieved when there's no limit`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val index = 5
+            val pagination = ForwardPagination(after = chatIdList.elementAt(index))
+            assertEquals(chatIdList.drop(index + 1), readChats(adminId, pagination).edges.map { it.node.id })
+        }
+
+        @Test
+        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the last item's cursor`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val pagination = ForwardPagination(after = chatIdList.last())
+            val (edges, pageInfo) = readChats(adminId, pagination)
+            assertEquals(0, edges.size)
+            assertFalse(pageInfo.hasNextPage)
+            assertTrue(pageInfo.hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
+            val (adminId, chatIdList) = createReadableChats()
+            GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
+            val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
+            val expected = listOf(chatIdList.elementAt(2), chatIdList.elementAt(4), chatIdList.elementAt(5))
+            val actual = readChats(adminId, pagination).edges.map { it.node.id }
+            assertEquals(expected, actual)
+        }
+
+        @Test
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val index = 5
+            val chatId = chatIdList.elementAt(index)
+            GroupChatUsers.removeUsers(chatId, adminId)
+            val actual = readChats(adminId, ForwardPagination(after = chatId)).edges.map { it.node.id }
+            assertEquals(chatIdList.drop(index + 1), actual)
+        }
+
+        @Test
+        fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
+            val (adminId) = createReadableChats()
+            val pageInfo = readChats(adminId, ForwardPagination(first = 1)).pageInfo
+            assertTrue(pageInfo.hasNextPage)
+        }
+
+        @Test
+        fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val pagination = ForwardPagination(after = chatIdList.last())
+            assertTrue(readChats(adminId, pagination).pageInfo.hasPreviousPage)
+        }
+
+        @Test
+        fun `If there are no items, the page info must indicate such`() {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val expected = PageInfo(hasNextPage = false, hasPreviousPage = false, startCursor = null, endCursor = null)
+            assertEquals(expected, readChats(adminId).pageInfo)
+        }
+
+        @Test
+        fun `If there's one item, the page info must indicate such`() {
+            val (adminId, chatIdList) = createReadableChats(count = 1)
+            val expected = PageInfo(
+                hasNextPage = false,
+                hasPreviousPage = false,
+                startCursor = chatIdList.first(),
+                endCursor = chatIdList.first(),
+            )
+            assertEquals(expected, readChats(adminId).pageInfo)
+        }
+
+        @Test
+        fun `When requesting zero items sans cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId) = createReadableChats()
+            val (hasNextPage, hasPreviousPage) = readChats(adminId, ForwardPagination(first = 0)).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items after the end cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val pagination = ForwardPagination(first = 0, after = chatIdList.last())
+            val (hasNextPage, hasPreviousPage) = readChats(adminId, pagination).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10, when requesting zero items after item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val pagination = ForwardPagination(first = 0, after = chatIdList.elementAt(4))
+            val (hasNextPage, hasPreviousPage) = readChats(adminId, pagination).pageInfo
+            assertTrue(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `The first and last cursors must be the first and last items respectively`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val (_, _, startCursor, endCursor) = readChats(adminId).pageInfo
+            assertEquals(chatIdList.first(), startCursor)
+            assertEquals(chatIdList.last(), endCursor)
         }
     }
 
@@ -850,18 +1000,18 @@ class QueriesTest {
 
         @Test
         fun `Chats must be paginated`() {
-            val (adminId, chatIdList) = createChats()
+            val (adminId, chatIdList) = createSearchableChats()
             val first = 3
             val index = 5
             val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, "", pagination).edges.map { it.node.chat.id }
+            val actual = searchMessages(adminId, "", pagination).edges.map { it.node.chat.id }.toLinkedHashSet()
             assertEquals(chatIdList.slice(index + 1..index + first), actual)
         }
     }
 
-    private data class CreatedChats(val adminId: Int, val chatIdList: LinkedHashSet<Int>)
+    private data class SearchableChats(val adminId: Int, val chatIdList: LinkedHashSet<Int>)
 
-    private fun createChats(count: Int = 10): CreatedChats {
+    private fun createSearchableChats(count: Int = 10): SearchableChats {
         val adminId = createVerifiedUsers(1).first().info.id
         val chatIdList = (1..count)
             .map {
@@ -870,21 +1020,77 @@ class QueriesTest {
                 chatId
             }
             .toLinkedHashSet()
-        return CreatedChats(adminId, chatIdList)
+        return SearchableChats(adminId, chatIdList)
     }
 
     @Nested
     inner class PaginateSearchMessages {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
-            val (adminId, chatIdList) = createChats()
+            val (adminId, chatIdList) = createSearchableChats()
             val actual = searchMessages(adminId, query = "").edges.map { it.node.chat.id }.toLinkedHashSet()
             assertEquals(chatIdList, actual)
         }
 
         @Test
+        fun `The number of items specified by the limit must be returned from after the cursor`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val first = 3
+            val index = 5
+            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
+            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }.toLinkedHashSet()
+            assertEquals(chatIdList.slice(index + 1..index + first), actual)
+        }
+
+        @Test
+        fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val pagination = ForwardPagination(after = chatIdList.first())
+            val (hasNextPage, hasPreviousPage) = searchMessages(adminId, query = "", pagination).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val first = 3
+            val actual = searchMessages(adminId, query = "", ForwardPagination(first)).edges.map { it.node.chat.id }
+            assertEquals(chatIdList.take(first), actual)
+        }
+
+        @Test
+        fun `Every item after the cursor must be retrieved when there's no limit`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val index = 5
+            val pagination = ForwardPagination(after = chatIdList.elementAt(index))
+            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
+            assertEquals(chatIdList.drop(index + 1), actual)
+        }
+
+        @Test
+        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the last item's cursor`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val pagination = ForwardPagination(after = chatIdList.last())
+            val (edges, pageInfo) = searchMessages(adminId, query = "", pagination)
+            assertEquals(0, edges.size)
+            assertFalse(pageInfo.hasNextPage)
+            assertTrue(pageInfo.hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
+            val expected = listOf(chatIdList.elementAt(2), chatIdList.elementAt(4), chatIdList.elementAt(5))
+            val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
+            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
+            assertEquals(expected, actual)
+        }
+
+        @Test
         fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createChats()
+            val (adminId, chatIdList) = createSearchableChats()
             val index = 5
             val chatId = chatIdList.elementAt(index)
             GroupChatUsers.removeUsers(chatId, adminId)
@@ -894,14 +1100,14 @@ class QueriesTest {
 
         @Test
         fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
-            val (adminId) = createChats()
+            val (adminId) = createSearchableChats()
             val pageInfo = searchMessages(adminId, query = "", ForwardPagination(first = 1)).pageInfo
             assertTrue(pageInfo.hasNextPage)
         }
 
         @Test
         fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
-            val (adminId, chatIdList) = createChats()
+            val (adminId, chatIdList) = createSearchableChats()
             val pagination = ForwardPagination(first = 1, after = chatIdList.elementAt(5))
             val pageInfo = searchMessages(adminId, query = "", pagination).pageInfo
             assertTrue(pageInfo.hasPreviousPage)
@@ -909,14 +1115,14 @@ class QueriesTest {
 
         @Test
         fun `If there are no items, the page info must indicate such`() {
-            val (adminId) = createChats(count = 0)
+            val (adminId) = createSearchableChats(count = 0)
             val expected = PageInfo(hasNextPage = false, hasPreviousPage = false, startCursor = null, endCursor = null)
             assertEquals(expected, searchMessages(adminId, query = "").pageInfo)
         }
 
         @Test
         fun `If there's one item, the page info must indicate such`() {
-            val (adminId, chatIdList) = createChats(count = 1)
+            val (adminId, chatIdList) = createSearchableChats(count = 1)
             val expected = PageInfo(
                 hasNextPage = false,
                 hasPreviousPage = false,
@@ -927,38 +1133,38 @@ class QueriesTest {
         }
 
         @Test
+        fun `When requesting zero items sans cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId) = createSearchableChats()
+            val (hasNextPage, hasPreviousPage) =
+                searchMessages(adminId, query = "", ForwardPagination(first = 0)).pageInfo
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items after the end cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val pagination = ForwardPagination(first = 0, after = chatIdList.last())
+            val (hasNextPage, hasPreviousPage) = searchMessages(adminId, query = "", pagination).pageInfo
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10, when requesting zero items after item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val pagination = ForwardPagination(first = 0, after = chatIdList.elementAt(4))
+            val (hasNextPage, hasPreviousPage) = searchMessages(adminId, query = "", pagination).pageInfo
+            assertTrue(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
         fun `The first and last cursors must be the first and last items respectively`() {
-            val (adminId, chatIdList) = createChats()
+            val (adminId, chatIdList) = createSearchableChats()
             val (_, _, startCursor, endCursor) = searchMessages(adminId, query = "").pageInfo
             assertEquals(chatIdList.first(), startCursor)
             assertEquals(chatIdList.last(), endCursor)
-        }
-
-        @Test
-        fun `The number of items specified by the limit must be returned from after the cursor`() {
-            val (adminId, chatIdList) = createChats()
-            val first = 3
-            val index = 5
-            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
-            assertEquals(chatIdList.slice(index + 1..index + first), actual)
-        }
-
-        @Test
-        fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
-            val (adminId, chatIdList) = createChats()
-            val first = 3
-            val actual = searchMessages(adminId, query = "", ForwardPagination(first)).edges.map { it.node.chat.id }
-            assertEquals(chatIdList.take(first), actual)
-        }
-
-        @Test
-        fun `Every item after the cursor must be retrieved when there's no limit`() {
-            val (adminId, chatIdList) = createChats()
-            val index = 5
-            val pagination = ForwardPagination(after = chatIdList.elementAt(index))
-            val actual = searchMessages(adminId, query = "", pagination).edges.map { it.node.chat.id }
-            assertEquals(chatIdList.drop(index + 1), actual)
         }
     }
 
@@ -1070,7 +1276,7 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
         MessagesOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text.value, chatMessagesPagination = pagination).edges.flatMap { it.node.messages }
         MessagesOperationName.READ_CHATS ->
-            readChats(adminId, groupChatMessagesPagination = pagination)[0].messages.edges
+            readChats(adminId, groupChatMessagesPagination = pagination).edges[0].node.messages.edges
         MessagesOperationName.READ_CHAT -> {
             val chat = readChat(chatId, groupChatMessagesPagination = pagination, userId = adminId) as GroupChat
             chat.messages.edges
@@ -1137,7 +1343,7 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
     val chat = when (operationName) {
         GroupChatUsersOperationName.READ_CHAT ->
             readChat(chatId, usersPagination = pagination, userId = adminId) as GroupChat
-        GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination)[0]
+        GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination).edges[0].node
         GroupChatUsersOperationName.SEARCH_CHATS -> {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value
             searchChats(adminId, title, usersPagination = pagination)[0]

@@ -56,16 +56,7 @@ object Messages : IntIdTable() {
 
     data class TypedMessage(val type: MessageType, val message: BareMessage)
 
-    private enum class CursorType {
-        /** First message's cursor. */
-        START,
-
-        /** Last message's cursor. */
-        END,
-    }
-
-    /** Whether messages exist before or after a particular point in time. */
-    private enum class Chronology { BEFORE, AFTER }
+    private enum class Chronology { BEFORE, FROM }
 
     /**
      * Returns whether the [chatId] is a broadcast group with the [userId] as an admin. It's assumed the [userId] is in
@@ -512,10 +503,11 @@ object Messages : IntIdTable() {
         chatId: Int,
         pagination: BackwardPagination? = null,
         userId: Int? = null,
-    ): MessagesConnection = MessagesConnection(
-        readGroupChat(chatId, pagination, userId).toList(),
-        buildPageInfo(chatId, pagination?.before),
-    )
+    ): MessagesConnection {
+        val edges = readGroupChat(chatId, pagination, userId).toList()
+        val pageInfo = buildPageInfo(chatId, edges.firstOrNull()?.cursor, pagination)
+        return MessagesConnection(edges, pageInfo)
+    }
 
     fun readPrivateChatConnection(
         chatId: Int,
@@ -523,30 +515,36 @@ object Messages : IntIdTable() {
         pagination: BackwardPagination? = null,
     ): MessagesConnection {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
-        return MessagesConnection(
-            readPrivateChat(userId, chatId, pagination).toList(),
-            buildPageInfo(chatId, pagination?.before, op),
-        )
+        val edges = readPrivateChat(userId, chatId, pagination).toList()
+        val pageInfo = buildPageInfo(chatId, edges.firstOrNull()?.cursor, pagination, op)
+        return MessagesConnection(edges, pageInfo)
     }
 
-    /**
-     * Builds the [PageInfo] for a [MessagesConnection].
-     *
-     * A `null` [cursor] indicates that the [MessagesConnection] neither [PageInfo.hasNextPage] nor
-     * [PageInfo.hasPreviousPage].
-     */
-    private fun buildPageInfo(chatId: Int, cursor: Cursor?, filter: Filter = null): PageInfo = PageInfo(
-        hasNextPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.AFTER, filter),
-        hasPreviousPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.BEFORE, filter),
-        startCursor = readCursor(chatId, CursorType.START, filter),
-        endCursor = readCursor(chatId, CursorType.END, filter),
-    )
+    /** Builds the [MessagesConnection.pageInfo]. The [firstMessageId] is the ID of the message. */
+    private fun buildPageInfo(
+        chatId: Int,
+        firstMessageId: Int?,
+        pagination: BackwardPagination? = null,
+        filter: Filter = null,
+    ): PageInfo {
+        val hasNextPage =
+            if (pagination?.before == null) false else hasMessages(chatId, pagination.before, Chronology.FROM, filter)
+        val startCursor = readCursor(chatId, CursorType.START, filter)
+        val endCursor = readCursor(chatId, CursorType.END, filter)
+        val hasPreviousPage = when {
+            firstMessageId != null -> hasMessages(chatId, firstMessageId, Chronology.BEFORE, filter)
+            pagination?.before == null ->
+                if (endCursor == null) false else hasMessages(chatId, endCursor, Chronology.BEFORE, filter)
+            else -> hasMessages(chatId, pagination.before, Chronology.BEFORE, filter)
+        }
+        return PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+    }
 
-    /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.AFTER] the [messageId]. */
+    /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.FROM] the [messageId]. */
     private fun hasMessages(chatId: Int, messageId: Int, chronology: Chronology, filter: Filter = null): Boolean {
         var op: Op<Boolean> = when (chronology) {
             Chronology.BEFORE -> Messages.id less messageId
-            Chronology.AFTER -> Messages.id greater messageId
+            Chronology.FROM -> Messages.id greaterEq messageId
         }
         filter?.let { op = op and it }
         return transaction { select((Messages.chatId eq chatId) and op).empty().not() }

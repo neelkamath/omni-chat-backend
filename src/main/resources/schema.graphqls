@@ -108,7 +108,7 @@ type Query {
 
     An access token must be sent with this request.
     """
-    readChats: [Chat!]!
+    readChats(first: Int, after: Cursor): ChatsConnection!
 
     """An access token must be sent with this request if the chat being read isn't a public chat."""
     readChat(id: Int!): ReadChatResult!
@@ -773,6 +773,16 @@ type ActionableMessage {
     text: MessageText!
     """There's at least one action. Each action is unique."""
     actions: [MessageText!]!
+}
+
+type ChatsConnection {
+    edges: [ChatEdge!]!
+    pageInfo: PageInfo!
+}
+
+type ChatEdge {
+    node: Chat!
+    cursor: Cursor!
 }
 
 type AccountsConnection {

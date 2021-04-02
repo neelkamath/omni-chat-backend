@@ -114,6 +114,10 @@ class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
 
 data class ChatMessagesDtoConnection(val edges: List<ChatMessagesEdgeDto>, val pageInfo: PageInfo)
 
+data class ChatsConnectionDto(val edges: List<ChatEdgeDto>, val pageInfo: PageInfo)
+
+data class ChatEdgeDto(val node: ChatDto, val cursor: Cursor)
+
 fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     val userId = env.getArgument<Int>("userId")
     return if (Users.isExisting(userId)) Users.readOnlineStatus(userId) else InvalidUserId
@@ -141,10 +145,37 @@ fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     }
 }
 
-fun readChats(env: DataFetchingEnvironment): List<ChatDto> {
+fun readChats(env: DataFetchingEnvironment): ChatsConnectionDto {
     env.verifyAuth()
-    return GroupChatUsers.readChatIdList(env.userId!!).map { GroupChatDto(it, env.userId!!) } +
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    val chats = GroupChatUsers.readChatIdList(env.userId!!).map { GroupChatDto(it, env.userId!!) } +
             PrivateChats.readUserChatIdList(env.userId!!).map(::PrivateChatDto)
+    return paginateReadChats(chats.toSet(), pagination)
+}
+
+/** Builds the [ChatsConnectionDto] for [readChats]. */
+@Suppress("DuplicatedCode")
+private fun paginateReadChats(chats: Set<ChatDto>, pagination: ForwardPagination): ChatsConnectionDto {
+    val sorted = chats.sortedBy { it.id }
+    var edges = sorted
+    if (pagination.after != null) edges = edges.filter { it.id > pagination.after }
+    if (pagination.first != null) edges = edges.take(pagination.first)
+    val startCursor = sorted.firstOrNull()?.id
+    val endCursor = sorted.lastOrNull()?.id
+    val hasNextPage = when {
+        sorted.isEmpty() -> false
+        edges.isNotEmpty() -> endCursor!! > edges.last().id
+        edges.isEmpty() -> if (pagination.after == null) true else pagination.after < sorted.last().id
+        else -> throw NoWhenBranchMatchedException()
+    }
+    val hasPreviousPage = when {
+        sorted.isEmpty() -> false
+        edges.isNotEmpty() -> startCursor!! < edges.first().id
+        edges.isEmpty() -> if (pagination.after == null) false else pagination.after > sorted.first().id
+        else -> throw NoWhenBranchMatchedException()
+    }
+    val pageInfo = PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+    return ChatsConnectionDto(edges.map { ChatEdgeDto(node = it, cursor = it.id) }, pageInfo)
 }
 
 fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
@@ -229,11 +260,12 @@ fun searchMessages(env: DataFetchingEnvironment): ChatMessagesDtoConnection {
         .queryUserChatEdges(env.userId!!, query)
         .map { ChatMessagesEdgeDto(PrivateChatDto(it.chatId), it.edges.toList()) }
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    return paginateSearchMessages(groupChats + privateChats, pagination)
+    return paginateSearchMessages(groupChats.plus(privateChats).toSet(), pagination)
 }
 
+@Suppress("DuplicatedCode")
 private fun paginateSearchMessages(
-    chats: List<ChatMessagesEdgeDto>,
+    chats: Set<ChatMessagesEdgeDto>,
     pagination: ForwardPagination,
 ): ChatMessagesDtoConnection {
     val sorted = chats.sortedBy { it.node.chat.id }
@@ -242,13 +274,19 @@ private fun paginateSearchMessages(
     if (pagination.first != null) edges = edges.take(pagination.first)
     val startCursor = if (sorted.isEmpty()) null else sorted[0].cursor
     val endCursor = if (sorted.isEmpty()) null else sorted.last().cursor
-    val pageInfo = PageInfo(
-        hasNextPage = if (endCursor == null) false else endCursor > edges.last().cursor,
-        hasPreviousPage = if (startCursor == null) false else startCursor < edges[0].cursor,
-        startCursor,
-        endCursor,
-    )
-    return ChatMessagesDtoConnection(edges, pageInfo)
+    val hasNextPage = when {
+        endCursor == null -> false
+        edges.isNotEmpty() -> edges.last().cursor < endCursor
+        pagination.after == null -> true
+        else -> pagination.after < endCursor
+    }
+    val hasPreviousPage = when {
+        startCursor == null -> false
+        edges.isNotEmpty() -> edges[0].cursor > startCursor
+        pagination.after == null -> false
+        else -> pagination.after > startCursor
+    }
+    return ChatMessagesDtoConnection(edges, PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor))
 }
 
 fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {

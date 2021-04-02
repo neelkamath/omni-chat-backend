@@ -946,3 +946,30 @@ const val LEAVE_GROUP_CHAT_RESULT_FRAGMENT = """
     $CANNOT_LEAVE_CHAT_FRAGMENT
     $INVALID_CHAT_ID_FRAGMENT
 """
+
+const val CHAT_FRAGMENT = """
+    $GROUP_CHAT_FRAGMENT
+    $PRIVATE_CHAT_FRAGMENT
+"""
+
+const val CHAT_EDGE_FRAGMENT = """
+    ... on ChatEdge {
+        __typename
+        node {
+            $CHAT_FRAGMENT
+        }
+        cursor
+    }
+"""
+
+const val CHATS_CONNECTION_FRAGMENT = """
+    ... on ChatsConnection {
+        __typename
+        edges {
+            $CHAT_EDGE_FRAGMENT
+        }
+        pageInfo {
+            $PAGE_INFO_FRAGMENT
+        }
+    }
+"""
