@@ -126,7 +126,7 @@ type Query {
 
     An access token must be sent with this request.
     """
-    searchChats(query: String!): [Chat!]!
+    searchChats(query: String!, first: Int, after: Cursor): ChatsConnection!
 
     """Searches chats by case-insensitively `query`ing their titles."""
     searchPublicChats(query: String!): [GroupChat!]!

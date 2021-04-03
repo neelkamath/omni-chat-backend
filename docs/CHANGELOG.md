@@ -31,6 +31,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Paginate `Query.readStars`.
 - Paginate `Query.searchMessages`.
 - Paginate `Query.readChats`.
+- Paginate `Query.searchChats`.
 
 ### Removed
 

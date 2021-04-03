@@ -319,6 +319,8 @@ fun searchChatMessages(
 const val SEARCH_CHATS_QUERY = """
     query SearchChats(
         ${"$"}query: String!
+        ${"$"}first: Int
+        ${"$"}after: Cursor
         ${"$"}privateChat_messages_last: Int
         ${"$"}privateChat_messages_before: Cursor
         ${"$"}groupChat_users_first: Int
@@ -326,9 +328,8 @@ const val SEARCH_CHATS_QUERY = """
         ${"$"}groupChat_messages_last: Int
         ${"$"}groupChat_messages_before: Cursor
     ) {
-        searchChats(query: ${"$"}query) {
-            $PRIVATE_CHAT_FRAGMENT
-            $GROUP_CHAT_FRAGMENT
+        searchChats(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
+            $CHATS_CONNECTION_FRAGMENT
         }
     }
 """
@@ -336,14 +337,17 @@ const val SEARCH_CHATS_QUERY = """
 fun searchChats(
     userId: Int,
     query: String,
+    pagination: ForwardPagination? = null,
     privateChatMessagesPagination: BackwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     groupChatMessagesPagination: BackwardPagination? = null,
-): List<Chat> {
+): ChatsConnection {
     val chats = executeGraphQlViaEngine(
         SEARCH_CHATS_QUERY,
         mapOf(
             "query" to query,
+            "first" to pagination?.first,
+            "after" to pagination?.after?.toString(),
             "privateChat_messages_last" to privateChatMessagesPagination?.last,
             "privateChat_messages_before" to privateChatMessagesPagination?.before?.toString(),
             "groupChat_users_first" to usersPagination?.first,
@@ -620,6 +624,16 @@ class QueriesTest {
         }
 
         @Test
+        fun `Chats must be paginated`() {
+            val (adminId, chatIdList) = createReadableChats()
+            val index = 5
+            val first = 3
+            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
+            val actual = readChats(adminId, pagination).edges.map { it.node.id }.toLinkedHashSet()
+            assertEquals(chatIdList.slice(index + 1..index + first), actual)
+        }
+
+        @Test
         fun `Messages must be paginated`(): Unit = testMessagesPagination(MessagesOperationName.READ_CHATS)
 
         @Test
@@ -627,13 +641,14 @@ class QueriesTest {
             testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHATS)
     }
 
+    private fun createReadableChats(count: Int = 10): ReadableChats {
+        val adminId = createVerifiedUsers(1).first().info.id
+        val chatIdList = (1..count).map { GroupChats.create(listOf(adminId)) }.toLinkedHashSet()
+        return ReadableChats(adminId, chatIdList)
+    }
+
     @Nested
-    inner class PaginateReadChats {
-        private fun createReadableChats(count: Int = 10): ReadableChats {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatIdList = (1..count).map { GroupChats.create(listOf(adminId)) }.toLinkedHashSet()
-            return ReadableChats(adminId, chatIdList)
-        }
+    inner class BuildChatsConnection {
 
         @Test
         fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
@@ -935,7 +950,17 @@ class QueriesTest {
             val (user1, user2) = createVerifiedUsers(2).map { it.info }
             val chatId = PrivateChats.create(user1.id, user2.id)
             PrivateChatDeletions.create(chatId, user1.id)
-            assertTrue(searchChats(user1.id, user2.username.value).isEmpty())
+            assertTrue(searchChats(user1.id, user2.username.value).edges.isEmpty())
+        }
+
+        @Test
+        fun `Chats must be paginated`() {
+            val (adminId, chatIdList) = createSearchableChats()
+            val first = 3
+            val index = 5
+            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
+            val actual = searchChats(adminId, query = "", pagination).edges.map { it.node.id }.toLinkedHashSet()
+            assertEquals(chatIdList.slice(index + 1..index + first), actual)
         }
 
         @Test
@@ -1283,7 +1308,7 @@ private fun testMessagesPagination(operation: MessagesOperationName) {
         }
         MessagesOperationName.SEARCH_CHATS -> {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value
-            searchChats(adminId, title, groupChatMessagesPagination = pagination)[0].messages.edges
+            searchChats(adminId, title, groupChatMessagesPagination = pagination).edges[0].node.messages.edges
         }
     }
     assertEquals(messageIdList.dropLast(messageIdList.size - cursorIndex).takeLast(last), messages.map { it.cursor })
@@ -1346,7 +1371,7 @@ private fun testGroupChatUsersPagination(operationName: GroupChatUsersOperationN
         GroupChatUsersOperationName.READ_CHATS -> readChats(adminId, usersPagination = pagination).edges[0].node
         GroupChatUsersOperationName.SEARCH_CHATS -> {
             val title = GroupChats.readChat(chatId, userId = adminId).title.value
-            searchChats(adminId, title, usersPagination = pagination)[0]
+            searchChats(adminId, title, usersPagination = pagination).edges[0].node
         }
         GroupChatUsersOperationName.SEARCH_MESSAGES ->
             searchMessages(adminId, text, usersPagination = pagination).edges[0].node.chat

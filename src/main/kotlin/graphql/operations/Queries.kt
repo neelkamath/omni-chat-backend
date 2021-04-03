@@ -150,12 +150,12 @@ fun readChats(env: DataFetchingEnvironment): ChatsConnectionDto {
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
     val chats = GroupChatUsers.readChatIdList(env.userId!!).map { GroupChatDto(it, env.userId!!) } +
             PrivateChats.readUserChatIdList(env.userId!!).map(::PrivateChatDto)
-    return paginateReadChats(chats.toSet(), pagination)
+    return buildChatsConnection(chats.toSet(), pagination)
 }
 
 /** Builds the [ChatsConnectionDto] for [readChats]. */
 @Suppress("DuplicatedCode")
-private fun paginateReadChats(chats: Set<ChatDto>, pagination: ForwardPagination): ChatsConnectionDto {
+private fun buildChatsConnection(chats: Set<ChatDto>, pagination: ForwardPagination): ChatsConnectionDto {
     val sorted = chats.sortedBy { it.id }
     var edges = sorted
     if (pagination.after != null) edges = edges.filter { it.id > pagination.after }
@@ -222,9 +222,10 @@ fun searchChatMessages(env: DataFetchingEnvironment): SearchChatMessagesResult {
     return MessageEdges(edges)
 }
 
-fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
+fun searchChats(env: DataFetchingEnvironment): ChatsConnectionDto {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
     val groupChats = GroupChats
         .search(
             env.userId!!,
@@ -235,7 +236,7 @@ fun searchChats(env: DataFetchingEnvironment): List<ChatDto> {
         .map { GroupChatDto(it.id, env.userId!!) }
     val privateChats =
         PrivateChats.search(env.userId!!, query, BackwardPagination(last = 0)).map { PrivateChatDto(it.id) }
-    return groupChats + privateChats
+    return buildChatsConnection(groupChats.plus(privateChats).toSet(), pagination)
 }
 
 fun readStars(env: DataFetchingEnvironment): StarredMessagesConnection {
