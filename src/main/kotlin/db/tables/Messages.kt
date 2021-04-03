@@ -54,7 +54,103 @@ object Messages : IntIdTable() {
 
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
-    data class TypedMessage(val type: MessageType, val message: BareMessage)
+    data class RawMessage(
+        val type: MessageType,
+        val messageId: Int,
+        val sender: Account,
+        val state: MessageState,
+        val dateTimes: MessageDateTimes,
+        val context: MessageContext,
+        val isForwarded: Boolean,
+    ) {
+        fun toNewTextMessage(): NewTextMessage = NewTextMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+            TextMessages.read(messageId),
+        )
+
+        fun toNewActionMessage(): NewActionMessage = NewActionMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+            ActionMessages.read(messageId),
+        )
+
+        fun toNewAudioMessage(): NewAudioMessage = NewAudioMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
+            val chatId = readChatIdFromMessageId(messageId)
+            return NewGroupChatInviteMessage(
+                chatId,
+                messageId,
+                sender,
+                state,
+                dateTimes.sent,
+                context,
+                isForwarded,
+                GroupChats.readInviteCode(chatId),
+            )
+        }
+
+        fun toNewDocMessage(): NewDocMessage = NewDocMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewVideoMessage(): NewVideoMessage = NewVideoMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewPicMessage(): NewPicMessage = NewPicMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+            PicMessages.read(messageId).caption,
+        )
+
+        fun toNewPollMessage(): NewPollMessage = NewPollMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            dateTimes.sent,
+            context,
+            isForwarded,
+            PollMessages.read(messageId),
+        )
+    }
 
     private enum class Chronology { BEFORE, FROM }
 
@@ -345,7 +441,11 @@ object Messages : IntIdTable() {
         select(Messages.chatId eq chatId).orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
     }
 
-    /** Returns a concrete class for the [messageId] as seen by the [userId]. */
+    /**
+     * Returns a concrete class for the [messageId] as seen by the [userId].
+     *
+     * @see [readRawMessage]
+     */
     fun readMessage(userId: Int, messageId: Int): Message {
         val row = transaction { select(Messages.id eq messageId).first() }
         return buildMessage(row, userId)
@@ -355,11 +455,11 @@ object Messages : IntIdTable() {
      * Returns a concrete class as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readMessage]
-     * @see [readTypedMessage]
+     * @see [readRawMessage]
      */
     private fun buildMessage(row: ResultRow, userId: Int? = null): Message {
-        val (type, message) = readTypedMessage(row[id].value)
-        return when (type) {
+        val message = readRawMessage(row[id].value)
+        return when (message.type) {
             MessageType.TEXT -> TextMessage.build(message, userId)
             MessageType.ACTION -> ActionMessage.build(message, userId)
             MessageType.PIC -> PicMessage.build(message, userId)
@@ -372,18 +472,17 @@ object Messages : IntIdTable() {
     }
 
     /** @see [readMessage] */
-    fun readTypedMessage(messageId: Int): TypedMessage {
+    fun readRawMessage(messageId: Int): RawMessage {
         val row = transaction { select(Messages.id eq messageId).first() }
-        val message = object : BareMessage {
-            override val messageId: Int = messageId
-            override val sender: Account = Users.read(row[senderId]).toAccount()
-            override val state: MessageState = readState(messageId)
-            override val dateTimes: MessageDateTimes =
-                MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList())
-            override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
-            override val isForwarded: Boolean = row[this@Messages.isForwarded]
-        }
-        return TypedMessage(row[type], message)
+        return RawMessage(
+            row[type],
+            messageId,
+            Users.read(row[senderId]).toAccount(),
+            readState(messageId),
+            MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList()),
+            MessageContext(row[hasContext], row[contextMessageId]),
+            row[isForwarded],
+        )
     }
 
     private fun readState(messageId: Int): MessageState {

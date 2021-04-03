@@ -33,11 +33,23 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Paginate `Query.readChats`.
 - Paginate `Query.searchChats`.
 - Paginate `Query.searchPublicChats`.
+- Remove the `dateTimes` field, and add the `sent` field to the following:
+    - `interface NewMessage`
+    - `type NewTextMessage`
+    - `type NewActionMessage`
+    - `type NewPicMessage`
+    - `type NewPollMessage`
+    - `type NewAudioMessage`
+    - `type NewGroupChatInviteMessage`
+    - `type NewDocMessage`
+    - `type NewVideoMessage`
 
 ### Removed
 
 - Remove `Mutation.createContacts` in favor of `Mutation.createContact`.
 - Remove `Mutation.deleteContacts` in favor of `Mutation.deleteContact`.
+- `interface BareMessage`
+- `interface BareChatMessage`
 
 ### Fixed
 

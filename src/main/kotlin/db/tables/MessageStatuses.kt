@@ -65,9 +65,7 @@ object MessageStatuses : Table() {
         insertAndNotify(messageId, userId, status)
     }
 
-    /**
-     * Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier].
-     */
+    /** Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier]. */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transaction {
             insert {

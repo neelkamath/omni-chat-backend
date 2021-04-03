@@ -958,22 +958,13 @@ type MessageContext {
 
     If this message doesn't `hasContext`, this will be null. If this message `hasContext`, this will be null only if the
     context message was deleted. Since this message might not make any sense without the context, if this message
-    `hasContext`, but the context message was deleted, a frontend could replace what should've been the context message
-    with something similar to "Message deleted".
+    `hasContext`, but the context message was deleted, a frontend UI could replace what should've been the context
+    message with something similar to "Message deleted".
     """
     id: Int
 }
 
-interface BareMessage {
-    messageId: Int!
-    sender: Account!
-    state: MessageState!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-}
-
-interface Message implements BareMessage {
+interface Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -983,7 +974,7 @@ interface Message implements BareMessage {
     hasStar: Boolean!
 }
 
-type TextMessage implements BareMessage, Message {
+type TextMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -994,7 +985,7 @@ type TextMessage implements BareMessage, Message {
     textMessage: MessageText!
 }
 
-type ActionMessage implements BareMessage, Message {
+type ActionMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1005,7 +996,7 @@ type ActionMessage implements BareMessage, Message {
     actionableMessage: ActionableMessage!
 }
 
-type PicMessage implements BareMessage, Message {
+type PicMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1016,7 +1007,7 @@ type PicMessage implements BareMessage, Message {
     caption: MessageText
 }
 
-type PollMessage implements BareMessage, Message {
+type PollMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1027,7 +1018,7 @@ type PollMessage implements BareMessage, Message {
     poll: Poll!
 }
 
-type AudioMessage implements BareMessage, Message {
+type AudioMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1037,7 +1028,7 @@ type AudioMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
-type GroupChatInviteMessage implements BareMessage, Message {
+type GroupChatInviteMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1048,7 +1039,7 @@ type GroupChatInviteMessage implements BareMessage, Message {
     inviteCode: Uuid!
 }
 
-type DocMessage implements BareMessage, Message {
+type DocMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1058,7 +1049,7 @@ type DocMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
-type VideoMessage implements BareMessage, Message {
+type VideoMessage implements Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
@@ -1068,7 +1059,8 @@ type VideoMessage implements BareMessage, Message {
     hasStar: Boolean!
 }
 
-interface BareChatMessage implements BareMessage {
+"""A message which is starred by the user."""
+interface StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1078,18 +1070,7 @@ interface BareChatMessage implements BareMessage {
     isForwarded: Boolean!
 }
 
-"""The message which the user starred."""
-interface StarredMessage implements BareChatMessage, BareMessage {
-    chatId: Int!
-    messageId: Int!
-    sender: Account!
-    state: MessageState!
-    dateTimes: MessageDateTimes!
-    context: MessageContext!
-    isForwarded: Boolean!
-}
-
-type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredTextMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1100,7 +1081,7 @@ type StarredTextMessage implements StarredMessage, BareChatMessage, BareMessage 
     textMessage: MessageText!
 }
 
-type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredActionMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1111,7 +1092,7 @@ type StarredActionMessage implements StarredMessage, BareChatMessage, BareMessag
     actionableMessage: ActionableMessage!
 }
 
-type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredPicMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1122,7 +1103,7 @@ type StarredPicMessage implements StarredMessage, BareChatMessage, BareMessage {
     caption: MessageText
 }
 
-type StarredPollMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredPollMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1133,7 +1114,7 @@ type StarredPollMessage implements StarredMessage, BareChatMessage, BareMessage 
     poll: Poll!
 }
 
-type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredAudioMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1143,7 +1124,7 @@ type StarredAudioMessage implements StarredMessage, BareChatMessage, BareMessage
     isForwarded: Boolean!
 }
 
-type StarredGroupChatInviteMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredGroupChatInviteMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1154,7 +1135,7 @@ type StarredGroupChatInviteMessage implements StarredMessage, BareChatMessage, B
     inviteCode: Uuid!
 }
 
-type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredDocMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1164,7 +1145,7 @@ type StarredDocMessage implements StarredMessage, BareChatMessage, BareMessage {
     isForwarded: Boolean!
 }
 
-type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage {
+type StarredVideoMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1174,97 +1155,97 @@ type StarredVideoMessage implements StarredMessage, BareChatMessage, BareMessage
     isForwarded: Boolean!
 }
 
-interface NewMessage implements BareChatMessage, BareMessage {
+interface NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
 }
 
-type NewTextMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewTextMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
     textMessage: MessageText!
 }
 
-type NewActionMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewActionMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
     actionableMessage: ActionableMessage!
 }
 
-type NewPicMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewPicMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
     caption: MessageText
 }
 
-type NewPollMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewPollMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
     poll: Poll!
 }
 
-type NewAudioMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewAudioMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
 }
 
-type NewGroupChatInviteMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewGroupChatInviteMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
     inviteCode: Uuid!
 }
 
-type NewDocMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewDocMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
 }
 
-type NewVideoMessage implements NewMessage, BareChatMessage, BareMessage {
+type NewVideoMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
     state: MessageState!
-    dateTimes: MessageDateTimes!
+    sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1300,8 +1281,7 @@ enum MessageState {
 }
 
 enum MessageStatus {
-    DELIVERED
-    READ
+    DELIVERED, READ
 }
 
 enum GroupChatPublicity {

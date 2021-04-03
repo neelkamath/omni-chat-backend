@@ -89,7 +89,7 @@ class MessagesTest {
             val messageId = Messages.message(user1Id, chatId)
             if (state == MessageState.DELIVERED) MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
             if (state == MessageState.READ) MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
-            assertEquals(state, Messages.readTypedMessage(messageId).message.state)
+            assertEquals(state, Messages.readRawMessage(messageId).state)
         }
 
         @Test
@@ -117,7 +117,7 @@ class MessagesTest {
                 MessageState.READ ->
                     listOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
             }
-            assertEquals(state, Messages.readTypedMessage(messageId).message.state)
+            assertEquals(state, Messages.readRawMessage(messageId).state)
         }
 
         @Test
@@ -137,7 +137,7 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertEquals(MessageState.READ, Messages.readTypedMessage(messageId).message.state)
+            assertEquals(MessageState.READ, Messages.readRawMessage(messageId).state)
         }
     }
 
@@ -317,11 +317,11 @@ class MessagesTest {
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
             val (adminSubscriber, user1Subscriber, user2Subscriber) =
                 listOf(adminId, user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
-            repeat(3) { Messages.create(listOf(adminId, user1Id, user2Id).random(), chatId) }
+            val messageIdList = (1..3).map { Messages.message(listOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
             mapOf(adminId to adminSubscriber, user1Id to user1Subscriber, user2Id to user2Subscriber)
-                .forEach { (userId, subscriber) ->
-                    val updates = Messages.readGroupChat(chatId, userId = userId).map { it.node.toNewTextMessage() }
+                .forEach { (_, subscriber) ->
+                    val updates = messageIdList.map { NewMessage.build(it) as NewTextMessage }
                     subscriber.assertValueSequence(updates)
                 }
         }
@@ -336,7 +336,7 @@ class MessagesTest {
                 val subscriber = messagesNotifier.subscribe(user1Id).subscribeWith(TestSubscriber())
                 val messageId = Messages.message(user2Id, chatId)
                 awaitBrokering()
-                Messages.readMessage(user1Id, messageId).toNewTextMessage().let(subscriber::assertValue)
+                subscriber.assertValue(NewMessage.build(messageId) as NewTextMessage)
             }
         }
 

@@ -45,7 +45,7 @@ object ActionMessages : IntIdTable() {
      * [messageId] via [messagesNotifier].
      */
     fun trigger(userId: Int, messageId: Int, action: MessageText) {
-        val creatorId = Messages.readTypedMessage(messageId).message.sender.id
+        val creatorId = Messages.readMessage(userId, messageId).sender.id
         val account = Users.read(userId).toAccount()
         messagesNotifier.publish(creatorId to TriggeredAction(messageId, action, account))
     }

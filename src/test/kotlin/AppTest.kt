@@ -31,9 +31,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(AccountsSubscriptionDeserializer)
     .register(GroupChatsSubscriptionDeserializer)
     .register(AccountDataDeserializer)
-    .register(BareMessageDeserializer)
     .register(MessageDeserializer)
-    .register(BareChatMessageDeserializer)
     .register(StarredMessageDeserializer)
     .register(NewMessageDeserializer)
     .register(UsernameDeserializer, UsernameSerializer)
@@ -98,40 +96,6 @@ private object AccountDataDeserializer : JsonDeserializer<AccountData>() {
     }
 }
 
-private object BareMessageDeserializer : JsonDeserializer<BareMessage>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): BareMessage {
-        val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz = when (val type = node["__typename"].asText()) {
-            "TextMessage" -> TextMessage::class
-            "ActionMessage" -> ActionMessage::class
-            "PicMessage" -> PicMessage::class
-            "PollMessage" -> PollMessage::class
-            "AudioMessage" -> AudioMessage::class
-            "GroupChatInviteMessage" -> GroupChatInviteMessage::class
-            "DocMessage" -> DocMessage::class
-            "VideoMessage" -> VideoMessage::class
-            "StarredTextMessage" -> StarredTextMessage::class
-            "StarredActionMessage" -> StarredActionMessage::class
-            "StarredPicMessage" -> StarredPicMessage::class
-            "StarredPollMessage" -> StarredPollMessage::class
-            "StarredAudioMessage" -> StarredAudioMessage::class
-            "StarredGroupChatInviteMessage" -> StarredGroupChatInviteMessage::class
-            "StarredDocMessage" -> StarredDocMessage::class
-            "StarredVideoMessage" -> StarredVideoMessage::class
-            "NewTextMessage" -> NewTextMessage::class
-            "NewActionMessage" -> NewActionMessage::class
-            "NewPicMessage" -> NewPicMessage::class
-            "NewPollMessage" -> NewPollMessage::class
-            "NewAudioMessage" -> NewAudioMessage::class
-            "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
-            "NewDocMessage" -> NewDocMessage::class
-            "NewVideoMessage" -> NewVideoMessage::class
-            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
-        }
-        return parser.codec.treeToValue(node, clazz.java)
-    }
-}
-
 private object BareGroupChatDeserializer : JsonDeserializer<BareGroupChat>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): BareGroupChat {
         val node = parser.codec.readTree<JsonNode>(parser)
@@ -168,32 +132,6 @@ private object TypingStatusesSubscriptionDeserializer : JsonDeserializer<TypingS
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
             "TypingStatus" -> TypingStatus::class
-            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
-        }
-        return parser.codec.treeToValue(node, clazz.java)
-    }
-}
-
-private object BareChatMessageDeserializer : JsonDeserializer<BareChatMessage>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): BareChatMessage {
-        val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz = when (val type = node["__typename"].asText()) {
-            "StarredTextMessage" -> StarredTextMessage::class
-            "StarredActionMessage" -> StarredActionMessage::class
-            "StarredPicMessage" -> StarredPicMessage::class
-            "StarredPollMessage" -> StarredPollMessage::class
-            "StarredAudioMessage" -> StarredAudioMessage::class
-            "StarredGroupChatInviteMessage" -> StarredGroupChatInviteMessage::class
-            "StarredDocMessage" -> StarredDocMessage::class
-            "StarredVideoMessage" -> StarredVideoMessage::class
-            "NewTextMessage" -> NewTextMessage::class
-            "NewActionMessage" -> NewActionMessage::class
-            "NewPicMessage" -> NewPicMessage::class
-            "NewPollMessage" -> NewPollMessage::class
-            "NewAudioMessage" -> NewAudioMessage::class
-            "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
-            "NewDocMessage" -> NewDocMessage::class
-            "NewVideoMessage" -> NewVideoMessage::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

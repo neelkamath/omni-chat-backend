@@ -244,103 +244,6 @@ data class MessageContext(val hasContext: Boolean, val id: Int?)
 
 enum class GroupChatPublicity { NOT_INVITABLE, INVITABLE, PUBLIC }
 
-interface BareMessage {
-    val messageId: Int
-    val sender: Account
-    val state: MessageState
-    val dateTimes: MessageDateTimes
-    val context: MessageContext
-    val isForwarded: Boolean
-
-    fun toNewTextMessage(): NewTextMessage = NewTextMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-        TextMessages.read(messageId),
-    )
-
-    fun toNewActionMessage(): NewActionMessage = NewActionMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-        ActionMessages.read(messageId),
-    )
-
-    fun toNewAudioMessage(): NewAudioMessage = NewAudioMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-    )
-
-    fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
-        val chatId = Messages.readChatIdFromMessageId(messageId)
-        return NewGroupChatInviteMessage(
-            chatId,
-            messageId,
-            sender,
-            state,
-            dateTimes,
-            context,
-            isForwarded,
-            GroupChats.readInviteCode(chatId),
-        )
-    }
-
-    fun toNewDocMessage(): NewDocMessage = NewDocMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-    )
-
-    fun toNewVideoMessage(): NewVideoMessage = NewVideoMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-    )
-
-    fun toNewPicMessage(): NewPicMessage = NewPicMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-        PicMessages.read(messageId).caption,
-    )
-
-    fun toNewPollMessage(): NewPollMessage = NewPollMessage(
-        Messages.readChatIdFromMessageId(messageId),
-        messageId,
-        sender,
-        state,
-        dateTimes,
-        context,
-        isForwarded,
-        PollMessages.read(messageId),
-    )
-}
-
 interface AccountsSubscription
 
 data class NewContact(
@@ -573,23 +476,13 @@ data class MessageEdge(val node: Message, val cursor: Cursor)
 
 data class UnstarredChat(val id: Int) : MessagesSubscription
 
-interface BareChatMessage : BareMessage {
-    val chatId: Int
-    override val messageId: Int
-    override val sender: Account
-    override val state: MessageState
-    override val dateTimes: MessageDateTimes
-    override val context: MessageContext
-    override val isForwarded: Boolean
-}
-
-interface Message : BareMessage {
-    override val messageId: Int
-    override val sender: Account
-    override val state: MessageState
-    override val dateTimes: MessageDateTimes
-    override val context: MessageContext
-    override val isForwarded: Boolean
+interface Message {
+    val messageId: Int
+    val sender: Account
+    val state: MessageState
+    val dateTimes: MessageDateTimes
+    val context: MessageContext
+    val isForwarded: Boolean
     val hasStar: Boolean
 
     fun toUpdatedMessage(): UpdatedMessage =
@@ -693,10 +586,10 @@ data class TextMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val textMessage: MessageText,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): TextMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): TextMessage = with(message) {
             TextMessage(
                 messageId,
                 sender,
@@ -720,10 +613,10 @@ data class ActionMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val actionableMessage: ActionableMessage,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): ActionMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): ActionMessage = with(message) {
             ActionMessage(
                 messageId,
                 sender,
@@ -747,10 +640,10 @@ data class PicMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val caption: MessageText?,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): PicMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): PicMessage = with(message) {
             PicMessage(
                 messageId,
                 sender,
@@ -773,10 +666,10 @@ data class AudioMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): AudioMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): AudioMessage = with(message) {
             AudioMessage(
                 messageId,
                 sender,
@@ -799,10 +692,10 @@ data class GroupChatInviteMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val inviteCode: UUID,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): GroupChatInviteMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): GroupChatInviteMessage = with(message) {
             GroupChatInviteMessage(
                 messageId,
                 sender,
@@ -825,10 +718,10 @@ data class DocMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): DocMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): DocMessage = with(message) {
             DocMessage(
                 messageId,
                 sender,
@@ -850,10 +743,10 @@ data class VideoMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): VideoMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): VideoMessage = with(message) {
             VideoMessage(
                 messageId,
                 sender,
@@ -876,10 +769,10 @@ data class PollMessage(
     override val isForwarded: Boolean,
     override val hasStar: Boolean,
     val poll: Poll,
-) : BareMessage, Message {
+) : Message {
     companion object {
         /** Builds the message as seen by the [userId]. */
-        fun build(message: BareMessage, userId: Int? = null): PollMessage = with(message) {
+        fun build(message: Messages.RawMessage, userId: Int? = null): PollMessage = with(message) {
             PollMessage(
                 messageId,
                 sender,
@@ -894,14 +787,14 @@ data class PollMessage(
     }
 }
 
-interface StarredMessage : BareChatMessage, BareMessage {
-    override val chatId: Int
-    override val messageId: Int
-    override val sender: Account
-    override val state: MessageState
-    override val dateTimes: MessageDateTimes
-    override val context: MessageContext
-    override val isForwarded: Boolean
+interface StarredMessage {
+    val chatId: Int
+    val messageId: Int
+    val sender: Account
+    val state: MessageState
+    val dateTimes: MessageDateTimes
+    val context: MessageContext
+    val isForwarded: Boolean
 
     companion object {
         /** Returns a concrete class for the [messageId] as seen by the [userId]. */
@@ -929,7 +822,7 @@ data class StarredTextMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val textMessage: MessageText,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredActionMessage(
     override val chatId: Int,
@@ -940,7 +833,7 @@ data class StarredActionMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val actionableMessage: ActionableMessage,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredPicMessage(
     override val chatId: Int,
@@ -951,7 +844,7 @@ data class StarredPicMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val caption: MessageText?,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredPollMessage(
     override val chatId: Int,
@@ -962,7 +855,7 @@ data class StarredPollMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val poll: Poll,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredAudioMessage(
     override val chatId: Int,
@@ -972,7 +865,7 @@ data class StarredAudioMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredGroupChatInviteMessage(
     override val chatId: Int,
@@ -983,7 +876,7 @@ data class StarredGroupChatInviteMessage(
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val inviteCode: UUID,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredDocMessage(
     override val chatId: Int,
@@ -993,7 +886,7 @@ data class StarredDocMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 data class StarredVideoMessage(
     override val chatId: Int,
@@ -1003,24 +896,24 @@ data class StarredVideoMessage(
     override val dateTimes: MessageDateTimes,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : StarredMessage, BareChatMessage, BareMessage
+) : StarredMessage
 
 interface MessagesSubscription
 
-interface NewMessage : BareChatMessage, BareMessage {
-    override val chatId: Int
-    override val messageId: Int
-    override val sender: Account
-    override val state: MessageState
-    override val dateTimes: MessageDateTimes
-    override val context: MessageContext
-    override val isForwarded: Boolean
+interface NewMessage {
+    val chatId: Int
+    val messageId: Int
+    val sender: Account
+    val state: MessageState
+    val sent: LocalDateTime
+    val context: MessageContext
+    val isForwarded: Boolean
 
     companion object {
         /** Returns a concrete class for the [messageId]. */
         fun build(messageId: Int): NewMessage {
-            val (type, message) = Messages.readTypedMessage(messageId)
-            return when (type) {
+            val message = Messages.readRawMessage(messageId)
+            return when (message.type) {
                 MessageType.TEXT -> message.toNewTextMessage()
                 MessageType.ACTION -> message.toNewActionMessage()
                 MessageType.PIC -> message.toNewPicMessage()
@@ -1039,85 +932,85 @@ data class NewTextMessage(
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val textMessage: MessageText,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewActionMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val actionableMessage: ActionableMessage,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewPicMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val caption: MessageText?,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewPollMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val poll: Poll,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewAudioMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewGroupChatInviteMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
     val inviteCode: UUID,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewDocMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class NewVideoMessage(
     override val chatId: Int,
     override val messageId: Int,
     override val sender: Account,
     override val state: MessageState,
-    override val dateTimes: MessageDateTimes,
+    override val sent: LocalDateTime,
     override val context: MessageContext,
     override val isForwarded: Boolean,
-) : NewMessage, BareChatMessage, BareMessage, MessagesSubscription
+) : NewMessage, MessagesSubscription
 
 data class UpdatedMessage(
     val chatId: Int,
