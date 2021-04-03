@@ -129,7 +129,7 @@ type Query {
     searchChats(query: String!, first: Int, after: Cursor): ChatsConnection!
 
     """Searches chats by case-insensitively `query`ing their titles."""
-    searchPublicChats(query: String!): [GroupChat!]!
+    searchPublicChats(query: String!, first: Int, after: Cursor): GroupChatsConnection!
 
     """
     Retrieves saved contacts.
@@ -773,6 +773,16 @@ type ActionableMessage {
     text: MessageText!
     """There's at least one action. Each action is unique."""
     actions: [MessageText!]!
+}
+
+type GroupChatsConnection {
+    edges: [GroupChatEdge!]!
+    pageInfo: PageInfo!
+}
+
+type GroupChatEdge {
+    node: GroupChat!
+    cursor: Cursor!
 }
 
 type ChatsConnection {

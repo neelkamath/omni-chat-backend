@@ -563,6 +563,10 @@ data class GroupChat(
     val inviteCode: UUID?
 ) : Chat, BareGroupChat, ReadChatResult
 
+data class GroupChatsConnection(val edges: List<GroupChatEdge>, val pageInfo: PageInfo)
+
+data class GroupChatEdge(val node: GroupChat, val cursor: Cursor)
+
 data class MessagesConnection(val edges: List<MessageEdge>, val pageInfo: PageInfo)
 
 data class MessageEdge(val node: Message, val cursor: Cursor)

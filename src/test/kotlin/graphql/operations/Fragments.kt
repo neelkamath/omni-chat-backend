@@ -973,3 +973,25 @@ const val CHATS_CONNECTION_FRAGMENT = """
         }
     }
 """
+
+const val GROUP_CHAT_EDGE_FRAGMENT = """
+    ... on GroupChatEdge {
+        __typename
+        node {
+            $GROUP_CHAT_FRAGMENT
+        }
+        cursor
+    }
+"""
+
+const val GROUP_CHATS_CONNECTION_FRAGMENT = """
+    ... on GroupChatsConnection {
+        __typename
+        edges {
+            $GROUP_CHAT_EDGE_FRAGMENT
+        }
+        pageInfo {
+            $PAGE_INFO_FRAGMENT
+        }
+    }
+"""

@@ -68,26 +68,31 @@ fun readBlockedUsers(userId: Int, pagination: ForwardPagination? = null): Accoun
 const val SEARCH_PUBLIC_CHATS_QUERY = """
     query SearchPublicChats(
         ${"$"}query: String!
+        ${"$"}first: Int
+        ${"$"}after: Cursor
         ${"$"}groupChat_users_first: Int
         ${"$"}groupChat_users_after: Cursor
         ${"$"}groupChat_messages_last: Int
         ${"$"}groupChat_messages_before: Cursor
     ) {
-        searchPublicChats(query: ${"$"}query) {
-            $GROUP_CHAT_FRAGMENT
+        searchPublicChats(query: ${"$"}query, first: ${"$"}first, after: ${"$"}after) {
+            $GROUP_CHATS_CONNECTION_FRAGMENT
         }
     }
 """
 
 fun searchPublicChats(
     query: String,
+    pagination: ForwardPagination? = null,
     usersPagination: ForwardPagination? = null,
     messagesPagination: BackwardPagination? = null,
-): List<GroupChat> {
+): GroupChatsConnection {
     val data = executeGraphQlViaEngine(
         SEARCH_PUBLIC_CHATS_QUERY,
         mapOf(
             "query" to query,
+            "first" to pagination?.first,
+            "after" to pagination?.after?.toString(),
             "groupChat_users_first" to usersPagination?.first,
             "groupChat_users_after" to usersPagination?.after?.toString(),
             "groupChat_messages_last" to messagesPagination?.last,
@@ -558,7 +563,18 @@ class QueriesTest {
             val chatId = GroupChats
                 .create(listOf(adminId), title = GroupChatTitle("Kotlin/JS"), publicity = GroupChatPublicity.PUBLIC)
             GroupChats.create(listOf(adminId), title = GroupChatTitle("Gaming"), publicity = GroupChatPublicity.PUBLIC)
-            assertEquals(listOf(chatId), searchPublicChats("kotlin").map { it.id })
+            assertEquals(listOf(chatId), searchPublicChats("kotlin").edges.map { it.node.id })
+        }
+
+        @Test
+        fun `Chats must be paginated`() {
+            val adminId = createVerifiedUsers(1).first().info.id
+            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC) }
+            val first = 3
+            val index = 5
+            val pagination = ForwardPagination(first, after = chatIdList.elementAt(index))
+            val actual = searchPublicChats(query = "", pagination).edges.map { it.node.id }
+            assertEquals(chatIdList.slice(index + 1..index + first), actual)
         }
     }
 
@@ -1049,7 +1065,7 @@ class QueriesTest {
     }
 
     @Nested
-    inner class PaginateSearchMessages {
+    inner class BuildChatMessagesConnection {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
             val (adminId, chatIdList) = createSearchableChats()

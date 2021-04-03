@@ -112,11 +112,15 @@ class GroupChatInfoDto(private val inviteCode: UUID) : ReadGroupChatResult {
         GroupChats.readChatInfo(inviteCode, ForwardPagination(env.getArgument("first"), env.getArgument("after"))).users
 }
 
-data class ChatMessagesDtoConnection(val edges: List<ChatMessagesEdgeDto>, val pageInfo: PageInfo)
+data class ChatMessagesConnectionDto(val edges: List<ChatMessagesEdgeDto>, val pageInfo: PageInfo)
 
 data class ChatsConnectionDto(val edges: List<ChatEdgeDto>, val pageInfo: PageInfo)
 
 data class ChatEdgeDto(val node: ChatDto, val cursor: Cursor)
+
+data class GroupChatsConnectionDto(val edges: List<GroupChatEdgeDto>, val pageInfo: PageInfo)
+
+data class GroupChatEdgeDto(val node: GroupChatDto, val cursor: Cursor)
 
 fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     val userId = env.getArgument<Int>("userId")
@@ -176,6 +180,12 @@ private fun buildChatsConnection(chats: Set<ChatDto>, pagination: ForwardPaginat
     }
     val pageInfo = PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
     return ChatsConnectionDto(edges.map { ChatEdgeDto(node = it, cursor = it.id) }, pageInfo)
+}
+
+private fun buildGroupChatsConnection(chats: Set<ChatDto>, pagination: ForwardPagination): GroupChatsConnectionDto {
+    val (chatEdges, pageInfo) = buildChatsConnection(chats.toSet(), pagination)
+    val edges = chatEdges.map { GroupChatEdgeDto(it.node as GroupChatDto, it.cursor) }
+    return GroupChatsConnectionDto(edges, pageInfo)
 }
 
 fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
@@ -251,7 +261,7 @@ fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
     return Contacts.search(env.userId!!, env.getArgument("query"), pagination)
 }
 
-fun searchMessages(env: DataFetchingEnvironment): ChatMessagesDtoConnection {
+fun searchMessages(env: DataFetchingEnvironment): ChatMessagesConnectionDto {
     env.verifyAuth()
     val query = env.getArgument<String>("query")
     val groupChats = GroupChats
@@ -261,14 +271,14 @@ fun searchMessages(env: DataFetchingEnvironment): ChatMessagesDtoConnection {
         .queryUserChatEdges(env.userId!!, query)
         .map { ChatMessagesEdgeDto(PrivateChatDto(it.chatId), it.edges.toList()) }
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    return paginateSearchMessages(groupChats.plus(privateChats).toSet(), pagination)
+    return buildChatMessagesConnection(groupChats.plus(privateChats).toSet(), pagination)
 }
 
 @Suppress("DuplicatedCode")
-private fun paginateSearchMessages(
+private fun buildChatMessagesConnection(
     chats: Set<ChatMessagesEdgeDto>,
     pagination: ForwardPagination,
-): ChatMessagesDtoConnection {
+): ChatMessagesConnectionDto {
     val sorted = chats.sortedBy { it.node.chat.id }
     var edges = sorted
     if (pagination.after != null) edges = edges.filter { it.cursor > pagination.after }
@@ -287,7 +297,7 @@ private fun paginateSearchMessages(
         pagination.after == null -> false
         else -> pagination.after > startCursor
     }
-    return ChatMessagesDtoConnection(edges, PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor))
+    return ChatMessagesConnectionDto(edges, PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor))
 }
 
 fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
@@ -314,11 +324,13 @@ fun readGroupChat(env: DataFetchingEnvironment): ReadGroupChatResult {
     return if (GroupChats.isExistentInviteCode(inviteCode)) GroupChatInfoDto(inviteCode) else InvalidInviteCode
 }
 
-fun searchPublicChats(env: DataFetchingEnvironment): List<GroupChatDto> {
+fun searchPublicChats(env: DataFetchingEnvironment): GroupChatsConnectionDto {
     val query = env.getArgument<String>("query")
-    return GroupChats.searchPublicChats(
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    val chats = GroupChats.searchPublicChats(
         query,
         usersPagination = ForwardPagination(first = 0),
         messagesPagination = BackwardPagination(last = 0),
     ).map { GroupChatDto(it.id) }
+    return buildGroupChatsConnection(chats.toSet(), pagination)
 }
