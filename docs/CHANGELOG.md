@@ -43,6 +43,25 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type NewGroupChatInviteMessage`
     - `type NewDocMessage`
     - `type NewVideoMessage`
+- Remove the `dateTimes` field, and add the `sent` and `statuses` fields to the following:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
 
 ### Removed
 
@@ -50,6 +69,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Remove `Mutation.deleteContacts` in favor of `Mutation.deleteContact`.
 - `interface BareMessage`
 - `interface BareChatMessage`
+- `type MessageDateTimes`
 
 ### Fixed
 

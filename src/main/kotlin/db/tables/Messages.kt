@@ -59,7 +59,8 @@ object Messages : IntIdTable() {
         val messageId: Int,
         val sender: Account,
         val state: MessageState,
-        val dateTimes: MessageDateTimes,
+        val sent: LocalDateTime,
+        val statuses: List<MessageDateTimeStatus>,
         val context: MessageContext,
         val isForwarded: Boolean,
     ) {
@@ -68,7 +69,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
             TextMessages.read(messageId),
@@ -79,7 +80,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
             ActionMessages.read(messageId),
@@ -90,7 +91,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
         )
@@ -102,7 +103,7 @@ object Messages : IntIdTable() {
                 messageId,
                 sender,
                 state,
-                dateTimes.sent,
+                sent,
                 context,
                 isForwarded,
                 GroupChats.readInviteCode(chatId),
@@ -114,7 +115,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
         )
@@ -124,7 +125,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
         )
@@ -134,7 +135,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
             PicMessages.read(messageId).caption,
@@ -145,7 +146,7 @@ object Messages : IntIdTable() {
             messageId,
             sender,
             state,
-            dateTimes.sent,
+            sent,
             context,
             isForwarded,
             PollMessages.read(messageId),
@@ -479,7 +480,8 @@ object Messages : IntIdTable() {
             messageId,
             Users.read(row[senderId]).toAccount(),
             readState(messageId),
-            MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList()),
+            row[sent],
+            MessageStatuses.read(messageId).toList(),
             MessageContext(row[hasContext], row[contextMessageId]),
             row[isForwarded],
         )
@@ -680,6 +682,6 @@ object Messages : IntIdTable() {
         if (!isUserInChat(userId, chatId)) return false
         if (chatId in GroupChatUsers.readChatIdList(userId)) return true
         val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return true
-        return readMessage(userId, messageId).dateTimes.sent >= deletion
+        return readMessage(userId, messageId).sent >= deletion
     }
 }

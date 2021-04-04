@@ -244,16 +244,6 @@ const val MESSAGE_DATE_TIME_STATUS_FRAGMENT = """
     }
 """
 
-const val MESSAGE_DATE_TIMES_FRAGMENT = """
-    ... on MessageDateTimes {
-        __typename
-        sent
-        statuses {
-            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
-        }
-    }
-"""
-
 const val TEXT_MESSAGE_FRAGMENT = """
     ... on TextMessage {
         __typename
@@ -262,8 +252,9 @@ const val TEXT_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -282,8 +273,9 @@ const val AUDIO_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -301,8 +293,9 @@ const val GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -335,8 +328,9 @@ const val DOC_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -354,8 +348,9 @@ const val VIDEO_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -373,8 +368,9 @@ const val PIC_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -393,8 +389,9 @@ const val POLL_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -423,8 +420,9 @@ const val ACTION_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -602,8 +600,9 @@ const val STARRED_TEXT_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -622,8 +621,9 @@ const val STARRED_PIC_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -642,8 +642,9 @@ const val STARRED_AUDIO_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -661,8 +662,9 @@ const val STARRED_GROUP_CHAT_INVITE_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -681,8 +683,9 @@ const val STARRED_DOC_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -700,8 +703,9 @@ const val STARRED_VIDEO_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -719,8 +723,9 @@ const val STARRED_POLL_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
@@ -741,8 +746,9 @@ const val STARRED_ACTION_MESSAGE_FRAGMENT = """
             $ACCOUNT_FRAGMENT
         }
         state
-        dateTimes {
-            $MESSAGE_DATE_TIMES_FRAGMENT
+        sent
+        statuses {
+            $MESSAGE_DATE_TIME_STATUS_FRAGMENT
         }
         context {
             $MESSAGE_CONTEXT_FRAGMENT
