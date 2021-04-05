@@ -271,14 +271,13 @@ object Messages : IntIdTable() {
         isForwarded: Boolean = false,
         creator: (messageId: Int) -> Unit,
     ) {
-        if (!isUserInChat(userId, chatId))
-            throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
-        if (isInvalidBroadcast(userId, chatId))
-            throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
-        if (contextMessageId != null && contextMessageId !in readIdList(chatId))
-            throw IllegalArgumentException(
-                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId).",
-            )
+        require(isUserInChat(userId, chatId)) { "The user (ID: $userId) isn't in the chat (ID: $chatId)." }
+        require(!isInvalidBroadcast(userId, chatId)) {
+            "The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId)."
+        }
+        require(contextMessageId == null || contextMessageId in readIdList(chatId)) {
+            "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+        }
         val row = transaction {
             insert {
                 it[this.chatId] = chatId

@@ -120,13 +120,11 @@ fun readChatSharers(userId: Int): Set<Int> =
  * - The [userId] will be [Notifier.unsubscribe]d via [typingStatusesNotifier].
  */
 fun deleteUser(userId: Int) {
-    if (!GroupChatUsers.canUserLeave(userId))
-        throw IllegalArgumentException(
-            """
-            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
-            users.
-            """,
-        )
+    require(GroupChatUsers.canUserLeave(userId)) {
+        """
+        The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
+        """
+    }
     accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwners(userId) + readChatSharers(userId))
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)

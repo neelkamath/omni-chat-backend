@@ -15,15 +15,13 @@ typealias Cursor = Int
  */
 data class Username(val value: String) {
     init {
-        if (value.contains(Regex("""[^a-z0-9._]""")))
-            throw IllegalArgumentException(
-                """
-                The username ("$value") must only contain lowercase English letters, English numbers, periods, and 
-                underscores.
-                """.trimIndent()
-            )
-        if (value.length !in 1..30)
-            throw IllegalArgumentException("The username ($value) must be 1-${Users.MAX_NAME_LENGTH} characters long.")
+        require(!value.contains(Regex("""[^a-z0-9._]"""))) {
+            """
+            The username ("$value") must only contain lowercase English letters, English numbers, periods, and 
+            underscores.
+            """
+        }
+        require(value.length in 1..30) { "The username ($value) must be 1-${Users.MAX_NAME_LENGTH} characters long." }
     }
 }
 
@@ -35,10 +33,10 @@ data class DeletedAccount(val id: Int) : AccountsSubscription
  */
 data class Name(val value: String) {
     init {
-        if (value.contains(Regex("""\s""")))
-            throw IllegalArgumentException("""The name ("$value") cannot contain whitespace.""")
-        if (value.length > Users.MAX_NAME_LENGTH)
-            throw IllegalArgumentException("The name ($value) mustn't exceed ${Users.MAX_NAME_LENGTH} characters.")
+        require(!value.contains(Regex("""\s"""))) { """The name ("$value") cannot contain whitespace.""" }
+        require(value.length <= Users.MAX_NAME_LENGTH) {
+            "The name ($value) mustn't exceed ${Users.MAX_NAME_LENGTH} characters."
+        }
     }
 }
 
@@ -48,10 +46,8 @@ data class Name(val value: String) {
  */
 data class Bio(val value: String) {
     init {
-        if (value.length > MAX_LENGTH)
-            throw IllegalArgumentException("The value ($value) cannot exceed $MAX_LENGTH characters.")
-        if (value.trim() != value)
-            throw IllegalArgumentException("The value ($value) can neither contain leading nor trailing whitespace.")
+        require(value.length <= MAX_LENGTH) { "The value ($value) cannot exceed $MAX_LENGTH characters." }
+        require(value.trim() == value) { "The value ($value) can neither contain leading nor trailing whitespace." }
     }
 
     companion object {
@@ -62,7 +58,7 @@ data class Bio(val value: String) {
 /** An [IllegalArgumentException] will be thrown if the [value] doesn't contain non-whitespace characters. */
 data class Password(val value: String) {
     init {
-        if (value.trim().isEmpty()) throw IllegalArgumentException("""The password ("$value") mustn't be empty.""")
+        require(value.trim().isNotEmpty()) { """The password ("$value") mustn't be empty.""" }
     }
 }
 
@@ -296,11 +292,10 @@ data class GroupChatInput(
     val publicity: GroupChatPublicity,
 ) {
     init {
-        if (adminIdList.isEmpty()) throw IllegalArgumentException("There must be at least one admin.")
-        if (!userIdList.containsAll(adminIdList))
-            throw IllegalArgumentException(
-                "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList).",
-            )
+        require(adminIdList.isNotEmpty()) { "There must be at least one admin." }
+        require(userIdList.containsAll(adminIdList)) {
+            "The admin ID list ($adminIdList) must be a subset of the user ID list ($userIdList)."
+        }
     }
 }
 
@@ -310,12 +305,10 @@ data class GroupChatInput(
  */
 data class MessageText(val value: String) {
     init {
-        if (value.trim().isEmpty() || value.length > MAX_LENGTH)
-            throw IllegalArgumentException(
-                "The text must be 1-$MAX_LENGTH characters, with at least one non-whitespace.",
-            )
-        if (value.trim() != value)
-            throw IllegalArgumentException("The value ($value) mustn't contain leading or trailing whitespace.")
+        require(value.trim().isNotEmpty() && value.length <= MAX_LENGTH) {
+            "The text must be 1-$MAX_LENGTH characters, with at least one non-whitespace."
+        }
+        require(value.trim() == value) { "The value ($value) mustn't contain leading or trailing whitespace." }
     }
 
     companion object {
@@ -330,15 +323,10 @@ data class MessageText(val value: String) {
  */
 data class GroupChatTitle(val value: String) {
     init {
-        if (value.trim().isEmpty() || value.length > MAX_LENGTH)
-            throw IllegalArgumentException(
-                """
-                The title ("$value") must be 1-$MAX_LENGTH characters, with at least one 
-                non-whitespace character.
-                """.trimIndent(),
-            )
-        if (value.trim() != value)
-            throw IllegalArgumentException("The value ($value) cannot contain leading or trailing whitespace.")
+        require(value.trim().isNotEmpty() && value.length <= MAX_LENGTH) {
+            """The title ("$value") must be 1-$MAX_LENGTH characters, with at least one non-whitespace character."""
+        }
+        require(value.trim() == value) { "The value ($value) cannot contain leading or trailing whitespace." }
     }
 
     companion object {
@@ -352,10 +340,8 @@ data class GroupChatTitle(val value: String) {
  */
 data class GroupChatDescription(val value: String) {
     init {
-        if (value.length > MAX_LENGTH)
-            throw IllegalArgumentException("""The description ("$value") must be at most $MAX_LENGTH characters""")
-        if (value.trim() != value)
-            throw IllegalArgumentException("The value ($value) mustn't contain leading or trailing whitespace.")
+        require(value.length <= MAX_LENGTH) { """The description ("$value") must be at most $MAX_LENGTH characters""" }
+        require(value.trim() == value) { "The value ($value) mustn't contain leading or trailing whitespace." }
     }
 
     companion object {
@@ -395,10 +381,9 @@ data class UpdatedGroupChat(
     init {
         if (newUsers != null && removedUsers != null) {
             val intersection = newUsers.intersect(removedUsers)
-            if (intersection.isNotEmpty())
-                throw IllegalArgumentException(
-                    "The list of new and removed users must be distinct. Users in both lists: $intersection.",
-                )
+            require(intersection.isEmpty()) {
+                "The list of new and removed users must be distinct. Users in both lists: $intersection."
+            }
         }
     }
 }
@@ -1141,8 +1126,8 @@ data class PageInfo(
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
 private fun <T> validateOptions(options: Collection<T>) {
-    if (options.size < 2) throw IllegalArgumentException("There must be at least two options: $options.")
-    if (options.toSet().size != options.size) throw IllegalArgumentException("Options must be unique: $options.")
+    require(options.size > 1) { "There must be at least two options: $options." }
+    require(options.toSet().size == options.size) { "Options must be unique: $options." }
 }
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */

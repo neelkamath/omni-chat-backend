@@ -36,8 +36,7 @@ object PrivateChatDeletions : IntIdTable() {
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: Int) {
-        if (!isUserInChat(userId, chatId))
-            throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
+        require(isUserInChat(userId, chatId)) { "The user (ID: $userId) isn't in the chat (ID: $chatId)." }
         insert(chatId, userId)
         Stargazers.deleteUserChat(userId, chatId)
         deleteUnusedChatData(chatId, userId)

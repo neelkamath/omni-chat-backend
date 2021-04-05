@@ -45,20 +45,18 @@ object MessageStatuses : Table() {
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
      */
     fun create(userId: Int, messageId: Int, status: MessageStatus) {
-        if (!Messages.isVisible(userId, messageId))
-            throw IllegalArgumentException(
-                """
-                The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted
-                the chat.
-                """.trimIndent(),
-            )
-        if (Messages.readMessage(userId, messageId).sender.id == userId)
-            throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
-        if (isExisting(messageId, userId, status)) {
+        require(Messages.isVisible(userId, messageId)) {
+            """
+            The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted the
+            chat.
+            """
+        }
+        require(Messages.readMessage(userId, messageId).sender.id != userId) {
+            "You cannot save a status for the user (ID: $userId) on their own message."
+        }
+        require(!isExisting(messageId, userId, status)) {
             val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
-            throw IllegalArgumentException(
-                "The message (ID: $messageId) has already been $text the user (ID: $userId).",
-            )
+            "The message (ID: $messageId) has already been $text the user (ID: $userId)."
         }
         if (status == MessageStatus.READ && !isExisting(messageId, userId, MessageStatus.DELIVERED))
             insertAndNotify(messageId, userId, MessageStatus.DELIVERED)

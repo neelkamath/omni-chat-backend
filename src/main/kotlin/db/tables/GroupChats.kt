@@ -150,8 +150,7 @@ object GroupChats : Table() {
      */
     fun delete(chatId: Int) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
-        if (userIdList.isNotEmpty())
-            throw IllegalArgumentException("The chat (ID: $chatId) is not empty (users: $userIdList).")
+        require(userIdList.isEmpty()) { "The chat (ID: $chatId) is not empty (users: $userIdList)." }
         TypingStatuses.deleteChat(chatId)
         Messages.deleteChat(chatId)
         transaction {
@@ -199,8 +198,7 @@ object GroupChats : Table() {
      * [UpdatedGroupChat] via [groupChatsNotifier].
      */
     fun setInvitability(chatId: Int, isInvitable: Boolean) {
-        if (isExistentPublicChat(chatId))
-            throw IllegalArgumentException("A public chat's invitability cannot be updated.")
+        require(!isExistentPublicChat(chatId)) { "A public chat's invitability cannot be updated." }
         val publicity = if (isInvitable) GroupChatPublicity.INVITABLE else GroupChatPublicity.NOT_INVITABLE
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.publicity] = publicity }

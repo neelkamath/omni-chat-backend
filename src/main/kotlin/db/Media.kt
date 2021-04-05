@@ -15,7 +15,7 @@ data class Audio(
     val type: Type,
 ) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The audio mustn't exceed $MAX_BYTES bytes.")
+        require(bytes.size <= MAX_BYTES) { "The audio mustn't exceed $MAX_BYTES bytes." }
     }
 
     @Generated
@@ -66,10 +66,8 @@ data class Pic(
     val thumbnail: ByteArray,
 ) {
     init {
-        if (original.size > ORIGINAL_MAX_BYTES)
-            throw IllegalArgumentException("The original image mustn't exceed $ORIGINAL_MAX_BYTES bytes.")
-        if (thumbnail.size > THUMBNAIL_MAX_BYTES)
-            throw IllegalArgumentException("The thumbnail mustn't exceed $THUMBNAIL_MAX_BYTES bytes.")
+        require(original.size <= ORIGINAL_MAX_BYTES) { "The original image mustn't exceed $ORIGINAL_MAX_BYTES bytes." }
+        require(thumbnail.size <= THUMBNAIL_MAX_BYTES) { "The thumbnail mustn't exceed $THUMBNAIL_MAX_BYTES bytes." }
     }
 
     @Generated

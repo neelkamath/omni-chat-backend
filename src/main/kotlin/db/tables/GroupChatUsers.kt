@@ -30,7 +30,7 @@ object GroupChatUsers : IntIdTable() {
      */
     fun makeAdmins(chatId: Int, userIdList: Collection<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
-        if (invalidUsers.isNotEmpty()) throw IllegalArgumentException("$invalidUsers aren't in the chat (ID: $chatId).")
+        require(invalidUsers.isEmpty()) { "$invalidUsers aren't in the chat (ID: $chatId)." }
         transaction {
             update({ (groupChatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
@@ -126,8 +126,9 @@ object GroupChatUsers : IntIdTable() {
      * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
-        if (!canUsersLeave(chatId, userIdList))
-            throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
+        require(canUsersLeave(chatId, userIdList)) {
+            "The users ($userIdList) cannot leave because the chat needs an admin."
+        }
         val originalIdList = readUserIdList(chatId)
         val removedIdList = originalIdList.intersect(userIdList).toList()
         transaction {

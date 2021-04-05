@@ -32,7 +32,7 @@ private object CursorCoercing : Coercing<Cursor, String> {
 private object PlaceholderCoercing : Coercing<Placeholder, String> {
     /** An [IllegalArgumentException] will be thrown if the [input] isn't an empty [String]. */
     private fun parse(input: String): Placeholder {
-        if (input != "") throw IllegalArgumentException("""input ("$input") must be an empty string.""")
+        require(input == "") { """input ("$input") must be an empty string.""" }
         return Placeholder
     }
 
@@ -41,8 +41,9 @@ private object PlaceholderCoercing : Coercing<Placeholder, String> {
     override fun parseLiteral(input: Any): Placeholder = dissectLiteral { parse((input as StringValue).value) }
 
     override fun serialize(dataFetcherResult: Any): String = translate {
-        if (dataFetcherResult !is Placeholder)
-            throw IllegalArgumentException("The dataFetcherResult ($dataFetcherResult) must be a Placeholder.")
+        require(dataFetcherResult is Placeholder) {
+            "The dataFetcherResult ($dataFetcherResult) must be a Placeholder."
+        }
         ""
     }
 }

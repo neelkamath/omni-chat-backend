@@ -8,7 +8,7 @@ import javax.annotation.processing.Generated
 /** An [IllegalArgumentException] will be thrown if the [bytes] exceeds [Doc.MAX_BYTES]. */
 data class Doc(val bytes: ByteArray) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The doc cannot exceed $MAX_BYTES bytes.")
+        require(bytes.size <= MAX_BYTES) { "The doc cannot exceed $MAX_BYTES bytes." }
     }
 
     companion object {

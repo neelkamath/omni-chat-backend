@@ -26,8 +26,9 @@ object PrivateChats : Table() {
      * An [IllegalArgumentException] will be thrown if the chat exists.
      */
     fun create(user1Id: Int, user2Id: Int): Int {
-        if (isExisting(user1Id, user2Id))
-            throw IllegalArgumentException("The chat between user 1 (ID: $user1Id) and user 2 (ID: $user2Id) exists.")
+        require(!isExisting(user1Id, user2Id)) {
+            "The chat between user 1 (ID: $user1Id) and user 2 (ID: $user2Id) exists."
+        }
         return insert(user1Id, user2Id)
     }
 

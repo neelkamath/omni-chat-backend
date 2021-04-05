@@ -11,7 +11,7 @@ data class Mp4(
     val bytes: ByteArray
 ) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
+        require(bytes.size <= MAX_BYTES) { "The video mustn't exceed $MAX_BYTES bytes." }
     }
 
     @Generated
