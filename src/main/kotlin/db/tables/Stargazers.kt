@@ -1,9 +1,12 @@
 package com.neelkamath.omniChat.db.tables
 
+import com.neelkamath.omniChat.db.CursorType
+import com.neelkamath.omniChat.db.ForwardPagination
 import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.UnstarredChat
-import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Users' starred [Messages]. */
@@ -27,19 +30,51 @@ object Stargazers : Table() {
         messagesNotifier.publish(message, userId)
     }
 
-    /** Returns the ID of every message the [userId] has starred. */
-    fun read(userId: Int): Set<Int> = transaction {
-        select { Stargazers.userId eq userId }.map { it[messageId] }.toSet()
+    fun read(userId: Int, pagination: ForwardPagination? = null): StarredMessagesConnection {
+        var op = Stargazers.userId eq userId
+        if (pagination?.after != null) op = op and (messageId greater pagination.after)
+        val edges = transaction {
+            select(op)
+                .orderBy(messageId)
+                .let { if (pagination?.first == null) it else it.limit(pagination.first) }
+                .map { StarredMessageEdge(StarredMessage.build(userId, it[messageId]), cursor = it[messageId]) }
+        }
+        val pageInfo = buildPageInfo(userId, edges.lastOrNull()?.cursor, pagination)
+        return StarredMessagesConnection(edges, pageInfo)
+    }
+
+    private fun buildPageInfo(userId: Int, lastMessageId: Int?, pagination: ForwardPagination? = null): PageInfo {
+        val startCursor = readCursor(userId, CursorType.START)
+        val endCursor = readCursor(userId, CursorType.END)
+        val hasNextPage = when {
+            endCursor == null -> false
+            lastMessageId != null -> lastMessageId < endCursor
+            pagination?.after == null -> true
+            else -> pagination.after < endCursor
+        }
+        val hasPreviousPage =
+            if (startCursor == null || pagination?.after == null) false else startCursor <= pagination.after
+        return PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+    }
+
+    /** Reads the [type] of cursor for the [userId]. Returns `null` if the user hasn't starred any messages. */
+    private fun readCursor(userId: Int, type: CursorType): Int? {
+        val order = when (type) {
+            CursorType.END -> SortOrder.DESC
+            CursorType.START -> SortOrder.ASC
+        }
+        return transaction {
+            select(Stargazers.userId eq userId).orderBy(messageId, order).limit(1).firstOrNull()?.get(messageId)
+        }
     }
 
     /** Returns the ID of every user who has starred the [messageId]. */
     private fun readStargazers(messageId: Int): Set<Int> = transaction {
-        select { Stargazers.messageId eq messageId }.map { it[userId] }.toSet()
+        select(Stargazers.messageId eq messageId).map { it[userId] }.toSet()
     }
 
-    fun hasStar(userId: Int, messageId: Int): Boolean = transaction {
-        select { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }.empty().not()
-    }
+    fun hasStar(userId: Int, messageId: Int): Boolean =
+        transaction { select((Stargazers.userId eq userId) and (Stargazers.messageId eq messageId)).empty().not() }
 
     /**
      * Deletes every user's star from the [messageId]. Notifies stargazers of the [UpdatedMessage] via

@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.PostgresEnum
 import com.neelkamath.omniChat.graphql.routing.MessageText
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 data class CaptionedPic(val pic: Pic, val caption: MessageText?)
@@ -33,9 +34,8 @@ object PicMessages : Table() {
         }
     }
 
-    fun read(id: Int): CaptionedPic = transaction {
-        select { messageId eq id }.first()
-    }.let { CaptionedPic(Pic(it[type], it[original], it[thumbnail]), it[caption]?.let(::MessageText)) }
+    fun read(id: Int): CaptionedPic = transaction { select(messageId eq id).first() }
+        .let { CaptionedPic(Pic(it[type], it[original], it[thumbnail]), it[caption]?.let(::MessageText)) }
 
     fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }

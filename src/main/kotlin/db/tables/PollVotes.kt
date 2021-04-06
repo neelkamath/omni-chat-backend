@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** @see [PollOptions] */
@@ -11,7 +12,7 @@ object PollVotes : Table() {
 
     /** Creates a vote for the [userId] on the [optionId] if they haven't already. */
     fun create(userId: Int, optionId: Int) {
-        if (!exists(userId, optionId))
+        if (!isExisting(userId, optionId))
             transaction {
                 insert {
                     it[this.userId] = userId
@@ -20,14 +21,12 @@ object PollVotes : Table() {
             }
     }
 
-    private fun exists(userId: Int, optionId: Int): Boolean = transaction {
-        select { (PollVotes.userId eq userId) and (PollVotes.optionId eq optionId) }.empty().not()
-    }
+    private fun isExisting(userId: Int, optionId: Int): Boolean =
+        transaction { select((PollVotes.userId eq userId) and (PollVotes.optionId eq optionId)).empty().not() }
 
     /** Returns the IDs of users who voted for the [optionId]. */
-    fun read(optionId: Int): Set<Int> = transaction {
-        select { PollVotes.optionId eq optionId }.map { it[userId] }.toSet()
-    }
+    fun read(optionId: Int): Set<Int> =
+        transaction { select(PollVotes.optionId eq optionId).map { it[userId] }.toSet() }
 
     /** Deletes the [userId]'s vote on the [optionId] if it exists. */
     fun deleteVote(userId: Int, optionId: Int): Unit = transaction {

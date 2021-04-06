@@ -1,13 +1,14 @@
 package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.annotation.processing.Generated
 
 /** An [IllegalArgumentException] will be thrown if the [bytes] exceeds [Doc.MAX_BYTES]. */
 data class Doc(val bytes: ByteArray) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The doc cannot exceed $MAX_BYTES bytes.")
+        require(bytes.size <= MAX_BYTES) { "The doc cannot exceed $MAX_BYTES bytes." }
     }
 
     companion object {
@@ -47,9 +48,7 @@ object DocMessages : Table() {
         }
     }
 
-    fun read(id: Int): Doc = transaction {
-        select { messageId eq id }.first()[doc].let(::Doc)
-    }
+    fun read(id: Int): Doc = transaction { select(messageId eq id).first()[doc].let(::Doc) }
 
     fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }

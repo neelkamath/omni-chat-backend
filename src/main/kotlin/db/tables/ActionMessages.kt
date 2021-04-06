@@ -8,6 +8,8 @@ import com.neelkamath.omniChat.graphql.routing.TriggeredAction
 import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
@@ -30,14 +32,11 @@ object ActionMessages : IntIdTable() {
         ActionMessageActions.create(actionMessageId, message.actions.toLinkedHashSet())
     }
 
-    fun exists(messageId: Int): Boolean = transaction {
-        select { ActionMessages.messageId eq messageId }.empty().not()
-    }
+    fun isExisting(messageId: Int): Boolean =
+        transaction { select(ActionMessages.messageId eq messageId).empty().not() }
 
     fun hasAction(messageId: Int, action: MessageText): Boolean {
-        val id = transaction {
-            select { ActionMessages.messageId eq messageId }.first()[ActionMessages.id].value
-        }
+        val id = transaction { select(ActionMessages.messageId eq messageId).first()[ActionMessages.id].value }
         return action in ActionMessageActions.read(id)
     }
 
@@ -46,23 +45,20 @@ object ActionMessages : IntIdTable() {
      * [messageId] via [messagesNotifier].
      */
     fun trigger(userId: Int, messageId: Int, action: MessageText) {
-        val creatorId = Messages.readTypedMessage(messageId).message.sender.id
+        val creatorId = Messages.readMessage(userId, messageId).sender.id
         val account = Users.read(userId).toAccount()
         messagesNotifier.publish(creatorId to TriggeredAction(messageId, action, account))
     }
 
     fun read(messageId: Int): ActionableMessage {
-        val row = transaction {
-            select { ActionMessages.messageId eq messageId }.first()
-        }
+        val row = transaction { select(ActionMessages.messageId eq messageId).first() }
         val actions = ActionMessageActions.read(row[id].value).toList()
         return ActionableMessage(MessageText(row[text]), actions)
     }
 
     /** Returns the ID of every action message in the [messageIdList]. */
-    private fun readIdList(messageIdList: Collection<Int>): Set<Int> = transaction {
-        select { messageId inList messageIdList }.map { it[ActionMessages.id].value }.toSet()
-    }
+    private fun readIdList(messageIdList: Collection<Int>): Set<Int> =
+        transaction { select(messageId inList messageIdList).map { it[ActionMessages.id].value }.toSet() }
 
     fun delete(messageIdList: Collection<Int>) {
         ActionMessageActions.delete(readIdList(messageIdList))

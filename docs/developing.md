@@ -18,7 +18,7 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        run --rm --service-ports chat sh -c 'flyway migrate && bash'
+        run --rm --service-ports chat sh -c 'flyway migrate && fish'
     ```
 1. Reports save to `build/reports/tests/test/`. Update the code and run tests any number of times:
     1. `gradle test`
@@ -78,7 +78,7 @@ To test the production build:
 
 ## OpenAPI Spec
 
-[`openapi.yaml`](openapi.yaml) is the REST API spec.
+The REST API spec is [`openapi.yaml`](openapi.yaml).
 
 ### Development
 
@@ -116,27 +116,27 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 
 ## Naming Conventions
 
-We use `create` (e.g., `createAcccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (e.g., `deleteAccount`), `is` (e.g., `isUsernameTaken`), and `search` (e.g., `searchAccounts`) to name functions. Don't use `get`, `set`, etc. unless needed.
+We use `create` (e.g., `createAccount`), `read` (e.g., `readAccount`), `update` (e.g., `updateAccount`), `delete` (e.g., `deleteAccount`), and `search` (e.g., `searchAccounts`) to name functions when possible. Don't use `get`, `set`, etc. unless needed.
 
 ## Writing Tests
 
 - Pics must be actual images (e.g., [`76px×57px.jpg`](../src/test/resources/76px×57px.jpg)) because a thumbnail is generated upon upload, and the program will crash if dummy data is provided. Other file formats such as audio should use dummies such as `kotlin.ByteArray`s.
 - These test cases must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
 - Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
-- The test source set should mirror the main source set. Files containing tests should be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files containing extra functionality should be named using the format `<FILE>Util.kt` (e.g., [`GroupChatsUtil.kt`](../src/test/kotlin/db/tables/GroupChatsUtil.kt) for [`GroupChats.kt`](../src/main/kotlin/db/tables/GroupChats.kt)).
-- Test cases should be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
-- Each function tested should have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`, `Person_Companion_build` for `fun build()` in a `companion object` where the `companion object` is inside a `class Person`, `MyNestedClass_myFun` for `fun myFun()` in `class MyNestedClass`). Test cases should be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
+- The test source set must mirror the main source set. Files containing tests must be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files in the main source set which have testing utilities but no tests in the test source set must be named using the format `<FILE>Util.kt`. For example, [`DbUtil.kt`](src/test/kotlin/db/DbUtil.kt) is named `DbUtil.kt` instead of `DbTest.kt` because it contains testing utilities for `Db.kt` but no tests.
+- Test cases must be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
+- Each function tested must have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`. Test cases must be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
 
 ## Diagram
 
-Here's a diagram of how the service works. The client application isn't included in this repo but are in the diagram for the purpose of explanation. PostgreSQL and Redis may be set up as clusters similar to the API server.
+Here's a diagram of how the service works. The client application isn't included in this repo but is included in the diagram for the purpose of explanation. PostgreSQL and Redis may be set up as clusters similar to the API server.
 
 ![Diagram](diagram.svg)
 
 ## Releasing
 
 1. Update the version in the [build file](../build.gradle.kts), [OpenAPI spec](openapi.yaml), and the `chat` service's image in [`docker-compose.yml`](docker-compose.yml).
-1. Ensure the [API docs **Operations** section](api.md#operations), [`Types.kt`](../src/main/kotlin/graphql/engine/Types.kt), [`AppUtil.kt`](../src/test/kotlin/AppUtil.kt), and [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) are up-to-date.
+1. Ensure the [API docs **Operations** section](api.md#operations), [`Types.kt`](../src/main/kotlin/graphql/engine/Types.kt), [`AppTest.kt`](../src/test/kotlin/AppTest.kt), and [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) are up-to-date.
 1. Add a [changelog](CHANGELOG.md) entry.
 1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
 1. Update [`cloud.md`](cloud.md).

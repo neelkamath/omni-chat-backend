@@ -6,6 +6,75 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## [0.18.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.18.0) - 2021-04-06
+
+### Added
+
+- `Query.searchBlockedUsers`
+- `type DeletedAccount`
+- `Mutation.createContact`
+- `Mutation.deleteContact`
+- `type StarredMessagesConnection`
+- `type StarredMessageEdge`
+- `type ChatMessagesConnection`
+- `type ChatMessagesEdge`
+- `type ChatsConnection`
+- `type ChatEdge`
+
+### Changed
+
+- Rename `chatId` to `id` in `type UnstarredChat`.
+- `scalar Username`
+- Add `type DeletedAccount` to `union AccountsSubscription`.
+- Return a `Boolean!` instead of a `Placeholder!` from `Mutation.unblockUser` to indicate whether the user got unblocked.
+- Use GitHub Flavored Markdown instead of CommonMark (update `scalar Bio`, `scalar GroupChatDescription`, and `scalar MessageText` accordingly).
+- Paginate `Query.readStars`.
+- Paginate `Query.searchMessages`.
+- Paginate `Query.readChats`.
+- Paginate `Query.searchChats`.
+- Paginate `Query.searchPublicChats`.
+- Remove the `dateTimes` field, and add the `sent` field to the following:
+    - `interface NewMessage`
+    - `type NewTextMessage`
+    - `type NewActionMessage`
+    - `type NewPicMessage`
+    - `type NewPollMessage`
+    - `type NewAudioMessage`
+    - `type NewGroupChatInviteMessage`
+    - `type NewDocMessage`
+    - `type NewVideoMessage`
+- Remove the `dateTimes` field, and add the `sent` and `statuses` fields to the following:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
+
+### Removed
+
+- Remove `Mutation.createContacts` in favor of `Mutation.createContact`.
+- Remove `Mutation.deleteContacts` in favor of `Mutation.deleteContact`.
+- `interface BareMessage`
+- `interface BareChatMessage`
+- `type MessageDateTimes`
+
+### Fixed
+
+- Fix pagination bugs.
+
 ## [0.17.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.17.0) - 2021-03-19
 
 ### Added
@@ -52,9 +121,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ForwardMessageResult`
 - `union TriggerActionResult`
 - `union SetPollVoteResult`
-- `type CannotLeaveChat`
-- `type UnstarredChat`
 - `union LeaveGroupChatResult`
+- `union ReadOnlineStatusResult`
+- `type UnstarredChat`
+- `type CannotLeaveChat`
 - `Query.readOnlineStatus`
 - `Mutation.joinPublicChat`
 - `Mutation.leaveGroupChat`
@@ -62,7 +132,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Renamed `Mutation.deleteStar` to `Mutation.unstar`.
+- Rename `Mutation.deleteStar` to `Mutation.unstar`.
 - Add the field `state: MessageState!` to the following:
     - `interface BareMessage`
     - `interface Message`
@@ -93,7 +163,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type NewGroupChatInviteMessage`
     - `type NewDocMessage`
     - `type NewVideoMessage`
-- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `"data"` value instead. Change the following operations' return types accordingly:
+- GraphQL operations used to return results related to invalid input in the GraphQL document's `errors[0].message`. Such results are supposed to be returned in the GraphQL document's `data` value instead. Change the following operations' return types accordingly:
     - `Query.searchChatMessages`
     - `Query.readChat`
     - `Query.readGroupChat`
@@ -128,7 +198,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `GroupChatTitle`
     - `GroupChatDescription`
     - `MessageText`
-- Add `type UpdatedMessage` to `union MessagesSubscription`, and remove the following:
+- Add the following to `union MessagesSubscription`:
+    - `type UnstarredChat`
+    - `type UpdatedMessage`
+- Remove the following from `union MessagesSubscription`:
     - `type UpdatedTextMessage`
     - `type UpdatedActionMessage`
     - `type UpdatedPicMessage`

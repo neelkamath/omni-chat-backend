@@ -11,8 +11,6 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("AccountData") { wireType(it, ::readAccountData) }
     .type("Chat") { wireType(it, ::readChat) }
     .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
-    .type("BareMessage") { wireType(it, ::readBareMessage) }
-    .type("BareChatMessage") { wireType(it, ::readBareChatMessage) }
     .type("StarredMessage") { wireType(it, ::readStarredMessage) }
     .type("NewMessage") { wireType(it, ::readNewMessage) }
     .type("Message") { wireType(it, ::readMessage) }
@@ -231,6 +229,7 @@ private fun readAccountsSubscription(obj: Any): String = when (obj) {
     is DeletedContact -> "DeletedContact"
     is BlockedAccount -> "BlockedAccount"
     is UnblockedAccount -> "UnblockedAccount"
+    is DeletedAccount -> "DeletedAccount"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -247,34 +246,6 @@ private fun readBareGroupChat(obj: Any): String = when (obj) {
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
-private fun readBareMessage(obj: Any): String = when (obj) {
-    is TextMessage -> "TextMessage"
-    is ActionMessage -> "ActionMessage"
-    is PicMessage -> "PicMessage"
-    is PollMessage -> "PollMessage"
-    is AudioMessage -> "AudioMessage"
-    is GroupChatInviteMessage -> "GroupChatInviteMessage"
-    is DocMessage -> "DocMessage"
-    is VideoMessage -> "VideoMessage"
-    is StarredTextMessage -> "StarredTextMessage"
-    is StarredActionMessage -> "StarredActionMessage"
-    is StarredPicMessage -> "StarredPicMessage"
-    is StarredPollMessage -> "StarredPollMessage"
-    is StarredAudioMessage -> "StarredAudioMessage"
-    is StarredGroupChatInviteMessage -> "StarredGroupChatInviteMessage"
-    is StarredDocMessage -> "StarredDocMessage"
-    is StarredVideoMessage -> "StarredVideoMessage"
-    is NewTextMessage -> "NewTextMessage"
-    is NewActionMessage -> "NewActionMessage"
-    is NewPicMessage -> "NewPicMessage"
-    is NewPollMessage -> "NewPollMessage"
-    is NewAudioMessage -> "NewAudioMessage"
-    is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
-    is NewDocMessage -> "NewDocMessage"
-    is NewVideoMessage -> "NewVideoMessage"
-    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
-}
-
 private fun readMessage(obj: Any): String = when (obj) {
     is TextMessage -> "TextMessage"
     is ActionMessage -> "ActionMessage"
@@ -284,26 +255,6 @@ private fun readMessage(obj: Any): String = when (obj) {
     is GroupChatInviteMessage -> "GroupChatInviteMessage"
     is DocMessage -> "DocMessage"
     is VideoMessage -> "VideoMessage"
-    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
-}
-
-private fun readBareChatMessage(obj: Any): String = when (obj) {
-    is StarredTextMessage -> "StarredTextMessage"
-    is StarredActionMessage -> "StarredActionMessage"
-    is StarredPicMessage -> "StarredPicMessage"
-    is StarredPollMessage -> "StarredPollMessage"
-    is StarredAudioMessage -> "StarredAudioMessage"
-    is StarredGroupChatInviteMessage -> "StarredGroupChatInviteMessage"
-    is StarredDocMessage -> "StarredDocMessage"
-    is StarredVideoMessage -> "StarredVideoMessage"
-    is NewTextMessage -> "NewTextMessage"
-    is NewActionMessage -> "NewActionMessage"
-    is NewPicMessage -> "NewPicMessage"
-    is NewPollMessage -> "NewPollMessage"
-    is NewAudioMessage -> "NewAudioMessage"
-    is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
-    is NewDocMessage -> "NewDocMessage"
-    is NewVideoMessage -> "NewVideoMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

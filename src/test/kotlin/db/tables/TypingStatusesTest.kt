@@ -44,14 +44,11 @@ class TypingStatusesTest {
         }
 
         @Test
-        fun `A new record must be created when setting a status for the first time`() {
-            assertSet(repetitions = 1)
-        }
+        fun `A new record must be created when setting a status for the first time`(): Unit = assertSet(repetitions = 1)
 
         @Test
-        fun `The existing record must be updated when setting a status the second time`() {
+        fun `The existing record must be updated when setting a status the second time`(): Unit =
             assertSet(repetitions = 2)
-        }
     }
 
     @Nested
@@ -66,9 +63,8 @@ class TypingStatusesTest {
         }
 
         @Test
-        fun `false must be returned when reading a nonexistent status`() {
+        fun `false must be returned when reading a nonexistent status`(): Unit =
             assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
-        }
     }
 
     @Nested

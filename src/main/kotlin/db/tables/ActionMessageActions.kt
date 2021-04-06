@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.graphql.routing.MessageText
 import com.neelkamath.omniChat.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
@@ -23,7 +24,7 @@ object ActionMessageActions : IntIdTable() {
     }
 
     fun read(actionMessageId: Int): LinkedHashSet<MessageText> = transaction {
-        select { ActionMessageActions.actionMessageId eq actionMessageId }
+        select(ActionMessageActions.actionMessageId eq actionMessageId)
             .orderBy(ActionMessageActions.id)
             .map { MessageText(it[action]) }
             .toLinkedHashSet()

@@ -7,6 +7,7 @@ import com.neelkamath.omniChat.db.readUserIdList
 import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -18,7 +19,7 @@ object GroupChatUsers : IntIdTable() {
     private val isAdmin: Column<Boolean> = bool("is_admin")
 
     private fun isUserInChat(userId: Int, chatId: Int): Boolean = transaction {
-        select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }.empty().not()
+        select((groupChatId eq chatId) and (GroupChatUsers.userId eq userId)).empty().not()
     }
 
     /**
@@ -29,7 +30,7 @@ object GroupChatUsers : IntIdTable() {
      */
     fun makeAdmins(chatId: Int, userIdList: Collection<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
-        if (invalidUsers.isNotEmpty()) throw IllegalArgumentException("$invalidUsers aren't in the chat (ID: $chatId).")
+        require(invalidUsers.isEmpty()) { "$invalidUsers aren't in the chat (ID: $chatId)." }
         transaction {
             update({ (groupChatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
@@ -45,7 +46,7 @@ object GroupChatUsers : IntIdTable() {
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
-        select { (groupChatId eq chatId) and (GroupChatUsers.userId eq userId) }
+        select((groupChatId eq chatId) and (GroupChatUsers.userId eq userId))
             .firstOrNull()
             ?.get(isAdmin) ?: false
     }
@@ -57,15 +58,15 @@ object GroupChatUsers : IntIdTable() {
      * @see [readAdminIdList]
      */
     fun readUserIdList(chatId: Int): Set<Int> = transaction {
-        select { groupChatId eq chatId }.map { it[userId] }.toSet()
+        select(groupChatId eq chatId).map { it[userId] }.toSet()
     }
 
     fun readAdminIdList(chatId: Int): Set<Int> = transaction {
-        select { (groupChatId eq chatId) and (isAdmin eq true) }.map { it[userId] }.toSet()
+        select((groupChatId eq chatId) and (isAdmin eq true)).map { it[userId] }.toSet()
     }
 
     private fun readAccountEdges(chatId: Int): Set<AccountEdge> = transaction {
-        select { groupChatId eq chatId }
+        select(groupChatId eq chatId)
             .map {
                 val account = Users.read(it[userId]).toAccount()
                 AccountEdge(account, cursor = it[GroupChatUsers.id].value)
@@ -125,8 +126,9 @@ object GroupChatUsers : IntIdTable() {
      * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
-        if (!canUsersLeave(chatId, userIdList))
-            throw IllegalArgumentException("The users ($userIdList) cannot leave because the chat needs an admin.")
+        require(canUsersLeave(chatId, userIdList)) {
+            "The users ($userIdList) cannot leave because the chat needs an admin."
+        }
         val originalIdList = readUserIdList(chatId)
         val removedIdList = originalIdList.intersect(userIdList).toList()
         transaction {
@@ -154,6 +156,6 @@ object GroupChatUsers : IntIdTable() {
 
     /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
     fun readChatIdList(userId: Int): Set<Int> = transaction {
-        select { GroupChatUsers.userId eq userId }.map { it[groupChatId] }.toSet()
+        select(GroupChatUsers.userId eq userId).map { it[groupChatId] }.toSet()
     }
 }

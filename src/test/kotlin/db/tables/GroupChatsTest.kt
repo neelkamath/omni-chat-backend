@@ -15,6 +15,25 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
+/** Returns the created chat's ID. It doesn't matter whether [adminIdList] and [userIdList] intersect. */
+fun GroupChats.create(
+    adminIdList: Collection<Int>,
+    userIdList: Collection<Int> = listOf(),
+    title: GroupChatTitle = GroupChatTitle("T"),
+    description: GroupChatDescription = GroupChatDescription(""),
+    isBroadcast: Boolean = false,
+    publicity: GroupChatPublicity = GroupChatPublicity.NOT_INVITABLE,
+): Int = create(
+    GroupChatInput(
+        title,
+        description,
+        userIdList = userIdList + adminIdList,
+        adminIdList = adminIdList.toList(),
+        isBroadcast = isBroadcast,
+        publicity = publicity,
+    )
+)
+
 @ExtendWith(DbExtension::class)
 class GroupChatsTest {
     @Nested
@@ -188,9 +207,7 @@ class GroupChatsTest {
     @Nested
     inner class IsInvitable {
         @Test
-        fun `A nonexistent chat mustn't be invitable`() {
-            assertFalse(GroupChats.isInvitable(chatId = 1))
-        }
+        fun `A nonexistent chat mustn't be invitable`(): Unit = assertFalse(GroupChats.isInvitable(chatId = 1))
 
         @Test
         fun `A chat disallowing invitations must be stated as such`() {

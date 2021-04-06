@@ -6,6 +6,7 @@ import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
@@ -70,7 +71,7 @@ object Users : IntIdTable() {
      * whether the [emailAddress] was verified using the [emailAddressVerificationCode].
      */
     fun verifyEmailAddress(emailAddress: String, emailAddressVerificationCode: Int): Boolean = transaction {
-        val row = select { Users.emailAddress eq emailAddress }.first()
+        val row = select(Users.emailAddress eq emailAddress).first()
         if (row[Users.emailAddressVerificationCode] == emailAddressVerificationCode) {
             update({ Users.emailAddress eq emailAddress }) { it[hasVerifiedEmailAddress] = true }
             true
@@ -79,40 +80,33 @@ object Users : IntIdTable() {
 
     /** Returns `false` if the [Login.username] doesn't exist, or the [Login.password] is incorrect. */
     fun isValidLogin(login: Login): Boolean = transaction {
-        val row = select { username eq login.username.value }
+        val row = select(username eq login.username.value)
         if (row.empty()) return@transaction false
         StrongPasswordEncryptor().checkPassword(login.password.value, row.first()[passwordDigest])
     }
 
-    fun isUsernameTaken(username: Username): Boolean = transaction {
-        select { Users.username eq username.value }.empty().not()
-    }
+    fun isUsernameTaken(username: Username): Boolean =
+        transaction { select(Users.username eq username.value).empty().not() }
 
-    fun isEmailAddressTaken(emailAddress: String): Boolean = transaction {
-        select { Users.emailAddress eq emailAddress }.empty().not()
-    }
+    fun isEmailAddressTaken(emailAddress: String): Boolean =
+        transaction { select(Users.emailAddress eq emailAddress).empty().not() }
 
-    fun exists(userId: Int): Boolean = transaction {
-        select { Users.id eq userId }.empty().not()
-    }
+    fun isExisting(userId: Int): Boolean =
+        transaction { select(Users.id eq userId).empty().not() }
 
-    fun read(userId: Int): User = transaction {
-        select { Users.id eq userId }.first()
-    }.toUser()
+    fun read(userId: Int): User = transaction { select(Users.id eq userId).first() }.toUser()
 
-    fun read(username: Username): User = transaction {
-        select { Users.username eq username.value }.first()
-    }.toUser()
+    fun read(username: Username): User = transaction { select(Users.username eq username.value).first() }.toUser()
 
-    fun read(emailAddress: String): User = transaction {
-        select { Users.emailAddress eq emailAddress }.first()
-    }.toUser()
+    fun read(emailAddress: String): User = transaction { select(Users.emailAddress eq emailAddress).first() }.toUser()
 
     fun readOnlineStatus(userId: Int): OnlineStatus {
-        val user = transaction {
-            select { Users.id eq userId }.first()
-        }
+        val user = transaction { select(Users.id eq userId).first() }
         return OnlineStatus(userId, user[isOnline], user[lastOnline])
+    }
+
+    fun readList(idList: Collection<Int>): Set<User> = transaction {
+        select(Users.id inList idList).map { it.toUser() }.toSet()
     }
 
     private fun ResultRow.toUser(): User = User(
@@ -141,7 +135,7 @@ object Users : IntIdTable() {
 
     /** Notifies subscribers of the [OnlineStatus] only if [isOnline] differs from the [userId]'s current status. */
     fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
-        if (select { Users.id eq userId }.first()[Users.isOnline] == isOnline) return@transaction
+        if (select(Users.id eq userId).first()[Users.isOnline] == isOnline) return@transaction
         update({ Users.id eq userId }) {
             it[Users.isOnline] = isOnline
             it[lastOnline] = LocalDateTime.now()
@@ -155,7 +149,7 @@ object Users : IntIdTable() {
      * [passwordResetCode] is correct, and returns `true`. Otherwise, `false` is returned.
      */
     fun resetPassword(emailAddress: String, passwordResetCode: Int, newPassword: Password): Boolean = transaction {
-        val row = select { Users.emailAddress eq emailAddress }.first()
+        val row = select(Users.emailAddress eq emailAddress).first()
         if (row[Users.passwordResetCode] == passwordResetCode) {
             update({ Users.emailAddress eq emailAddress }) {
                 it[passwordDigest] = StrongPasswordEncryptor().encryptPassword(newPassword.value)
@@ -187,7 +181,7 @@ object Users : IntIdTable() {
 
     /** If the [emailAddress] differs from the [userId]'s current one, it'll be marked as unverified. */
     private fun updateEmailAddress(userId: Int, emailAddress: String): Unit = transaction {
-        val address = select { Users.id eq userId }.first()[Users.emailAddress]
+        val address = select(Users.id eq userId).first()[Users.emailAddress]
         if (emailAddress != address)
             update({ Users.id eq userId }) {
                 it[Users.emailAddress] = emailAddress
@@ -209,14 +203,12 @@ object Users : IntIdTable() {
     /** Case-insensitively [query]s every user's username, first name, last name, and email address. */
     fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
         val users = transaction {
-            selectAll()
-                .filter {
-                    it[username].contains(query, ignoreCase = true) ||
-                            it[firstName].contains(query, ignoreCase = true) ||
-                            it[lastName].contains(query, ignoreCase = true) ||
-                            it[emailAddress].contains(query, ignoreCase = true)
-                }
-                .map { AccountEdge(it.toAccount(), it[Users.id].value) }
+            select(
+                (username iLike query) or
+                        (firstName iLike query) or
+                        (lastName iLike query) or
+                        (emailAddress iLike query)
+            ).map { AccountEdge(it.toAccount(), it[Users.id].value) }
         }
         return AccountsConnection.build(users.toSet(), pagination)
     }

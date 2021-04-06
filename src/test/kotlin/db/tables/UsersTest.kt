@@ -7,11 +7,19 @@ import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.db.onlineStatusesNotifier
 import com.neelkamath.omniChat.graphql.routing.*
 import com.neelkamath.omniChat.readPic
+import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
+
+/** Every user's cursor (ID) in their order of creation. */
+fun Users.read(): LinkedHashSet<Int> = transaction {
+    selectAll().orderBy(Users.id).map { it[Users.id].value }.toLinkedHashSet()
+}
 
 @ExtendWith(DbExtension::class)
 class UsersTest {
@@ -32,7 +40,7 @@ class UsersTest {
         fun `Updating the user's status must only notify users who have them in their contacts or chats`(): Unit =
             runBlocking {
                 val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.info.id }
-                Contacts.create(contactOwnerId, setOf(updaterId))
+                Contacts.create(contactOwnerId, updaterId)
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                     listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
@@ -153,14 +161,12 @@ class UsersTest {
         }
 
         @Test
-        fun `Updating an account's email address must cause it to become unverified`() {
+        fun `Updating an account's email address must cause it to become unverified`(): Unit =
             assertEmailAddressUpdate(changeAddress = true)
-        }
 
         @Test
-        fun `Updating an account's email address to the same address mustn't cause it to become unverified`() {
+        fun `Updating an account's email address to the same address mustn't cause it to become unverified`(): Unit =
             assertEmailAddressUpdate(changeAddress = false)
-        }
     }
 
     @Nested

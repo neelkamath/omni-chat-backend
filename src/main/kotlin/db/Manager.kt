@@ -1,10 +1,7 @@
 package com.neelkamath.omniChat.db
 
 import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.DeletedContact
-import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
-import com.neelkamath.omniChat.graphql.routing.MessageEdge
-import com.neelkamath.omniChat.graphql.routing.UserChatMessagesRemoval
+import com.neelkamath.omniChat.graphql.routing.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.LikeOp
@@ -29,11 +26,19 @@ data class ChatEdges(
     val edges: LinkedHashSet<MessageEdge>,
 )
 
-data class ForwardPagination(val first: Int? = null, val after: Int? = null)
+data class ForwardPagination(val first: Int? = null, val after: Cursor? = null)
 
-data class BackwardPagination(val last: Int? = null, val before: Int? = null)
+data class BackwardPagination(val last: Int? = null, val before: Cursor? = null)
 
 enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
+
+enum class CursorType {
+    /** First message's cursor. */
+    START,
+
+    /** Last message's cursor. */
+    END,
+}
 
 /**
  * Required for enums (see https://github.com/JetBrains/Exposed/wiki/DataTypes#how-to-use-database-enum-types). It's
@@ -62,7 +67,7 @@ fun isUserInChat(userId: Int, chatId: Int): Boolean =
     chatId in PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
 
 fun readUserIdList(chatId: Int): Set<Int> =
-    if (PrivateChats.exists(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
+    if (PrivateChats.isExisting(chatId)) PrivateChats.readUserIdList(chatId) else GroupChatUsers.readUserIdList(chatId)
 
 /** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
 fun readChatSharers(userId: Int): Set<Int> =
@@ -76,6 +81,7 @@ fun readChatSharers(userId: Int): Set<Int> =
  * ## Users
  *
  * - The [userId] will be deleted from the [Users].
+ * - Users who have the [userId] in their contacts or chats will be notified of the [DeletedAccount].
  * - Clients who have [Notifier.subscribe]d via [groupChatsNotifier] will be [Notifier.unsubscribe]d.
  *
  * ## Blocked Users
@@ -114,13 +120,12 @@ fun readChatSharers(userId: Int): Set<Int> =
  * - The [userId] will be [Notifier.unsubscribe]d via [typingStatusesNotifier].
  */
 fun deleteUser(userId: Int) {
-    if (!GroupChatUsers.canUserLeave(userId))
-        throw IllegalArgumentException(
-            """
-            The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other 
-            users.
-            """,
-        )
+    require(GroupChatUsers.canUserLeave(userId)) {
+        """
+        The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
+        """
+    }
+    accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwners(userId) + readChatSharers(userId))
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.removeUser(userId)

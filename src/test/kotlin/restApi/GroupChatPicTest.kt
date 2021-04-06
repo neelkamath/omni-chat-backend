@@ -96,9 +96,8 @@ class GroupChatPicTest {
         }
 
         @Test
-        fun `An HTTP status code of 400 must be received if the chat doesn't exist`() {
+        fun `An HTTP status code of 400 must be received if the chat doesn't exist`(): Unit =
             assertEquals(HttpStatusCode.BadRequest, getGroupChatPic(chatId = 1, type = PicType.ORIGINAL).status())
-        }
 
         private fun createGroupChat(): ChatPic {
             val adminId = createVerifiedUsers(1).first().info.id

@@ -9,6 +9,7 @@ import com.neelkamath.omniChat.graphql.routing.MessageStatus
 import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
 import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
@@ -40,33 +41,29 @@ object MessageStatuses : Table() {
      *
      * An [IllegalArgumentException] will be thrown if:
      * - The [messageId] was sent by the [userId].
-     * - The status has already been recorded (you can check if the [status] [exists]).
+     * - The status has already been recorded (you can check if the [status] [isExisting]).
      * - The [messageId] isn't visible to the [userId] (you can check if the [Messages.isVisible]).
      */
     fun create(userId: Int, messageId: Int, status: MessageStatus) {
-        if (!Messages.isVisible(userId, messageId))
-            throw IllegalArgumentException(
-                """
-                The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted
-                the chat.
-                """.trimIndent(),
-            )
-        if (Messages.readMessage(userId, messageId).sender.id == userId)
-            throw IllegalArgumentException("You cannot save a status for the user (ID: $userId) on their own message.")
-        if (exists(messageId, userId, status)) {
-            val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
-            throw IllegalArgumentException(
-                "The message (ID: $messageId) has already been $text the user (ID: $userId).",
-            )
+        require(Messages.isVisible(userId, messageId)) {
+            """
+            The user (ID: $userId) can't see the message (ID: $messageId) because it was sent before they deleted the
+            chat.
+            """
         }
-        if (status == MessageStatus.READ && !exists(messageId, userId, MessageStatus.DELIVERED))
+        require(Messages.readMessage(userId, messageId).sender.id != userId) {
+            "You cannot save a status for the user (ID: $userId) on their own message."
+        }
+        require(!isExisting(messageId, userId, status)) {
+            val text = if (status == MessageStatus.DELIVERED) "delivered to" else "seen by"
+            "The message (ID: $messageId) has already been $text the user (ID: $userId)."
+        }
+        if (status == MessageStatus.READ && !isExisting(messageId, userId, MessageStatus.DELIVERED))
             insertAndNotify(messageId, userId, MessageStatus.DELIVERED)
         insertAndNotify(messageId, userId, status)
     }
 
-    /**
-     * Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier].
-     */
+    /** Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier]. */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transaction {
             insert {
@@ -81,12 +78,12 @@ object MessageStatuses : Table() {
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
-    fun exists(messageId: Int, userId: Int, status: MessageStatus): Boolean = transaction {
-        select {
+    fun isExisting(messageId: Int, userId: Int, status: MessageStatus): Boolean = transaction {
+        select(
             (MessageStatuses.messageId eq messageId) and
                     (MessageStatuses.userId eq userId) and
                     (MessageStatuses.status eq status)
-        }.empty().not()
+        ).empty().not()
     }
 
     /** Deletes [MessageStatuses] from the [messageIdList], ignoring invalid ones. */
@@ -109,7 +106,7 @@ object MessageStatuses : Table() {
 
     /** [messageId]'s [MessageDateTimeStatus]es. */
     fun read(messageId: Int): Set<MessageDateTimeStatus> = transaction {
-        select { MessageStatuses.messageId eq messageId }
+        select(MessageStatuses.messageId eq messageId)
             .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
             .toSet()
     }

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -53,18 +54,106 @@ object Messages : IntIdTable() {
 
     private data class ChatAndMessageId(val chatId: Int, val messageId: Int)
 
-    data class TypedMessage(val type: MessageType, val message: BareMessage)
+    data class RawMessage(
+        val type: MessageType,
+        val messageId: Int,
+        val sender: Account,
+        val state: MessageState,
+        val sent: LocalDateTime,
+        val statuses: List<MessageDateTimeStatus>,
+        val context: MessageContext,
+        val isForwarded: Boolean,
+    ) {
+        fun toNewTextMessage(): NewTextMessage = NewTextMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+            TextMessages.read(messageId),
+        )
 
-    private enum class CursorType {
-        /** First message's cursor. */
-        START,
+        fun toNewActionMessage(): NewActionMessage = NewActionMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+            ActionMessages.read(messageId),
+        )
 
-        /** Last message's cursor. */
-        END,
+        fun toNewAudioMessage(): NewAudioMessage = NewAudioMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewGroupChatInviteMessage(): NewGroupChatInviteMessage {
+            val chatId = readChatIdFromMessageId(messageId)
+            return NewGroupChatInviteMessage(
+                chatId,
+                messageId,
+                sender,
+                state,
+                sent,
+                context,
+                isForwarded,
+                GroupChats.readInviteCode(chatId),
+            )
+        }
+
+        fun toNewDocMessage(): NewDocMessage = NewDocMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewVideoMessage(): NewVideoMessage = NewVideoMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+        )
+
+        fun toNewPicMessage(): NewPicMessage = NewPicMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+            PicMessages.read(messageId).caption,
+        )
+
+        fun toNewPollMessage(): NewPollMessage = NewPollMessage(
+            readChatIdFromMessageId(messageId),
+            messageId,
+            sender,
+            state,
+            sent,
+            context,
+            isForwarded,
+            PollMessages.read(messageId),
+        )
     }
 
-    /** Whether messages exist before or after a particular point in time. */
-    private enum class Chronology { BEFORE, AFTER }
+    private enum class Chronology { BEFORE, FROM }
 
     /**
      * Returns whether the [chatId] is a broadcast group with the [userId] as an admin. It's assumed the [userId] is in
@@ -182,14 +271,13 @@ object Messages : IntIdTable() {
         isForwarded: Boolean = false,
         creator: (messageId: Int) -> Unit,
     ) {
-        if (!isUserInChat(userId, chatId))
-            throw IllegalArgumentException("The user (ID: $userId) isn't in the chat (ID: $chatId).")
-        if (isInvalidBroadcast(userId, chatId))
-            throw IllegalArgumentException("The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId).")
-        if (contextMessageId != null && contextMessageId !in readIdList(chatId))
-            throw IllegalArgumentException(
-                "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId).",
-            )
+        require(isUserInChat(userId, chatId)) { "The user (ID: $userId) isn't in the chat (ID: $chatId)." }
+        require(!isInvalidBroadcast(userId, chatId)) {
+            "The user (ID: $userId) isn't an admin of the broadcast chat (ID: $chatId)."
+        }
+        require(contextMessageId == null || contextMessageId in readIdList(chatId)) {
+            "The context message (ID: $contextMessageId) isn't in the chat (ID: $chatId)."
+        }
         val row = transaction {
             insert {
                 it[this.chatId] = chatId
@@ -246,9 +334,7 @@ object Messages : IntIdTable() {
         }
     }
 
-    private fun readType(messageId: Int): MessageType = transaction {
-        select { Messages.id eq messageId }.first()[type]
-    }
+    private fun readType(messageId: Int): MessageType = transaction { select(Messages.id eq messageId).first()[type] }
 
     /**
      * Case-insensitively [query]s the [chatId]'s [MessageEdge]s as seen by the [userId], or an anonymous user if no
@@ -352,14 +438,16 @@ object Messages : IntIdTable() {
 
     /** The message IDs in the [chatId] in order of creation. */
     fun readIdList(chatId: Int): LinkedHashSet<Int> = transaction {
-        select { Messages.chatId eq chatId }.orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
+        select(Messages.chatId eq chatId).orderBy(Messages.id).map { it[Messages.id].value }.toLinkedHashSet()
     }
 
-    /** Returns a concrete class for the [messageId] as seen by the [userId]. */
+    /**
+     * Returns a concrete class for the [messageId] as seen by the [userId].
+     *
+     * @see [readRawMessage]
+     */
     fun readMessage(userId: Int, messageId: Int): Message {
-        val row = transaction {
-            select { Messages.id eq messageId }.first()
-        }
+        val row = transaction { select(Messages.id eq messageId).first() }
         return buildMessage(row, userId)
     }
 
@@ -367,11 +455,11 @@ object Messages : IntIdTable() {
      * Returns a concrete class as seen by the [userId], or an anonymous user if there's no [userId].
      *
      * @see [readMessage]
-     * @see [readTypedMessage]
+     * @see [readRawMessage]
      */
     private fun buildMessage(row: ResultRow, userId: Int? = null): Message {
-        val (type, message) = readTypedMessage(row[id].value)
-        return when (type) {
+        val message = readRawMessage(row[id].value)
+        return when (message.type) {
             MessageType.TEXT -> TextMessage.build(message, userId)
             MessageType.ACTION -> ActionMessage.build(message, userId)
             MessageType.PIC -> PicMessage.build(message, userId)
@@ -384,20 +472,18 @@ object Messages : IntIdTable() {
     }
 
     /** @see [readMessage] */
-    fun readTypedMessage(messageId: Int): TypedMessage {
-        val row = transaction {
-            select { Messages.id eq messageId }.first()
-        }
-        val message = object : BareMessage {
-            override val messageId: Int = messageId
-            override val sender: Account = Users.read(row[senderId]).toAccount()
-            override val state: MessageState = readState(messageId)
-            override val dateTimes: MessageDateTimes =
-                MessageDateTimes(row[sent], MessageStatuses.read(messageId).toList())
-            override val context: MessageContext = MessageContext(row[hasContext], row[contextMessageId])
-            override val isForwarded: Boolean = row[this@Messages.isForwarded]
-        }
-        return TypedMessage(row[type], message)
+    fun readRawMessage(messageId: Int): RawMessage {
+        val row = transaction { select(Messages.id eq messageId).first() }
+        return RawMessage(
+            row[type],
+            messageId,
+            Users.read(row[senderId]).toAccount(),
+            readState(messageId),
+            row[sent],
+            MessageStatuses.read(messageId).toList(),
+            MessageContext(row[hasContext], row[contextMessageId]),
+            row[isForwarded],
+        )
     }
 
     private fun readState(messageId: Int): MessageState {
@@ -416,11 +502,10 @@ object Messages : IntIdTable() {
     /**
      * The ID of the chat which contains the [messageId].
      *
-     * @see [Messages.exists]
+     * @see [Messages.isExistingFrom]
      */
-    fun readChatIdFromMessageId(messageId: Int): Int = transaction {
-        select { Messages.id eq messageId }.first()[chatId]
-    }
+    fun readChatIdFromMessageId(messageId: Int): Int =
+        transaction { select(Messages.id eq messageId).first()[chatId] }
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: Collection<Int>) {
@@ -497,13 +582,12 @@ object Messages : IntIdTable() {
      * the [userId] doesn't exist.
      */
     private fun readChatMessages(userId: Int): Set<ChatAndMessageId> = transaction {
-        select { senderId eq userId }.map { ChatAndMessageId(it[chatId], it[Messages.id].value) }.toSet()
+        select(senderId eq userId).map { ChatAndMessageId(it[chatId], it[Messages.id].value) }.toSet()
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
-    fun existsFrom(chatId: Int, from: LocalDateTime): Boolean = transaction {
-        !select { (Messages.chatId eq chatId) and (sent greaterEq from) }.empty()
-    }
+    fun isExistingFrom(chatId: Int, from: LocalDateTime): Boolean =
+        transaction { select((Messages.chatId eq chatId) and (sent greaterEq from)).empty().not() }
 
     /** The [id] list for the [chatId]. */
     private fun readMessageIdList(chatId: Int, filter: Filter = null): Set<Int> = transaction {
@@ -512,19 +596,18 @@ object Messages : IntIdTable() {
         select(op).map { it[Messages.id].value }.toSet()
     }
 
-    fun exists(id: Int): Boolean = transaction {
-        select { Messages.id eq id }.empty().not()
-    }
+    fun isExisting(id: Int): Boolean = transaction { select(Messages.id eq id).empty().not() }
 
     /** The [MessagesConnection] as seen by the [userId], or an anonymous user if there's no [userId]. */
     fun readGroupChatConnection(
         chatId: Int,
         pagination: BackwardPagination? = null,
         userId: Int? = null,
-    ): MessagesConnection = MessagesConnection(
-        readGroupChat(chatId, pagination, userId).toList(),
-        buildPageInfo(chatId, pagination?.before),
-    )
+    ): MessagesConnection {
+        val edges = readGroupChat(chatId, pagination, userId).toList()
+        val pageInfo = buildPageInfo(chatId, edges.firstOrNull()?.cursor, pagination)
+        return MessagesConnection(edges, pageInfo)
+    }
 
     fun readPrivateChatConnection(
         chatId: Int,
@@ -532,35 +615,39 @@ object Messages : IntIdTable() {
         pagination: BackwardPagination? = null,
     ): MessagesConnection {
         val op = PrivateChatDeletions.readLastDeletion(chatId, userId)?.let { sent greater it }
-        return MessagesConnection(
-            readPrivateChat(userId, chatId, pagination).toList(),
-            buildPageInfo(chatId, pagination?.before, op),
-        )
+        val edges = readPrivateChat(userId, chatId, pagination).toList()
+        val pageInfo = buildPageInfo(chatId, edges.firstOrNull()?.cursor, pagination, op)
+        return MessagesConnection(edges, pageInfo)
     }
 
-    /**
-     * Builds the [PageInfo] for a [MessagesConnection].
-     *
-     * A `null` [cursor] indicates that the [MessagesConnection] neither [PageInfo.hasNextPage] nor
-     * [PageInfo.hasPreviousPage].
-     */
-    private fun buildPageInfo(chatId: Int, cursor: Cursor?, filter: Filter = null): PageInfo = PageInfo(
-        hasNextPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.AFTER, filter),
-        hasPreviousPage = if (cursor == null) false else hasMessages(chatId, cursor, Chronology.BEFORE, filter),
-        startCursor = readCursor(chatId, CursorType.START, filter),
-        endCursor = readCursor(chatId, CursorType.END, filter),
-    )
+    /** Builds the [MessagesConnection.pageInfo]. The [firstMessageId] is the ID of the message. */
+    private fun buildPageInfo(
+        chatId: Int,
+        firstMessageId: Int?,
+        pagination: BackwardPagination? = null,
+        filter: Filter = null,
+    ): PageInfo {
+        val hasNextPage =
+            if (pagination?.before == null) false else hasMessages(chatId, pagination.before, Chronology.FROM, filter)
+        val startCursor = readCursor(chatId, CursorType.START, filter)
+        val endCursor = readCursor(chatId, CursorType.END, filter)
+        val hasPreviousPage = when {
+            firstMessageId != null -> hasMessages(chatId, firstMessageId, Chronology.BEFORE, filter)
+            pagination?.before == null ->
+                if (endCursor == null) false else hasMessages(chatId, endCursor, Chronology.BEFORE, filter)
+            else -> hasMessages(chatId, pagination.before, Chronology.BEFORE, filter)
+        }
+        return PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+    }
 
-    /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.AFTER] the [messageId]. */
+    /** Whether the [chatId] has messages [Chronology.BEFORE] or [Chronology.FROM] the [messageId]. */
     private fun hasMessages(chatId: Int, messageId: Int, chronology: Chronology, filter: Filter = null): Boolean {
         var op: Op<Boolean> = when (chronology) {
             Chronology.BEFORE -> Messages.id less messageId
-            Chronology.AFTER -> Messages.id greater messageId
+            Chronology.FROM -> Messages.id greaterEq messageId
         }
         filter?.let { op = op and it }
-        return transaction {
-            select { (Messages.chatId eq chatId) and op }.empty().not()
-        }
+        return transaction { select((Messages.chatId eq chatId) and op).empty().not() }
     }
 
     /** The ID of the [type] of message in the [chatId], or `null` if there are no messages. */
@@ -587,13 +674,13 @@ object Messages : IntIdTable() {
      * - `false` if the [messageId] was sent before the [userId] deleted the private chat.
      */
     fun isVisible(userId: Int?, messageId: Int): Boolean {
-        if (!exists(messageId)) return false
+        if (!isExisting(messageId)) return false
         val chatId = readChatIdFromMessageId(messageId)
         if (GroupChats.isExistentPublicChat(chatId)) return true
         if (userId == null) return false
         if (!isUserInChat(userId, chatId)) return false
         if (chatId in GroupChatUsers.readChatIdList(userId)) return true
         val deletion = PrivateChatDeletions.readLastDeletion(chatId, userId) ?: return true
-        return readMessage(userId, messageId).dateTimes.sent >= deletion
+        return readMessage(userId, messageId).sent >= deletion
     }
 }

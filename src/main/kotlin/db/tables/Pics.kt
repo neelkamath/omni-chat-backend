@@ -4,6 +4,7 @@ import com.neelkamath.omniChat.db.Pic
 import com.neelkamath.omniChat.db.PostgresEnum
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
@@ -30,9 +31,8 @@ object Pics : IntIdTable() {
         }.value
     }
 
-    fun read(id: Int): Pic = transaction {
-        select { Pics.id eq id }.first()
-    }.let { Pic(it[type], it[original], it[thumbnail]) }
+    fun read(id: Int): Pic =
+        transaction { select(Pics.id eq id).first() }.let { Pic(it[type], it[original], it[thumbnail]) }
 
     /**
      * Returns the [pic]'s [id] after updating it.

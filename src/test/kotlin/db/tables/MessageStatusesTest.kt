@@ -104,8 +104,8 @@ class MessageStatusesTest {
             val chat1Id = createUsedChat(user1Id, user2Id)
             val chat2Id = createUsedChat(user1Id, user3Id)
             MessageStatuses.deleteUserChatStatuses(chat1Id, user1Id)
-            assertTrue(Messages.readPrivateChat(user1Id, chat1Id).flatMap { it.node.dateTimes.statuses }.isEmpty())
-            assertFalse(Messages.readPrivateChat(user1Id, chat2Id).flatMap { it.node.dateTimes.statuses }.isEmpty())
+            assertTrue(Messages.readPrivateChat(user1Id, chat1Id).flatMap { it.node.statuses }.isEmpty())
+            assertFalse(Messages.readPrivateChat(user1Id, chat2Id).flatMap { it.node.statuses }.isEmpty())
         }
     }
 }

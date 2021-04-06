@@ -13,9 +13,31 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
 class BlockedUsersTest {
+    @Nested
+    inner class Search {
+        @Test
+        fun `Only blocked users must be searched`() {
+            // Create three users instead of two to verify that the user who isn't blocked doesn't get searched.
+            val (blockerId, blockedId) = createVerifiedUsers(3).map { it.info.id }
+            BlockedUsers.create(blockerId, blockedId)
+            val actual = BlockedUsers.search(blockerId, query = "").edges.map { it.node.id }
+            assertEquals(listOf(blockedId), actual)
+        }
+
+        @Test
+        fun `Only matching users must be found`() {
+            val (blocker, blocked1, blocked2) = createVerifiedUsers(3).map { it.info }
+            listOf(blocked1, blocked2).forEach { BlockedUsers.create(blocker.id, it.id) }
+            val actual = BlockedUsers.search(blocker.id, query = blocked1.username.value).edges.map { it.node.id }
+            assertEquals(listOf(blocked1.id), actual)
+        }
+    }
+
     @Nested
     inner class Create {
         @Test
@@ -67,21 +89,13 @@ class BlockedUsersTest {
     @Nested
     inner class Delete {
         @Test
-        fun `The user must be unblocked`() {
-            val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
-            BlockedUsers.create(blockerId, blockedId)
-            BlockedUsers.delete(blockerId, blockedId)
-            assertEquals(0, BlockedUsers.count())
-        }
-
-        @Test
         fun `The user must be notified of the unblocked user`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             BlockedUsers.create(blockerId, blockedId)
             awaitBrokering()
             val (blockerSubscriber, blockedSubscriber) =
                 listOf(blockerId, blockedId).map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
-            BlockedUsers.delete(blockerId, blockedId)
+            assertTrue(BlockedUsers.delete(blockerId, blockedId))
             awaitBrokering()
             blockerSubscriber.assertValue(UnblockedAccount(blockedId))
             blockedSubscriber.assertNoValues()
@@ -91,7 +105,7 @@ class BlockedUsersTest {
         fun `The user mustn't be notified when unblocking a user who wasn't blocked`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             val subscriber = accountsNotifier.subscribe(blockerId).subscribeWith(TestSubscriber())
-            BlockedUsers.delete(blockerId, blockedId)
+            assertFalse(BlockedUsers.delete(blockerId, blockedId))
             awaitBrokering()
             subscriber.assertNoValues()
         }

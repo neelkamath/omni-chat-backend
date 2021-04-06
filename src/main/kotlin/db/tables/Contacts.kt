@@ -9,6 +9,7 @@ import com.neelkamath.omniChat.graphql.routing.DeletedContact
 import com.neelkamath.omniChat.graphql.routing.NewContact
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object Contacts : IntIdTable() {
@@ -19,24 +20,31 @@ object Contacts : IntIdTable() {
     private val contactId: Column<Int> = integer("contact_id").references(Users.id)
 
     /**
-     * Saves the [ownerId]'s [contactIdList], ignoring existing contacts. The [ownerId] will be notified of the
-     * [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier].
+     * Saves the [ownerId]'s [contactId].
+     *
+     * If the [contactId] was either previously saved or a nonexistent user, then `false` will be returned. Otherwise,
+     * the [ownerId] will be notified of the [NewContact] if they've [Notifier.subscribe]d via [accountsNotifier], and
+     * `true` will be returned.
      */
-    fun create(ownerId: Int, contactIdList: Set<Int>) {
-        val existingContacts = readIdList(ownerId)
-        val newContacts = contactIdList.filter { it !in existingContacts }
+    fun create(ownerId: Int, contactId: Int): Boolean {
+        if (hasContact(ownerId, contactId)) return false
         transaction {
-            batchInsert(newContacts) {
-                this[contactOwnerId] = ownerId
-                this[contactId] = it
+            insert {
+                it[contactOwnerId] = ownerId
+                it[this.contactId] = contactId
             }
         }
-        for (newContact in newContacts) accountsNotifier.publish(NewContact.build(newContact), ownerId)
+        accountsNotifier.publish(NewContact.build(contactId), ownerId)
+        return true
+    }
+
+    private fun hasContact(ownerId: Int, contactId: Int): Boolean = transaction {
+        select((contactOwnerId eq ownerId) and (Contacts.contactId eq contactId)).empty().not()
     }
 
     /** Returns the ID of every user who has the [contactId] in their contacts. */
     fun readOwners(contactId: Int): Set<Int> = transaction {
-        select { Contacts.contactId eq contactId }.map { it[contactOwnerId] }.toSet()
+        select(Contacts.contactId eq contactId).map { it[contactOwnerId] }.toSet()
     }
 
     /**
@@ -44,13 +52,13 @@ object Contacts : IntIdTable() {
      *
      * @see [read]
      */
-    fun readIdList(ownerId: Int): List<Int> = transaction {
-        select { contactOwnerId eq ownerId }.map { it[contactId] }
+    fun readIdList(ownerId: Int): Set<Int> = transaction {
+        select(contactOwnerId eq ownerId).map { it[contactId] }.toSet()
     }
 
     /** The [ownerId]'s contacts. */
     private fun readRows(ownerId: Int): Set<AccountEdge> = transaction {
-        select { contactOwnerId eq ownerId }
+        select(contactOwnerId eq ownerId)
             .map {
                 val account = Users.read(it[contactId]).toAccount()
                 AccountEdge(account, cursor = it[Contacts.id].value)
@@ -71,15 +79,21 @@ object Contacts : IntIdTable() {
     }
 
     /**
-     * Deletes the [ownerId]'s contacts from the [contactIdList], ignoring nonexistent contacts. The [ownerId] will be
-     * notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier].
+     * Deletes the [ownerId]'s [contactId].
+     *
+     * If the [contactId] either wasn't saved or is a nonexistent user, then `false` will be returned. Otherwise, the
+     * [ownerId] will be notified of the [DeletedContact]s if they've [Notifier.subscribe]d via [accountsNotifier], and
+     * `true` will be returned.
      */
-    fun delete(ownerId: Int, contactIdList: Collection<Int>) {
-        val contacts = readIdList(ownerId).intersect(contactIdList)
-        transaction {
-            deleteWhere { (contactOwnerId eq ownerId) and (contactId inList contacts) }
+    fun delete(ownerId: Int, contactId: Int): Boolean {
+        val count = transaction {
+            deleteWhere { (contactOwnerId eq ownerId) and (Contacts.contactId eq contactId) }
         }
-        for (contact in contacts) accountsNotifier.publish(DeletedContact(contact), ownerId)
+        return if (count == 0) false
+        else {
+            accountsNotifier.publish(DeletedContact(contactId), ownerId)
+            true
+        }
     }
 
     /**

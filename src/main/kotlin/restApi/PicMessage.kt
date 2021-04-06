@@ -48,7 +48,7 @@ private fun postPicMessage(route: Route): Unit = with(route) {
             !isUserInChat(call.userId!!, chatId) ->
                 call.respond(HttpStatusCode.BadRequest, InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT))
 
-            contextMessageId != null && !Messages.exists(contextMessageId) -> call.respond(
+            contextMessageId != null && !Messages.isExisting(contextMessageId) -> call.respond(
                 HttpStatusCode.BadRequest,
                 InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )

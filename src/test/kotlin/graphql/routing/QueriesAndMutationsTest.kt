@@ -5,8 +5,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChat.*
 import com.neelkamath.omniChat.db.tables.GroupChats
 import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChat.graphql.operations.ACCOUNT_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.graphql.operations.STARRED_MESSAGE_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.TYPING_USERS_FRAGMENT
 import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import io.ktor.application.*
@@ -16,6 +17,33 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
+/** [executeGraphQlViaHttp] wrapper which parses the [TestApplicationResponse.content] as a [Map]. */
+fun readGraphQlHttpResponse(
+    query: String,
+    variables: Map<String, Any?>? = null,
+    accessToken: String? = null,
+): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(testingObjectMapper::readValue)
+
+/**
+ * Executes GraphQL queries and mutations via the HTTP interface. The [variables] are for the query, which is the
+ * GraphQL doc.
+ *
+ * @see [readGraphQlHttpResponse]
+ * @see [executeGraphQlViaEngine]
+ */
+fun executeGraphQlViaHttp(
+    query: String,
+    variables: Map<String, Any?>? = null,
+    accessToken: String? = null,
+): TestApplicationResponse = withTestApplication(Application::main) {
+    handleRequest(HttpMethod.Post, "query-or-mutation") {
+        accessToken?.let { addHeader(HttpHeaders.Authorization, "Bearer $it") }
+        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+        val body = GraphQlRequest(query, variables)
+        setBody(testingObjectMapper.writeValueAsString(body))
+    }.response
+}
 
 @ExtendWith(DbExtension::class)
 class QueriesAndMutationsTest {
@@ -34,9 +62,9 @@ class QueriesAndMutationsTest {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query ReadStars {
-                            readStars {
-                                $STARRED_MESSAGE_FRAGMENT
+                        query ReadAccount {
+                            readAccount {
+                                $ACCOUNT_FRAGMENT
                             }
                         }
                         
@@ -48,7 +76,7 @@ class QueriesAndMutationsTest {
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    val operationName = "ReadStars".takeIf { mustSupplyOperationName }
+                    val operationName = "ReadAccount".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }
@@ -57,14 +85,12 @@ class QueriesAndMutationsTest {
         }
 
         @Test
-        fun `The specified operation must be executed when there are multiple`() {
+        fun `The specified operation must be executed when there are multiple`(): Unit =
             testOperationName(mustSupplyOperationName = true)
-        }
 
         @Test
-        fun `An error must be returned when multiple operations are supplied without an operation name`() {
+        fun `An error must be returned when multiple operations are supplied without an operation name`(): Unit =
             testOperationName(mustSupplyOperationName = false)
-        }
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {

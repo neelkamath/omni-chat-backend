@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.annotation.processing.Generated
 
@@ -10,7 +11,7 @@ data class Mp4(
     val bytes: ByteArray
 ) {
     init {
-        if (bytes.size > MAX_BYTES) throw IllegalArgumentException("The video mustn't exceed $MAX_BYTES bytes.")
+        require(bytes.size <= MAX_BYTES) { "The video mustn't exceed $MAX_BYTES bytes." }
     }
 
     @Generated
@@ -49,9 +50,7 @@ object VideoMessages : Table() {
         }
     }
 
-    fun read(id: Int): Mp4 = transaction {
-        select { messageId eq id }.first()[video].let(::Mp4)
-    }
+    fun read(id: Int): Mp4 = transaction { select(messageId eq id).first()[video].let(::Mp4) }
 
     fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }

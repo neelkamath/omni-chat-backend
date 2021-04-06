@@ -1,6 +1,7 @@
 package com.neelkamath.omniChat.db.tables
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** @see [Messages] */
@@ -18,9 +19,8 @@ object GroupChatInviteMessages : Table() {
     }
 
     /** Returns the ID of the invited chat. */
-    fun read(messageId: Int): Int = transaction {
-        select { GroupChatInviteMessages.messageId eq messageId }.first()[groupChatId]
-    }
+    fun read(messageId: Int): Int =
+        transaction { select(GroupChatInviteMessages.messageId eq messageId).first()[groupChatId] }
 
     fun delete(idList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList idList }
