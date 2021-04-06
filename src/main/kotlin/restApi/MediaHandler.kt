@@ -134,14 +134,9 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartPic(): Pic? {
 
 /** Receives a multipart request with only one part, where the part is a [PartData.FileItem]. */
 private suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartFile(): TypedFile {
-    var typedFile: TypedFile? = null
-    call.receiveMultipart().forEachPart { part ->
-        typedFile = when (part) {
-            is PartData.FileItem ->
-                TypedFile(File(part.originalFileName!!).extension, part.streamProvider().use { it.readBytes() })
-            else -> throw NoWhenBranchMatchedException()
-        }
-        part.dispose()
-    }
-    return typedFile!!
+    val part = call.receiveMultipart().readPart()!! as PartData.FileItem
+    val extension = File(part.originalFileName!!).extension
+    val bytes = part.streamProvider().use { it.readBytes() }
+    part.dispose()
+    return TypedFile(extension, bytes)
 }
