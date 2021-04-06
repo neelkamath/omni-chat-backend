@@ -161,14 +161,12 @@ class UsersTest {
         }
 
         @Test
-        fun `Updating an account's email address must cause it to become unverified`() {
+        fun `Updating an account's email address must cause it to become unverified`(): Unit =
             assertEmailAddressUpdate(changeAddress = true)
-        }
 
         @Test
-        fun `Updating an account's email address to the same address mustn't cause it to become unverified`() {
+        fun `Updating an account's email address to the same address mustn't cause it to become unverified`(): Unit =
             assertEmailAddressUpdate(changeAddress = false)
-        }
     }
 
     @Nested

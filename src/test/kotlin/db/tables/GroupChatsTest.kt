@@ -207,9 +207,7 @@ class GroupChatsTest {
     @Nested
     inner class IsInvitable {
         @Test
-        fun `A nonexistent chat mustn't be invitable`() {
-            assertFalse(GroupChats.isInvitable(chatId = 1))
-        }
+        fun `A nonexistent chat mustn't be invitable`(): Unit = assertFalse(GroupChats.isInvitable(chatId = 1))
 
         @Test
         fun `A chat disallowing invitations must be stated as such`() {

@@ -94,14 +94,12 @@ class SubscriptionsTest {
         }
 
         @Test
-        fun `The specified operation must be executed when there are multiple`() {
+        fun `The specified operation must be executed when there are multiple`(): Unit =
             testOperationName(mustSupplyOperationName = true)
-        }
 
         @Test
-        fun `An error must be returned when supplying multiple operations but not which to execute`() {
+        fun `An error must be returned when supplying multiple operations but not which to execute`(): Unit =
             testOperationName(mustSupplyOperationName = false)
-        }
 
         @Test
         fun `A token from an account with an unverified email address mustn't work`() {
@@ -152,8 +150,7 @@ class SubscriptionsTest {
     @Nested
     inner class CloseWithError {
         @Test
-        fun `The connection must be closed when calling an operation with an invalid token`() {
+        fun `The connection must be closed when calling an operation with an invalid token`(): Unit =
             subscribeToAccounts { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
-        }
     }
 }

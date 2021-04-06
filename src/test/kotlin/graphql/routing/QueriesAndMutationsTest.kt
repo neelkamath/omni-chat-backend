@@ -85,14 +85,12 @@ class QueriesAndMutationsTest {
         }
 
         @Test
-        fun `The specified operation must be executed when there are multiple`() {
+        fun `The specified operation must be executed when there are multiple`(): Unit =
             testOperationName(mustSupplyOperationName = true)
-        }
 
         @Test
-        fun `An error must be returned when multiple operations are supplied without an operation name`() {
+        fun `An error must be returned when multiple operations are supplied without an operation name`(): Unit =
             testOperationName(mustSupplyOperationName = false)
-        }
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {

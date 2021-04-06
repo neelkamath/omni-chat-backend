@@ -216,14 +216,12 @@ class MessagesTest {
         }
 
         @Test
-        fun `The message must be visible if the user never deleted the private chat`() {
+        fun `The message must be visible if the user never deleted the private chat`(): Unit =
             createChatWithMessage(mustDelete = false)
-        }
 
         @Test
-        fun `The message must be visible if it was sent after the user deleted the private chat`() {
+        fun `The message must be visible if it was sent after the user deleted the private chat`(): Unit =
             createChatWithMessage(mustDelete = true)
-        }
 
         @Test
         fun `The message mustn't be visible if it was sent before the user deleted the chat`() {

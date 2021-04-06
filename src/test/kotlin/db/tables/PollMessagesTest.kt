@@ -49,13 +49,9 @@ class PollMessagesTest {
         }
 
         @Test
-        fun `The option must be said to exist`() {
-            assertOptionExistence(exists = true)
-        }
+        fun `The option must be said to exist`(): Unit = assertOptionExistence(exists = true)
 
         @Test
-        fun `The option mustn't be said to exist`() {
-            assertOptionExistence(exists = false)
-        }
+        fun `The option mustn't be said to exist`(): Unit = assertOptionExistence(exists = false)
     }
 }

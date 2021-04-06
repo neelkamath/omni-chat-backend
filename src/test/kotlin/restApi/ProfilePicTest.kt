@@ -45,9 +45,8 @@ class ProfilePicTest {
         }
 
         @Test
-        fun `Requesting the pic of a nonexistent user must cause an HTTP status code of 400 to be received`() {
+        fun `Requesting the pic of a nonexistent user must cause an HTTP status code of 400 to be received`(): Unit =
             assertEquals(HttpStatusCode.BadRequest, getProfilePic(userId = 1, PicType.ORIGINAL).status())
-        }
 
         @Test
         fun `Requesting the original image must return the original`() {

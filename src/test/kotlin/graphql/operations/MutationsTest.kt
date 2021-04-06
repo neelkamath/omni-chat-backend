@@ -1326,14 +1326,10 @@ class MutationsTest {
         }
 
         @Test
-        fun `The user's online status must be set to true`() {
-            assertOnlineStatus(true)
-        }
+        fun `The user's online status must be set to true`(): Unit = assertOnlineStatus(true)
 
         @Test
-        fun `The user's online status must be set to false`() {
-            assertOnlineStatus(false)
-        }
+        fun `The user's online status must be set to false`(): Unit = assertOnlineStatus(false)
     }
 
     @Nested
@@ -1346,14 +1342,10 @@ class MutationsTest {
         }
 
         @Test
-        fun `The user's typing status must be set to true`() {
-            assertTypingStatus(isTyping = true)
-        }
+        fun `The user's typing status must be set to true`(): Unit = assertTypingStatus(isTyping = true)
 
         @Test
-        fun `The user's typing status must be set to false`() {
-            assertTypingStatus(isTyping = false)
-        }
+        fun `The user's typing status must be set to false`(): Unit = assertTypingStatus(isTyping = false)
 
         @Test
         fun `Setting the typing status in a chat the user isn't in must fail`() {

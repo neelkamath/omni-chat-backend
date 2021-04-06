@@ -6,11 +6,8 @@ import com.neelkamath.omniChat.db.accountsNotifier
 import com.neelkamath.omniChat.db.awaitBrokering
 import com.neelkamath.omniChat.graphql.routing.DeletedContact
 import com.neelkamath.omniChat.graphql.routing.NewContact
-import com.neelkamath.omniChat.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
@@ -18,13 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Returns every contact's cursor in the order of creation. */
-private fun Contacts.read(): LinkedHashSet<Int> = transaction {
-    selectAll().orderBy(Contacts.id).map { it[Contacts.id].value }.toLinkedHashSet()
-}
-
-fun Contacts.createAll(ownerId: Int, contactIdList: Set<Int>): Unit =
-    contactIdList.forEach { create(ownerId, it) }
+fun Contacts.createAll(ownerId: Int, contactIdList: Set<Int>): Unit = contactIdList.forEach { create(ownerId, it) }
 
 @ExtendWith(DbExtension::class)
 class ContactsTest {

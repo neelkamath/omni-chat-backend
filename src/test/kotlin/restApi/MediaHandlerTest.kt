@@ -182,14 +182,12 @@ class MediaHandlerTest {
         }
 
         @Test
-        fun `Uploading an invalid file type must fail`() {
-            testBadRequest(DummyFile("audio.flac", bytes = 1))
-        }
+        fun `Uploading an invalid file type must fail`(): Unit = testBadRequest(DummyFile("audio.flac", bytes = 1))
+
 
         @Test
-        fun `Uploading an excessively large audio file must fail`() {
+        fun `Uploading an excessively large audio file must fail`(): Unit =
             testBadRequest(DummyFile("audio.mp3", Audio.MAX_BYTES + 1))
-        }
 
         @Test
         fun `An HTTP status code of 401 must be returned when a non-admin creates a message in a broadcast chat`() {

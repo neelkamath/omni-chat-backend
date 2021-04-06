@@ -839,14 +839,11 @@ class QueriesTest {
         }
 
         @Test
-        fun `Messages must be paginated`() {
-            testMessagesPagination(MessagesOperationName.READ_CHAT)
-        }
+        fun `Messages must be paginated`(): Unit = testMessagesPagination(MessagesOperationName.READ_CHAT)
 
         @Test
-        fun `Group chat users must be paginated`() {
+        fun `Group chat users must be paginated`(): Unit =
             testGroupChatUsersPagination(GroupChatUsersOperationName.READ_CHAT)
-        }
     }
 
     @Nested
@@ -859,9 +856,7 @@ class QueriesTest {
         }
 
         @Test
-        fun `Contacts must be paginated`() {
-            testContactsPagination(ContactsOperationName.READ_CONTACTS)
-        }
+        fun `Contacts must be paginated`(): Unit = testContactsPagination(ContactsOperationName.READ_CONTACTS)
     }
 
     @Nested
@@ -954,9 +949,7 @@ class QueriesTest {
         }
 
         @Test
-        fun `Messages must be paginated`() {
-            testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES)
-        }
+        fun `Messages must be paginated`(): Unit = testMessagesPagination(MessagesOperationName.SEARCH_CHAT_MESSAGES)
     }
 
     @Nested
@@ -980,14 +973,11 @@ class QueriesTest {
         }
 
         @Test
-        fun `Messages must be paginated`() {
-            testMessagesPagination(MessagesOperationName.SEARCH_CHATS)
-        }
+        fun `Messages must be paginated`(): Unit = testMessagesPagination(MessagesOperationName.SEARCH_CHATS)
 
         @Test
-        fun `Group chat users must be paginated`() {
+        fun `Group chat users must be paginated`(): Unit =
             testGroupChatUsersPagination(GroupChatUsersOperationName.SEARCH_CHATS)
-        }
     }
 
     @Nested
@@ -1014,9 +1004,7 @@ class QueriesTest {
         }
 
         @Test
-        fun `Contacts must be paginated`() {
-            testContactsPagination(ContactsOperationName.SEARCH_CONTACTS)
-        }
+        fun `Contacts must be paginated`(): Unit = testContactsPagination(ContactsOperationName.SEARCH_CONTACTS)
     }
 
     @Nested

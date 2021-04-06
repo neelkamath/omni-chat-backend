@@ -36,8 +36,7 @@ class PicsTest {
         }
 
         @Test
-        fun `If neither ID nor pic were supplied, then no ID must be returned`() {
+        fun `If neither ID nor pic were supplied, then no ID must be returned`(): Unit =
             assertNull(Pics.update(id = null, pic = null))
-        }
     }
 }

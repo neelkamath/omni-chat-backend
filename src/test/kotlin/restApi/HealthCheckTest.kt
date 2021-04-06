@@ -15,8 +15,7 @@ class HealthCheckTest {
     @Nested
     inner class GetHealthCheck {
         @Test
-        fun `A health check must respond with an HTTP status code of 204`() {
+        fun `A health check must respond with an HTTP status code of 204`(): Unit =
             assertEquals(HttpStatusCode.NoContent, getHealthCheck().status())
-        }
     }
 }
