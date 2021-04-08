@@ -20,6 +20,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `type ChatMessagesEdge`
 - `type ChatsConnection`
 - `type ChatEdge`
+- `type GroupChatsConnection`
+- `type GroupChatEdge`
 
 ### Changed
 

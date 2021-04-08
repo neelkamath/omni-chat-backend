@@ -10,12 +10,12 @@ underscores are allowed.
 """
 scalar Username
 
-"""A name must neither contain whitespace nor exceed 30 characters."""
+"""A name must neither contain whitespace nor exceed 30 characters. An empty string corresponds to no name."""
 scalar Name
 
 """
 A user's bio which cannot exceed 2,500 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is
-disallowed.
+disallowed. An empty string corresponds to no bio.
 """
 scalar Bio
 
@@ -25,7 +25,10 @@ scalar Password
 """1-70 characters, of which at least one isn't whitespace. Leading and trailing whitespace is disallowed."""
 scalar GroupChatTitle
 
-"""At most 1,000 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is disallowed."""
+"""
+At most 1,000 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is disallowed. An empty
+string corresponds to no description.
+"""
 scalar GroupChatDescription
 
 """
