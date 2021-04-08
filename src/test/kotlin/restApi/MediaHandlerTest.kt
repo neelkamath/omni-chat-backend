@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Audio
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.GroupChatPublicity
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.Audio
+import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import io.ktor.application.*
 
 import io.ktor.http.*

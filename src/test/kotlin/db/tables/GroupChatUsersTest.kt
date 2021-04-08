@@ -1,14 +1,14 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.awaitBrokering
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.graphql.routing.ExitedUsers
-import com.neelkamath.omniChat.graphql.routing.GroupChatId
-import com.neelkamath.omniChat.graphql.routing.UpdatedGroupChat
-import com.neelkamath.omniChat.toLinkedHashSet
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.db.groupChatsNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.ExitedUsers
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatId
+import com.neelkamath.omniChatBackend.graphql.routing.UpdatedGroupChat
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.selectAll

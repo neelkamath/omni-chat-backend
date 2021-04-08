@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.accountsNotifier
-import com.neelkamath.omniChat.graphql.routing.AccountEdge
-import com.neelkamath.omniChat.graphql.routing.AccountsConnection
-import com.neelkamath.omniChat.graphql.routing.BlockedAccount
-import com.neelkamath.omniChat.graphql.routing.UnblockedAccount
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.accountsNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.AccountEdge
+import com.neelkamath.omniChatBackend.graphql.routing.AccountsConnection
+import com.neelkamath.omniChatBackend.graphql.routing.BlockedAccount
+import com.neelkamath.omniChatBackend.graphql.routing.UnblockedAccount
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

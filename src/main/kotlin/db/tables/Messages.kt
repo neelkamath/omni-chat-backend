@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.toLinkedHashSet
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

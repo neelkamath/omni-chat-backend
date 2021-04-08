@@ -1,16 +1,16 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
-import com.neelkamath.omniChat.buildTokenSet
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.engine.UnauthorizedException
-import com.neelkamath.omniChat.graphql.engine.parseArgument
-import com.neelkamath.omniChat.graphql.engine.verifyAuth
-import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.buildTokenSet
+import com.neelkamath.omniChatBackend.db.BackwardPagination
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
+import com.neelkamath.omniChatBackend.graphql.engine.parseArgument
+import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
+import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 import java.util.*
 

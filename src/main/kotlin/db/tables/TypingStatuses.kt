@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.db.typingStatusesNotifier
-import com.neelkamath.omniChat.graphql.routing.TypingStatus
-import com.neelkamath.omniChat.graphql.routing.TypingUsers
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.TypingStatus
+import com.neelkamath.omniChatBackend.graphql.routing.TypingUsers
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList

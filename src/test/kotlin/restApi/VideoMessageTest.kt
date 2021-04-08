@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
+import com.neelkamath.omniChatBackend.db.tables.create
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested

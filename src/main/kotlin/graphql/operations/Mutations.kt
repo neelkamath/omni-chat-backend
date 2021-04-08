@@ -1,14 +1,14 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.deleteUser
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.engine.UnauthorizedException
-import com.neelkamath.omniChat.graphql.engine.parseArgument
-import com.neelkamath.omniChat.graphql.engine.verifyAuth
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.deleteUser
+import com.neelkamath.omniChatBackend.db.isUserInChat
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
+import com.neelkamath.omniChatBackend.graphql.engine.parseArgument
+import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
 import java.util.*
 

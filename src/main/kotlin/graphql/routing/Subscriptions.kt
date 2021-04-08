@@ -1,15 +1,15 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.engine.UnauthorizedException
-import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
-import com.neelkamath.omniChat.graphql.engine.buildSpecification
-import com.neelkamath.omniChat.graphql.engine.graphQl
-import com.neelkamath.omniChat.jwtVerifier
-import com.neelkamath.omniChat.objectMapper
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
+import com.neelkamath.omniChatBackend.graphql.engine.buildExecutionInput
+import com.neelkamath.omniChatBackend.graphql.engine.buildSpecification
+import com.neelkamath.omniChatBackend.graphql.engine.graphQl
+import com.neelkamath.omniChatBackend.jwtVerifier
+import com.neelkamath.omniChatBackend.objectMapper
 import graphql.ExecutionResult
 import graphql.execution.UnknownOperationException
 import io.ktor.application.*

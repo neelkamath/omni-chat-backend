@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*

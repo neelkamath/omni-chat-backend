@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChatBackend.db.tables.Users
 import java.util.*
 import javax.mail.*
 import javax.mail.internet.InternetAddress

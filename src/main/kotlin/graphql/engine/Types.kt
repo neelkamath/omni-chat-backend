@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.graphql.engine
+package com.neelkamath.omniChatBackend.graphql.engine
 
-import com.neelkamath.omniChat.graphql.operations.GroupChatDto
-import com.neelkamath.omniChat.graphql.operations.GroupChatInfoDto
-import com.neelkamath.omniChat.graphql.operations.PrivateChatDto
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.operations.GroupChatDto
+import com.neelkamath.omniChatBackend.graphql.operations.GroupChatInfoDto
+import com.neelkamath.omniChatBackend.graphql.operations.PrivateChatDto
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 

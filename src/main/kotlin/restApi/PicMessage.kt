@@ -1,12 +1,12 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.tables.CaptionedPic
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.PicMessages
-import com.neelkamath.omniChat.graphql.routing.MessageText
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.isUserInChat
+import com.neelkamath.omniChatBackend.db.tables.CaptionedPic
+import com.neelkamath.omniChatBackend.db.tables.Messages
+import com.neelkamath.omniChatBackend.db.tables.PicMessages
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*

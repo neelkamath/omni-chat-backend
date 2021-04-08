@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.awaitBrokering
-import com.neelkamath.omniChat.db.tables.Contacts
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.tables.Contacts
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
+import com.neelkamath.omniChatBackend.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import io.ktor.application.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.server.testing.*

@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.UnstarredChat
+import com.neelkamath.omniChatBackend.db.isUserInChat
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.UnstarredChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

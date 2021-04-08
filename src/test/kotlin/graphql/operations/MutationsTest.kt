@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.awaitBrokering
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking

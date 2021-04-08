@@ -1,13 +1,13 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.Notifier
-import com.neelkamath.omniChat.db.PostgresEnum
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.graphql.routing.MessageDateTimeStatus
-import com.neelkamath.omniChat.graphql.routing.MessageStatus
-import com.neelkamath.omniChat.graphql.routing.MessagesSubscription
-import com.neelkamath.omniChat.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChatBackend.db.Notifier
+import com.neelkamath.omniChatBackend.db.PostgresEnum
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.graphql.routing.MessageDateTimeStatus
+import com.neelkamath.omniChatBackend.graphql.routing.MessageStatus
+import com.neelkamath.omniChatBackend.graphql.routing.MessagesSubscription
+import com.neelkamath.omniChatBackend.graphql.routing.UpdatedMessage
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime

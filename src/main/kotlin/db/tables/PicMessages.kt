@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.PostgresEnum
-import com.neelkamath.omniChat.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.PostgresEnum
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction

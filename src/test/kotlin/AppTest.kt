@@ -1,16 +1,16 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.operations.READ_CHATS_QUERY
-import com.neelkamath.omniChat.graphql.operations.READ_CHAT_QUERY
-import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
-import com.neelkamath.omniChat.graphql.operations.createTextMessage
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.operations.READ_CHATS_QUERY
+import com.neelkamath.omniChatBackend.graphql.operations.READ_CHAT_QUERY
+import com.neelkamath.omniChatBackend.graphql.operations.REQUEST_TOKEN_SET_QUERY
+import com.neelkamath.omniChatBackend.graphql.operations.createTextMessage
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith

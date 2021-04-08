@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.tables.Users
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*

@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.auth0.jwt.JWT
 import org.junit.jupiter.api.Nested

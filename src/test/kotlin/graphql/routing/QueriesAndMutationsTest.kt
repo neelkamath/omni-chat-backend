@@ -1,15 +1,15 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
-import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.operations.ACCOUNT_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChat.graphql.operations.TYPING_USERS_FRAGMENT
-import com.neelkamath.omniChat.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
+import com.neelkamath.omniChatBackend.db.tables.create
+import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChatBackend.graphql.operations.ACCOUNT_FRAGMENT
+import com.neelkamath.omniChatBackend.graphql.operations.READ_ACCOUNT_QUERY
+import com.neelkamath.omniChatBackend.graphql.operations.TYPING_USERS_FRAGMENT
+import com.neelkamath.omniChatBackend.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*

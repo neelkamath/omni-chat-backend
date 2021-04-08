@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.Username
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.routing.Username
 
 /** Sets the [username]'s email address verification status to verified without sending them an email. */
 fun verifyEmailAddress(username: Username) {

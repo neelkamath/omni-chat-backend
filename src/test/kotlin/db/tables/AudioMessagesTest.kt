@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.Audio
+import com.neelkamath.omniChatBackend.db.Audio
 import org.junit.jupiter.api.Nested
 import kotlin.test.Test
 import kotlin.test.assertFailsWith

@@ -1,15 +1,15 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.neelkamath.omniChat.db.setUpDb
-import com.neelkamath.omniChat.db.subscribeToMessageBroker
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
-import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
-import com.neelkamath.omniChat.restApi.*
+import com.neelkamath.omniChatBackend.db.setUpDb
+import com.neelkamath.omniChatBackend.db.subscribeToMessageBroker
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.routing.routeGraphQlQueriesAndMutations
+import com.neelkamath.omniChatBackend.graphql.routing.routeGraphQlSubscriptions
+import com.neelkamath.omniChatBackend.restApi.*
 import graphql.schema.DataFetchingEnvironment
 import io.ktor.application.*
 import io.ktor.auth.*

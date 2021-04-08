@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.MessageType
-import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.MessageType
+import com.neelkamath.omniChatBackend.db.tables.*
 import java.time.LocalDateTime
 import java.util.*
 

@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
 import org.junit.jupiter.api.Nested
 import kotlin.test.Test

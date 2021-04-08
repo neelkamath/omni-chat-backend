@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.routing.*
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0

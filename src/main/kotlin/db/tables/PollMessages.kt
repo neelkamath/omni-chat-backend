@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.graphql.routing.MessageText
-import com.neelkamath.omniChat.graphql.routing.Poll
-import com.neelkamath.omniChat.graphql.routing.PollInput
-import com.neelkamath.omniChat.toLinkedHashSet
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.graphql.routing.Poll
+import com.neelkamath.omniChatBackend.graphql.routing.PollInput
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

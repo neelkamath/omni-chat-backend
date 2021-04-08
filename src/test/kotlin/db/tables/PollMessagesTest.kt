@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.awaitBrokering
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.MessageText
-import com.neelkamath.omniChat.graphql.routing.PollInput
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.graphql.routing.PollInput
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested

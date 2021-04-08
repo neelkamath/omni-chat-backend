@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList

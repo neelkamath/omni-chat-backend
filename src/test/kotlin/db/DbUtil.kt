@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChatBackend.db.tables.*
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteAll
 import org.jetbrains.exposed.sql.selectAll

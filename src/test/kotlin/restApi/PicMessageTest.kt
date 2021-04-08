@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.db.tables.*
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.db.tables.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested

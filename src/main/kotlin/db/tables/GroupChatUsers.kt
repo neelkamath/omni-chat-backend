@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.groupChatsNotifier
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

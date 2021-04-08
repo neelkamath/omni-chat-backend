@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*

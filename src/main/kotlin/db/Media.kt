@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.db.Pic.Companion.ORIGINAL_MAX_BYTES
-import com.neelkamath.omniChat.db.Pic.Companion.THUMBNAIL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.Pic.Companion.ORIGINAL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.Pic.Companion.THUMBNAIL_MAX_BYTES
 import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream

@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.graphql.engine
+package com.neelkamath.omniChatBackend.graphql.engine
 
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import graphql.language.StringValue
 import graphql.schema.*
 import graphql.schema.idl.RuntimeWiring

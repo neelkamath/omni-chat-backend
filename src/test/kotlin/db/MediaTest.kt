@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.readPic
+import com.neelkamath.omniChatBackend.readPic
 import org.junit.Test
 import org.junit.jupiter.api.Nested
 import kotlin.test.assertEquals

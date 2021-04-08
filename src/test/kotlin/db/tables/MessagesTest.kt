@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Audio
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.awaitBrokering
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.Audio
+import com.neelkamath.omniChatBackend.db.BackwardPagination
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested

@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.ChatEdges
-import com.neelkamath.omniChat.db.Notifier
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.DeletionOfEveryMessage
-import com.neelkamath.omniChat.graphql.routing.PrivateChat
+import com.neelkamath.omniChatBackend.db.BackwardPagination
+import com.neelkamath.omniChatBackend.db.ChatEdges
+import com.neelkamath.omniChatBackend.db.Notifier
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.DeletionOfEveryMessage
+import com.neelkamath.omniChatBackend.graphql.routing.PrivateChat
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction

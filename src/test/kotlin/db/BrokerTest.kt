@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.UpdatedAccount
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.routing.UpdatedAccount
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.delay

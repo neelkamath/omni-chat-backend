@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.db.count
-import com.neelkamath.omniChat.readPic
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.readPic
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test

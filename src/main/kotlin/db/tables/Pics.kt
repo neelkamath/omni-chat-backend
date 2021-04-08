@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.PostgresEnum
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.PostgresEnum
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

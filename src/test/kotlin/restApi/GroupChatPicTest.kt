@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
-import com.neelkamath.omniChat.graphql.routing.GroupChatPublicity
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
+import com.neelkamath.omniChatBackend.db.tables.create
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*

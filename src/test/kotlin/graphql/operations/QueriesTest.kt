@@ -1,12 +1,12 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.BackwardPagination
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.BackwardPagination
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith

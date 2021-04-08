@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.Pic
+import com.neelkamath.omniChatBackend.db.Pic
 import java.lang.ClassLoader.getSystemClassLoader
 
 /** Reads the [filename] from the filesystem. */

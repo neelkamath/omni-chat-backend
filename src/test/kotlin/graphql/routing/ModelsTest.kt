@@ -1,12 +1,12 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.db.tables.read
-import com.neelkamath.omniChat.slice
-import com.neelkamath.omniChat.toLinkedHashSet
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.db.tables.read
+import com.neelkamath.omniChatBackend.slice
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*

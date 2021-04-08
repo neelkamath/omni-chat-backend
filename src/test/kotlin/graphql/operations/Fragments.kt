@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
 const val NONEXISTENT_USER_FRAGMENT = """
     ... on NonexistentUser {

@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.graphql.engine
+package com.neelkamath.omniChatBackend.graphql.engine
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.graphql.routing.GraphQlResponse
-import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
-import com.neelkamath.omniChat.testingObjectMapper
+import com.neelkamath.omniChatBackend.graphql.routing.GraphQlResponse
+import com.neelkamath.omniChatBackend.graphql.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChatBackend.testingObjectMapper
 import graphql.ExecutionInput
 
 /**
