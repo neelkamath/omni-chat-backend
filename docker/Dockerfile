@@ -7,7 +7,7 @@ RUN gradle shadowJar
 
 FROM adoptopenjdk:15-jre-hotspot
 WORKDIR /app
-COPY --from=builder /home/gradle/project/build/libs/*.jar omni-chat.jar
+COPY --from=builder /home/gradle/project/build/libs/*.jar omni-chat-backend.jar
 COPY src/main/resources/db/migration/ .
 RUN curl -s \
         https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/7.0.4/flyway-commandline-7.0.4-linux-x64.tar.gz \
@@ -20,4 +20,4 @@ ENV FLYWAY_LOCATIONS=filesystem:/app \
     FLYWAY_URL=jdbc:postgresql://$POSTGRES_URL/$POSTGRES_DB \
     FLYWAY_USER=$POSTGRES_USER \
     FLYWAY_PASSWORD=$POSTGRES_PASSWORD
-CMD sh -c 'flyway migrate && java -server -jar omni-chat.jar'
+CMD sh -c 'flyway migrate && java -server -jar omni-chat-backend.jar'

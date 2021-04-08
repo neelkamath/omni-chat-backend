@@ -14,11 +14,11 @@ info:
     thumbnail followed by the original for a medium-scaled image (e.g., the way searching images on Google works).
   contact:
     name: Neel Kamath
-    url: https://github.com/neelkamath/omni-chat
+    url: https://github.com/neelkamath/omni-chat-backend
     email: neelkamathonline@gmail.com
   license:
     name: MIT
-    url: https://github.com/neelkamath/omni-chat/blob/master/LICENSE
+    url: https://github.com/neelkamath/omni-chat-backend/blob/master/LICENSE
 servers:
   - url: http://localhost
     description: This is the URL if you're running it locally. Otherwise, it's the URL you or someone else is running it

@@ -4,6 +4,6 @@ services:
     build:
       dockerfile: docker/Dockerfile
       context: .
-    command: sh -c 'flyway migrate && java -server -jar omni-chat.jar'
+    command: sh -c 'flyway migrate && java -server -jar omni-chat-backend.jar'
     environment:
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS}
