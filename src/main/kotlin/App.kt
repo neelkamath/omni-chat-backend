@@ -2,6 +2,7 @@ package com.neelkamath.omniChat
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.neelkamath.omniChat.db.setUpDb
 import com.neelkamath.omniChat.db.subscribeToMessageBroker
@@ -25,7 +26,8 @@ import java.time.Duration
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    .findAndRegisterModules()
+    // Use <registerModule()> instead of <findAndRegisterModules()> because the latter doesn't work in the prod build.
+    .registerModule(JavaTimeModule())
 
 /** The user's ID on authenticated calls, and `null` otherwise. */
 val ApplicationCall.userId: Int? get() = authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt()
