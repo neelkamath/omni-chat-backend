@@ -8,6 +8,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.19.0
 
+### Changed
+
+- Renamed Docker image from `neelkamath/omni-chat` to `neelkamath/omni-chat-backend`.
+
 ### Fixed
 
 - `Mutation.setOnline`

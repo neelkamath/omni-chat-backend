@@ -3,7 +3,11 @@ package com.neelkamath.omniChatBackend.db.tables
 import com.neelkamath.omniChatBackend.db.CursorType
 import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.messagesNotifier
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.routing.PageInfo
+import com.neelkamath.omniChatBackend.graphql.routing.StarredMessageEdge
+import com.neelkamath.omniChatBackend.graphql.routing.UnstarredChat
+import com.neelkamath.omniChatBackend.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
@@ -30,20 +34,21 @@ object Stargazers : Table() {
         messagesNotifier.publish(message, userId)
     }
 
-    fun read(userId: Int, pagination: ForwardPagination? = null): StarredMessagesConnection {
+    /** Returns the message IDs the [userId] starred as per the [pagination]. */
+    fun readMessageIdList(userId: Int, pagination: ForwardPagination? = null): LinkedHashSet<Int> {
         var op = Stargazers.userId eq userId
         if (pagination?.after != null) op = op and (messageId greater pagination.after)
-        val edges = transaction {
+        return transaction {
             select(op)
                 .orderBy(messageId)
                 .let { if (pagination?.first == null) it else it.limit(pagination.first) }
-                .map { StarredMessageEdge(StarredMessage.build(userId, it[messageId]), cursor = it[messageId]) }
+                .map { it[messageId] }
+                .toLinkedHashSet()
         }
-        val pageInfo = buildPageInfo(userId, edges.lastOrNull()?.cursor, pagination)
-        return StarredMessagesConnection(edges, pageInfo)
     }
 
-    private fun buildPageInfo(userId: Int, lastMessageId: Int?, pagination: ForwardPagination? = null): PageInfo {
+    /** The [lastMessageId] is the ID of the last [StarredMessageEdge] read by the [pagination] for the [userId]. */
+    fun readPageInfo(userId: Int, lastMessageId: Int?, pagination: ForwardPagination? = null): PageInfo {
         val startCursor = readCursor(userId, CursorType.START)
         val endCursor = readCursor(userId, CursorType.END)
         val hasNextPage = when {

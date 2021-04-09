@@ -1305,7 +1305,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertNull(star(adminId, messageId))
-            assertEquals(listOf(messageId), Stargazers.read(adminId).edges.map { it.node.messageId })
+            assertEquals(linkedHashSetOf(messageId), Stargazers.readMessageIdList(adminId))
         }
 
         @Test

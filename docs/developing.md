@@ -10,7 +10,7 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        up --scale chat=0 -d
+        up --build --scale chat=0 -d
     ```
 1. Enter the shell:
     ```
@@ -102,6 +102,20 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - An `input` for updating a resource must have its name suffixed with `Update` (e.g., `AccountUpdate`).
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 - A `union` returned by a `Query` or `Mutation` must be the operation's name suffixed with `Result` (e.g., the `union` returned by `Query.searchChatMessages` is named `SearchChatMessagesResult`).
+
+Always use functions instead of member variables when creating [DTOs](src/main/kotlin/graphql/operations/DataTransferObjects.kt) in order to prevent [overfetching](https://blog.logrocket.com/properly-designed-graphql-resolvers/). For example, in the following code snippet, `edges` is incorrect because it's a member variable, and `getPageInfo()` is correct because it's a function:
+
+```kotlin
+class StarredMessagesConnectionDto(
+    private val messageIdList: LinkedHashSet<Int>,
+    private val pagination: ForwardPagination? = null,
+) {
+    val edges: List<StarredMessageEdgeDto> = messageIdList.map(::StarredMessageEdgeDto)
+
+    fun getPageInfo(env: DataFetchingEnvironment): PageInfo =
+        Stargazers.readPageInfo(env.userId!!, messageIdList.lastOrNull(), pagination)
+}
+```
 
 Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.kt) for GraphQL types:
 
