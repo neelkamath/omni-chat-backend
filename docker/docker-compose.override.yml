@@ -5,12 +5,12 @@ services:
       dockerfile: docker/dev.Dockerfile
       context: .
     command: sh -c 'flyway migrate && gradle --stacktrace -t installDist & gradle run'
-    # The directory must be named "omni-chat-backend" because ktor's autoreload watches a directory by that name.
     working_dir: /home/gradle/omni-chat-backend
     ports: [ 5005:5005 ] # The debugger attaches to port 5005.
     environment:
       ALLOWED_EMAIL_DOMAINS: example.com,icloud.com,gmail.com
       FLYWAY_LOCATIONS: filesystem:src/main/resources/db/migration
+      KTOR_DEV: 'true'
     volumes:
       - type: bind
         source: .
