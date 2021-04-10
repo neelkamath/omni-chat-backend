@@ -190,6 +190,120 @@ class UsernameTest {
     }
 }
 
+class PageInfoTest {
+    @Suppress("ClassName")
+    @Nested
+    inner class Companion_build {
+        @Test
+        fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
+            val cursors = 1..10
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = cursors.first,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                ForwardPagination(first = 1),
+            )
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
+            val cursors = 1..10
+            val pagination = ForwardPagination(after = cursors.elementAt(cursors.last - 1))
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = cursors.last,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                pagination,
+            )
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items sans cursor, the page info must indicate such`() {
+            val cursors = 1..10
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = null,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                ForwardPagination(first = 0),
+            )
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting zero items after the end cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val cursors = 1..10
+            val pagination = ForwardPagination(first = 0, after = cursors.last)
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = null,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                pagination,
+            )
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
+            val cursors = 1..10
+            val pagination = ForwardPagination(after = cursors.first)
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = cursors.last,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                pagination,
+            )
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given items 1-10, when requesting zero items after item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val cursors = 1..10
+            val pagination = ForwardPagination(first = 0, after = cursors.elementAt(4))
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = null,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                pagination,
+            )
+            assertTrue(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given cursors 5-10, when requesting zero items after the nonexistent cursor 3, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val cursors = 5..10
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = null,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                ForwardPagination(first = 0, after = 3),
+            )
+            assertTrue(hasNextPage)
+            assertFalse(hasPreviousPage)
+        }
+
+        @Test
+        fun `Given cursors 1-5, when requesting items after the nonexistent cursor 7, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+            val cursors = 1..5
+            val (hasNextPage, hasPreviousPage) = PageInfo.build(
+                lastEdgeCursor = null,
+                startCursor = cursors.first,
+                endCursor = cursors.last,
+                ForwardPagination(after = 7),
+            )
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+    }
+}
+
 class PasswordTest {
     @Nested
     inner class Init {
@@ -301,18 +415,6 @@ class AccountsConnectionTest {
             val modifiedEdges = edges.withIndex().filter { it.index != 3 }.map { it.value }.toSet()
             val actual = AccountsConnection.build(modifiedEdges, pagination).edges
             assertEquals(expected, actual)
-        }
-
-        @Test
-        fun `Using a deleted user's cursor must cause pagination to work as if the user still exists`() {
-            val edges = createAccountEdges()
-            val index = 5
-            val deletedUser = edges.elementAt(index)
-            Users.delete(deletedUser.node.id)
-            val first = 3
-            val actual =
-                AccountsConnection.build(edges, ForwardPagination(first, deletedUser.cursor)).edges.toLinkedHashSet()
-            assertEquals(edges.slice(index + 1..index + first), actual)
         }
 
         @Test

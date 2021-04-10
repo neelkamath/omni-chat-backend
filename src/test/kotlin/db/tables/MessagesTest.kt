@@ -623,20 +623,6 @@ class MessagesTest {
         }
 
         @Test
-        fun `Using a deleted message's cursor mustn't cause pagination to behave differently`() {
-            val (adminId, chatId, messageIdList) = createPaginatedChat()
-            val index = 5
-            val deletedMessageId = messageIdList.elementAt(index)
-            Messages.delete(deletedMessageId)
-            val last = 3
-            val cursors = Messages
-                .readGroupChat(chatId, BackwardPagination(last, before = deletedMessageId), adminId)
-                .map { it.cursor }
-                .toLinkedHashSet()
-            assertEquals(messageIdList.subList(index - last, index), cursors)
-        }
-
-        @Test
         fun `When requesting zero items sans cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
             val (adminId, chatId) = createPaginatedChat()
             val (hasNextPage, hasPreviousPage) =

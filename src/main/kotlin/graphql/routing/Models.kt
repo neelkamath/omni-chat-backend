@@ -1122,7 +1122,30 @@ data class PageInfo(
     val hasPreviousPage: Boolean,
     val startCursor: Cursor? = null,
     val endCursor: Cursor? = null,
-)
+) {
+    companion object {
+        fun build(
+            lastEdgeCursor: Cursor?,
+            startCursor: Cursor?,
+            endCursor: Cursor?,
+            pagination: ForwardPagination? = null,
+        ): PageInfo {
+            val hasNextPage = when {
+                endCursor == null -> false
+                lastEdgeCursor != null -> lastEdgeCursor < endCursor
+                pagination?.after == null -> true
+                else -> pagination.after < endCursor
+            }
+            val hasPreviousPage = when {
+                startCursor == null -> false
+                lastEdgeCursor != null -> startCursor < lastEdgeCursor
+                pagination?.after == null -> false
+                else -> startCursor <= pagination.after
+            }
+            return PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+        }
+    }
+}
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
 private fun <T> validateOptions(options: Collection<T>) {

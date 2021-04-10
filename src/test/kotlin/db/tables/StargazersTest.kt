@@ -1,14 +1,11 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.DbExtension
-import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.graphql.routing.PageInfo
 import com.neelkamath.omniChatBackend.graphql.routing.UnstarredChat
-import com.neelkamath.omniChatBackend.linkedHashSetOf
-import com.neelkamath.omniChatBackend.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -73,19 +70,32 @@ class StargazersTest {
         }
     }
 
-    private data class StarredChat(val adminId: Int, val messageIdList: List<Int>)
+    private data class StarredChat(val adminId: Int, val messageCursors: LinkedHashSet<Stargazers.MessageCursor>)
 
     private fun createStarredChat(messages: Int = 10): StarredChat {
         val adminId = createVerifiedUsers(1).first().info.id
         val chatId = GroupChats.create(listOf(adminId))
-        val messageIdList = (1..messages).map {
-            Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
+        repeat(messages) {
+            val messageId = Messages.message(adminId, chatId)
+            Stargazers.create(adminId, messageId)
         }
-        return StarredChat(adminId, messageIdList)
+        return StarredChat(adminId, Stargazers.readMessageCursors(adminId))
     }
 
     @Nested
-    inner class ReadMessageIdList {
+    inner class ReadMessageCursors {
+        @Test
+        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the last item's cursor`() {
+            val (adminId, messageCursors) = createStarredChat()
+            val pagination = ForwardPagination(after = messageCursors.last().cursor)
+            val paginatedMessages = Stargazers.readMessageCursors(adminId, pagination)
+            val (hasNextPage, hasPreviousPage) =
+                Stargazers.readPageInfo(adminId, paginatedMessages.lastOrNull()?.cursor, pagination)
+            assertEquals(0, paginatedMessages.size)
+            assertFalse(hasNextPage)
+            assertTrue(hasPreviousPage)
+        }
+
         @Test
         fun `Only the user's messages must be retrieved`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.info.id }
@@ -93,160 +103,82 @@ class StargazersTest {
             val (messageId) = listOf(user1Id, user2Id).map { userId ->
                 Messages.message(userId, chatId).also { Stargazers.create(userId, it) }
             }
-            assertEquals(linkedHashSetOf(messageId), Stargazers.readMessageIdList(user1Id))
+            val actual = Stargazers.readMessageCursors(user1Id).map { it.messageId }.toLinkedHashSet()
+            assertEquals(linkedHashSetOf(messageId), actual)
         }
 
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
-            val (adminId, messageIdList) = createStarredChat()
-            assertEquals(messageIdList.toLinkedHashSet(), Stargazers.readMessageIdList(adminId))
-        }
-
-        @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val index = 5
-            val messageId = messageIdList[index]
-            Messages.delete(messageId)
-            val actual = Stargazers.readMessageIdList(adminId, ForwardPagination(after = messageId))
-            assertEquals(messageIdList.drop(index + 1).toLinkedHashSet(), actual)
+            val (adminId, messageCursors) = createStarredChat()
+            assertEquals(messageCursors, Stargazers.readMessageCursors(adminId))
         }
 
         @Test
         fun `The number of items specified by the limit must be returned from after the cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageCursors) = createStarredChat()
             val first = 3
             val index = 5
-            val expected = messageIdList.slice(index + 1..index + first).toLinkedHashSet()
-            val pagination = ForwardPagination(first, after = messageIdList[index])
-            val actual = Stargazers.readMessageIdList(adminId, pagination)
-            assertEquals(expected, actual)
+            val expected = messageCursors.slice(index + 1..index + first)
+            val pagination = ForwardPagination(first, after = messageCursors.elementAt(index).cursor)
+            assertEquals(expected, Stargazers.readMessageCursors(adminId, pagination))
         }
 
         @Test
         fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageCursors) = createStarredChat()
             val first = 3
-            val actual = Stargazers.readMessageIdList(adminId, ForwardPagination(first))
-            assertEquals(messageIdList.take(first).toLinkedHashSet(), actual)
-        }
-
-        @Test
-        fun `When requesting items after the start cursor, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(after = messageIdList[0])
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            val (hasNextPage, hasPreviousPage) = Stargazers.readPageInfo(adminId, lastMessageId, pagination)
-            assertFalse(hasNextPage)
-            assertTrue(hasPreviousPage)
+            val actual = Stargazers.readMessageCursors(adminId, ForwardPagination(first))
+            assertEquals(messageCursors.take(first).toLinkedHashSet(), actual)
         }
 
         @Test
         fun `Every item after the cursor must be retrieved when there's no limit`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageCursors) = createStarredChat()
             val index = 5
-            val pagination = ForwardPagination(after = messageIdList[index])
-            val expected = messageIdList.drop(index + 1).toLinkedHashSet()
-            val actual = Stargazers.readMessageIdList(adminId, pagination)
-            assertEquals(expected, actual)
+            val pagination = ForwardPagination(after = messageCursors.elementAt(index).cursor)
+            val actual = Stargazers.readMessageCursors(adminId, pagination)
+            assertEquals(messageCursors.drop(index + 1).toLinkedHashSet(), actual)
         }
 
         @Test
         fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val (adminId, messageIdList) = createStarredChat()
-            Messages.delete(messageIdList[3])
-            val paginatedMessages =
-                Stargazers.readMessageIdList(adminId, ForwardPagination(first = 3, after = messageIdList[1]))
-            assertEquals(linkedHashSetOf(messageIdList[2], messageIdList[4], messageIdList[5]), paginatedMessages)
+            val (adminId, messageCursors) = createStarredChat()
+            Messages.delete(messageCursors.elementAt(3).messageId)
+            val expected = listOf(2, 4, 5).map(messageCursors::elementAt).toLinkedHashSet()
+            val pagination = ForwardPagination(first = 3, after = messageCursors.elementAt(1).cursor)
+            val actual = Stargazers.readMessageCursors(adminId, pagination)
+            assertEquals(expected, actual)
         }
     }
 
     @Nested
     inner class ReadPageInfo {
         @Test
-        fun `When requesting zero items sans cursor, the page info must indicate such`() {
-            val (adminId) = createStarredChat()
-            val pagination = ForwardPagination(first = 0)
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            val (hasNextPage, hasPreviousPage) = Stargazers.readPageInfo(adminId, lastMessageId, pagination)
-            assertTrue(hasNextPage)
-            assertFalse(hasPreviousPage)
-        }
-
-        @Test
-        fun `When requesting zero items after the end cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(first = 0, after = messageIdList.last())
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            val (hasNextPage, hasPreviousPage) = Stargazers.readPageInfo(adminId, lastMessageId, pagination)
-            assertFalse(hasNextPage)
-            assertTrue(hasPreviousPage)
-        }
-
-        @Test
-        fun `Given items 1-10, when requesting zero items after item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(first = 0, after = messageIdList[4])
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            val (hasNextPage, hasPreviousPage) = Stargazers.readPageInfo(adminId, lastMessageId, pagination)
-            assertTrue(hasNextPage)
-            assertTrue(hasPreviousPage)
-        }
-
-        @Test
-        fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the last item's cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(after = messageIdList.last())
-            val paginatedMessages = Stargazers.readMessageIdList(adminId, pagination)
-            val (hasNextPage, hasPreviousPage) =
-                Stargazers.readPageInfo(adminId, paginatedMessages.lastOrNull(), pagination)
-            assertEquals(0, paginatedMessages.size)
-            assertEquals(false, hasNextPage)
-            assertEquals(true, hasPreviousPage)
-        }
-
-        @Test
-        fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(first = 1, after = messageIdList[0])
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            Stargazers.readPageInfo(adminId, lastMessageId, pagination).hasNextPage.let(::assertTrue)
-        }
-
-        @Test
-        fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val pagination = ForwardPagination(after = messageIdList[messageIdList.size - 2])
-            val lastMessageId = Stargazers.readMessageIdList(adminId, pagination).lastOrNull()
-            Stargazers.readPageInfo(adminId, lastMessageId, pagination).hasPreviousPage.let(::assertTrue)
-        }
-
-        @Test
         fun `If there are zero items, the page info must indicate such`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val expected = PageInfo(hasNextPage = false, hasPreviousPage = false, startCursor = null, endCursor = null)
-            assertEquals(expected, Stargazers.readPageInfo(adminId, lastMessageId = null))
+            assertEquals(expected, Stargazers.readPageInfo(adminId, lastEdgeCursor = null))
         }
 
         @Test
         fun `If there's one item, the page info must indicate such`() {
-            val (adminId, messageIdList) = createStarredChat(messages = 1)
+            val (adminId, messageCursors) = createStarredChat(messages = 1)
+            val lastEdgeCursor = messageCursors.first().cursor
             val expected = PageInfo(
                 hasNextPage = false,
                 hasPreviousPage = false,
-                startCursor = messageIdList[0],
-                endCursor = messageIdList[0],
+                startCursor = lastEdgeCursor,
+                endCursor = lastEdgeCursor,
             )
-            val actual = Stargazers.readPageInfo(adminId, lastMessageId = messageIdList[0])
-            assertEquals(expected, actual)
+            assertEquals(expected, Stargazers.readPageInfo(adminId, lastEdgeCursor))
         }
 
         @Test
         fun `The first and last cursors must be the first and last items respectively`() {
-            val (adminId, messageIdList) = createStarredChat()
-            val (_, _, startCursor, endCursor) = Stargazers.readPageInfo(adminId, lastMessageId = null)
-            assertEquals(messageIdList[0], startCursor)
-            assertEquals(messageIdList.last(), endCursor)
+            val (adminId, messageCursors) = createStarredChat()
+            val (_, _, startCursor, endCursor) = Stargazers.readPageInfo(adminId, lastEdgeCursor = null)
+            assertEquals(messageCursors.first().cursor, startCursor)
+            assertEquals(messageCursors.last().cursor, endCursor)
         }
     }
 
@@ -259,7 +191,7 @@ class StargazersTest {
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, userId)
-            assertTrue(Stargazers.readMessageIdList(userId).isEmpty())
+            assertTrue(Stargazers.readMessageCursors(userId).isEmpty())
         }
 
         @Test

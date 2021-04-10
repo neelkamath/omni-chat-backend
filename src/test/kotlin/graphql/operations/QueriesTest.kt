@@ -593,14 +593,17 @@ class QueriesTest {
         fun `Messages must be paginated`() {
             val adminId = createVerifiedUsers(1).first().info.id
             val chatId = GroupChats.create(listOf(adminId))
-            val messageIdList = (1..10).map {
-                Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
+            repeat(10) {
+                val messageId = Messages.message(adminId, chatId)
+                Stargazers.create(adminId, messageId)
             }
             val first = 3
             val index = 5
-            val pagination = ForwardPagination(first, after = messageIdList[index])
+            val messages = Stargazers.readMessageCursors(adminId)
+            val expected = messages.slice(index + 1..index + first).map { it.messageId }
+            val pagination = ForwardPagination(first, after = messages.elementAt(index).cursor)
             val actual = readStars(adminId, pagination).edges.map { it.node.messageId }
-            assertEquals(messageIdList.slice(index + 1..index + first), actual)
+            assertEquals(expected, actual)
         }
     }
 
@@ -725,16 +728,6 @@ class QueriesTest {
             val expected = listOf(chatIdList.elementAt(2), chatIdList.elementAt(4), chatIdList.elementAt(5))
             val actual = readChats(adminId, pagination).edges.map { it.node.id }
             assertEquals(expected, actual)
-        }
-
-        @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createReadableChats()
-            val index = 5
-            val chatId = chatIdList.elementAt(index)
-            GroupChatUsers.removeUsers(chatId, adminId)
-            val actual = readChats(adminId, ForwardPagination(after = chatId)).edges.map { it.node.id }
-            assertEquals(chatIdList.drop(index + 1), actual)
         }
 
         @Test
@@ -1118,16 +1111,6 @@ class QueriesTest {
         }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createSearchableChats()
-            val index = 5
-            val chatId = chatIdList.elementAt(index)
-            GroupChatUsers.removeUsers(chatId, adminId)
-            val edges = searchMessages(adminId, query = "", ForwardPagination(after = chatId)).edges
-            assertEquals(chatIdList.drop(index + 1), edges.map { it.node.chat.id })
-        }
-
-        @Test
         fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
             val (adminId) = createSearchableChats()
             val pageInfo = searchMessages(adminId, query = "", ForwardPagination(first = 1)).pageInfo
@@ -1259,7 +1242,7 @@ private fun testBlockedUsersPagination(operation: BlockedUsersOperationName) {
     val expected = userIdList.subList(index + 1, index + 1 + first)
     val actual = when (operation) {
         BlockedUsersOperationName.READ_BLOCKED_USERS -> {
-            val cursor = BlockedUsers.read(blockerId).edges[index].cursor
+            val cursor = BlockedUsers.readBlockedUsers(blockerId).elementAt(index).cursor
             readBlockedUsers(blockerId, ForwardPagination(first, cursor))
         }
         BlockedUsersOperationName.SEARCH_BLOCKED_USERS -> {

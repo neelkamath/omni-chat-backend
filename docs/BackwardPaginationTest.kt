@@ -77,3 +77,13 @@ fun `Given items 1-10, when requesting zero items before item 5, the 'hasNextPag
 fun `The first and last cursors must be the first and last items respectively`() {
 
 }
+
+@Test
+fun `Given cursors 5-10, when requesting zero items after the nonexistent cursor 3, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+
+}
+
+@Test
+fun `Given cursors 1-5, when requesting items after the nonexistent cursor 7, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+
+}

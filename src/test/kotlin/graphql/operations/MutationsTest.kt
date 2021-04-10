@@ -635,8 +635,8 @@ class MutationsTest {
         fun `'null' must be returned once the user gets blocked`() {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.info.id }
             assertNull(blockUser(blockerId, blockedId))
-            val userId = BlockedUsers.read(blockerId).edges[0].node.id
-            assertEquals(blockedId, userId)
+            val actual = BlockedUsers.readBlockedUsers(blockerId).first().blockedUserId
+            assertEquals(blockedId, actual)
         }
 
         @Test
@@ -1305,7 +1305,7 @@ class MutationsTest {
             val chatId = GroupChats.create(listOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertNull(star(adminId, messageId))
-            assertEquals(linkedHashSetOf(messageId), Stargazers.readMessageIdList(adminId))
+            assertEquals(listOf(messageId), Stargazers.readMessageCursors(adminId).map { it.messageId })
         }
 
         @Test

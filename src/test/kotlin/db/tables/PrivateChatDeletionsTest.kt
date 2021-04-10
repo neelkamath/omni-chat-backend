@@ -75,7 +75,7 @@ class PrivateChatDeletionsTest {
             val messageId = Messages.message(user1Id, chatId)
             Stargazers.create(user1Id, messageId)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertTrue(Stargazers.readMessageIdList(user1Id).isEmpty())
+            assertTrue(Stargazers.readMessageCursors(user1Id).isEmpty())
         }
     }
 

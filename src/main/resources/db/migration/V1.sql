@@ -132,6 +132,7 @@ CREATE TABLE private_chat_deletions
 );
 CREATE TABLE stargazers
 (
+    id         SERIAL PRIMARY KEY,
     user_id    INTEGER NOT NULL REFERENCES users (id),
     message_id INTEGER NOT NULL REFERENCES messages (id)
 );

@@ -3,20 +3,20 @@ package com.neelkamath.omniChatBackend.db.tables
 import com.neelkamath.omniChatBackend.db.CursorType
 import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.messagesNotifier
-import com.neelkamath.omniChatBackend.graphql.routing.PageInfo
-import com.neelkamath.omniChatBackend.graphql.routing.StarredMessageEdge
-import com.neelkamath.omniChatBackend.graphql.routing.UnstarredChat
-import com.neelkamath.omniChatBackend.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import com.neelkamath.omniChatBackend.toLinkedHashSet
+import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /** Users' starred [Messages]. */
-object Stargazers : Table() {
+object Stargazers : IntIdTable() {
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
+
+    data class MessageCursor(val messageId: Int, val cursor: Cursor)
 
     /**
      * If [hasStar], nothing happens. Otherwise, the [userId] is notified of the starred [messageId] via
@@ -34,42 +34,43 @@ object Stargazers : Table() {
         messagesNotifier.publish(message, userId)
     }
 
-    /** Returns the message IDs the [userId] starred as per the [pagination]. */
-    fun readMessageIdList(userId: Int, pagination: ForwardPagination? = null): LinkedHashSet<Int> {
+    /**
+     * Returns the messages the [userId] starred as per the [pagination].
+     *
+     * The [MessageCursor]s are sorted in ascending order of their [MessageCursor.cursor].
+     */
+    fun readMessageCursors(userId: Int, pagination: ForwardPagination? = null): LinkedHashSet<MessageCursor> {
         var op = Stargazers.userId eq userId
-        if (pagination?.after != null) op = op and (messageId greater pagination.after)
+        if (pagination?.after != null) op = op and (Stargazers.id greater pagination.after)
         return transaction {
             select(op)
-                .orderBy(messageId)
+                .orderBy(Stargazers.id)
                 .let { if (pagination?.first == null) it else it.limit(pagination.first) }
-                .map { it[messageId] }
+                .map { MessageCursor(it[messageId], cursor = it[Stargazers.id].value) }
                 .toLinkedHashSet()
         }
     }
 
-    /** The [lastMessageId] is the ID of the last [StarredMessageEdge] read by the [pagination] for the [userId]. */
-    fun readPageInfo(userId: Int, lastMessageId: Int?, pagination: ForwardPagination? = null): PageInfo {
+    /** The [lastEdgeCursor] is the ID of the last [StarredMessageEdge] read by the [pagination] for the [userId]. */
+    fun readPageInfo(userId: Int, lastEdgeCursor: Int?, pagination: ForwardPagination? = null): PageInfo {
         val startCursor = readCursor(userId, CursorType.START)
         val endCursor = readCursor(userId, CursorType.END)
-        val hasNextPage = when {
-            endCursor == null -> false
-            lastMessageId != null -> lastMessageId < endCursor
-            pagination?.after == null -> true
-            else -> pagination.after < endCursor
-        }
-        val hasPreviousPage =
-            if (startCursor == null || pagination?.after == null) false else startCursor <= pagination.after
-        return PageInfo(hasNextPage, hasPreviousPage, startCursor, endCursor)
+        return PageInfo.build(lastEdgeCursor, startCursor, endCursor, pagination)
     }
 
-    /** Reads the [type] of cursor for the [userId]. Returns `null` if the user hasn't starred any messages. */
+    /** Returns the [type] of cursor for the [userId]. Returns `null` if the user hasn't starred any messages. */
     private fun readCursor(userId: Int, type: CursorType): Int? {
         val order = when (type) {
             CursorType.END -> SortOrder.DESC
             CursorType.START -> SortOrder.ASC
         }
         return transaction {
-            select(Stargazers.userId eq userId).orderBy(messageId, order).limit(1).firstOrNull()?.get(messageId)
+            select(Stargazers.userId eq userId)
+                .orderBy(Stargazers.id, order)
+                .limit(1)
+                .firstOrNull()
+                ?.get(Stargazers.id)
+                ?.value
         }
     }
 

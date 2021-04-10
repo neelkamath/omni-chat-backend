@@ -244,8 +244,8 @@ fun searchChats(env: DataFetchingEnvironment): ChatsConnectionDto {
 fun readStars(env: DataFetchingEnvironment): StarredMessagesConnectionDto {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    val messageIdList = Stargazers.readMessageIdList(env.userId!!, pagination)
-    return StarredMessagesConnectionDto(messageIdList, pagination)
+    val messageCursors = Stargazers.readMessageCursors(env.userId!!, pagination)
+    return StarredMessagesConnectionDto(messageCursors, pagination)
 }
 
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
@@ -306,10 +306,11 @@ fun searchBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
     return BlockedUsers.search(env.userId!!, query, pagination)
 }
 
-fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnection {
+fun readBlockedUsers(env: DataFetchingEnvironment): AccountsConnectionDto {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    return BlockedUsers.read(env.userId!!, pagination)
+    val blockedUsers = BlockedUsers.readBlockedUsers(env.userId!!, pagination)
+    return AccountsConnectionDto(blockedUsers, pagination)
 }
 
 fun readGroupChat(env: DataFetchingEnvironment): ReadGroupChatResult {
