@@ -5,6 +5,7 @@ package com.neelkamath.omniChatBackend.graphql.operations
 import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.tables.BlockedUsers
 import com.neelkamath.omniChatBackend.db.tables.Stargazers
+import com.neelkamath.omniChatBackend.db.tables.TypingStatuses
 import com.neelkamath.omniChatBackend.db.tables.Users
 import com.neelkamath.omniChatBackend.graphql.routing.Account
 import com.neelkamath.omniChatBackend.graphql.routing.PageInfo
@@ -28,7 +29,7 @@ class StarredMessagesConnectionDto(
 }
 
 class StarredMessageEdgeDto(private val messageId: Int) {
-    fun getCursor(): Int = messageId
+    val cursor: Int = messageId
 
     fun getNode(env: DataFetchingEnvironment): StarredMessage = StarredMessage.build(env.userId!!, messageId)
 }
@@ -49,7 +50,12 @@ class AccountsConnectionDto(
 }
 
 class AccountEdgeDto(private val userId: Int) {
-    fun getCursor(): Int = userId
+    val cursor: Int = userId
 
     fun getNode(): Account = Users.read(userId).toAccount()
+}
+
+/** The users who are typing in the [chatId]. */
+class TypingUsersDto(val chatId: Int) {
+    fun getUsers(env: DataFetchingEnvironment): List<Account> = TypingStatuses.readChat(chatId, env.userId!!).toList()
 }

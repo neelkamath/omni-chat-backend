@@ -2,11 +2,10 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.readUserIdList
 import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
+import com.neelkamath.omniChatBackend.graphql.routing.Account
 import com.neelkamath.omniChatBackend.graphql.routing.TypingStatus
-import com.neelkamath.omniChatBackend.graphql.routing.TypingUsers
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -51,14 +50,10 @@ object TypingStatuses : Table() {
             ?.get(isTyping) ?: false
     }
 
-    /** Returns the statuses of users who are typing in the chat [idList] excluding the [userId]'s. */
-    fun readChats(idList: Collection<Int>, userId: Int): Set<TypingUsers> = transaction {
-        select((chatId inList idList) and isTyping and (TypingStatuses.userId neq userId))
-            .groupBy { it[chatId] }
-            .map { (chatId, rows) ->
-                val users = rows.map { Users.read(it[TypingStatuses.userId]).toAccount() }
-                TypingUsers(chatId, users)
-            }
+    /** Returns the statuses of users (excluding the [userId]'s) who are typing in the [chatId]. */
+    fun readChat(chatId: Int, userId: Int): Set<Account> = transaction {
+        select((TypingStatuses.chatId eq chatId) and isTyping and (TypingStatuses.userId neq userId))
+            .map { Users.read(it[TypingStatuses.userId]).toAccount() }
             .toSet()
     }
 

@@ -119,10 +119,10 @@ fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     return if (Users.isExisting(userId)) Users.readOnlineStatus(userId) else InvalidUserId
 }
 
-fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
+fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsersDto> {
     env.verifyAuth()
-    val idList = PrivateChats.readUserChatIdList(env.userId!!) + GroupChatUsers.readChatIdList(env.userId!!)
-    return TypingStatuses.readChats(idList, env.userId!!).toList()
+    val chatIdList = PrivateChats.readUserChatIdList(env.userId!!) + GroupChatUsers.readChatIdList(env.userId!!)
+    return chatIdList.map(::TypingUsersDto)
 }
 
 fun readAccount(env: DataFetchingEnvironment): Account {

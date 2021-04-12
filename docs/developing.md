@@ -103,13 +103,15 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 - A `union` returned by a `Query` or `Mutation` must be the operation's name suffixed with `Result` (e.g., the `union` returned by `Query.searchChatMessages` is named `SearchChatMessagesResult`).
 
-Always use functions instead of member variables when creating [DTOs](src/main/kotlin/graphql/operations/DataTransferObjects.kt) in order to prevent [overfetching](https://blog.logrocket.com/properly-designed-graphql-resolvers/), and for consistency. For example, in the following code snippet, `edges` is incorrect because it's a member variable, and `getPageInfo()` is correct because it's a function:
+Use functions for expensive operations instead of member variables when creating [DTOs](src/main/kotlin/graphql/operations/DataTransferObjects.kt) in order to prevent [overfetching](https://blog.logrocket.com/properly-designed-graphql-resolvers/). For example, in the following code snippet, `first` is correct because it's a member variable for an inexpensive operation, `edges` is incorrect because it's a member variable for an expensive operation, and `getPageInfo()` is correct because it's a function for an expensive operation:
 
 ```kotlin
-class StarredMessagesConnectionDto(
+class MyDto(
     private val messageIdList: LinkedHashSet<Int>,
     private val pagination: ForwardPagination? = null,
 ) {
+    val first: Int? = pagination?.first
+
     val edges: List<StarredMessageEdgeDto> = messageIdList.map(::StarredMessageEdgeDto)
 
     fun getPageInfo(env: DataFetchingEnvironment): PageInfo =

@@ -6,7 +6,6 @@ import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
 import com.neelkamath.omniChatBackend.graphql.routing.TypingStatus
-import com.neelkamath.omniChatBackend.graphql.routing.TypingUsers
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -68,17 +67,14 @@ class TypingStatusesTest {
     }
 
     @Nested
-    inner class ReadChats {
+    inner class ReadChat {
         @Test
         fun `Only users who are typing must be returned excluding the user themselves`() {
             val (adminId, participant1Id, participant2Id) = createVerifiedUsers(3).map { it.info.id }
             val chatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
             TypingStatuses.update(chatId, adminId, isTyping = true)
             TypingStatuses.update(chatId, participant1Id, isTyping = true)
-            val users = listOf(Users.read(participant1Id).toAccount())
-            val expected = setOf(TypingUsers(chatId, users))
-            val actual = TypingStatuses.readChats(setOf(chatId), adminId)
-            assertEquals(expected, actual)
+            assertEquals(setOf(Users.read(participant1Id).toAccount()), TypingStatuses.readChat(chatId, adminId))
         }
     }
 }
