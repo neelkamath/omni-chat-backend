@@ -53,7 +53,7 @@ fun Application.main() {
             validate { credential ->
                 val userId = credential.payload.subject.toInt()
                 // It's possible the user updated their email address just after the token was created.
-                if (Users.isExisting(userId) && Users.read(userId).hasVerifiedEmailAddress) JWTPrincipal(credential.payload)
+                if (Users.isExisting(userId) && Users.hasVerifiedEmailAddress(userId)) JWTPrincipal(credential.payload)
                 else null
             }
         }

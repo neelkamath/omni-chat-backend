@@ -9,10 +9,10 @@ import graphql.ExecutionInput
 /**
  * Executes GraphQL queries and mutations directly via the GraphQL engine.
  *
- * @param[query] GraphQL document.
- * @param[variables] GraphQL variables for the [query].
- * @param[userId] the ID of the user performing the operation.
- * @see [readGraphQlHttpResponse]
+ * @param query GraphQL document.
+ * @param variables GraphQL variables for the [query].
+ * @param userId the ID of the user performing the operation.
+ * @see readGraphQlHttpResponse
  */
 fun executeGraphQlViaEngine(
     query: String,

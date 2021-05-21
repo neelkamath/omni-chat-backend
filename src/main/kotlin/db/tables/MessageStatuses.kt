@@ -4,10 +4,11 @@ import com.neelkamath.omniChatBackend.db.Notifier
 import com.neelkamath.omniChatBackend.db.PostgresEnum
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.db.readUserIdList
-import com.neelkamath.omniChatBackend.graphql.routing.MessageDateTimeStatus
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.MessagesSubscription
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.graphql.routing.MessageStatus
-import com.neelkamath.omniChatBackend.graphql.routing.MessagesSubscription
-import com.neelkamath.omniChatBackend.graphql.routing.UpdatedMessage
+import com.neelkamath.omniChatBackend.toLinkedHashSet
+import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.`java-time`.datetime
@@ -15,7 +16,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 /** When [Messages] were delivered and read. */
-object MessageStatuses : Table() {
+object MessageStatuses : IntIdTable() {
     override val tableName = "message_statuses"
     private val messageId: Column<Int> = integer("message_id").references(Messages.id)
     private val status: Column<MessageStatus> = customEnumeration(
@@ -35,9 +36,9 @@ object MessageStatuses : Table() {
      * Records that the [userId]'s [status] on the [messageId]. Clients who have [Notifier.subscribe]d to
      * [MessagesSubscription]s via [messagesNotifier] will be notified of the [messageId]'s [MessageStatus] update.
      *
-     * If you record that the [userId] has [MessageStatus.READ] the [messageId], but haven't recorded that the [userId]
-     * had a [messageId] [MessageStatus.DELIVERED], then it will also be recorded that the [userId] had a [messageId]
-     * [MessageStatus.DELIVERED] too.
+     * If you record that the [userId] has [MessageStatus.READ] the [messageId] but haven't recorded that the [userId]
+     * had a [messageId] [MessageStatus.DELIVERED], then it'll also be recorded that the [userId] had the [messageId]
+     * [MessageStatus.DELIVERED].
      *
      * An [IllegalArgumentException] will be thrown if:
      * - The [messageId] was sent by the [userId].
@@ -51,7 +52,7 @@ object MessageStatuses : Table() {
             chat.
             """
         }
-        require(Messages.readMessage(userId, messageId).sender.id != userId) {
+        require(Messages.readSenderId(messageId) != userId) {
             "You cannot save a status for the user (ID: $userId) on their own message."
         }
         require(!isExisting(messageId, userId, status)) {
@@ -72,9 +73,16 @@ object MessageStatuses : Table() {
                 it[this.status] = status
             }
         }
-        val updates = readUserIdList(Messages.readChatIdFromMessageId(messageId))
-            .associateWith { Messages.readMessage(it, messageId).toUpdatedMessage() }
-        messagesNotifier.publish(updates)
+        val userIdList = readUserIdList(Messages.readChatId(messageId))
+        messagesNotifier.publish(UpdatedMessage(messageId), userIdList)
+    }
+
+    /** Returns the status IDs of the [messageId] sorted in ascending order. */
+    fun readIdList(messageId: Int): LinkedHashSet<Int> = transaction {
+        select(MessageStatuses.messageId eq messageId)
+            .orderBy(MessageStatuses.id)
+            .map { it[MessageStatuses.id].value }
+            .toLinkedHashSet()
     }
 
     /** Whether the [userId] has the specified [status] on the [messageId]. */
@@ -91,9 +99,6 @@ object MessageStatuses : Table() {
         deleteWhere { messageId inList messageIdList }
     }
 
-    /** Convenience function for [delete]. */
-    fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
-
     /** Deletes every status the [userId] created in the [chatId]. */
     fun deleteUserChatStatuses(chatId: Int, userId: Int) = transaction {
         deleteWhere { (messageId inList Messages.readIdList(chatId)) and (MessageStatuses.userId eq userId) }
@@ -104,10 +109,17 @@ object MessageStatuses : Table() {
         deleteWhere { MessageStatuses.userId eq userId }
     }
 
-    /** [messageId]'s [MessageDateTimeStatus]es. */
-    fun read(messageId: Int): Set<MessageDateTimeStatus> = transaction {
-        select(MessageStatuses.messageId eq messageId)
-            .map { MessageDateTimeStatus(Users.read(it[userId]).toAccount(), it[dateTime], it[status]) }
-            .toSet()
-    }
+    /** Returns the ID of the user who created the specified [MessageStatuses.id]. */
+    fun readUserId(statusId: Int): Int = transaction { select(MessageStatuses.id eq statusId).first()[userId] }
+
+    /** Returns the [LocalDateTime] of when the specified [MessageStatuses.id] was created. */
+    fun readDateTime(statusId: Int): LocalDateTime =
+        transaction { select(MessageStatuses.id eq statusId).first()[dateTime] }
+
+    /** Returns the [MessageStatus] of the specified [MessageStatuses.id]. */
+    fun readStatus(statusId: Int): MessageStatus =
+        transaction { select(MessageStatuses.id eq statusId).first()[status] }
+
+    fun countStatuses(messageId: Int, status: MessageStatus): Long =
+        transaction { select((MessageStatuses.messageId eq messageId) and (MessageStatuses.status eq status)).count() }
 }

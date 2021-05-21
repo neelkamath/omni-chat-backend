@@ -4,6 +4,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.CreatedSubscription
 import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
 import com.neelkamath.omniChatBackend.graphql.engine.buildExecutionInput
 import com.neelkamath.omniChatBackend.graphql.engine.buildSpecification
@@ -77,8 +78,8 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
 /**
  * Parses the [DefaultWebSocketServerSession.incoming] [Frame.Text] as a [GraphQlRequest], and executes it.
  *
- * @throws [UnknownOperationException]
- * @throws [JWTVerificationException] if the [accessToken] couldn't be verified.
+ * @throws UnknownOperationException
+ * @throws JWTVerificationException if the [accessToken] couldn't be verified.
  */
 private suspend fun buildExecutionResult(
     session: DefaultWebSocketServerSession,
@@ -86,7 +87,7 @@ private suspend fun buildExecutionResult(
 ): ExecutionResult = with(session) {
     val userId = jwtVerifier.verify(accessToken).subject.toInt()
     // It's possible the user updated their email address just after the token was created.
-    if (!Users.read(userId).hasVerifiedEmailAddress) throw JWTVerificationException("The email address is unverified.")
+    if (!Users.hasVerifiedEmailAddress(userId)) throw JWTVerificationException("The email address is unverified.")
     val frame = incoming.receive() as Frame.Text
     val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val builder = buildExecutionInput(request, userId)
@@ -158,10 +159,7 @@ private class Subscriber(
     private fun sendCreatedSubscription() {
         val doc = mapOf(
             "data" to mapOf(
-                graphQlSubscription.operation to mapOf(
-                    "__typename" to "CreatedSubscription",
-                    "placeholder" to "",
-                ),
+                graphQlSubscription.operation to mapOf("__typename" to "CreatedSubscription", "placeholder" to ""),
             ),
         )
         val json = objectMapper.writeValueAsString(doc)
@@ -184,7 +182,7 @@ private class Subscriber(
     /** Closes the connection with the [GraphQlSubscription.completionReason]. */
     override fun onComplete(): Unit = withSession { close(graphQlSubscription.completionReason) }
 
-    /** Closes the connection using [CloseReason.Codes.INTERNAL_ERROR]. */
+    /** Closes the connection with a [CloseReason.Codes.INTERNAL_ERROR]. */
     override fun onError(throwable: Throwable): Unit = withSession {
         call.application.log.error(throwable)
         val reason = CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Error")

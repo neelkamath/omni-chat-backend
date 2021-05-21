@@ -1,21 +1,20 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.BackwardPagination
 import com.neelkamath.omniChatBackend.db.ChatEdges
-import com.neelkamath.omniChatBackend.db.Notifier
-import com.neelkamath.omniChatBackend.db.messagesNotifier
-import com.neelkamath.omniChatBackend.graphql.routing.DeletionOfEveryMessage
-import com.neelkamath.omniChatBackend.graphql.routing.PrivateChat
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.linkedHashSetOf
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 
 /**
- * @see [Messages]
- * @see [PrivateChatDeletions]
+ * @see Messages
+ * @see PrivateChatDeletions
  */
 object PrivateChats : Table() {
-    override val tableName get() = "private_chats"
+    override val tableName = "private_chats"
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
     private val user1Id: Column<Int> = integer("user_1_id").references(Users.id)
     private val user2Id: Column<Int> = integer("user_2_id").references(Users.id)
@@ -44,77 +43,47 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Returns the ID of the chat between the [participantId] (is in the chat) and [userId] (may be in the chat). You
-     * can check if the [PrivateChats.isExisting].
-     */
-    fun readChatId(participantId: Int, userId: Int): Int =
-        readUserChats(participantId, BackwardPagination(last = 0)).first { it.user.id == userId }.id
-
-    /**
-     * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
-     * returned.
+     * Returns the ID of the chat between the [user1Id] and [user2Id].
      *
-     * @see [readIdList]
-     * @see [readUserChatIdList]
+     * @see PrivateChats.isExisting
      */
-    fun readUserChats(userId: Int, messagesPagination: BackwardPagination? = null): Set<PrivateChat> =
-        readUserChatsRows(userId).map { buildPrivateChat(it, userId, messagesPagination) }.toSet()
+    fun readChatId(user1Id: Int, user2Id: Int): Int {
+        val list = listOf(user1Id, user2Id)
+        return transaction {
+            select((PrivateChats.user1Id inList list) and (PrivateChats.user2Id inList list)).first()[PrivateChats.id]
+        }
+    }
 
     /**
-     * Returns the [userId]'s chats. Chats the [userId] deleted, which had no activity after their deletion, aren't
-     * returned.
+     * Returns the chat IDs (sorted in ascending order) the [userId] is in. Chats the [userId] deleted, which had no
+     * activity after their deletion, aren't returned.
      *
-     * @see [readIdList]
-     * @see [readUserChats]
+     * @see readIdList
      */
-    fun readUserChatIdList(userId: Int): Set<Int> = readUserChatsRows(userId).map { it[id] }.toSet()
-
-    /**
-     * Returns every chat the [userId] is in, excluding ones they've deleted which have had no activity after their
-     * deletion.
-     */
-    private fun readUserChatsRows(userId: Int): Set<ResultRow> = transaction {
+    fun readUserChatIdList(userId: Int): LinkedHashSet<Int> = transaction {
         select((user1Id eq userId) or (user2Id eq userId))
-            .filterNot { PrivateChatDeletions.isDeleted(userId, it[PrivateChats.id]) }
-            .toSet()
+            .orderBy(PrivateChats.id)
+            .fold(linkedHashSetOf()) { chatIdList, row ->
+                if (!PrivateChatDeletions.isDeleted(userId, row[PrivateChats.id])) chatIdList.add(row[PrivateChats.id])
+                chatIdList
+            }
     }
 
-    fun read(id: Int, userId: Int, pagination: BackwardPagination? = null): PrivateChat {
-        val row = transaction { select(PrivateChats.id eq id).first() }
-        return buildPrivateChat(row, userId, pagination)
-    }
-
-    private fun buildPrivateChat(
-        row: ResultRow,
-        userId: Int,
-        pagination: BackwardPagination? = null,
-    ): PrivateChat {
-        val otherUserId = if (row[user1Id] == userId) row[user2Id] else row[user1Id]
-        return PrivateChat(
-            row[id],
-            Users.read(otherUserId).toAccount(),
-            Messages.readPrivateChatConnection(row[id], userId, pagination),
-        )
-    }
-
-    /**
-     * Returns the ID list of the [userId]'s chats, including deleted chat IDs.
-     *
-     * @see [readUserChats]
-     */
+    /** Returns the ID list of the [userId]'s chats. This includes chats which had no new messages post-deletion. */
     fun readIdList(userId: Int): Set<Int> =
         transaction { select((user1Id eq userId) or (user2Id eq userId)).map { it[PrivateChats.id] }.toSet() }
 
     /**
      * Case-insensitively [query]s the messages in the chats the [userId] is in, excluding ones the [userId] deleted.
-     * Only chats having messages matching the [query] will be returned. Only the matched message [ChatEdges.edges] will
-     * be returned.
+     *
+     * Only chats having messages matching the [query] will be returned, and they'll only contain the matched
+     * [ChatEdges.messageIdList]. The returned [ChatEdges] are sorted in ascending order of their [ChatEdges.chatId].
      */
-    fun queryUserChatEdges(userId: Int, query: String): Set<ChatEdges> = readUserChatIdList(userId)
+    fun queryUserChatEdges(userId: Int, query: String): LinkedHashSet<ChatEdges> = readUserChatIdList(userId)
         .associateWith { Messages.searchPrivateChat(it, userId, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
-        .toSet()
+        .toLinkedHashSet()
 
     /** Whether there exists a chat between [user1Id] and [user2Id]. */
     fun isExisting(user1Id: Int, user2Id: Int): Boolean = transaction {
@@ -123,11 +92,22 @@ object PrivateChats : Table() {
     }
 
     /**
-     * Searches chats the [userId] has by case-insensitively [query]ing other users' first name, last name, and
-     * username. Chats the [userId] deleted, which had no activity after their deletion, are not searched.
+     * Searches chats the [userId] has by case-insensitively [query]ing other users' usernames, first names, last names,
+     * and email addresses. Returns the IDs of each matched chat in ascending order.
+     *
+     * Chats the [userId] deleted, which had no activity after their deletion, aren't searched.
      */
-    fun search(userId: Int, query: String, pagination: BackwardPagination? = null): Set<PrivateChat> =
-        readUserChats(userId, pagination).filter { Users.read(it.user.id).toAccount().matches(query) }.toSet()
+    fun search(userId: Int, query: String): LinkedHashSet<Int> = readOtherUserIdList(userId)
+        .filter { otherUserId ->
+            listOf(
+                Users.readUsername(otherUserId).value,
+                Users.readFirstName(otherUserId).value,
+                Users.readLastName(otherUserId).value,
+                Users.readEmailAddress(otherUserId),
+            ).any { it.contains(query, ignoreCase = true) }
+        }
+        .map { readChatId(userId, it) }
+        .toLinkedHashSet()
 
     /** [delete]s every chat which the [userId] is in. Nothing will happen if the [userId] doesn't exist. */
     fun deleteUserChats(userId: Int): Unit = readIdList(userId).forEach(::delete)
@@ -135,9 +115,7 @@ object PrivateChats : Table() {
     /**
      * Deletes the [chatId].
      *
-     * Clients will be notified of a [DeletionOfEveryMessage], and then [Notifier.unsubscribe]d via [messagesNotifier].
-     *
-     * @see [deleteUserChats]
+     * @see deleteUserChats
      */
     fun delete(chatId: Int) {
         Messages.deleteChat(chatId)
@@ -153,24 +131,27 @@ object PrivateChats : Table() {
      * Returns the two IDs of the users in the [chatId]. Even if one of the users has deleted the chat, their ID will be
      * returned.
      *
-     * @see [readOtherUserId]
+     * @see readOtherUserId
      */
     fun readUserIdList(chatId: Int): Set<Int> = transaction {
         val row = select(PrivateChats.id eq chatId).first()
-        listOf(row[user1Id], row[user2Id]).toSet()
+        setOf(row[user1Id], row[user2Id])
     }
 
     /**
      * Returns the ID of the other user in the [chatId].
      *
-     * @see [readUserIdList]
+     * @see readUserIdList
      */
     fun readOtherUserId(chatId: Int, userId: Int): Int {
         val (user1Id, user2Id) = readUserIdList(chatId).toList()
         return if (userId == user1Id) user2Id else user1Id
     }
 
-    /** Returns the ID of every other user the [userId] has chats with (excluding deleted chats). */
-    fun readOtherUserIdList(userId: Int): Set<Int> =
-        readUserChats(userId, messagesPagination = BackwardPagination(last = 0)).map { it.user.id }.toSet()
+    /**
+     * Returns the user IDs (sorted in ascending order) the [userId] has chats with. Chats the userId deleted, which had
+     * no activity after their deletion, aren't returned.
+     */
+    fun readOtherUserIdList(userId: Int): LinkedHashSet<Int> =
+        readUserChatIdList(userId).map { readOtherUserId(it, userId) }.toLinkedHashSet()
 }

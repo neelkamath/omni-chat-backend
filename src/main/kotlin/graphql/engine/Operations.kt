@@ -17,6 +17,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("searchChats", ::searchChats)
     .dataFetcher("readStars", ::readStars)
     .dataFetcher("readContacts", ::readContacts)
+    .dataFetcher("readMessage", ::readMessage)
     .dataFetcher("searchContacts", ::searchContacts)
     .dataFetcher("searchMessages", ::searchMessages)
     .dataFetcher("requestTokenSet", ::requestTokenSet)

@@ -15,9 +15,9 @@ object Chats : IntIdTable() {
         insertAndGetId {}.value
     }
 
-    fun delete(id: Int): Unit = transaction {
-        deleteWhere { Chats.id eq id }
+    fun delete(chatId: Int): Unit = transaction {
+        deleteWhere { Chats.id eq chatId }
     }
 
-    fun isExisting(id: Int): Boolean = transaction { select(Chats.id eq id).empty().not() }
+    fun isExisting(chatId: Int): Boolean = transaction { select(Chats.id eq chatId).empty().not() }
 }

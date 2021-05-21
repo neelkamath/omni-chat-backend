@@ -1,7 +1,11 @@
 package com.neelkamath.omniChatBackend.db
 
 import com.neelkamath.omniChatBackend.db.tables.*
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedAccount
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedContact
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UserChatMessagesRemoval
+import com.neelkamath.omniChatBackend.graphql.routing.Cursor
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.LikeOp
@@ -20,23 +24,22 @@ val db: Database by lazy {
     )
 }
 
-data class ChatEdges(
-    val chatId: Int,
-    /** Chronologically ordered. */
-    val edges: LinkedHashSet<MessageEdge>,
-)
+/** The [messageIdList] (sorted in ascending order) belonging to the [chatId]. */
+data class ChatEdges(val chatId: Int, val messageIdList: LinkedHashSet<Int>)
 
-data class ForwardPagination(val first: Int? = null, val after: Cursor? = null)
+sealed class Pagination
 
-data class BackwardPagination(val last: Int? = null, val before: Cursor? = null)
+data class ForwardPagination(val first: Int? = null, val after: Cursor? = null) : Pagination()
+
+data class BackwardPagination(val last: Int? = null, val before: Cursor? = null) : Pagination()
 
 enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
 enum class CursorType {
-    /** First message's cursor. */
+    /** First item's cursor. */
     START,
 
-    /** Last message's cursor. */
+    /** Last item's cursor. */
     END,
 }
 
@@ -56,6 +59,23 @@ fun setUpDb() {
     db
 }
 
+/**
+ * Returns the ID of each of [userIdList] which match the [query].
+ *
+ * The [userIdList] must be sorted in ascending order. The [query] is used to case-insensitively query each user's
+ * username, first name, last name, and email address.
+ */
+fun searchUsers(userIdList: LinkedHashSet<Int>, query: String): LinkedHashSet<Int> = userIdList
+    .filter { userId ->
+        listOf(
+            Users.readUsername(userId).value,
+            Users.readFirstName(userId).value,
+            Users.readLastName(userId).value,
+            Users.readEmailAddress(userId),
+        ).any { it.contains(query, ignoreCase = true) }
+    }
+    .toLinkedHashSet()
+
 /** Case-insensitively checks if [this] contains the [pattern]. */
 infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"
 
@@ -71,7 +91,7 @@ fun readUserIdList(chatId: Int): Set<Int> =
 
 /** Returns the ID of every user who the [userId] has a chat with (deleted private chats aren't included). */
 fun readChatSharers(userId: Int): Set<Int> =
-    PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipants(userId)
+    PrivateChats.readOtherUserIdList(userId) + GroupChatUsers.readFellowParticipantIdList(userId)
 
 /**
  * Deletes the [userId]'s data from the DB, and [Notifier.unsubscribe]s them from all notifiers. An
@@ -99,7 +119,6 @@ fun readChatSharers(userId: Int): Set<Int> =
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
- * - Subscribers will be notified of a [DeletionOfEveryMessage] via [messagesNotifier].
  *
  * ## Group Chats
  *
@@ -125,7 +144,7 @@ fun deleteUser(userId: Int) {
         The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
         """
     }
-    accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwners(userId) + readChatSharers(userId))
+    accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwnerUserIdList(userId) + readChatSharers(userId))
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.removeUser(userId)

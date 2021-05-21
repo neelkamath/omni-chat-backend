@@ -6,8 +6,6 @@ import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.tables.Contacts
 import com.neelkamath.omniChatBackend.db.tables.Users
-import com.neelkamath.omniChatBackend.graphql.operations.ACCOUNTS_SUBSCRIPTION_FRAGMENT
-import com.neelkamath.omniChatBackend.graphql.operations.CREATED_SUBSCRIPTION_FRAGMENT
 import io.ktor.application.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.server.testing.*
@@ -19,10 +17,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 private typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
+
+private data class EventData(val __typename: String)
 
 /**
  * Opens a WebSocket connection on the URI's [path] (e.g., `"messages-subscription"`), sends the GraphQL subscription
@@ -64,52 +63,53 @@ class SubscriptionsTest {
     private val subscribeToMessagesQuery = """
         subscription SubscribeToMessages {
             subscribeToMessages {
-                $CREATED_SUBSCRIPTION_FRAGMENT
+                __typename
             }
         }
     """
 
     @Nested
     inner class RouteSubscription {
-        private fun testOperationName(mustSupplyOperationName: Boolean) {
+        private fun testOperationName(willSpecifyOperation: Boolean) {
             val query = """
                 $subscribeToMessagesQuery
                 
                 subscription SubscribeToAccounts {
                     subscribeToAccounts {
-                        $CREATED_SUBSCRIPTION_FRAGMENT
+                        __typename
                     }
                 }
             """
-            val operationName = "SubscribeToAccounts".takeIf { mustSupplyOperationName }
+            val operationName = "SubscribeToAccounts".takeIf { willSpecifyOperation }
             val token = createVerifiedUsers(1).first().accessToken
             executeGraphQlSubscriptionViaWebSocket(
                 path = "accounts-subscription",
                 GraphQlRequest(query, operationName = operationName),
                 token,
             ) { incoming ->
-                if (mustSupplyOperationName) parseFrameData<CreatedSubscription>(incoming)
+                if (willSpecifyOperation)
+                    assertEquals("CreatedSubscription", parseFrameData<EventData>(incoming).__typename)
                 else assertEquals(FrameType.CLOSE, incoming.receive().frameType)
             }
         }
 
         @Test
-        fun `The specified operation must be executed when there are multiple`(): Unit =
-            testOperationName(mustSupplyOperationName = true)
+        fun `The specified operation must be executed when there are multiple operations`(): Unit =
+            testOperationName(willSpecifyOperation = true)
 
         @Test
         fun `An error must be returned when supplying multiple operations but not which to execute`(): Unit =
-            testOperationName(mustSupplyOperationName = false)
+            testOperationName(willSpecifyOperation = false)
 
         @Test
         fun `A token from an account with an unverified email address mustn't work`() {
-            val userId = createVerifiedUsers(1).first().info.id
-            val token = buildTokenSet(userId).accessToken
-            Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
+            val account = AccountInput(Username("u"), Password("p"), "u@example.com")
+            Users.create(account)
+            val userId = Users.readId(account.username)
             executeGraphQlSubscriptionViaWebSocket(
                 path = "messages-subscription",
                 GraphQlRequest(subscribeToMessagesQuery),
-                token,
+                buildTokenSet(userId).accessToken.value,
             ) { incoming -> assertEquals(FrameType.CLOSE, incoming.receive().frameType) }
         }
     }
@@ -118,7 +118,7 @@ class SubscriptionsTest {
         val subscribeToAccountsQuery = """
             subscription SubscribeToAccounts {
                 subscribeToAccounts {
-                    $ACCOUNTS_SUBSCRIPTION_FRAGMENT
+                    __typename
                 }
             }
         """
@@ -138,10 +138,10 @@ class SubscriptionsTest {
             subscribeToAccounts(user.accessToken) {}
             subscribeToAccounts(user.accessToken) { incoming ->
                 awaitBrokering()
-                parseFrameData<CreatedSubscription>(incoming)
-                Contacts.create(user.info.id, contact.info.id)
+                assertEquals("CreatedSubscription", parseFrameData<EventData>(incoming).__typename)
+                Contacts.create(user.userId, contact.userId)
                 awaitBrokering()
-                assertNotNull(incoming.poll())
+                assertEquals("NewContact", parseFrameData<EventData>(incoming).__typename)
                 assertNull(incoming.poll())
             }
         }

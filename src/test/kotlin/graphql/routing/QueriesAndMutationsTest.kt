@@ -1,15 +1,10 @@
 package com.neelkamath.omniChatBackend.graphql.routing
 
-import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.tables.GroupChats
 import com.neelkamath.omniChatBackend.db.tables.create
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
-import com.neelkamath.omniChatBackend.graphql.operations.ACCOUNT_FRAGMENT
-import com.neelkamath.omniChatBackend.graphql.operations.READ_ACCOUNT_QUERY
-import com.neelkamath.omniChatBackend.graphql.operations.TYPING_USERS_FRAGMENT
-import com.neelkamath.omniChatBackend.graphql.operations.UPDATE_GROUP_CHAT_TITLE_QUERY
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -26,11 +21,11 @@ fun readGraphQlHttpResponse(
 ): Map<String, Any> = executeGraphQlViaHttp(query, variables, accessToken).content!!.let(testingObjectMapper::readValue)
 
 /**
- * Executes GraphQL queries and mutations via the HTTP interface. The [variables] are for the query, which is the
+ * Executes GraphQL queries and mutations via the HTTP interface. The [variables] are for the [query], which is the
  * GraphQL doc.
  *
- * @see [readGraphQlHttpResponse]
- * @see [executeGraphQlViaEngine]
+ * @see readGraphQlHttpResponse
+ * @see executeGraphQlViaEngine
  */
 fun executeGraphQlViaHttp(
     query: String,
@@ -52,9 +47,18 @@ class QueriesAndMutationsTest {
         @Test
         fun `The GraphQL engine must be queried via the HTTP interface`() {
             val user = createVerifiedUsers(1).first()
-            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = user.accessToken).content!!
-            val data = testingObjectMapper.readValue<GraphQlResponse>(response).data!!["readAccount"]!!
-            assertEquals(user.info, testingObjectMapper.convertValue(data))
+            val response = readGraphQlHttpResponse(
+                """
+                query ReadAccount {
+                    readAccount {
+                        userId
+                    }
+                }
+                """,
+                accessToken = user.accessToken,
+            )["data"] as Map<*, *>
+            val account = response["readAccount"] as Map<*, *>
+            assertEquals(user.userId, account["userId"])
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
@@ -64,13 +68,13 @@ class QueriesAndMutationsTest {
                     val query = """
                         query ReadAccount {
                             readAccount {
-                                $ACCOUNT_FRAGMENT
+                                __typename
                             }
                         }
                         
                         query ReadTypingUsers {
                             readTypingUsers {
-                                $TYPING_USERS_FRAGMENT
+                                __typename
                             }
                         }
                     """
@@ -94,17 +98,32 @@ class QueriesAndMutationsTest {
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {
-            val response = executeGraphQlViaHttp(READ_ACCOUNT_QUERY, accessToken = "invalid token")
+            val response = executeGraphQlViaHttp(
+                """
+                query ReadAccount {
+                    readAccount {
+                        __typename
+                    }
+                }
+                """,
+                accessToken = "invalid",
+            )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying the token of a user who lacks permissions`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.info.id), listOf(user.info.id))
+            val chatId = GroupChats.create(listOf(admin.userId), listOf(user.userId))
             val response = executeGraphQlViaHttp(
-                UPDATE_GROUP_CHAT_TITLE_QUERY,
-                mapOf("chatId" to chatId, "title" to "T"),
+                """
+                mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
+                    setInvitability(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
+                        __typename
+                    }
+                }
+                """,
+                mapOf("chatId" to chatId, "isInvitable" to true),
                 user.accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())

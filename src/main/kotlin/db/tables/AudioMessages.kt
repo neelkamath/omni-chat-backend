@@ -1,38 +1,28 @@
 package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.Audio
-import com.neelkamath.omniChatBackend.db.PostgresEnum
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** @see [Messages] */
+/** @see Messages */
 object AudioMessages : Table() {
     override val tableName = "audio_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val audio: Column<ByteArray> = binary("audio", Audio.MAX_BYTES)
-    private val type: Column<Audio.Type> = customEnumeration(
-        name = "type",
-        sql = "audio_type",
-        fromDb = { Audio.Type.valueOf((it as String).toUpperCase()) },
-        toDb = { PostgresEnum("audio_type", it) },
-    )
 
-    /** @see [Messages.createAudioMessage] */
-    fun create(id: Int, audio: Audio): Unit = transaction {
+    /** @see Messages.createAudioMessage */
+    fun create(messageId: Int, audio: Audio): Unit = transaction {
         insert {
-            it[this.messageId] = id
+            it[this.messageId] = messageId
             it[this.audio] = audio.bytes
-            it[this.type] = audio.type
         }
     }
 
-    fun read(id: Int): Audio {
-        val row = transaction { select(messageId eq id).first() }
-        return Audio(row[audio], row[type])
-    }
+    fun read(messageId: Int): Audio =
+        transaction { select(AudioMessages.messageId eq messageId).first()[audio].let(::Audio) }
 
-    fun delete(idList: Collection<Int>): Unit = transaction {
-        deleteWhere { messageId inList idList }
+    fun delete(messageIdList: Collection<Int>): Unit = transaction {
+        deleteWhere { messageId inList messageIdList }
     }
 }

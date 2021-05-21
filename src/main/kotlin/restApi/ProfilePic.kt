@@ -1,5 +1,6 @@
 package com.neelkamath.omniChatBackend.restApi
 
+import com.neelkamath.omniChatBackend.db.PicType
 import com.neelkamath.omniChatBackend.db.tables.Users
 import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
@@ -21,13 +22,8 @@ private fun getProfilePic(route: Route): Unit = with(route) {
         val type = PicType.valueOf(call.parameters["pic-type"]!!)
         if (!Users.isExisting(userId)) call.respond(HttpStatusCode.BadRequest)
         else {
-            val pic = Users.read(userId).pic
-            if (pic == null) call.respond(HttpStatusCode.NoContent)
-            else
-                when (type) {
-                    PicType.ORIGINAL -> call.respond(pic.original)
-                    PicType.THUMBNAIL -> call.respond(pic.thumbnail)
-                }
+            val pic = Users.readPic(userId, type)
+            if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic)
         }
     }
 }

@@ -1,8 +1,6 @@
 CREATE
 EXTENSION pgcrypto;
 CREATE TYPE message_status AS ENUM ('delivered', 'read');
-CREATE TYPE pic_type AS ENUM ('png', 'jpeg');
-CREATE TYPE audio_type AS ENUM ('mp3', 'mp4');
 CREATE TYPE message_type AS ENUM ('text', 'action', 'pic', 'audio', 'video', 'doc', 'poll', 'group_chat_invite');
 CREATE TYPE group_chat_publicity AS ENUM ('not_invitable', 'invitable', 'public');
 CREATE TABLE chats
@@ -13,8 +11,7 @@ CREATE TABLE pics
 (
     id        SERIAL PRIMARY KEY,
     original  BYTEA    NOT NULL,
-    thumbnail BYTEA    NOT NULL,
-    type      pic_type NOT NULL
+    thumbnail BYTEA    NOT NULL
 );
 CREATE TABLE users
 (
@@ -63,14 +60,12 @@ CREATE TABLE pic_messages
     message_id INTEGER  NOT NULL UNIQUE REFERENCES messages (id),
     original   BYTEA    NOT NULL,
     thumbnail  BYTEA    NOT NULL,
-    type       pic_type NOT NULL,
     caption    VARCHAR(10000)
 );
 CREATE TABLE audio_messages
 (
     message_id INTEGER    NOT NULL UNIQUE REFERENCES messages (id),
-    audio      BYTEA      NOT NULL,
-    type       audio_type NOT NULL
+    audio      BYTEA      NOT NULL
 );
 CREATE TABLE video_messages
 (
@@ -89,30 +84,27 @@ CREATE TABLE group_chat_invite_messages
 );
 CREATE TABLE poll_messages
 (
-    id         SERIAL PRIMARY KEY,
     message_id INTEGER        NOT NULL UNIQUE REFERENCES messages (id),
     title      VARCHAR(10000) NOT NULL
 );
-CREATE TABLE poll_options
+CREATE TABLE poll_message_options
 (
-    id      SERIAL PRIMARY KEY,
-    poll_id INTEGER        NOT NULL REFERENCES poll_messages (id),
-    option  VARCHAR(10000) NOT NULL
+    id         SERIAL PRIMARY KEY,
+    message_id INTEGER        NOT NULL REFERENCES messages (id),
+    option     VARCHAR(10000) NOT NULL
 );
-CREATE TABLE poll_votes
+CREATE TABLE poll_message_votes
 (
     user_id   INTEGER NOT NULL REFERENCES users (id),
-    option_id INTEGER NOT NULL REFERENCES poll_options (id)
+    option_id INTEGER NOT NULL REFERENCES poll_message_options (id)
 );
 CREATE TABLE contacts
 (
-    id               SERIAL PRIMARY KEY,
-    contact_owner_id INTEGER NOT NULL REFERENCES users (id),
-    contact_id       INTEGER NOT NULL REFERENCES users (id)
+    contact_owner_user_id INTEGER NOT NULL REFERENCES users (id),
+    contact_user_id       INTEGER NOT NULL REFERENCES users (id)
 );
 CREATE TABLE group_chat_users
 (
-    id            SERIAL PRIMARY KEY,
     group_chat_id INTEGER NOT NULL REFERENCES group_chats (id),
     user_id       INTEGER NOT NULL REFERENCES users (id),
     is_admin      BOOLEAN NOT NULL
@@ -132,12 +124,12 @@ CREATE TABLE private_chat_deletions
 );
 CREATE TABLE stargazers
 (
-    id         SERIAL PRIMARY KEY,
     user_id    INTEGER NOT NULL REFERENCES users (id),
     message_id INTEGER NOT NULL REFERENCES messages (id)
 );
 CREATE TABLE message_statuses
 (
+    id         SERIAL PRIMARY KEY,
     message_id INTEGER        NOT NULL REFERENCES messages (id),
     status     message_status NOT NULL,
     user_id    INTEGER        NOT NULL REFERENCES users (id),
@@ -146,20 +138,18 @@ CREATE TABLE message_statuses
 CREATE TABLE typing_statuses
 (
     chat_id   INTEGER NOT NULL REFERENCES chats (id),
-    user_id   INTEGER NOT NULL REFERENCES users (id),
-    is_typing BOOLEAN NOT NULL
+    user_id   INTEGER NOT NULL REFERENCES users (id)
 );
 CREATE TABLE action_messages
 (
-    id         SERIAL PRIMARY KEY,
     message_id INTEGER        NOT NULL UNIQUE REFERENCES messages (id),
     text       VARCHAR(10000) NOT NULL
 );
 CREATE TABLE action_message_actions
 (
-    id                SERIAL PRIMARY KEY,
-    action_message_id INTEGER        NOT NULL REFERENCES action_messages (id),
-    action            VARCHAR(10000) NOT NULL
+    id         SERIAL PRIMARY KEY,
+    message_id INTEGER        NOT NULL REFERENCES messages (id),
+    action     VARCHAR(10000) NOT NULL
 );
 CREATE TABLE blocked_users
 (

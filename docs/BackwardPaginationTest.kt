@@ -1,25 +1,25 @@
 @Test
-fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
+fun `Given items, when requesting items with neither a limit nor a cursor, then every item must be retrieved`() {
 
 }
 
 @Test
-fun `The number of items specified by the limit must be returned from before the cursor`() {
+fun `Given items, when requesting items with a limit and cursor, then the number of items specified by the limit must be returned from before the cursor`() {
 
 }
 
 @Test
-fun `The number of items specified by the limit from the last item must be retrieved when there's no cursor`() {
+fun `Given items, when requesting items with a limit but no cursor, then the number of items specified by the limit from the last item must be retrieved`() {
 
 }
 
 @Test
-fun `Every item before the cursor must be retrieved when there's no limit`() {
+fun `Given items, when requesting items with a cursor but no limit, then every item before the cursor must be retrieved`() {
 
 }
 
 @Test
-fun `Zero items must be retrieved along with the correct 'hasNextPage' and 'hasPreviousPage' when using the first item's cursor`() {
+fun `Given items, when requesting items with the first item's cursor but no limit, then zero items must be retrieved, 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
@@ -29,61 +29,61 @@ fun `Given items 1-10 where item 4 has been deleted, when requesting the last th
 }
 
 @Test
-fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
+fun `Given items 1-10 where item 6 has been deleted, when requesting items using the deleted item's cursor, then items 1-5 must be retrieved`() {
 
 }
 
 @Test
-fun `Retrieving the first of many items must cause the page info to state there are only items after it`() {
+fun `Retrieving the first of many items must cause 'hasNextPage' to be 'true', and 'hasPreviousPage' to be 'false'`() {
 
 }
 
 @Test
-fun `Retrieving the last of many items must cause the page info to state there are only items before it`() {
+fun `Retrieving the last of many items must cause 'hasNextPage' to be 'false', and 'hasPreviousPage' to be 'true'`() {
 
 }
 
 @Test
-fun `If there are zero items, the page info must indicate such`() {
+fun `Given zero items, when requesting every item, then 'startCursor' must be 'null', 'endCursor' must be 'null', 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
 @Test
-fun `If there's one item, the page info must indicate such`() {
+fun `Given one item, when requesting every item, then 'startCursor' must point to the item, 'endCursor' must point to the item, 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
 @Test
-fun `When requesting zero items sans cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+fun `Given items, when requesting zero items sans cursor, then 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
 
 }
 
 @Test
-fun `When requesting zero items before the start cursor, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+fun `Given items, when requesting zero items before the start cursor, then 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
 @Test
-fun `When requesting items before the end cursor, 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
+fun `Given items, when requesting items before the end cursor, then 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
 @Test
-fun `Given items 1-10, when requesting zero items before item 5, the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+fun `Given items 1-10, when requesting zero items before item 5, then 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'true'`() {
 
 }
 
 @Test
-fun `The first and last cursors must be the first and last items respectively`() {
+fun `Given items, when requesting the start and end cursors, then they must point to the first and last items respectively`() {
 
 }
 
 @Test
-fun `Given cursors 5-10, when requesting zero items after the nonexistent cursor 3, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+fun `Given items 1-10 where items 1-5 have been deleted, when requesting items before the deleted item 3, then 'hasNextPage' must be 'true', and 'hasPreviousPage' must be 'false'`() {
 
 }
 
 @Test
-fun `Given cursors 1-5, when requesting items after the nonexistent cursor 7, then the 'hasNextPage' and 'hasPreviousPage' must indicate such`() {
+fun `Given items 1-10 where items 6-10 have been deleted, when requesting zero items before the deleted item 7, then 'hasNextPage' must be 'false', and 'hasPreviousPage' must be 'true'`() {
 
 }

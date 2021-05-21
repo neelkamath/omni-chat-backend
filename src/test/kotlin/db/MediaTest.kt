@@ -1,5 +1,6 @@
 package com.neelkamath.omniChatBackend.db
 
+import com.neelkamath.omniChatBackend.readBytes
 import com.neelkamath.omniChatBackend.readPic
 import org.junit.Test
 import org.junit.jupiter.api.Nested
@@ -12,14 +13,12 @@ class PicTest {
     inner class Init {
         @Test
         fun `Passing an excessively large original image must cause an exception to be thrown`() {
-            assertFailsWith<IllegalArgumentException> { Pic.build(Pic.Type.PNG, ByteArray(Pic.ORIGINAL_MAX_BYTES + 1)) }
+            assertFailsWith<IllegalArgumentException> { Pic.build("png", ByteArray(Pic.ORIGINAL_MAX_BYTES + 1)) }
         }
 
         @Test
         fun `Passing an excessively large thumbnail must cause an exception to be thrown`() {
-            assertFailsWith<IllegalArgumentException> {
-                Pic(Pic.Type.PNG, ByteArray(1), ByteArray(Pic.THUMBNAIL_MAX_BYTES + 1))
-            }
+            assertFailsWith<IllegalArgumentException> { Pic(ByteArray(1), ByteArray(Pic.THUMBNAIL_MAX_BYTES + 1)) }
         }
     }
 
@@ -30,36 +29,20 @@ class PicTest {
         fun `Using a valid capitalized file extension mustn't fail`() {
             Pic.Type.build("PNG")
         }
-
-        @Test
-        fun `Using an invalid file extension must fail`() {
-            assertFailsWith<IllegalArgumentException> { Pic.Type.build("html") }
-        }
     }
 
     @Nested
     @Suppress("ClassName")
     inner class Companion_build {
-        private fun testSupportedPic(jpeg: String) {
-            val pic = Pic.build(jpeg, readPic("76px×57px.jpg").original)
-            assertEquals(Pic.Type.JPEG, pic.type)
-        }
-
-        private fun testUnsupportedPic(name: String) {
-            assertFailsWith<IllegalArgumentException> { Pic.build(name, ByteArray(1)) }
+        @Test
+        fun `Passing a supported extension must work`() {
+            Pic.build("jpg", readPic("76px×57px.jpg").original)
         }
 
         @Test
-        fun `Passing a supported extension must work`(): Unit = testSupportedPic("jpg")
-
-        @Test
-        fun `Passing an unsupported extension mustn't work`(): Unit = testUnsupportedPic("webp")
-
-        @Test
-        fun `Passing a supported filename must work`(): Unit = testSupportedPic("pic.jpg")
-
-        @Test
-        fun `Passing an unsupported filename mustn't work`(): Unit = testUnsupportedPic("pic.gif")
+        fun `Passing an unsupported extension mustn't work`() {
+            assertFailsWith<IllegalArgumentException> { Pic.build("webp", readBytes("76px×57px.webp")) }
+        }
     }
 }
 

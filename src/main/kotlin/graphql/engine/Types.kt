@@ -1,9 +1,6 @@
 package com.neelkamath.omniChatBackend.graphql.engine
 
-import com.neelkamath.omniChatBackend.graphql.operations.GroupChatDto
-import com.neelkamath.omniChatBackend.graphql.operations.GroupChatInfoDto
-import com.neelkamath.omniChatBackend.graphql.operations.PrivateChatDto
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 
@@ -49,8 +46,8 @@ private inline fun wireType(
 }
 
 private fun readChat(obj: Any): String = when (obj) {
-    is PrivateChat, is PrivateChatDto -> "PrivateChat"
-    is GroupChat, is GroupChatDto -> "GroupChat"
+    is PrivateChat -> "PrivateChat"
+    is GroupChat -> "GroupChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -67,8 +64,6 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is UpdatedMessage -> "UpdatedMessage"
     is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
-    is MessageDeletionPoint -> "MessageDeletionPoint"
-    is DeletionOfEveryMessage -> "DeletionOfEveryMessage"
     is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
@@ -89,21 +84,21 @@ private fun readSearchChatMessagesResult(obj: Any): String = when (obj) {
 }
 
 private fun readReadChatResult(obj: Any): String = when (obj) {
-    is PrivateChat, is PrivateChatDto -> "PrivateChat"
-    is GroupChat, is GroupChatDto -> "GroupChat"
+    is PrivateChat -> "PrivateChat"
+    is GroupChat -> "GroupChat"
     is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
 private fun readReadGroupChatResult(obj: Any): String = when (obj) {
-    is GroupChatInfo, is GroupChatInfoDto -> "GroupChatInfo"
+    is GroupChatInfo -> "GroupChatInfo"
     is InvalidInviteCode -> "InvalidInviteCode"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
 private fun readRequestTokenSetResult(obj: Any): String = when (obj) {
     is TokenSet -> "TokenSet"
-    is NonexistentUser -> "NonexistentUser"
+    is NonexistingUser -> "NonexistingUser"
     is UnverifiedEmailAddress -> "UnverifiedEmailAddress"
     is IncorrectPassword -> "IncorrectPassword"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -205,7 +200,7 @@ private fun readReadOnlineStatusResult(obj: Any): String = when (obj) {
 
 private fun readSetPollVoteResult(obj: Any): String = when (obj) {
     is InvalidMessageId -> "InvalidMessageId"
-    is NonexistentOption -> "NonexistentOption"
+    is NonexistingOption -> "NonexistingOption"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

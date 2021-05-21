@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.restApi
 
 import com.neelkamath.omniChatBackend.db.Audio
 import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.PicType
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.tables.Doc
 import com.neelkamath.omniChatBackend.db.tables.Messages
@@ -16,8 +17,6 @@ import io.ktor.routing.*
 import io.ktor.util.pipeline.*
 import java.io.File
 import javax.annotation.processing.Generated
-
-enum class PicType { ORIGINAL, THUMBNAIL }
 
 /** The [bytes] are the file's contents. An example [extension] is `"mp4"`. */
 data class TypedFile(val extension: String, val bytes: ByteArray) {
@@ -73,7 +72,7 @@ fun <T> postMediaMessage(
             message == null ->
                 call.respond(HttpStatusCode.BadRequest, InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_FILE))
 
-            contextMessageId != null && !Messages.isExisting(contextMessageId) -> call.respond(
+            !Messages.isValidContext(call.userId!!, chatId, contextMessageId) -> call.respond(
                 HttpStatusCode.BadRequest,
                 InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )
@@ -112,11 +111,8 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartDoc(): Doc? {
  */
 suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? {
     val (extension, bytes) = readMultipartFile()
-    return try {
-        Audio(bytes, Audio.Type.build(extension))
-    } catch (_: IllegalArgumentException) {
-        null
-    }
+    if (!Audio.isValidExtension(extension) || bytes.size > Audio.MAX_BYTES) return null
+    return Audio(bytes)
 }
 
 /**

@@ -5,14 +5,13 @@ import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
-import com.neelkamath.omniChatBackend.graphql.routing.TypingStatus
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TypingStatus
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 @ExtendWith(DbExtension::class)
 class TypingStatusesTest {
@@ -21,60 +20,78 @@ class TypingStatusesTest {
         @Test
         fun `Only subscribers in the chat must be notified of the status`() {
             runBlocking {
-                val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
+                val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
                     .map { typingStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
                 val isTyping = true
                 TypingStatuses.update(chatId, user1Id, isTyping)
                 awaitBrokering()
-                listOf(user1Subscriber, user3Subscriber).forEach { it.assertNoValues() }
-                user2Subscriber.assertValue(TypingStatus(chatId, user1Id, isTyping))
+                listOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
+                    val values = subscriber.values().map { it as TypingStatus }
+                    assertEquals(listOf(chatId), values.map { it.getChatId() })
+                    assertEquals(listOf(user1Id), values.map { it.getUserId() })
+                }
+                user3Subscriber.assertNoValues()
             }
         }
 
-        private fun assertSet(repetitions: Int) {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            repeat(repetitions) {
-                TypingStatuses.update(chatId, adminId, isTyping = true)
+        @Test
+        fun `Given a typing user, when their status gets updated to say they're still typing, then their DB entry must remain, and no notifications must be sent`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatId = GroupChats.create(listOf(adminId))
+                val update = { TypingStatuses.update(chatId, adminId, isTyping = true) }
+                update()
+                awaitBrokering()
+                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                update()
+                awaitBrokering()
                 assertEquals(1, TypingStatuses.count())
+                subscriber.assertNoValues()
             }
-        }
 
         @Test
-        fun `A new record must be created when setting a status for the first time`(): Unit = assertSet(repetitions = 1)
+        fun `Given a typing user, when their status gets updated to say they're no longer typing, then their DB entry must get deleted, and a notification must get sent`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatId = GroupChats.create(listOf(adminId))
+                TypingStatuses.update(chatId, adminId, isTyping = true)
+                awaitBrokering()
+                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                TypingStatuses.update(chatId, adminId, isTyping = false)
+                awaitBrokering()
+                assertEquals(0, TypingStatuses.count())
+                val values = subscriber.values().map { it as TypingStatus }
+                assertEquals(listOf(chatId), values.map { it.getChatId() })
+                assertEquals(listOf(adminId), values.map { it.getUserId() })
+            }
 
         @Test
-        fun `The existing record must be updated when setting a status the second time`(): Unit =
-            assertSet(repetitions = 2)
-    }
-
-    @Nested
-    inner class Read {
-        @Test
-        fun `The status must be read`() {
-            val adminId = createVerifiedUsers(1).first().info.id
-            val chatId = GroupChats.create(listOf(adminId))
-            val isTyping = true
-            TypingStatuses.update(chatId, adminId, isTyping)
-            assertEquals(isTyping, TypingStatuses.read(chatId, adminId))
-        }
+        fun `Given a user who isn't typing, when their status gets updated to say they're typing, then a DB must get created, and a notification must get sent`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatId = GroupChats.create(listOf(adminId))
+                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                TypingStatuses.update(chatId, adminId, isTyping = true)
+                awaitBrokering()
+                assertEquals(1, TypingStatuses.count())
+                val values = subscriber.values().map { it as TypingStatus }
+                assertEquals(listOf(chatId), values.map { it.getChatId() })
+                assertEquals(listOf(adminId), values.map { it.getUserId() })
+            }
 
         @Test
-        fun `false must be returned when reading a nonexistent status`(): Unit =
-            assertFalse(TypingStatuses.read(chatId = 1, userId = 1))
-    }
-
-    @Nested
-    inner class ReadChat {
-        @Test
-        fun `Only users who are typing must be returned excluding the user themselves`() {
-            val (adminId, participant1Id, participant2Id) = createVerifiedUsers(3).map { it.info.id }
-            val chatId = GroupChats.create(listOf(adminId), listOf(participant1Id, participant2Id))
-            TypingStatuses.update(chatId, adminId, isTyping = true)
-            TypingStatuses.update(chatId, participant1Id, isTyping = true)
-            assertEquals(setOf(Users.read(participant1Id).toAccount()), TypingStatuses.readChat(chatId, adminId))
+        fun `Given a user who isn't typing, when their status gets updated to say they're not typing, then a DB entry musn't get created, and a notification mustn't get sent`() {
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatId = GroupChats.create(listOf(adminId))
+                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                TypingStatuses.update(chatId, adminId, isTyping = false)
+                awaitBrokering()
+                assertEquals(0, TypingStatuses.count())
+                subscriber.assertNoValues()
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.neelkamath.omniChatBackend.db
 
 import com.neelkamath.omniChatBackend.db.tables.Contacts
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
 import com.neelkamath.omniChatBackend.objectMapper
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
@@ -49,7 +49,8 @@ private fun brokerAccounts() {
 private fun brokerGroupChats() {
     if (redisson.getTopic(Topic.GROUP_CHATS.toString()).countListeners() == 0)
         redisson.getTopic(Topic.GROUP_CHATS.toString()).addListener(List::class.java) { _, message ->
-            @Suppress("UNCHECKED_CAST") groupChatsNotifier.notify(message as List<Notification<GroupChatsSubscription>>)
+            @Suppress("UNCHECKED_CAST")
+            groupChatsNotifier.notify(message as List<Notification<GroupChatsSubscription>>)
         }
 }
 
@@ -90,7 +91,7 @@ enum class Topic {
     },
 }
 
-/** [subscribe]d clients with the [userId] will receive the corresponding [update]. */
+/** [Notifier.subscribe]d clients with the [userId] will receive the corresponding [update]. */
 data class Notification<T>(val userId: Int, val update: T)
 
 /** [subscribe] to be [notify]d of updates. */
@@ -106,6 +107,7 @@ class Notifier<T>(private val topic: Topic) {
     /** The [userId] is used to filter which clients will get [notify]d. */
     fun subscribe(userId: Int): Flowable<T> {
         val subject = PublishSubject.create<T>()
+        @Suppress("UNCHECKED_CAST") subject.onNext(CreatedSubscription() as T)
         val client = Client(userId, subject)
         clients.add(client)
         return subject
@@ -154,7 +156,7 @@ class Notifier<T>(private val topic: Topic) {
 
 val messagesNotifier = Notifier<MessagesSubscription>(Topic.MESSAGES)
 
-/** @see [negotiateUserUpdate] */
+/** @see negotiateUserUpdate */
 val accountsNotifier = Notifier<AccountsSubscription>(Topic.ACCOUNTS)
 
 val groupChatsNotifier = Notifier<GroupChatsSubscription>(Topic.GROUP_CHATS)
@@ -168,7 +170,7 @@ val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription>(Topic.ONLINE_S
  * be sent, and an [UpdatedAccount] otherwise.
  */
 fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
-    val subscribers = Contacts.readOwners(userId) + userId + readChatSharers(userId)
-    val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount.build(userId)
+    val subscribers = Contacts.readOwnerUserIdList(userId) + userId + readChatSharers(userId)
+    val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount(userId)
     accountsNotifier.publish(update, subscribers)
 }

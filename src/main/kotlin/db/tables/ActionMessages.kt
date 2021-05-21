@@ -1,67 +1,76 @@
 package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TriggeredAction
 import com.neelkamath.omniChatBackend.graphql.routing.ActionMessageInput
-import com.neelkamath.omniChatBackend.graphql.routing.ActionableMessage
 import com.neelkamath.omniChatBackend.graphql.routing.MessageText
-import com.neelkamath.omniChatBackend.graphql.routing.TriggeredAction
 import com.neelkamath.omniChatBackend.toLinkedHashSet
-import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** @see [Messages] */
-object ActionMessages : IntIdTable() {
+/**
+ * @see Messages
+ * @see ActionMessageActions
+ */
+object ActionMessages : Table() {
     override val tableName = "action_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val text: Column<String> = varchar("text", MessageText.MAX_LENGTH)
 
-    /** @see [Messages.createActionMessage] */
+    /** @see Messages.createActionMessage */
     fun create(messageId: Int, message: ActionMessageInput) {
-        val actionMessageId = transaction {
-            insertAndGetId {
+        transaction {
+            insert {
                 it[this.messageId] = messageId
                 it[text] = message.text.value
-            }.value
+            }
         }
-        ActionMessageActions.create(actionMessageId, message.actions.toLinkedHashSet())
+        ActionMessageActions.create(messageId, message.actions.toLinkedHashSet())
     }
 
     fun isExisting(messageId: Int): Boolean =
         transaction { select(ActionMessages.messageId eq messageId).empty().not() }
 
-    fun hasAction(messageId: Int, action: MessageText): Boolean {
-        val id = transaction { select(ActionMessages.messageId eq messageId).first()[ActionMessages.id].value }
-        return action in ActionMessageActions.read(id)
+    fun hasAction(messageId: Int, action: MessageText): Boolean = action in ActionMessageActions.read(messageId)
+
+    /**
+     * Returns `false` in the following cases:
+     * - The [messageId] isn't [Messages.isVisible].
+     * - The [userId] isn't in the chat the [messageId] is from.
+     * - The [action] doesn't exist on the [messageId].
+     */
+    fun isValidTrigger(userId: Int, messageId: Int, action: MessageText): Boolean {
+        if (!Messages.isVisible(userId, messageId))
+            return false
+        val chatId = Messages.readChatId(messageId)
+        if (GroupChats.isExistingPublicChat(chatId) && chatId !in GroupChatUsers.readChatIdList(userId))
+            return false
+        if (!hasAction(messageId, action))
+            return false
+        return true
     }
 
     /**
      * Has the [userId] trigger the [messageId]'s [action], and sends this [TriggeredAction] to the creator of the
      * [messageId] via [messagesNotifier].
+     *
+     * An [IllegalArgumentException] gets thrown if not [isValidTrigger].
      */
     fun trigger(userId: Int, messageId: Int, action: MessageText) {
-        val creatorId = Messages.readMessage(userId, messageId).sender.id
-        val account = Users.read(userId).toAccount()
-        messagesNotifier.publish(creatorId to TriggeredAction(messageId, action, account))
+        if (!isValidTrigger(userId, messageId, action))
+            throw IllegalArgumentException(
+                "The user (ID: $userId) cannot trigger the action ($action) on the message (ID: $messageId).",
+            )
+        val senderId = Messages.readSenderId(messageId)
+        messagesNotifier.publish(senderId to TriggeredAction(messageId, action, userId))
     }
 
-    fun read(messageId: Int): ActionableMessage {
-        val row = transaction { select(ActionMessages.messageId eq messageId).first() }
-        val actions = ActionMessageActions.read(row[id].value).toList()
-        return ActionableMessage(MessageText(row[text]), actions)
-    }
-
-    /** Returns the ID of every action message in the [messageIdList]. */
-    private fun readIdList(messageIdList: Collection<Int>): Set<Int> =
-        transaction { select(messageId inList messageIdList).map { it[ActionMessages.id].value }.toSet() }
+    fun readText(messageId: Int): MessageText =
+        transaction { select(ActionMessages.messageId eq messageId).first()[text].let(::MessageText) }
 
     fun delete(messageIdList: Collection<Int>) {
-        ActionMessageActions.delete(readIdList(messageIdList))
+        ActionMessageActions.delete(messageIdList)
         transaction {
             deleteWhere { messageId inList messageIdList }
         }

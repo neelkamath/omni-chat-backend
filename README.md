@@ -6,7 +6,7 @@ _Trusted, Extensible, Better Chat_
 
 Read about the service [here](docs/about.md).
 
-To view a previous version's docs, go to `https://github.com/neelkamath/omni-chat-backend/tree/<VERSION>`, where `<VERSION>` is the [release tag](https://github.com/neelkamath/omni-chat-backend/tags) (e.g., `v0.1.1`).
+To view a specific version's docs, go to `https://github.com/neelkamath/omni-chat-backend/tree/<VERSION>`, where `<VERSION>` is the [release tag](https://github.com/neelkamath/omni-chat-backend/tags) (e.g., `v0.1.1`).
 
 Here are the guides for running the server using [Docker Compose](docs/docker-compose.md) (recommended for local development), and the [cloud](docs/cloud.md) (recommended for production).
 
