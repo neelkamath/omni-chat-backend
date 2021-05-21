@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.graphql.operations
+package com.neelkamath.omniChatBackend.graphql.operations
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.engine.verifyAuth
-import com.neelkamath.omniChat.graphql.routing.*
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
+import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
+import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 import org.reactivestreams.Publisher
 

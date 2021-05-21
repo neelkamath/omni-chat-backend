@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.graphql.routing.UnstarredChat
+import com.neelkamath.omniChatBackend.db.isUserInChat
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -18,7 +18,7 @@ import java.time.LocalDateTime
  * first message in a new chat for the user.
  */
 object PrivateChatDeletions : IntIdTable() {
-    override val tableName get() = "private_chat_deletions"
+    override val tableName = "private_chat_deletions"
     private val chatId: Column<Int> = integer("chat_id").references(PrivateChats.id)
     private val dateTime: Column<LocalDateTime> = datetime("date_time").clientDefault { LocalDateTime.now() }
     private val userId: Column<Int> = integer("user_id").references(Users.id)
@@ -78,9 +78,9 @@ object PrivateChatDeletions : IntIdTable() {
     /** Deletes every private chat deletion record the [userId] has in the [chatId] except for the latest one. */
     private fun deletePreviousDeletionRecords(chatId: Int, userId: Int): Unit = transaction {
         val idList = select((PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId))
-            .toList()
-            .dropLast(1)
+            .orderBy(PrivateChatDeletions.id)
             .map { it[PrivateChatDeletions.id].value }
+            .dropLast(1)
         deleteWhere { PrivateChatDeletions.id inList idList }
     }
 
@@ -89,10 +89,10 @@ object PrivateChatDeletions : IntIdTable() {
         val deletions = select(PrivateChatDeletions.chatId eq chatId)
         val userIdList = deletions.map { it[userId] }.toSet()
         if (userIdList.size < 2) return@transaction null
-        val getDateTime = { index: Int ->
+        val readDateTime = { index: Int ->
             deletions.last { it[userId] == userIdList.elementAt(index) }[dateTime]
         }
-        listOf(getDateTime(0), getDateTime(1)).minOrNull()
+        listOf(readDateTime(0), readDateTime(1)).minOrNull()
     }
 
     /** Returns the last time the [userId] deleted the [chatId], if they ever did. */
@@ -102,7 +102,7 @@ object PrivateChatDeletions : IntIdTable() {
             ?.get(dateTime)
     }
 
-    /** Whether the [userId] has deleted the [chatId] (and not recreated the chat after that). */
+    /** Whether the [userId] has deleted the [chatId], and no messages were sent after that. */
     fun isDeleted(userId: Int, chatId: Int): Boolean = transaction {
         val deletions = select((PrivateChatDeletions.chatId eq chatId) and (PrivateChatDeletions.userId eq userId))
         if (deletions.empty()) return@transaction false

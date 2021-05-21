@@ -10,7 +10,7 @@
         -f docker/docker-compose.yml \
         -f docker/docker-compose.override.yml \
         --project-directory . \
-        up --scale chat=0 -d
+        up --build --scale chat=0 -d
     ```
 1. Enter the shell:
     ```
@@ -103,16 +103,34 @@ npx @stoplight/spectral lint docs/openapi.yaml
 - A `type` representing an updated resource, such as one returned via a subscription, must have its name prefixed with `Updated` (e.g., `UpdatedAccount`).
 - A `union` returned by a `Query` or `Mutation` must be the operation's name suffixed with `Result` (e.g., the `union` returned by `Query.searchChatMessages` is named `SearchChatMessagesResult`).
 
+Use functions instead of member variables when creating [DTOs](src/main/kotlin/graphql/dataTransferObjects) in order to prevent [overfetching](https://blog.logrocket.com/properly-designed-graphql-resolvers/), and for consistency. Wire each GraphQL scalar directly instead of using the GraphQL Java library's POJO feature because it ties the DB schema to the data fetchers too tightly (e.g., if a deeply nested GraphQL field were to accept an argument later on, it'd be a nightmare to refactor the code to use DTOs). For example, in the following code snippet, `startCursor` is incorrect because it isn't a function even though it fetches the scalar directly, `getEdges()` is incorrect even though it's a function because it doesn't fetch the scalar directly, `getData()` is correct because it's a function which fetches the scalars directly via further DTOs, and `getPageInfo()` is correct because it's a function which resolves the scalar directly:
+
+```kotlin
+class MyDto(
+    private val messageIdList: LinkedHashSet<Int>,
+    private val pagination: ForwardPagination? = null,
+) {
+    val startCursor = messageIdList.first()
+
+    fun getEdges(): List<StarredMessageEdge> = Stargazers.read(messageIdList)
+
+    fun getData(): List<DataDto> = messageIdList.map(::DataDto)
+
+    fun getHasNextPage(env: DataFetchingEnvironment): boolean =
+        Stargazers.readPageInfo(env.userId!!, messageIdList.lastOrNull(), pagination).hasNextPage
+}
+```
+
 Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.kt) for GraphQL types:
 
 |GraphQL|Kotlin|
 |---|---|
-|`type`|A `data class` or `object`.|
+|`type`|`class`|
 |`input`|`data class`|
 |`interface`|`interface`|
-|`union`|Create an `interface` sans body, and have the `union`'s types inherit from it.|
+|`union`|Create an `interface` sans body, and have the `union`'s `type`s implement it.|
 |`enum`|`enum class`|
-|`scalar`|A `data class`, `typealias`, predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
+|`scalar`|A `data class`, `typealias` for a predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
 
 ## Naming Conventions
 
@@ -122,7 +140,6 @@ We use `create` (e.g., `createAccount`), `read` (e.g., `readAccount`), `update` 
 
 - Pics must be actual images (e.g., [`76px×57px.jpg`](../src/test/resources/76px×57px.jpg)) because a thumbnail is generated upon upload, and the program will crash if dummy data is provided. Other file formats such as audio should use dummies such as `kotlin.ByteArray`s.
 - These test cases must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
-- Inline fragments in [`Fragments.kt`](../src/test/kotlin/graphql/operations/Fragments.kt) use the format `<FRAGMENT>_<FIELD>_<ARGUMENT>` when naming variables. For example, an argument `last` to a field `messages` in a fragment `ChatMessages` would be named `chatMessages_messages_last`.
 - The test source set must mirror the main source set. Files containing tests must be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files in the main source set which have testing utilities but no tests in the test source set must be named using the format `<FILE>Util.kt`. For example, [`DbUtil.kt`](src/test/kotlin/db/DbUtil.kt) is named `DbUtil.kt` instead of `DbTest.kt` because it contains testing utilities for `Db.kt` but no tests.
 - Test cases must be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
 - Each function tested must have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`. Test cases must be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).

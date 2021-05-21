@@ -1,34 +1,18 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.OnlineStatus
+import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
-data class User(
-    val id: Int,
-    val username: Username,
-    val passwordResetCode: Int,
-    val emailAddress: String,
-    val hasVerifiedEmailAddress: Boolean,
-    val emailAddressVerificationCode: Int,
-    val firstName: Name,
-    val lastName: Name,
-    val isOnline: Boolean,
-    val lastOnline: LocalDateTime?,
-    val bio: Bio,
-    val pic: Pic?,
-) {
-    fun toAccount(): Account = Account(id, username, emailAddress, firstName, lastName, bio)
-}
-
-/** Neither usernames not email addresses may be used more than once. Pics cannot exceed [Pic.ORIGINAL_MAX_BYTES]. */
+/** Neither usernames nor email addresses may be used more than once. Pics cannot exceed [Pic.ORIGINAL_MAX_BYTES]. */
 object Users : IntIdTable() {
     /** Names and usernames cannot exceed 30 characters. */
     const val MAX_NAME_LENGTH = 30
@@ -50,10 +34,10 @@ object Users : IntIdTable() {
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
 
     /**
-     * Check if [isUsernameTaken] because the [AccountInput.username] mustn't exist.
-     *
-     * @see [setOnlineStatus]
-     * @see [updatePic]
+     * @see isUsernameTaken
+     * @see isEmailAddressTaken
+     * @see setOnlineStatus
+     * @see updatePic
      */
     fun create(account: AccountInput): Unit = transaction {
         insert {
@@ -81,8 +65,8 @@ object Users : IntIdTable() {
     /** Returns `false` if the [Login.username] doesn't exist, or the [Login.password] is incorrect. */
     fun isValidLogin(login: Login): Boolean = transaction {
         val row = select(username eq login.username.value)
-        if (row.empty()) return@transaction false
-        StrongPasswordEncryptor().checkPassword(login.password.value, row.first()[passwordDigest])
+        if (row.empty()) false
+        else StrongPasswordEncryptor().checkPassword(login.password.value, row.first()[passwordDigest])
     }
 
     fun isUsernameTaken(username: Username): Boolean =
@@ -91,57 +75,22 @@ object Users : IntIdTable() {
     fun isEmailAddressTaken(emailAddress: String): Boolean =
         transaction { select(Users.emailAddress eq emailAddress).empty().not() }
 
-    fun isExisting(userId: Int): Boolean =
-        transaction { select(Users.id eq userId).empty().not() }
+    fun isExisting(userId: Int): Boolean = transaction { select(Users.id eq userId).empty().not() }
 
-    fun read(userId: Int): User = transaction { select(Users.id eq userId).first() }.toUser()
+    fun isOnline(userId: Int): Boolean = transaction { select(Users.id eq userId).first()[isOnline] }
 
-    fun read(username: Username): User = transaction { select(Users.username eq username.value).first() }.toUser()
-
-    fun read(emailAddress: String): User = transaction { select(Users.emailAddress eq emailAddress).first() }.toUser()
-
-    fun readOnlineStatus(userId: Int): OnlineStatus {
-        val user = transaction { select(Users.id eq userId).first() }
-        return OnlineStatus(userId, user[isOnline], user[lastOnline])
-    }
-
-    fun readList(idList: Collection<Int>): Set<User> = transaction {
-        select(Users.id inList idList).map { it.toUser() }.toSet()
-    }
-
-    private fun ResultRow.toUser(): User = User(
-        this[id].value,
-        Username(this[username]),
-        this[passwordResetCode],
-        this[emailAddress],
-        this[hasVerifiedEmailAddress],
-        this[emailAddressVerificationCode],
-        Name(this[firstName]),
-        Name(this[lastName]),
-        this[isOnline],
-        this[lastOnline],
-        Bio(this[bio]),
-        this[picId]?.let(Pics::read),
-    )
-
-    private fun ResultRow.toAccount(): Account = Account(
-        this[id].value,
-        Username(this[username]),
-        this[emailAddress],
-        Name(this[firstName]),
-        Name(this[lastName]),
-        Bio(this[bio]),
-    )
+    fun readLastOnline(userId: Int): LocalDateTime? = transaction { select(Users.id eq userId).first()[lastOnline] }
 
     /** Notifies subscribers of the [OnlineStatus] only if [isOnline] differs from the [userId]'s current status. */
     fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
-        if (select(Users.id eq userId).first()[Users.isOnline] == isOnline) return@transaction
+        val status = transaction { select(Users.id eq userId).first()[Users.isOnline] }
+        if (status == isOnline) return@transaction
         update({ Users.id eq userId }) {
             it[Users.isOnline] = isOnline
             it[lastOnline] = LocalDateTime.now()
         }
-        val subscribers = Contacts.readOwners(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(OnlineStatus(userId, isOnline, read(userId).lastOnline), subscribers)
+        val subscribers = Contacts.readOwnerUserIdList(userId) + readChatSharers(userId)
+        onlineStatusesNotifier.publish(OnlineStatus(userId), subscribers)
     }
 
     /**
@@ -167,10 +116,7 @@ object Users : IntIdTable() {
         transaction {
             update({ Users.id eq userId }) { statement ->
                 update.username?.let { statement[username] = it.value }
-                update.password?.let {
-                    statement[passwordDigest] =
-                        StrongPasswordEncryptor().encryptPassword(update.password.value)
-                }
+                update.password?.let { statement[passwordDigest] = StrongPasswordEncryptor().encryptPassword(it.value) }
                 update.firstName?.let { statement[firstName] = it.value }
                 update.lastName?.let { statement[lastName] = it.value }
                 update.bio?.let { statement[bio] = it.value }
@@ -181,7 +127,7 @@ object Users : IntIdTable() {
 
     /** If the [emailAddress] differs from the [userId]'s current one, it'll be marked as unverified. */
     private fun updateEmailAddress(userId: Int, emailAddress: String): Unit = transaction {
-        val address = select(Users.id eq userId).first()[Users.emailAddress]
+        val address = transaction { select(Users.id eq userId).first()[Users.emailAddress] }
         if (emailAddress != address)
             update({ Users.id eq userId }) {
                 it[Users.emailAddress] = emailAddress
@@ -200,25 +146,56 @@ object Users : IntIdTable() {
         negotiateUserUpdate(userId, isProfilePic = true)
     }
 
-    /** Case-insensitively [query]s every user's username, first name, last name, and email address. */
-    fun search(query: String, pagination: ForwardPagination? = null): AccountsConnection {
-        val users = transaction {
-            select(
-                (username iLike query) or
-                        (firstName iLike query) or
-                        (lastName iLike query) or
-                        (emailAddress iLike query)
-            ).map { AccountEdge(it.toAccount(), it[Users.id].value) }
-        }
-        return AccountsConnection.build(users.toSet(), pagination)
+    /**
+     * Case-insensitively [query]s every user's username, first name, last name, and email address. Returns the IDs
+     * of the matched users sorted in ascending order.
+     */
+    fun search(query: String): LinkedHashSet<Int> = transaction {
+        select(
+            (username iLike query) or (firstName iLike query) or (lastName iLike query) or (emailAddress iLike query)
+        ).orderBy(Users.id).map { it[Users.id].value }.toLinkedHashSet()
     }
 
     /**
      * Deletes the specified user if they exist.
      *
-     * @see [deleteUser]
+     * @see deleteUser
      */
-    fun delete(id: Int): Unit = transaction {
-        deleteWhere { Users.id eq id }
+    fun delete(userId: Int): Unit = transaction {
+        deleteWhere { Users.id eq userId }
+    }
+
+    fun readUsername(userId: Int): Username =
+        transaction { select(Users.id eq userId).first()[username].let(::Username) }
+
+    fun readEmailAddress(userId: Int): String = transaction { select(Users.id eq userId).first() }[emailAddress]
+
+    fun readFirstName(userId: Int): Name = transaction { select(Users.id eq userId).first()[firstName].let(::Name) }
+
+    fun readLastName(userId: Int): Name = transaction { select(Users.id eq userId).first()[lastName].let(::Name) }
+
+    fun readBio(userId: Int): Bio = transaction { select(Users.id eq userId).first()[bio].let(::Bio) }
+
+    fun readEmailAddressVerificationCode(userId: Int): Int =
+        transaction { select(Users.id eq userId).first()[emailAddressVerificationCode] }
+
+    fun readEmailAddressVerificationCode(emailAddress: String): Int =
+        transaction { select(Users.emailAddress eq emailAddress).first()[emailAddressVerificationCode] }
+
+    fun readPasswordResetCode(emailAddress: String): Int =
+        transaction { select(Users.emailAddress eq emailAddress).first()[passwordResetCode] }
+
+    fun hasVerifiedEmailAddress(userId: Int): Boolean =
+        transaction { select(Users.id eq userId).first()[hasVerifiedEmailAddress] }
+
+    fun hasVerifiedEmailAddress(emailAddress: String): Boolean =
+        transaction { select(Users.emailAddress eq emailAddress).first()[hasVerifiedEmailAddress] }
+
+    fun readId(username: Username): Int =
+        transaction { select(Users.username eq username.value).first()[Users.id].value }
+
+    fun readPic(userId: Int, type: PicType): ByteArray? {
+        val picId = transaction { select(Users.id eq userId).first()[picId] } ?: return null
+        return Pics.read(picId, type)
     }
 }

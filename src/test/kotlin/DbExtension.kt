@@ -1,11 +1,11 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.deleteUser
-import com.neelkamath.omniChat.db.setUpDb
-import com.neelkamath.omniChat.db.subscribeToMessageBroker
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.db.tables.read
-import com.neelkamath.omniChat.db.wipeDb
+import com.neelkamath.omniChatBackend.db.deleteUser
+import com.neelkamath.omniChatBackend.db.setUpDb
+import com.neelkamath.omniChatBackend.db.subscribeToMessageBroker
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.db.tables.read
+import com.neelkamath.omniChatBackend.db.wipeDb
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext

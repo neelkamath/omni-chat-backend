@@ -6,6 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## 0.19.0
+
+### Added
+
+- `Query.readMessage`
+
+### Changed
+
+- Return a `type InvalidChatId` from `Mutation.forwardMessage` when attempting to forward a message in the chat it's from instead of forwarding it.
+- Change the field from `votes: [Int!]!` to `votes: [Account!]!` in `type PollOption`.
+- Disallow using `Mutation.createGroupChatInviteMessage` by a user who isn't in the chat the invitation is for.
+- Disallow using `Mutation.createGroupChatInviteMessage` when its `chatId` and `invitedChatId` arguments are the same.
+- Disallow using `Mutations.forwardMessage` on group chat invite messages when its `chatId` argument is the same as the ID of the group chat the invitation is for.
+- Rename Docker Hub image from `neelkamath/omni-chat` to `neelkamath/omni-chat-backend`.
+- Make `Mutation.triggerAction` return a `Boolean!` instead of a `TriggerActionResult` for indicating whether the operation was successful.
+- `Subscription.subscribeToTypingStatuses` now yields the user's own typing status.
+- `Query.readTypingUsers` can now return the user's own ID.
+- Give `description` have a default value of `""` in `input GroupChatInput`.
+- Rename `NonexistentUser` to `NonexistingUser`.
+- Rename `NonexistentOption` to `NonexistingOption`.
+- Rename the `idList` argument to `userIdList` in `Mutation.addGroupChatUsers`.
+- Rename the `idList` argument to `userIdList` in `Mutation.removeGroupChatUsers`.
+- Rename the `idList` argument to `userIdList` in `Mutation.makeGroupChatAdmins`.
+- Rename the `id` field to `chatId` in `type UnstarredChat`.
+- Rename the `id` field to `userId` in `type DeletedAccount`.
+- Rename the `id` field to `userId` in `type UpdatedProfilePic`.
+- Rename the `id` field to `chatId` in `type UpdatedGroupChatPic`.
+- Rename the `id` field to `chatId` in `type GroupChatId`.
+- Rename the `id` field to `userId` in `type UpdatedAccount`.
+- Rename the `id` field to `userId` in `interface AccountData`.
+- Rename the `id` field to `userId` in `type Account`.
+- Rename the `id` field to `userId` in `type BlockedAccount`.
+- Rename the `id` field to `userId` in `type UnblockedAccount`.
+- Rename the `id` field to `userId` in `type DeletedContact`.
+- Rename the `id` field to `chatId` in `interface Chat`.
+- Rename the `id` field to `chatId` in `type GroupChat`.
+- Rename the `id` field to `chatId` in `type PrivateChat`.
+- Rename the `id` field to `messageId` in `type MessageContext`.
+- Rename the `id` field to `chatId` in `type CreatedChatId`.
+
+### Fixed
+
+- Fix pagination bugs.
+- `Mutation.setOnline`
+- `Mutation.joinGroupChat`
+- `Mutation.triggerAction`
+- `Mutation.leaveGroupChat`
+- `Mutation.createActionMessage`
+- `Query.readGroupChat`
+- Stop yielding duplicate notifications from `Subscription.subscribeToTypingStatuses`.
+
+### Removed
+
+- `union TriggerActionResult`
+- `type DeletionOfEveryMessage`
+- `type MessageDeletionPoint`
+
 ## [0.18.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.18.0) - 2021-04-06
 
 ### Added
@@ -20,6 +77,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `type ChatMessagesEdge`
 - `type ChatsConnection`
 - `type ChatEdge`
+- `type GroupChatsConnection`
+- `type GroupChatEdge`
 
 ### Changed
 

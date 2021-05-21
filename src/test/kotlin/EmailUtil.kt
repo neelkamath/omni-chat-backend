@@ -1,10 +1,11 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.Username
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.db.tables.readEmailAddress
+import com.neelkamath.omniChatBackend.db.tables.readEmailAddressVerificationCode
+import com.neelkamath.omniChatBackend.graphql.routing.Username
 
 /** Sets the [username]'s email address verification status to verified without sending them an email. */
 fun verifyEmailAddress(username: Username) {
-    val user = Users.read(username)
-    Users.verifyEmailAddress(user.emailAddress, user.emailAddressVerificationCode)
+    Users.verifyEmailAddress(Users.readEmailAddress(username), Users.readEmailAddressVerificationCode(username))
 }

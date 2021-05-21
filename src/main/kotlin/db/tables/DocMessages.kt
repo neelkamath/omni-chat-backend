@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -34,23 +34,23 @@ data class Doc(val bytes: ByteArray) {
     }
 }
 
-/** @see [Messages] */
+/** @see Messages */
 object DocMessages : Table() {
     override val tableName = "doc_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val doc: Column<ByteArray> = binary("doc", Doc.MAX_BYTES)
 
-    /** @see [Messages.createDocMessage] */
-    fun create(id: Int, doc: Doc): Unit = transaction {
+    /** @see Messages.createDocMessage */
+    fun create(messageId: Int, doc: Doc): Unit = transaction {
         insert {
-            it[this.messageId] = id
+            it[this.messageId] = messageId
             it[this.doc] = doc.bytes
         }
     }
 
-    fun read(id: Int): Doc = transaction { select(messageId eq id).first()[doc].let(::Doc) }
+    fun read(messageId: Int): Doc = transaction { select(DocMessages.messageId eq messageId).first()[doc].let(::Doc) }
 
-    fun delete(idList: Collection<Int>): Unit = transaction {
-        deleteWhere { messageId inList idList }
+    fun delete(messageIdList: Collection<Int>): Unit = transaction {
+        deleteWhere { messageId inList messageIdList }
     }
 }

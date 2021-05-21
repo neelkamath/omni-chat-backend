@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.db.tables.create
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
+import com.neelkamath.omniChatBackend.db.tables.create
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
@@ -16,8 +16,8 @@ fun getAudioMessage(accessToken: String? = null, messageId: Int): TestApplicatio
 
 fun postAudioMessage(
     accessToken: String,
-    dummy: DummyFile,
     chatId: Int,
+    dummy: DummyFile,
     contextMessageId: Int? = null,
 ): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
@@ -33,9 +33,9 @@ class AudioMessageTest {
         @Test
         fun `Using a capitalized file extensions mustn't fail`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.info.id))
+            val chatId = GroupChats.create(listOf(admin.userId))
             val dummy = DummyFile("audio.MP3", bytes = 1)
-            assertEquals(HttpStatusCode.NoContent, postAudioMessage(admin.accessToken, dummy, chatId).status())
+            assertEquals(HttpStatusCode.NoContent, postAudioMessage(admin.accessToken, chatId, dummy).status())
         }
     }
 }

@@ -1,10 +1,10 @@
-package com.neelkamath.omniChat.graphql.routing
+package com.neelkamath.omniChatBackend.graphql.routing
 
-import com.neelkamath.omniChat.graphql.engine.UnauthorizedException
-import com.neelkamath.omniChat.graphql.engine.buildExecutionInput
-import com.neelkamath.omniChat.graphql.engine.buildSpecification
-import com.neelkamath.omniChat.graphql.engine.graphQl
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
+import com.neelkamath.omniChatBackend.graphql.engine.buildExecutionInput
+import com.neelkamath.omniChatBackend.graphql.engine.buildSpecification
+import com.neelkamath.omniChatBackend.graphql.engine.graphQl
+import com.neelkamath.omniChatBackend.userId
 import graphql.execution.UnknownOperationException
 import io.ktor.application.*
 import io.ktor.auth.*

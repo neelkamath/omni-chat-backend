@@ -1,19 +1,22 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.ForwardPagination
-import com.neelkamath.omniChat.db.groupChatsNotifier
-import com.neelkamath.omniChat.db.messagesNotifier
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.graphql.routing.*
-import org.jetbrains.exposed.dao.id.IntIdTable
+import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.groupChatsNotifier
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 /** The users in [GroupChats]. */
-object GroupChatUsers : IntIdTable() {
-    override val tableName get() = "group_chat_users"
+object GroupChatUsers : Table() {
+    override val tableName = "group_chat_users"
     private val groupChatId: Column<Int> = integer("group_chat_id").references(GroupChats.id)
     private val userId: Column<Int> = integer("user_id").references(Users.id)
     private val isAdmin: Column<Boolean> = bool("is_admin")
@@ -23,14 +26,14 @@ object GroupChatUsers : IntIdTable() {
     }
 
     /**
-     * Makes the [userIdList] admins of the [chatId]. An [IllegalArgumentException] will be thrown if the a user isn't
-     * in the chat.
+     * Makes the [userIdList] admins of the [chatId].
      *
-     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier].
+     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier]. An
+     * [IllegalArgumentException] will be thrown if any of the [userIdList] aren't in the chat.
      */
     fun makeAdmins(chatId: Int, userIdList: Collection<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
-        require(invalidUsers.isEmpty()) { "$invalidUsers aren't in the chat (ID: $chatId)." }
+        require(invalidUsers.isEmpty()) { "The users (IDs: $invalidUsers) aren't in the chat (ID: $chatId)." }
         transaction {
             update({ (groupChatId eq chatId) and (userId inList userIdList) }) { it[isAdmin] = true }
         }
@@ -41,8 +44,8 @@ object GroupChatUsers : IntIdTable() {
     }
 
     /** Returns the ID of every user the [userId] has a chat with, excluding their own ID. */
-    fun readFellowParticipants(userId: Int): Set<Int> =
-        readChatIdList(userId).flatMap(::readUserIdList).toSet() - userId
+    fun readFellowParticipantIdList(userId: Int): Set<Int> =
+        readChatIdList(userId).flatMap(this::readUserIdList).toSet() - userId
 
     /** Whether the [userId] is an admin of the [chatId]. */
     fun isAdmin(userId: Int, chatId: Int): Boolean = transaction {
@@ -51,36 +54,29 @@ object GroupChatUsers : IntIdTable() {
             ?.get(isAdmin) ?: false
     }
 
-    /**
-     * The user ID list from the specified [chatId].
-     *
-     * @see [readUsers]
-     * @see [readAdminIdList]
-     */
-    fun readUserIdList(chatId: Int): Set<Int> = transaction {
-        select(groupChatId eq chatId).map { it[userId] }.toSet()
+    /** Returns the user IDs (sorted in ascending order) in the [chatId] as per the [pagination]. */
+    @Suppress("DuplicatedCode")
+    fun readUserIdList(chatId: Int, pagination: ForwardPagination? = null): LinkedHashSet<Int> {
+        var op = groupChatId eq chatId
+        pagination?.after?.let { op = op and (userId greater it) }
+        return transaction {
+            select(op)
+                .orderBy(userId)
+                .let { if (pagination?.first == null) it else it.limit(pagination.first) }
+                .map { it[userId] }
+                .toLinkedHashSet()
+        }
     }
 
     fun readAdminIdList(chatId: Int): Set<Int> = transaction {
         select((groupChatId eq chatId) and (isAdmin eq true)).map { it[userId] }.toSet()
     }
 
-    private fun readAccountEdges(chatId: Int): Set<AccountEdge> = transaction {
-        select(groupChatId eq chatId)
-            .map {
-                val account = Users.read(it[userId]).toAccount()
-                AccountEdge(account, cursor = it[GroupChatUsers.id].value)
-            }
-            .toSet()
-    }
-
-    /** @see [readUserIdList] */
-    fun readUsers(chatId: Int, pagination: ForwardPagination? = null): AccountsConnection =
-        AccountsConnection.build(readAccountEdges(chatId), pagination)
-
     /**
-     * Adds the [users] who aren't already in the [chatId]. Notifies existing users of the [UpdatedGroupChat] via
-     * [groupChatsNotifier], and new users of the [GroupChatId] via [groupChatsNotifier].
+     * Adds the [users] who aren't already in the [chatId].
+     *
+     * Notifies existing users of the [UpdatedGroupChat] via [groupChatsNotifier], and the [users] of the [GroupChatId]
+     * via [groupChatsNotifier].
      */
     fun addUsers(chatId: Int, users: Collection<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
@@ -92,17 +88,20 @@ object GroupChatUsers : IntIdTable() {
             }
         }
         groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList)
-        val update = UpdatedGroupChat(chatId, newUsers = newUserIdList.map { Users.read(it).toAccount() })
+        val update = UpdatedGroupChat(chatId, newUserIdList = newUserIdList.toList())
         groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList))
     }
 
     fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
 
-    /** If the [userId] is in the chat having the [inviteCode], nothing happens. Otherwise, [addUsers] is called. */
-    fun addUserViaInvite(userId: Int, inviteCode: UUID) {
-        val chatId = GroupChats.readChatFromInvite(inviteCode)
-        if (isUserInChat(userId, chatId)) return
-        addUsers(chatId, userId)
+    /**
+     * Nothing happens if the [userId] is already in the chat. If the [inviteCode] doesn't belong to an invitable chat,
+     * then an [IllegalArgumentException] gets thrown. Otherwise, [addUsers] gets called.
+     */
+    fun addUserViaInviteCode(userId: Int, inviteCode: UUID) {
+        val chatId = GroupChats.readChatIdFromInviteCode(inviteCode)
+        requireNotNull(chatId) { "There's no invitable chat having the invite code $inviteCode." }
+        if (!isUserInChat(userId, chatId)) addUsers(chatId, userId)
     }
 
     /**
@@ -118,9 +117,10 @@ object GroupChatUsers : IntIdTable() {
     fun canUsersLeave(chatId: Int, vararg userIdList: Int): Boolean = canUsersLeave(chatId, userIdList.toSet())
 
     /**
-     * Removes users in the [userIdList] from the [chatId]. Users who aren't in the chat are ignored. An
-     * [IllegalArgumentException] will be thrown if not [canUsersLeave]. If every user is removed, the [chatId] will be
-     * [GroupChats.delete]d. Returns whether the chat was deleted.
+     * Removes users in the [userIdList] from the [chatId]. Returns whether the chat was deleted.
+     *
+     * Users who aren't in the chat are ignored. If every user is removed, the [chatId] will be [GroupChats.delete]d.
+     * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
      * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
@@ -154,8 +154,11 @@ object GroupChatUsers : IntIdTable() {
     /** Calls [removeUsers] on the [userId] for every chat they're in. The [userId] needn't exist. */
     fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
-    /** The chat ID list of every chat the [userId] is in. Returns an empty list if the [userId] doesn't exist. */
-    fun readChatIdList(userId: Int): Set<Int> = transaction {
-        select(GroupChatUsers.userId eq userId).map { it[groupChatId] }.toSet()
+    /**
+     * Returns the chat IDs of every chat the [userId] is in, or an empty [LinkedHashSet] if the [userId] doesn't exist.
+     * The chat IDs are sorted in ascending order.
+     */
+    fun readChatIdList(userId: Int): LinkedHashSet<Int> = transaction {
+        select(GroupChatUsers.userId eq userId).orderBy(groupChatId).map { it[groupChatId] }.toLinkedHashSet()
     }
 }

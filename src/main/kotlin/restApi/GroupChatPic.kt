@@ -1,9 +1,10 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.db.tables.GroupChatUsers
-import com.neelkamath.omniChat.db.tables.GroupChats
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.db.tables.GroupChatUsers
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
+import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
@@ -24,14 +25,9 @@ private fun getGroupChatPic(route: Route): Unit = with(route) {
         val isAuthorizedParticipant = call.userId != null && call.userId in readUserIdList(chatId)
         when {
             !GroupChats.isExisting(chatId) -> call.respond(HttpStatusCode.BadRequest)
-            GroupChats.isExistentPublicChat(chatId) || isAuthorizedParticipant -> {
-                val pic = GroupChats.readPic(chatId)
-                if (pic == null) call.respond(HttpStatusCode.NoContent)
-                else
-                    when (type) {
-                        PicType.ORIGINAL -> call.respondBytes(pic.original)
-                        PicType.THUMBNAIL -> call.respondBytes(pic.thumbnail)
-                    }
+            GroupChats.isExistingPublicChat(chatId) || isAuthorizedParticipant -> {
+                val pic = GroupChats.readPic(chatId, type)
+                if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic)
             }
             else -> call.respond(HttpStatusCode.Unauthorized)
         }

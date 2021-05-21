@@ -70,10 +70,10 @@ jobs:
         env:
           DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
         run: echo "$DOCKER_HUB_PASSWORD" | docker login -u neelkamath --password-stdin https://index.docker.io/v1/
-      - run: docker build -t omni-chat -f docker/Dockerfile .
+      - run: docker build -t omni-chat-backend -f docker/Dockerfile .
       - name: Set $VERSION
         run: echo "VERSION=$(./gradlew -q printVersion)" >> $GITHUB_ENV
-      - run: docker tag omni-chat neelkamath/omni-chat:$VERSION
-      - run: docker push neelkamath/omni-chat:$VERSION
-      - run: docker tag omni-chat neelkamath/omni-chat:latest
-      - run: docker push neelkamath/omni-chat:latest
+      - run: docker tag omni-chat-backend neelkamath/omni-chat-backend:$VERSION
+      - run: docker push neelkamath/omni-chat-backend:$VERSION
+      - run: docker tag omni-chat-backend neelkamath/omni-chat-backend:latest
+      - run: docker push neelkamath/omni-chat-backend:latest

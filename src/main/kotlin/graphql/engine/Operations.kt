@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.graphql.engine
+package com.neelkamath.omniChatBackend.graphql.engine
 
-import com.neelkamath.omniChat.graphql.operations.*
+import com.neelkamath.omniChatBackend.graphql.operations.*
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 
@@ -17,6 +17,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("searchChats", ::searchChats)
     .dataFetcher("readStars", ::readStars)
     .dataFetcher("readContacts", ::readContacts)
+    .dataFetcher("readMessage", ::readMessage)
     .dataFetcher("searchContacts", ::searchContacts)
     .dataFetcher("searchMessages", ::searchMessages)
     .dataFetcher("requestTokenSet", ::requestTokenSet)

@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -8,7 +8,7 @@ import javax.annotation.processing.Generated
 /** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
 data class Mp4(
     /** At most [Mp4.MAX_BYTES]. */
-    val bytes: ByteArray
+    val bytes: ByteArray,
 ) {
     init {
         require(bytes.size <= MAX_BYTES) { "The video mustn't exceed $MAX_BYTES bytes." }
@@ -36,23 +36,24 @@ data class Mp4(
     }
 }
 
-/** @see [Messages] */
+/** @see Messages */
 object VideoMessages : Table() {
     override val tableName = "video_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
     private val video: Column<ByteArray> = binary("video", Mp4.MAX_BYTES)
 
-    /** @see [Messages.createVideoMessage] */
-    fun create(id: Int, video: Mp4): Unit = transaction {
+    /** @see Messages.createVideoMessage */
+    fun create(messageId: Int, video: Mp4): Unit = transaction {
         insert {
-            it[this.messageId] = id
+            it[this.messageId] = messageId
             it[this.video] = video.bytes
         }
     }
 
-    fun read(id: Int): Mp4 = transaction { select(messageId eq id).first()[video].let(::Mp4) }
+    fun read(messageId: Int): Mp4 =
+        transaction { select(VideoMessages.messageId eq messageId).first()[video].let(::Mp4) }
 
-    fun delete(idList: Collection<Int>): Unit = transaction {
-        deleteWhere { messageId inList idList }
+    fun delete(messageIdList: Collection<Int>): Unit = transaction {
+        deleteWhere { messageId inList messageIdList }
     }
 }

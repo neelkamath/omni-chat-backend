@@ -1,12 +1,12 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.isUserInChat
-import com.neelkamath.omniChat.db.tables.CaptionedPic
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.PicMessages
-import com.neelkamath.omniChat.graphql.routing.MessageText
-import com.neelkamath.omniChat.userId
+import com.neelkamath.omniChatBackend.db.Pic
+import com.neelkamath.omniChatBackend.db.isUserInChat
+import com.neelkamath.omniChatBackend.db.tables.CaptionedPic
+import com.neelkamath.omniChatBackend.db.tables.Messages
+import com.neelkamath.omniChatBackend.db.tables.PicMessages
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
@@ -25,12 +25,7 @@ fun routePicMessage(routing: Routing): Unit = with(routing) {
 }
 
 private fun getPicMessage(route: Route): Unit = with(route) {
-    getMediaMessage(this) { messageId, picType ->
-        when (picType!!) {
-            PicType.ORIGINAL -> PicMessages.read(messageId).pic.original
-            PicType.THUMBNAIL -> PicMessages.read(messageId).pic.thumbnail
-        }
-    }
+    getMediaMessage(this) { messageId, picType -> PicMessages.readPic(messageId, picType!!) }
 }
 
 private fun postPicMessage(route: Route): Unit = with(route) {
@@ -48,7 +43,7 @@ private fun postPicMessage(route: Route): Unit = with(route) {
             !isUserInChat(call.userId!!, chatId) ->
                 call.respond(HttpStatusCode.BadRequest, InvalidPicMessage(InvalidPicMessage.Reason.USER_NOT_IN_CHAT))
 
-            contextMessageId != null && !Messages.isExisting(contextMessageId) -> call.respond(
+            !Messages.isValidContext(call.userId!!, chatId, contextMessageId) -> call.respond(
                 HttpStatusCode.BadRequest,
                 InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )
@@ -68,8 +63,8 @@ private class InvalidCaptionException(message: String? = null) : Exception(messa
 private class InvalidPicException(message: String? = null) : Exception(message)
 
 /**
- * @throws [InvalidCaptionException] if the [PicMessageRequest.caption] is invalid.
- * @throws [InvalidPicException] if the [PicMessageRequest.pic] is invalid.
+ * @throws InvalidCaptionException if the [PicMessageRequest.caption] is invalid.
+ * @throws InvalidPicException if the [PicMessageRequest.pic] is invalid.
  */
 private suspend fun PipelineContext<Unit, ApplicationCall>.readPicMessageRequest(): PicMessageRequest {
     var pic: Pic? = null

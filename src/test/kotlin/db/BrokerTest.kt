@@ -1,9 +1,9 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.DbExtension
-import com.neelkamath.omniChat.createVerifiedUsers
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.routing.UpdatedAccount
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedAccount
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.delay
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Duration
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * Makes up for the message broker's latency.
@@ -29,7 +30,7 @@ class BrokerTest {
         fun `Updating an account must only notify non-deleted chat sharers, contact owners, and the updater`(): Unit =
             runBlocking {
                 val (userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer) =
-                    createVerifiedUsers(5).map { it.info.id }
+                    createVerifiedUsers(5).map { it.userId }
                 Contacts.create(contactOwnerId, userId)
                 val chatId = PrivateChats.create(userId, deletedPrivateChatSharer)
                 PrivateChatDeletions.create(chatId, userId)
@@ -52,7 +53,10 @@ class BrokerTest {
                     contactOwnerSubscriber,
                     privateChatSharerSubscriber,
                     groupChatSharerSubscriber,
-                ).forEach { it.assertValue(UpdatedAccount.build(userId)) }
+                ).forEach { subscriber ->
+                    val actual = subscriber.values().map { (it as UpdatedAccount).id }
+                    assertEquals(listOf(userId), actual)
+                }
             }
     }
 }
@@ -64,7 +68,7 @@ class NotifierTest {
         @Test
         fun `Clients who have subscribed with a matching asset must be notified`() {
             runBlocking {
-                val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.info.id }
+                val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val notifier = Notifier<String>(Topic.MESSAGES)
                 val (subscriber1, subscriber2, subscriber3, subscriber4) = listOf(user1Id, user1Id, user2Id, user3Id)
                     .map { notifier.subscribe(it).subscribeWith(TestSubscriber()) }

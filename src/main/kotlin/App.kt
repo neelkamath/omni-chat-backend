@@ -1,14 +1,15 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.neelkamath.omniChat.db.setUpDb
-import com.neelkamath.omniChat.db.subscribeToMessageBroker
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.routeGraphQlQueriesAndMutations
-import com.neelkamath.omniChat.graphql.routing.routeGraphQlSubscriptions
-import com.neelkamath.omniChat.restApi.*
+import com.neelkamath.omniChatBackend.db.setUpDb
+import com.neelkamath.omniChatBackend.db.subscribeToMessageBroker
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.routing.routeGraphQlQueriesAndMutations
+import com.neelkamath.omniChatBackend.graphql.routing.routeGraphQlSubscriptions
+import com.neelkamath.omniChatBackend.restApi.*
 import graphql.schema.DataFetchingEnvironment
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -25,7 +26,8 @@ import java.time.Duration
 val objectMapper: ObjectMapper = jacksonObjectMapper()
     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    .findAndRegisterModules()
+    // Use <registerModule()> instead of <findAndRegisterModules()> because the latter doesn't work in the prod build.
+    .registerModule(JavaTimeModule())
 
 /** The user's ID on authenticated calls, and `null` otherwise. */
 val ApplicationCall.userId: Int? get() = authentication.principal<JWTPrincipal>()?.payload?.subject?.toInt()
@@ -51,7 +53,7 @@ fun Application.main() {
             validate { credential ->
                 val userId = credential.payload.subject.toInt()
                 // It's possible the user updated their email address just after the token was created.
-                if (Users.isExisting(userId) && Users.read(userId).hasVerifiedEmailAddress) JWTPrincipal(credential.payload)
+                if (Users.isExisting(userId) && Users.hasVerifiedEmailAddress(userId)) JWTPrincipal(credential.payload)
                 else null
             }
         }

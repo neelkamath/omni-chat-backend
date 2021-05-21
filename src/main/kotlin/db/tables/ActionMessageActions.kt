@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.graphql.routing.MessageText
-import com.neelkamath.omniChat.toLinkedHashSet
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -10,27 +10,29 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** @see [ActionMessages] */
+/** @see ActionMessages */
 object ActionMessageActions : IntIdTable() {
     override val tableName = "action_message_actions"
-    private val actionMessageId: Column<Int> = integer("action_message_id").references(ActionMessages.id)
+    private val messageId: Column<Int> = integer("message_id").references(Messages.id)
     private val action: Column<String> = varchar("action", MessageText.MAX_LENGTH)
 
-    fun create(actionMessageId: Int, actions: LinkedHashSet<MessageText>): Unit = transaction {
+    /** The [actions] can be [read] in the order they were created in. */
+    fun create(messageId: Int, actions: LinkedHashSet<MessageText>): Unit = transaction {
         batchInsert(actions) {
-            this[ActionMessageActions.actionMessageId] = actionMessageId
+            this[ActionMessageActions.messageId] = messageId
             this[action] = it.value
         }
     }
 
-    fun read(actionMessageId: Int): LinkedHashSet<MessageText> = transaction {
-        select(ActionMessageActions.actionMessageId eq actionMessageId)
+    /** Returns the [messageId]'s actions with the same order they were created with. */
+    fun read(messageId: Int): LinkedHashSet<MessageText> = transaction {
+        select(ActionMessageActions.messageId eq messageId)
             .orderBy(ActionMessageActions.id)
             .map { MessageText(it[action]) }
             .toLinkedHashSet()
     }
 
-    fun delete(actionMessageIdList: Collection<Int>): Unit = transaction {
-        deleteWhere { actionMessageId inList actionMessageIdList }
+    fun delete(messageIdList: Collection<Int>): Unit = transaction {
+        deleteWhere { messageId inList messageIdList }
     }
 }

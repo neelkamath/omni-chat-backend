@@ -1,18 +1,18 @@
-package com.neelkamath.omniChat.graphql.engine
+package com.neelkamath.omniChatBackend.graphql.engine
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.graphql.routing.GraphQlResponse
-import com.neelkamath.omniChat.graphql.routing.readGraphQlHttpResponse
-import com.neelkamath.omniChat.testingObjectMapper
+import com.neelkamath.omniChatBackend.graphql.routing.GraphQlResponse
+import com.neelkamath.omniChatBackend.graphql.routing.readGraphQlHttpResponse
+import com.neelkamath.omniChatBackend.testingObjectMapper
 import graphql.ExecutionInput
 
 /**
  * Executes GraphQL queries and mutations directly via the GraphQL engine.
  *
- * @param[query] GraphQL document.
- * @param[variables] GraphQL variables for the [query].
- * @param[userId] the ID of the user performing the operation.
- * @see [readGraphQlHttpResponse]
+ * @param query GraphQL document.
+ * @param variables GraphQL variables for the [query].
+ * @param userId the ID of the user performing the operation.
+ * @see readGraphQlHttpResponse
  */
 fun executeGraphQlViaEngine(
     query: String,

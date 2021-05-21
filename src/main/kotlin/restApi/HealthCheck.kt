@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
 import io.ktor.application.*
 import io.ktor.http.*

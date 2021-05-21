@@ -1,19 +1,26 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.tables.Users
+import com.neelkamath.omniChatBackend.graphql.routing.*
 
 /** Used to give unique IDs. Increment every usage to get a new one. */
 private var userCount = 0
 
-data class VerifiedUser(val info: Account, val password: Password) {
-    val login: Login = Login(info.username, password)
-    val accessToken: String by lazy { buildTokenSet(info.id).accessToken }
+data class VerifiedUser(
+    val userId: Int,
+    val username: Username,
+    val emailAddress: String,
+    val firstName: Name,
+    val lastName: Name,
+    val bio: Bio,
+    val password: Password,
+) {
+    val login: Login = Login(username, password)
+    val accessToken: String by buildTokenSet(userId).accessToken
 
     companion object {
         fun build(account: AccountInput): VerifiedUser = with(account) {
-            val userId = Users.read(username).id
-            VerifiedUser(Account(userId, username, emailAddress, firstName, lastName, bio), password)
+            VerifiedUser(Users.readId(username), username, emailAddress, firstName, lastName, bio, password)
         }
     }
 }

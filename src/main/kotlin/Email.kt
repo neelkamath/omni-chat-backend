@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChatBackend.db.tables.Users
 import java.util.*
 import javax.mail.*
 import javax.mail.internet.InternetAddress
@@ -33,7 +33,7 @@ fun emailNewEmailAddressVerification(emailAddress: String, code: Int) {
  * `verifyEmailAddress`. Use [emailNewEmailAddressVerification] if the [emailAddress] is unregistered.
  */
 fun emailEmailAddressVerification(emailAddress: String) {
-    val code = Users.read(emailAddress).emailAddressVerificationCode
+    val code = Users.readEmailAddressVerificationCode(emailAddress)
     emailEmailAddressVerification(emailAddress, code)
 }
 
@@ -47,7 +47,7 @@ private fun emailEmailAddressVerification(emailAddress: String, code: Int) {
 }
 
 fun emailResetPassword(emailAddress: String) {
-    val code = Users.read(emailAddress).passwordResetCode
+    val code = Users.readPasswordResetCode(emailAddress)
     val name = System.getenv("APP_NAME")
     email(
         emailAddress,

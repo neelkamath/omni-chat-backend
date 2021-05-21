@@ -1,6 +1,6 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.tables.Chats.id
+import com.neelkamath.omniChatBackend.db.tables.Chats.id
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
@@ -15,9 +15,9 @@ object Chats : IntIdTable() {
         insertAndGetId {}.value
     }
 
-    fun delete(id: Int): Unit = transaction {
-        deleteWhere { Chats.id eq id }
+    fun delete(chatId: Int): Unit = transaction {
+        deleteWhere { Chats.id eq chatId }
     }
 
-    fun isExisting(id: Int): Boolean = transaction { select(Chats.id eq id).empty().not() }
+    fun isExisting(chatId: Int): Boolean = transaction { select(Chats.id eq chatId).empty().not() }
 }

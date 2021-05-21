@@ -1,8 +1,8 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.*
-import com.neelkamath.omniChat.db.Pic
-import com.neelkamath.omniChat.db.tables.Users
+import com.neelkamath.omniChatBackend.*
+import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.tables.Users
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -18,11 +18,8 @@ private fun getProfilePic(userId: Int, type: PicType): TestApplicationResponse =
         handleRequest(HttpMethod.Get, "profile-pic?$parameters").response
     }
 
-private fun patchProfilePic(accessToken: String, filename: String, fileContent: ByteArray): TestApplicationResponse =
-    uploadFile(accessToken, filename, fileContent, HttpMethod.Patch, "profile-pic")
-
-private fun patchProfilePic(accessToken: String, pic: Pic): TestApplicationResponse =
-    patchProfilePic(accessToken, "pic.${pic.type}", pic.original)
+private fun patchProfilePic(accessToken: String, filename: String): TestApplicationResponse =
+    uploadFile(accessToken, filename, readBytes(filename), HttpMethod.Patch, "profile-pic")
 
 @ExtendWith(DbExtension::class)
 class ProfilePicTest {
@@ -30,7 +27,7 @@ class ProfilePicTest {
     inner class GetProfileImage {
         @Test
         fun `Requesting an existing pic must cause the pic to be received with an HTTP status code of 200`() {
-            val userId = createVerifiedUsers(1).first().info.id
+            val userId = createVerifiedUsers(1).first().userId
             val pic = readPic("76px×57px.jpg")
             Users.updatePic(userId, pic)
             val response = getProfilePic(userId, PicType.ORIGINAL)
@@ -39,29 +36,29 @@ class ProfilePicTest {
         }
 
         @Test
-        fun `Requesting a nonexistent pic must cause an HTTP status code of 204 to be received`() {
-            val userId = createVerifiedUsers(1).first().info.id
+        fun `Requesting a non-existing pic must cause an HTTP status code of 204 to be received`() {
+            val userId = createVerifiedUsers(1).first().userId
             assertEquals(HttpStatusCode.NoContent, getProfilePic(userId, PicType.ORIGINAL).status())
         }
 
         @Test
-        fun `Requesting the pic of a nonexistent user must cause an HTTP status code of 400 to be received`(): Unit =
+        fun `Requesting the pic of a non-existing user must cause an HTTP status code of 400 to be received`(): Unit =
             assertEquals(HttpStatusCode.BadRequest, getProfilePic(userId = 1, PicType.ORIGINAL).status())
 
         @Test
         fun `Requesting the original image must return the original`() {
-            val userId = createVerifiedUsers(1).first().info.id
+            val userId = createVerifiedUsers(1).first().userId
             Users.updatePic(userId, readPic("1008px×756px.jpg"))
             val response = getProfilePic(userId, PicType.ORIGINAL).byteContent
-            assertTrue(Users.read(userId).pic!!.original.contentEquals(response))
+            assertTrue(Users.readPic(userId, PicType.ORIGINAL).contentEquals(response))
         }
 
         @Test
         fun `Requesting the thumbnail must return the thumbnail`() {
-            val userId = createVerifiedUsers(1).first().info.id
+            val userId = createVerifiedUsers(1).first().userId
             Users.updatePic(userId, readPic("1008px×756px.jpg"))
             val response = getProfilePic(userId, PicType.THUMBNAIL).byteContent!!
-            assertTrue(Users.read(userId).pic!!.thumbnail.contentEquals(response))
+            assertTrue(Users.readPic(userId, PicType.THUMBNAIL).contentEquals(response))
         }
     }
 
@@ -70,15 +67,15 @@ class ProfilePicTest {
         @Test
         fun `Updating the pic must update the DB, and respond with an HTTP status code of 204`() {
             val user = createVerifiedUsers(1).first()
-            val pic = readPic("76px×57px.jpg")
-            assertEquals(HttpStatusCode.NoContent, patchProfilePic(user.accessToken, pic).status())
-            assertEquals(pic, Users.read(user.info.id).pic)
+            val filename = "76px×57px.jpg"
+            assertEquals(HttpStatusCode.NoContent, patchProfilePic(user.accessToken, filename).status())
+            val actual = Users.readPic(user.userId, PicType.ORIGINAL)
+            assertTrue(readPic(filename).original.contentEquals(actual))
         }
 
         private fun testBadRequest(filename: String) {
             val token = createVerifiedUsers(1).first().accessToken
-            val response = patchProfilePic(token, filename, readBytes(filename))
-            assertEquals(HttpStatusCode.BadRequest, response.status())
+            assertEquals(HttpStatusCode.BadRequest, patchProfilePic(token, filename).status())
         }
 
         @Test

@@ -10,12 +10,12 @@ underscores are allowed.
 """
 scalar Username
 
-"""A name must neither contain whitespace nor exceed 30 characters."""
+"""A name must neither contain whitespace nor exceed 30 characters. An empty string corresponds to no name."""
 scalar Name
 
 """
 A user's bio which cannot exceed 2,500 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is
-disallowed.
+disallowed. An empty string corresponds to no bio.
 """
 scalar Bio
 
@@ -25,7 +25,10 @@ scalar Password
 """1-70 characters, of which at least one isn't whitespace. Leading and trailing whitespace is disallowed."""
 scalar GroupChatTitle
 
-"""At most 1,000 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is disallowed."""
+"""
+At most 1,000 characters, and uses GitHub Flavored Markdown. Leading and trailing whitespace is disallowed. An empty
+string corresponds to no description.
+"""
 scalar GroupChatDescription
 
 """
@@ -50,6 +53,13 @@ schema {
 
 type Query {
     """
+    An access token must be sent with this request if the `messageId` isn't from a public chat. Sending an access token
+    for a public chat will return the message as viewed by the user (e.g., the message may be stated as being starred).
+    If there's no such `messageId` visible to the user (including anonymous users), then the user will be unauthorized.
+    """
+    readMessage(messageId: Int!): Message!
+
+    """
     Returns the user's starred messages.
 
     An access token must be sent with this request.
@@ -70,7 +80,7 @@ type Query {
     readOnlineStatus(userId: Int!): ReadOnlineStatusResult!
 
     """
-    The users who are typing in a chat the user is in. The user's own status won't be returned.
+    The users who are typing in a chat the user is in.
 
     An access token must be sent with this request.
     """
@@ -82,7 +92,8 @@ type Query {
 
     A returned `InvalidChatId` indicates that the chat isn't public, and the user isn't in the chat.
 
-    An access token must be sent with this request if the `chatId` isn't a public chat.
+    An access token must be sent with this request if the `chatId` isn't a public chat. Sending an access token for a
+    public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
     """
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): SearchChatMessagesResult!
 
@@ -110,7 +121,10 @@ type Query {
     """
     readChats(first: Int, after: Cursor): ChatsConnection!
 
-    """An access token must be sent with this request if the chat being read isn't a public chat."""
+    """
+    An access token must be sent with this request if the chat being read isn't a public chat. Sending an access token
+    for a public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
+    """
     readChat(id: Int!): ReadChatResult!
 
     """
@@ -128,7 +142,12 @@ type Query {
     """
     searchChats(query: String!, first: Int, after: Cursor): ChatsConnection!
 
-    """Searches chats by case-insensitively `query`ing their titles."""
+    """
+    Searches chats by case-insensitively `query`ing their titles.
+
+    If an access token is sent with this request, the chats will be returned as viewed by the user (e.g., messages they
+    starred will be stated as such).
+    """
     searchPublicChats(query: String!, first: Int, after: Cursor): GroupChatsConnection!
 
     """
@@ -175,16 +194,17 @@ type Query {
 
 type Mutation {
     """
-    Blocks the `id`. Does nothing if the user has already been blocked, or the user is blocking themselves.`null` will
-    be returned if the operation succeeded.
+    Blocks the specified user. Does nothing if the user has already been blocked, or the user is blocking themselves.
+    `null` will be returned if the operation succeeded. An `InvalidUserId` will be returned if the specified user
+    doesn't exist.
 
     An access token must be sent with this request.
     """
     blockUser(id: Int!): InvalidUserId
 
     """
-    Unblocks the `id`. Returns `true` if the user got unblocked. Returns `false` if either the user wasn't blocked or
-    the `id` doesn't exist.
+    Unblocks the specified user. Returns `true` if the user got unblocked. Returns `false` if either the user wasn't
+    blocked or the `id` doesn't exist.
 
     An access token must be sent with this request.
     """
@@ -222,7 +242,7 @@ type Mutation {
     star(messageId: Int!): InvalidMessageId
 
     """
-    Unstars the `messageId`. Does nothing if the message wasn't starred.
+    Unstars the `messageId`. Does nothing if either the message doesn't exist or the message wasn't starred.
 
     An access token must be sent with this request.
     """
@@ -317,20 +337,21 @@ type Mutation {
     updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
 
     """
-    Nonexistent users, and users who are already in the chat will be ignored.
+    Nonexisting users, and users who are already in the chat will be ignored.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    addGroupChatUsers(chatId: Int!, idList: [Int!]!): Placeholder!
+    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Messages sent by, and polls voted on, by removed users will remain. Nonexistent users, and users who aren't in the
-    chat will be ignored. Every message a removed user had starred in the specified chat will be unstarred for them.
-    `null` will be returned if the operation succeeded.
+    Removes the specified users from the `chatId` which may include admins including the user themself. Messages sent
+    by, and polls voted on, by removed users will remain. Nonexisting users, and users who aren't in the chat will be
+    ignored. Every message a removed user had starred in the specified chat will be unstarred for them. `null` will be
+    returned if the operation succeeded.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, idList: [Int!]!): CannotLeaveChat
+    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): CannotLeaveChat
 
     """
     Leaves the chat the user is in. Every message the user has starred in the specified chat will be unstarred for them.
@@ -343,12 +364,12 @@ type Mutation {
     leaveGroupChat(chatId: Int!): LeaveGroupChatResult
 
     """
-    Makes every user in the `idList` an admin of the `chatId`. Nonexistent users, users who aren't in the chat, and
+    Makes every user in the `idList` an admin of the `chatId`. Nonexisting users, users who aren't in the chat, and
     users who are already admins, are ignored.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    makeGroupChatAdmins(chatId: Int!, idList: [Int!]!): Placeholder!
+    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
     Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
@@ -369,16 +390,20 @@ type Mutation {
     setBroadcast(chatId: Int!, isBroadcast: Boolean!): Placeholder!
 
     """
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the chat isn't a group
-    chat, or the chat is a public chat.
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the chat isn't a
+    group chat or the chat is a public chat.
 
     An access token must be sent with this request. The user must be an admin to perform this operation.
     """
     setInvitability(chatId: Int!, isInvitable: Boolean!): InvalidChatId
 
     """
-    Joins the chat the `inviteCode` is for. Nothing will happen if the user is already in the chat. `null` will be
-    returned if the operation succeeded. You can easily join a public chat using `Mutation.joinPublicChat`.
+    Joins the chat the `inviteCode` is for.
+
+    Nothing will happen if the user is already in the chat. `null` will be returned if the operation succeeded. An
+    `InvalidInviteCode` will be returned if there's no invitable chat having the `inviteCode` (e.g., the `inviteCode` is
+    now invalid because the admin of its group chat switched off invites). You can easily join a public chat using
+    `Mutation.joinPublicChat`.
 
     An access token must be sent with this request.
     """
@@ -393,7 +418,7 @@ type Mutation {
     joinPublicChat(chatId: Int!): InvalidChatId
 
     """
-    Deletes a private chat.  Any messages the user starred in the chat will be unstarred.
+    Deletes a private chat. Any messages the user starred in the chat will be unstarred.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat.
@@ -444,12 +469,22 @@ type Mutation {
     Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
     broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
     when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
-    message being replied to. A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead
-    display the `GroupChatInfo` returned by `Query.readGroupChat`.
+    message being replied to.
 
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    `chatId`. An `InvalidInvitedChat` will be returned if the `invitedChatId` isn't a group chat, or the chat has
-    turned off invitations. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the user isn't in
+    the `chatId` or the `chatId` is the same as the `invitedChatId`. An `InvalidInvitedChat` will be returned if the
+    `invitedChatId` isn't a group chat, the chat has turned off invitations, or the user isn't in it. An
+    `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+
+    Users aren't allowed to create invite messages for chats they aren't in because there's no use case for it, and
+    hackers could brute force joining many invitable chats in this manner. Users can, however, forward group chat
+    invite messages even if they aren't in the chat they're being invited to. An example use case of this is a college
+    student forwarding an invite for the Chemistry group chat to their friends even though they themselves haven't
+    joined the Chemistry chat because they didn't take up that subject.
+
+    A frontend UI might want to hide the `GroupChatInviteMessage.inviteCode`, and instead display the `GroupChatInfo`
+    returned by `Query.readGroupChat`. The user needn't be in the `invitedChatId` because it's possible that they were
+    simply required to forward a group chat invite to the relevant people.
 
     An access token must be sent with this request.
     """
@@ -477,21 +512,24 @@ type Mutation {
     In this case, the `contextMessageId` is to be the ID of the message being replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    chat. An `InvalidMessageId` will be returned if the `messageId` or `contextMessageId` doesn't exist.
+    `chatId`, the `messageId` is from the `chatId` (messages can't be forwarded in their own chats), or the `messageId`
+    is a group chat invite for the `chatId`. An `InvalidMessageId` will be returned if the `messageId` or
+    `contextMessageId` doesn't exist.
 
     An access token must be sent with this request.
     """
     forwardMessage(chatId: Int!, messageId: Int!, contextMessageId: Int): ForwardMessageResult
 
     """
-    Triggers the `action` on the `messageId`'s action message.
+    Triggers the `action` on the `messageId`'s action message. Returns whether the operation was successful.
 
-    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if there's no such action
-    message. An `InvalidAction` will be returned if the `action` doesn't exist.
+    `false` will be returned if there's no such action message, the user can't see the message (e.g., the message is
+    from a private chat which they had deleted), the user isn't in the chat, or the `action` doesn't exist on the
+    `messageId`.
 
     An access token must be sent with this request.
     """
-    triggerAction(messageId: Int!, action: MessageText!): TriggerActionResult
+    triggerAction(messageId: Int!, action: MessageText!): Boolean!
 
     """
     Updates the user's vote for the `option` on the `messageId`'s poll. If `vote` is `true`, the user's vote will be
@@ -517,15 +555,15 @@ type Mutation {
 
     """
     Deletes the specified user from the user's contacts. Returns `true` if the contact got deleted. Returns `false` if
-    the `id` was either not a contact or a nonexistent user ID.
+    the `id` was either not a contact or a nonexisting user ID.
 
     An access token must be sent with this request.
     """
     deleteContact(id: Int!): Boolean!
 
     """
-    Saves the `id` as a contact. Returns `true` if the contact got saved. Returns `false` if the `id` was either a
-    preexisting contact or a nonexistent user ID.
+    Saves the specified user as a contact. Returns `true` if the contact got saved. Returns `false` if the `id` was
+    either a preexisting contact or a nonexisting user ID.
 
     An access token must be sent with this request.
     """
@@ -551,8 +589,7 @@ type Subscription {
     subscribeToOnlineStatuses: OnlineStatusesSubscription!
 
     """
-    Yields typing statuses for chats the user has. The user's own typing statuses won't be yielded. The subscription
-    will be stopped if the user deletes their account.
+    Yields typing statuses for chats the user has. The subscription will be stopped if the user deletes their account.
 
     An access token must be sent with this request.
     """
@@ -588,14 +625,12 @@ union MessagesSubscription =
     | UpdatedMessage
     | TriggeredAction
     | DeletedMessage
-    | MessageDeletionPoint
-    | DeletionOfEveryMessage
     | UserChatMessagesRemoval
     | UnstarredChat
 
 """Every message in the chat has been unstarred by the user."""
 type UnstarredChat {
-    id: Int!
+    chatId: Int!
 }
 
 union OnlineStatusesSubscription = CreatedSubscription | OnlineStatus
@@ -617,14 +652,14 @@ union AccountsSubscription =
     | UnblockedAccount
     | DeletedAccount
 
-"""The `id` of the user who deleted their account."""
+"""The `userId` who deleted their account."""
 type DeletedAccount {
-    id: Int!
+    userId: Int!
 }
 
-"""The `id` of the user who updated their profile pic."""
+"""The `userId` of the user who updated their profile pic."""
 type UpdatedProfilePic {
-    id: Int!
+    userId: Int!
 }
 
 """
@@ -634,9 +669,9 @@ If the subscriber leaves the chat, they will receive their own `ExitedUsers` mes
 """
 union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUsers
 
-"""The `id` of the group chat whose pic was updated."""
+"""The `chatId` of the group chat whose pic was updated."""
 type UpdatedGroupChatPic {
-    id: Int!
+    chatId: Int!
 }
 
 """
@@ -670,7 +705,7 @@ type TypingUsers {
 }
 
 type GroupChatId {
-    id: Int!
+    chatId: Int!
 }
 
 """The users who left the group chat."""
@@ -679,9 +714,9 @@ type ExitedUsers {
     userIdList: [Int!]!
 }
 
-"""null fields correspond to the field not existing. This will not be sent if the profile pic was updated."""
-type UpdatedAccount {
-    id: Int!
+"""This will not be sent if the profile pic was updated."""
+type UpdatedAccount implements AccountData {
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -705,16 +740,6 @@ type UpdatedGroupChat {
 }
 
 """
-Every message in the `chatId` has been deleted.
-
-This happens in private chats when the user deleted it, or the other user deleted their account. This happens in group
-chats when the last user left the chat.
-"""
-type DeletionOfEveryMessage {
-    chatId: Int!
-}
-
-"""
 Every message the `userId` sent in the `chatId` has been deleted. This happens when a group chat's member deletes their
 account.
 """
@@ -728,12 +753,6 @@ Indicates that the `Subscription` has been created. This will only be sent only 
 """
 type CreatedSubscription {
     placeholder: Placeholder!
-}
-
-"""Indicates that the every message `until` the `DateTime` has been deleted in the `chatId`."""
-type MessageDeletionPoint {
-    chatId: Int!
-    until: DateTime!
 }
 
 """The `messageId` has been deleted from the `chatId`."""
@@ -751,8 +770,8 @@ input PollInput {
 
 type PollOption {
     option: MessageText!
-    """The ID of every user who voted for this."""
-    votes: [Int!]!
+    """The ID of every user who voted for the `option`."""
+    votes: [Account!]!
 }
 
 """A user can vote for each option at most once, but can vote for multiple options."""
@@ -806,7 +825,7 @@ type AccountEdge {
 }
 
 interface AccountData {
-    id: Int!
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -815,7 +834,7 @@ interface AccountData {
 }
 
 type Account implements AccountData {
-    id: Int!
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -825,7 +844,7 @@ type Account implements AccountData {
 
 """A blocked user."""
 type BlockedAccount implements AccountData {
-    id: Int!
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -833,13 +852,13 @@ type BlockedAccount implements AccountData {
     bio: Bio!
 }
 
-"""The user `id` of an unblocked user."""
+"""The `userId` of an unblocked user."""
 type UnblockedAccount {
-    id: Int!
+    userId: Int!
 }
 
 type NewContact implements AccountData {
-    id: Int!
+    userId: Int!
     username: Username!
     emailAddress: String!
     firstName: Name!
@@ -852,7 +871,7 @@ The `id` of the contact which has been deleted for the user. This happens when t
 contact's account gets deleted.
 """
 type DeletedContact {
-    id: Int!
+    userId: Int!
 }
 
 input AccountInput {
@@ -876,11 +895,12 @@ type ChatMessagesEdge {
 
 type ChatMessages {
     chat: Chat!
+    # Use backward (instead of forward) pagination because users would want to prioritize searching recent messages.
     messages(last: Int, before: Cursor): [MessageEdge!]!
 }
 
 interface Chat {
-    id: Int!
+    chatId: Int!
     messages(last: Int, before: Cursor): MessagesConnection!
 }
 
@@ -931,7 +951,7 @@ type GroupChatInfo implements BareGroupChat {
 }
 
 type GroupChat implements Chat, BareGroupChat {
-    id: Int!
+    chatId: Int!
     title: GroupChatTitle!
     description: GroupChatDescription!
     adminIdList: [Int!]!
@@ -944,7 +964,7 @@ type GroupChat implements Chat, BareGroupChat {
 }
 
 type PrivateChat implements Chat {
-    id: Int!
+    chatId: Int!
     messages(last: Int, before: Cursor): MessagesConnection!
     """The user being chatted with."""
     user: Account!
@@ -961,7 +981,7 @@ type MessageContext {
     `hasContext`, but the context message was deleted, a frontend UI could replace what should've been the context
     message with something similar to "Message deleted".
     """
-    id: Int
+    messageId: Int
 }
 
 interface Message {
@@ -972,6 +992,7 @@ interface Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }
 
@@ -983,6 +1004,7 @@ type TextMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
     textMessage: MessageText!
 }
@@ -995,6 +1017,7 @@ type ActionMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
     actionableMessage: ActionableMessage!
 }
@@ -1007,6 +1030,7 @@ type PicMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
     caption: MessageText
 }
@@ -1019,6 +1043,7 @@ type PollMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
     poll: Poll!
 }
@@ -1031,6 +1056,7 @@ type AudioMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }
 
@@ -1042,6 +1068,7 @@ type GroupChatInviteMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
     inviteCode: Uuid!
 }
@@ -1054,6 +1081,7 @@ type DocMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }
 
@@ -1065,6 +1093,7 @@ type VideoMessage implements Message {
     statuses: [MessageDateTimeStatus!]!
     context: MessageContext!
     isForwarded: Boolean!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }
 
@@ -1274,6 +1303,7 @@ type UpdatedMessage {
     messageId: Int!
     state: MessageState!
     statuses: [MessageDateTimeStatus!]!
+    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }
 
@@ -1341,7 +1371,7 @@ input GroupChatInput {
 }
 
 """The username doesn't exist."""
-type NonexistentUser {
+type NonexistingUser {
     placeholder: Placeholder!
 }
 
@@ -1400,7 +1430,7 @@ type InvalidPoll {
 }
 
 """The option isn't in the poll."""
-type NonexistentOption {
+type NonexistingOption {
     placeholder: Placeholder!
 }
 
@@ -1438,12 +1468,12 @@ type InvalidPasswordResetCode {
 }
 
 type CreatedChatId {
-    id: Int!
+    chatId: Int!
 }
 
 """
-The user attempted to leave the chat but they must first appoint another user as an admin because they're the last admin
-of an otherwise nonempty chat.
+An admin was attempted to be removed from the chat but another user must first be appointed as an admin because they're
+the last admin of an otherwise nonempty chat.
 """
 type CannotLeaveChat {
     placeholder: Placeholder!
@@ -1455,7 +1485,7 @@ union ReadChatResult = PrivateChat | GroupChat | InvalidChatId
 
 union ReadGroupChatResult = GroupChatInfo | InvalidInviteCode
 
-union RequestTokenSetResult = TokenSet | NonexistentUser | UnverifiedEmailAddress | IncorrectPassword
+union RequestTokenSetResult = TokenSet | NonexistingUser | UnverifiedEmailAddress | IncorrectPassword
 
 union VerifyEmailAddressResult = InvalidVerificationCode | UnregisteredEmailAddress
 
@@ -1481,9 +1511,7 @@ union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll
 
 union ForwardMessageResult = InvalidChatId | InvalidMessageId
 
-union TriggerActionResult = InvalidMessageId | InvalidAction
-
-union SetPollVoteResult = InvalidMessageId | NonexistentOption
+union SetPollVoteResult = InvalidMessageId | NonexistingOption
 
 union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat
 

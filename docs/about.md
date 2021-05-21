@@ -82,8 +82,9 @@ Here are Omni Chat's features:
 
         This is useful for something like a college's elective class where hundreds of students from different sections need to be added. Instead of admins manually adding each of them, or manually adding one person from each section who in turn adds their classmates, the admin can simply auto-invite users via a code so that people will forward it to their relevant class's chat.
 
-        This is how it'll work. Every chat gets associated with a Universally Unique IDentifier. Any user who enters this code gets added to the chat. The code isn't human readable so that hackers can't use brute force to join chats. Whether a chat can be joined via an invitation can be toggled by the admin; except for public chats where invitations are always on.
-- Public chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat). Users can search for, and view public chats without an account. Anyone with an account can join them. A frontend UI may allow for a search engine to index such chats.
+        This is how it'll work. Every chat gets associated with a UUID (Universally Unique IDentifier). Any user who enters this code gets added to the chat. The code isn't human readable so that hackers can't use brute force to join chats. Whether a chat can be joined via an invitation can be toggled by the admin; except for public chats where invitations are always on.
+    - Public chats (e.g., official Android chat, random groups individuals have created, Mario Kart chat). Users can search for, and view public chats without an account. Anyone with an account can join them. A frontend UI may allow for a search engine to index such chats.
+    - Though group chats can switch on and off invites, they can't toggle whether the chat is public. This is because making a chat public would cause previously sent messages to become public which is a privacy concern for users who were unaware such a change might be made later on.
 - Messages can be forwarded.
 - Omni Chat can be self-hosted.
 

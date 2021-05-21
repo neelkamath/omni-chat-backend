@@ -1,16 +1,13 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.module.kotlin.convertValue
-import com.neelkamath.omniChat.db.tables.*
-import com.neelkamath.omniChat.graphql.operations.READ_CHATS_QUERY
-import com.neelkamath.omniChat.graphql.operations.READ_CHAT_QUERY
-import com.neelkamath.omniChat.graphql.operations.REQUEST_TOKEN_SET_QUERY
-import com.neelkamath.omniChat.graphql.operations.createTextMessage
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.tables.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TokenSet
+import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,7 +15,6 @@ import java.util.*
 import kotlin.reflect.KClass
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /** The [objectMapper] for the test source set. */
@@ -59,7 +55,6 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(CreateTextMessageResultDeserializer)
     .register(CreatePollMessageResultDeserializer)
     .register(ForwardMessageResultDeserializer)
-    .register(TriggerActionResultDeserializer)
     .register(SetPollVoteResultDeserializer)
     .register(LeaveGroupChatResultDeserializer)
     .register(ReadOnlineStatusResultDeserializer)
@@ -235,8 +230,6 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "UpdatedMessage" -> UpdatedMessage::class
             "TriggeredAction" -> TriggeredAction::class
             "DeletedMessage" -> DeletedMessage::class
-            "MessageDeletionPoint" -> MessageDeletionPoint::class
-            "DeletionOfEveryMessage" -> DeletionOfEveryMessage::class
             "UserChatMessagesRemoval" -> UserChatMessagesRemoval::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
@@ -274,7 +267,7 @@ private object RequestTokenSetResultDeserializer : JsonDeserializer<RequestToken
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out RequestTokenSetResult> = when (val type = node["__typename"].asText()) {
             "TokenSet" -> TokenSet::class
-            "NonexistentUser" -> NonexistentUser::class
+            "NonexistingUser" -> NonexistingUser::class
             "UnverifiedEmailAddress" -> UnverifiedEmailAddress::class
             "IncorrectPassword" -> IncorrectPassword::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
@@ -405,23 +398,11 @@ private object ForwardMessageResultDeserializer : JsonDeserializer<ForwardMessag
     }
 }
 
-private object TriggerActionResultDeserializer : JsonDeserializer<TriggerActionResult>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): TriggerActionResult {
-        val node = parser.codec.readTree<JsonNode>(parser)
-        val clazz: KClass<out TriggerActionResult> = when (val type = node["__typename"].asText()) {
-            "InvalidAction" -> InvalidAction::class
-            "InvalidMessageId" -> InvalidMessageId::class
-            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
-        }
-        return parser.codec.treeToValue(node, clazz.java)
-    }
-}
-
 private object SetPollVoteResultDeserializer : JsonDeserializer<SetPollVoteResult>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): SetPollVoteResult {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out SetPollVoteResult> = when (val type = node["__typename"].asText()) {
-            "NonexistentOption" -> NonexistentOption::class
+            "NonexistingOption" -> NonexistingOption::class
             "InvalidMessageId" -> InvalidMessageId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
@@ -596,25 +577,28 @@ class AppTest {
     @Nested
     @Suppress("ClassName")
     inner class Application_Main {
+        private fun executeReadChats(accessToken: String): HttpStatusCode = executeGraphQlViaHttp(
+            """
+            query ReadChats {
+                readChats
+            }
+            """,
+            accessToken = accessToken,
+        ).status()!!
+
         @Test
         fun `An access token must work for queries and mutations`() {
-            val userId = createVerifiedUsers(1).first().info.id
-            val token = buildTokenSet(userId).accessToken
-            assertNotEquals(
-                HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status(),
-            )
+            val userId = createVerifiedUsers(1).first().userId
+            val token = buildTokenSet(userId).accessToken.value
+            assertEquals(HttpStatusCode.OK, executeReadChats(token))
         }
 
         @Test
         fun `A token from an account with an unverified email address mustn't work for queries and mutation`() {
-            val userId = createVerifiedUsers(1).first().info.id
-            val token = buildTokenSet(userId).accessToken
+            val userId = createVerifiedUsers(1).first().userId
+            val token = buildTokenSet(userId).accessToken.value
             Users.update(userId, AccountUpdate(emailAddress = "new.address@example.com"))
-            assertEquals(
-                HttpStatusCode.Unauthorized,
-                executeGraphQlViaHttp(READ_CHATS_QUERY, accessToken = token).status(),
-            )
+            assertEquals(HttpStatusCode.Unauthorized, executeReadChats(token))
         }
     }
 }
@@ -628,16 +612,28 @@ class AppTest {
  */
 @ExtendWith(DbExtension::class)
 class EncodingTest {
+    private fun executeCreateTextMessage(accessToken: String, chatId: Int, message: MessageText) {
+        executeGraphQlViaHttp(
+            """
+            mutation CreateTextMessage(${"$"}chatId: Int!, ${"$"}text: MessageText!) {
+                createTextMessage(chatId: ${"$"}chatId, text: ${"$"}text) {
+                    __typename
+                }
+            }
+            """,
+            mapOf("chatId" to chatId, "text" to message),
+            accessToken,
+        )
+    }
+
     @Test
     fun `A message must allow using emoji and multiple languages`() {
-        val adminId = createVerifiedUsers(1).first().info.id
-        val chatId = GroupChats.create(listOf(adminId))
+        val admin = createVerifiedUsers(1).first()
+        val chatId = GroupChats.create(listOf(admin.userId))
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
-        createTextMessage(adminId, chatId, message)
-        assertEquals(
-            message,
-            Messages.readGroupChat(chatId, userId = adminId).first().node.messageId.let(TextMessages::read),
-        )
+        executeCreateTextMessage(admin.accessToken, chatId, message)
+        val messageId = Messages.readGroupChat(chatId).first()
+        assertEquals(message, TextMessages.read(messageId))
     }
 }
 
@@ -653,42 +649,47 @@ class EncodingTest {
  */
 @ExtendWith(DbExtension::class)
 class SpecComplianceTest {
+    private fun executeRequestTokenSet(login: Any): Map<String, Any> = readGraphQlHttpResponse(
+        """
+        query RequestTokenSet(${"$"}login: Login!) {
+            requestTokenSet(login: ${"$"}login) {
+                __typename
+            }
+        }
+        """,
+        mapOf("login" to login),
+    )
+
     @Test
-    fun `The data key mustn't be returned if there was no data to be received`() {
-        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, mapOf("login" to "invalid data")).keys
-        assertTrue("data" !in keys)
-    }
+    fun `The data key mustn't be returned if there was no data to be received`(): Unit =
+        assertTrue("data" !in executeRequestTokenSet(login = "invalid data").keys)
 
     @Test
     fun `The errors key mustn't be returned if there were no errors`() {
         val login = createVerifiedUsers(1).first().login
-        val keys = readGraphQlHttpResponse(REQUEST_TOKEN_SET_QUERY, mapOf("login" to login)).keys
-        assertTrue("errors" !in keys)
+        assertTrue("errors" !in executeRequestTokenSet(login).keys)
     }
 
     @Test
-    fun `null fields in the data key must be returned`() {
+    fun `'null' fields in the data key must be returned`() {
         val admin = createVerifiedUsers(1).first()
-        val chatId = GroupChats.create(listOf(admin.info.id))
-        Messages.message(admin.info.id, chatId)
+        val chatId = GroupChats.create(listOf(admin.userId))
+        val messageId = Messages.message(admin.userId, chatId)
         val response = readGraphQlHttpResponse(
-            READ_CHAT_QUERY,
-            mapOf(
-                "id" to chatId,
-                "privateChat_messages_last" to null,
-                "privateChat_messages_before" to null,
-                "groupChat_users_first" to null,
-                "groupChat_users_after" to null,
-                "groupChat_messages_last" to null,
-                "groupChat_messages_before" to null,
-            ),
+            """
+            query ReadMessage(${"$"}messageId: Int!) {
+                readMessage(messageId: ${"$"}messageId) {
+                    context {
+                        messageId
+                    }
+                }
+            }
+            """,
+            mapOf("messageId" to messageId),
             admin.accessToken,
         )["data"] as Map<*, *>
-        val data = testingObjectMapper.convertValue<Map<String, Any?>>(response["readChat"]!!)
-        val messages = testingObjectMapper.convertValue<Map<String, Any?>>(data.getValue("messages")!!)
-        val edge = testingObjectMapper.convertValue<List<Map<String, Any?>>>(messages.getValue("edges")!!)[0]
-        val node = testingObjectMapper.convertValue<Map<String, Any?>>(edge.getValue("node")!!)
-        val context = testingObjectMapper.convertValue<Map<String, Any?>>(node.getValue("context")!!)
+        val data = response["readMessage"] as Map<*, *>
+        val context = data["context"] as Map<*, *>
         assertTrue(null in context.values)
     }
 }

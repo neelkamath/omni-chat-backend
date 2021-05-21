@@ -1,66 +1,53 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.readUserIdList
-import com.neelkamath.omniChat.db.typingStatusesNotifier
-import com.neelkamath.omniChat.graphql.routing.TypingStatus
-import com.neelkamath.omniChat.graphql.routing.TypingUsers
+import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TypingStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** Whether the user is typing in a chat. */
+/** Which users are typing in which chats. */
 object TypingStatuses : Table() {
     override val tableName = "typing_statuses"
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
     private val userId: Column<Int> = integer("user_id").references(Users.id)
-    private val isTyping: Column<Boolean> = bool("is_typing")
 
-    /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier]. */
+    /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier] if necessary. */
     fun update(chatId: Int, userId: Int, isTyping: Boolean) {
-        if (isExisting(chatId, userId)) updateRecord(chatId, userId, isTyping) else insert(chatId, userId, isTyping)
-        val subscribers = readUserIdList(chatId).minus(userId)
-        typingStatusesNotifier.publish(TypingStatus(chatId, userId, isTyping), subscribers)
+        when {
+            isExisting(chatId, userId) && isTyping -> return
+            isExisting(chatId, userId) && !isTyping -> deleteRecord(chatId, userId)
+            !isExisting(chatId, userId) && isTyping -> insert(chatId, userId)
+            !isExisting(chatId, userId) && !isTyping -> return
+        }
+        typingStatusesNotifier.publish(TypingStatus(chatId, userId), readUserIdList(chatId))
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */
     private fun isExisting(chatId: Int, userId: Int): Boolean =
         transaction { select((TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId)).empty().not() }
 
-    /** Updates the existing record in the table. */
-    private fun updateRecord(chatId: Int, userId: Int, isTyping: Boolean): Unit = transaction {
-        update({ (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }) {
-            it[this.isTyping] = isTyping
-        }
+    /** Deletes the specified record if it exists. This means the [userId] is no longer typing in the [chatId]. */
+    private fun deleteRecord(chatId: Int, userId: Int): Unit = transaction {
+        deleteWhere { (TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId) }
     }
 
-    /** Inserts the record into the table. */
-    private fun insert(chatId: Int, userId: Int, isTyping: Boolean): Unit = transaction {
+    /** Inserts the specified record. This means the [userId] is typing in the [chatId]. */
+    private fun insert(chatId: Int, userId: Int): Unit = transaction {
         insert {
             it[this.chatId] = chatId
             it[this.userId] = userId
-            it[this.isTyping] = isTyping
         }
     }
 
     /** Whether the [userId] is typing in the [chatId]. */
-    fun read(chatId: Int, userId: Int): Boolean = transaction {
-        select((TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId))
-            .firstOrNull()
-            ?.get(isTyping) ?: false
-    }
+    fun isTyping(chatId: Int, userId: Int): Boolean =
+        transaction { select((TypingStatuses.chatId eq chatId) and (TypingStatuses.userId eq userId)).empty().not() }
 
-    /** Returns the statuses of users who are typing in the chat [idList] excluding the [userId]'s. */
-    fun readChats(idList: Collection<Int>, userId: Int): Set<TypingUsers> = transaction {
-        select((chatId inList idList) and isTyping and (TypingStatuses.userId neq userId))
-            .groupBy { it[chatId] }
-            .map { (chatId, rows) ->
-                val users = rows.map { Users.read(it[TypingStatuses.userId]).toAccount() }
-                TypingUsers(chatId, users)
-            }
-            .toSet()
-    }
+    /** Returns the IDs of users who are typing in the [chatId]. */
+    fun readChat(chatId: Int): Set<Int> =
+        transaction { select(TypingStatuses.chatId eq chatId).map { it[userId] }.toSet() }
 
     /** Deletes every status created on the [chatId]. */
     fun deleteChat(chatId: Int): Unit = transaction {

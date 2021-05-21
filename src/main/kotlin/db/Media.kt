@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.db
+package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChat.db.Pic.Companion.ORIGINAL_MAX_BYTES
-import com.neelkamath.omniChat.db.Pic.Companion.THUMBNAIL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.Pic.Companion.ORIGINAL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.Pic.Companion.THUMBNAIL_MAX_BYTES
 import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -12,7 +12,6 @@ import javax.imageio.ImageIO
 data class Audio(
     /** At most [Audio.MAX_BYTES]. */
     val bytes: ByteArray,
-    val type: Type,
 ) {
     init {
         require(bytes.size <= MAX_BYTES) { "The audio mustn't exceed $MAX_BYTES bytes." }
@@ -35,22 +34,12 @@ data class Audio(
         return bytes.contentHashCode()
     }
 
-    enum class Type {
-        MP3, MP4;
-
-        companion object {
-            /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"m4a"`) isn't one of the [Type]s. */
-            fun build(extension: String): Type = when (extension.toLowerCase()) {
-                "mp3" -> MP3
-                "mp4", "m4a", "m4p", "m4b", "m4r", "m4v" -> MP4
-                else ->
-                    throw IllegalArgumentException("The audio ($extension) must be one of ${values().joinToString()}.")
-            }
-        }
-    }
-
     companion object {
         const val MAX_BYTES = 5 * 1024 * 1024
+
+        /** Whether the [extension] is one of the supported audio types (i.e., MP3 and MP4). */
+        fun isValidExtension(extension: String): Boolean =
+            listOf("mp3", "mp4", "m4a", "m4p", "m4b", "m4r", "m4v").any { it.equals(extension, ignoreCase = true) }
     }
 }
 
@@ -59,7 +48,6 @@ data class Audio(
  * [Pic.THUMBNAIL_MAX_BYTES].
  */
 data class Pic(
-    val type: Type,
     /** At most [ORIGINAL_MAX_BYTES]. */
     val original: ByteArray,
     /** At most [THUMBNAIL_MAX_BYTES]. */
@@ -78,7 +66,7 @@ data class Pic(
         other as Pic
 
         if (!original.contentEquals(other.original)) return false
-        if (type != other.type) return false
+        if (!thumbnail.contentEquals(other.thumbnail)) return false
 
         return true
     }
@@ -86,7 +74,7 @@ data class Pic(
     @Generated
     override fun hashCode(): Int {
         var result = original.contentHashCode()
-        result = 31 * result + type.hashCode()
+        result = 31 * result + thumbnail.contentHashCode()
         return result
     }
 
@@ -109,19 +97,19 @@ data class Pic(
         const val THUMBNAIL_MAX_BYTES = 100 * 100
 
         /**
-         * The [type] is found from the [name] (e.g., `"jpg"`, `"img.png"`). The [thumbnail] is created using the
-         * [original].
+         * The [thumbnail] is created using the [original].
          *
-         * An [IllegalArgumentException] will be thrown if the [Type] is invalid, or the [original] is too big.
+         * An [IllegalArgumentException] will be thrown if either the [extension] isn't a supported [Type] or the
+         * [original] is bigger than [ORIGINAL_MAX_BYTES].
          */
-        fun build(name: String, original: ByteArray): Pic {
-            val extension = name.substringAfterLast(".")
-            return build(Type.build(extension), original)
+        fun build(extension: String, original: ByteArray): Pic {
+            val thumbnail = createThumbnail(Type.build(extension), original)
+            return Pic(original, thumbnail)
         }
-
-        fun build(type: Type, original: ByteArray): Pic = Pic(type, original, createThumbnail(type, original))
     }
 }
+
+enum class PicType { ORIGINAL, THUMBNAIL }
 
 /**
  * Creates an image no larger than 100px by 100px where each pixel is at most 1 byte. It uses 8-bit color. The created

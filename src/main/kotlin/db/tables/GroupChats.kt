@@ -1,21 +1,27 @@
-package com.neelkamath.omniChat.db.tables
+package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChat.db.*
-import com.neelkamath.omniChat.graphql.routing.*
+import com.neelkamath.omniChatBackend.db.*
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChatPic
+import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 /**
  * The chat's pic cannot exceed [Pic.ORIGINAL_MAX_BYTES].
  *
- * @see [GroupChatUsers]
- * @see [Messages]
+ * @see GroupChatUsers
+ * @see Messages
  */
 object GroupChats : Table() {
-    override val tableName get() = "group_chats"
+    override val tableName = "group_chats"
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
     private val title: Column<String> = varchar("title", GroupChatTitle.MAX_LENGTH)
     private val description: Column<String> = varchar("description", GroupChatDescription.MAX_LENGTH)
@@ -31,7 +37,7 @@ object GroupChats : Table() {
         uuid("invite_code").uniqueIndex().defaultExpression(CustomFunction("gen_random_uuid", UUIDColumnType()))
 
     /**
-     * Returns the [chat]'s ID after creating it.
+     * Returns the newly created [chat]'s ID.
      *
      * Notifies the [GroupChatInput.userIdList] of the [GroupChatId] via [groupChatsNotifier].
      */
@@ -50,60 +56,22 @@ object GroupChats : Table() {
         return chatId
     }
 
+    fun readPublicity(chatId: Int): GroupChatPublicity =
+        transaction { select(GroupChats.id eq chatId).first()[publicity] }
+
+    fun isBroadcastChat(chatId: Int): Boolean = transaction { select(GroupChats.id eq chatId).first()[isBroadcast] }
+
     fun isExisting(chatId: Int): Boolean = transaction { select(GroupChats.id eq chatId).empty().not() }
 
-    /** Whether the [chatId] exists, and it's public. */
-    fun isExistentPublicChat(chatId: Int): Boolean = isExisting(chatId) &&
-            readChatInfo(chatId, usersPagination = ForwardPagination(first = 0)).publicity == GroupChatPublicity.PUBLIC
-
-    /**
-     * Returns the [chatId] for the [userId], or for an anonymous user if there's no [userId].
-     *
-     * @see [readChatInfo]
-     */
-    fun readChat(
-        chatId: Int,
-        usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null,
-        userId: Int? = null,
-    ): GroupChat {
-        val row = transaction { select(GroupChats.id eq chatId).first() }
-        return buildGroupChat(row, usersPagination, messagesPagination, userId)
+    fun isExistingPublicChat(chatId: Int): Boolean = transaction {
+        select((GroupChats.id eq chatId) and (publicity eq GroupChatPublicity.PUBLIC)).empty().not()
     }
 
-    /** @see [readChat] */
-    fun readChatInfo(inviteCode: UUID, usersPagination: ForwardPagination? = null): GroupChatInfo {
-        val row = transaction { select(GroupChats.inviteCode eq inviteCode).first() }
-        return buildChatInfo(row, usersPagination)
-    }
+    fun readTitle(chatId: Int): GroupChatTitle =
+        transaction { select(GroupChats.id eq chatId).first()[title].let(::GroupChatTitle) }
 
-    private fun readChatInfo(chatId: Int, usersPagination: ForwardPagination? = null): GroupChatInfo {
-        val row = transaction { select(GroupChats.id eq chatId).first() }
-        return buildChatInfo(row, usersPagination)
-    }
-
-    private fun buildChatInfo(row: ResultRow, usersPagination: ForwardPagination? = null): GroupChatInfo =
-        GroupChatInfo(
-            GroupChatUsers.readAdminIdList(row[id]).toList(),
-            GroupChatUsers.readUsers(row[id], usersPagination),
-            row[title].let(::GroupChatTitle),
-            row[description].let(::GroupChatDescription),
-            row[isBroadcast],
-            row[publicity],
-        )
-
-    /**
-     * Returns the [userId]'s chats.
-     *
-     * @see [GroupChatUsers.readChatIdList]
-     */
-    fun readUserChats(
-        userId: Int,
-        usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null,
-    ): Set<GroupChat> = transaction {
-        GroupChatUsers.readChatIdList(userId).map { readChat(it, usersPagination, messagesPagination, userId) }.toSet()
-    }
+    fun readDescription(chatId: Int): GroupChatDescription =
+        transaction { select(GroupChats.id eq chatId).first()[description].let(::GroupChatDescription) }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
     fun updateTitle(chatId: Int, title: GroupChatTitle) {
@@ -124,33 +92,33 @@ object GroupChats : Table() {
         )
     }
 
-    /**
-     * Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier].
-     *
-     * @see [update]
-     */
+    /** Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
     fun updatePic(chatId: Int, pic: Pic?) {
         transaction {
-            val op = GroupChats.id eq chatId
-            update({ op }) { it[picId] = null }
-            val picId = select(op).first()[picId]
-            update({ op }) { it[this.picId] = Pics.update(picId, pic) }
+            // If the pic is to be deleted, its reference must be cleared before we can delete the referenced data.
+            if (pic == null) update({ GroupChats.id eq chatId }) { it[picId] = null }
+            val picId = select(GroupChats.id eq chatId).first()[picId]
+            update({ GroupChats.id eq chatId }) { it[this.picId] = Pics.update(picId, pic) }
         }
         groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId))
     }
 
-    fun readPic(chatId: Int): Pic? = transaction { select(GroupChats.id eq chatId).first()[picId] }?.let(Pics::read)
+    /** Returns the group chat's pic (`null` if there's no pic). */
+    fun readPic(chatId: Int, type: PicType): ByteArray? {
+        val picId = transaction { select(GroupChats.id eq chatId).first()[picId] } ?: return null
+        return Pics.read(picId, type)
+    }
 
     /**
-     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses]. Clients who
-     * have [Notifier.subscribe]d to [MessagesSubscription]s via [messagesNotifier] will receive a
-     * [DeletionOfEveryMessage].
+     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
+     *
+     * @see GroupChatUsers.removeUsers
      */
     fun delete(chatId: Int) {
         val userIdList = GroupChatUsers.readUserIdList(chatId)
-        require(userIdList.isEmpty()) { "The chat (ID: $chatId) is not empty (users: $userIdList)." }
+        require(userIdList.isEmpty()) { "The chat (ID: $chatId) is not empty (user IDs: $userIdList)." }
         TypingStatuses.deleteChat(chatId)
         Messages.deleteChat(chatId)
         transaction {
@@ -159,27 +127,51 @@ object GroupChats : Table() {
         Chats.delete(chatId)
     }
 
-    /** Case-insensitively [query]s the title of every chat the [userId] is in. */
-    fun search(
-        userId: Int,
-        query: String,
-        usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null,
-    ): Set<GroupChat> = transaction {
-        select((GroupChats.id inList GroupChatUsers.readChatIdList(userId)) and (title iLike query))
-            .map { buildGroupChat(it, usersPagination, messagesPagination, userId) }
-            .toSet()
+    /**
+     * Case-insensitively [query]s the title of every chat the [userId] is in, and returns the IDs of matching chats.
+     * The returned chat IDs are sorted in ascending order.
+     */
+    fun search(userId: Int, query: String): LinkedHashSet<Int> {
+        val chatIdList = GroupChatUsers.readChatIdList(userId)
+        return transaction {
+            select((GroupChats.id inList chatIdList) and (title iLike query))
+                .orderBy(GroupChats.id)
+                .map { it[GroupChats.id] }
+                .toLinkedHashSet()
+        }
     }
 
-    /** Case-insensitively [query]s public chats. */
-    fun searchPublicChats(
-        query: String,
-        usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null,
-    ): Set<GroupChat> = transaction {
-        select((publicity eq GroupChatPublicity.PUBLIC) and (title iLike query))
-            .map { buildGroupChat(it, usersPagination, messagesPagination) }
-            .toSet()
+    /**
+     * Case-insensitively [query]s public chats by their title, and returns the IDs of matching chats in ascending
+     * order.
+     */
+    fun searchPublicChats(query: String, pagination: ForwardPagination? = null): LinkedHashSet<Int> {
+        var op = (publicity eq GroupChatPublicity.PUBLIC) and (title iLike query)
+        pagination?.after?.let { op = op and (id greater pagination.after) }
+        return transaction {
+            select(op)
+                .orderBy(GroupChats.id)
+                .let { if (pagination?.first == null) it else it.limit(pagination.first) }
+                .map { it[GroupChats.id] }
+                .toLinkedHashSet()
+        }
+    }
+
+    /**
+     * Case-insensitively [query]s public chats by their title. Returns the [type] of [Cursor] from the searched chats.
+     */
+    fun readPublicChatsCursor(query: String, type: CursorType): Cursor? {
+        val order = when (type) {
+            CursorType.END -> SortOrder.DESC
+            CursorType.START -> SortOrder.ASC
+        }
+        return transaction {
+            select((publicity eq GroupChatPublicity.PUBLIC) and (title iLike query))
+                .orderBy(GroupChats.id, order)
+                .limit(1)
+                .firstOrNull()
+                ?.get(GroupChats.id)
+        }
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
@@ -198,7 +190,7 @@ object GroupChats : Table() {
      * [UpdatedGroupChat] via [groupChatsNotifier].
      */
     fun setInvitability(chatId: Int, isInvitable: Boolean) {
-        require(!isExistentPublicChat(chatId)) { "A public chat's invitability cannot be updated." }
+        require(!isExistingPublicChat(chatId)) { "A public chat's invitability cannot be updated." }
         val publicity = if (isInvitable) GroupChatPublicity.INVITABLE else GroupChatPublicity.NOT_INVITABLE
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.publicity] = publicity }
@@ -209,47 +201,51 @@ object GroupChats : Table() {
         )
     }
 
-    /** Builds the chat from the [row] for the [userId], or an anonymous user if there's no [userId]. */
-    private fun buildGroupChat(
-        row: ResultRow,
-        usersPagination: ForwardPagination? = null,
-        messagesPagination: BackwardPagination? = null,
-        userId: Int? = null,
-    ): GroupChat = GroupChat(
-        row[id],
-        GroupChatUsers.readAdminIdList(row[id]).toList(),
-        GroupChatUsers.readUsers(row[id], usersPagination),
-        GroupChatTitle(row[title]),
-        GroupChatDescription(row[description]),
-        Messages.readGroupChatConnection(row[id], messagesPagination, userId),
-        row[isBroadcast],
-        row[publicity],
-        row[inviteCode].takeIf { row[publicity] != GroupChatPublicity.NOT_INVITABLE },
-    )
-
-    /** Returns `false` if the [chatId] doesn't exist, or isn't invitable. */
+    /** Returns `false` if the [chatId] either doesn't exist or isn't invitable. */
     fun isInvitable(chatId: Int): Boolean = transaction {
         val publicity = select(GroupChats.id eq chatId).firstOrNull()?.get(publicity) ?: return@transaction false
         publicity != GroupChatPublicity.NOT_INVITABLE
     }
 
-    fun isExistentInviteCode(inviteCode: UUID): Boolean =
-        transaction { select(GroupChats.inviteCode eq inviteCode).empty().not() }
-
-    /** @see [isExistentInviteCode] */
-    fun readInviteCode(chatId: Int): UUID = transaction { select(GroupChats.id eq chatId).first()[inviteCode] }
-
-    /** Returns the ID of the chat having the [inviteCode]. */
-    fun readChatFromInvite(inviteCode: UUID): Int =
-        transaction { select(GroupChats.inviteCode eq inviteCode).first()[GroupChats.id] }
+    /**
+     * Returns `true` if there's an invitable chat (i.e., not [GroupChatPublicity.NOT_INVITABLE]) having the
+     * [inviteCode], and `false` otherwise.
+     */
+    fun isExistingInviteCode(inviteCode: UUID): Boolean = transaction {
+        select((GroupChats.inviteCode eq inviteCode) and (publicity neq GroupChatPublicity.NOT_INVITABLE))
+            .empty()
+            .not()
+    }
 
     /**
-     * Case-insensitively [query]s the messages in the chats the [userId] is in. Only chats having messages matching the
-     * [query] will be returned. Only the matched message [ChatEdges.edges] will be returned.
+     * Returns the [chatId]'s invite code, or `null` if the chat isn't invitable.
+     *
+     * @see isExistingInviteCode
      */
-    fun queryUserChatEdges(userId: Int, query: String): Set<ChatEdges> = GroupChatUsers.readChatIdList(userId)
-        .associateWith { Messages.searchGroupChat(it, query, userId = userId) }
+    fun readInviteCode(chatId: Int): UUID? = transaction {
+        select((GroupChats.id eq chatId) and (publicity neq GroupChatPublicity.NOT_INVITABLE))
+            .firstOrNull()
+            ?.get(inviteCode)
+    }
+
+    /** Returns the ID of the chat having the [inviteCode], or `null` if there's no such invitable chat. */
+    fun readChatIdFromInviteCode(inviteCode: UUID): Int? = transaction {
+        select((GroupChats.inviteCode eq inviteCode) and (publicity neq GroupChatPublicity.NOT_INVITABLE))
+            .firstOrNull()
+            ?.get(GroupChats.id)
+    }
+
+    /**
+     * Case-insensitively [query]s the messages in the chats the [userId] is in.
+     *
+     * Only [ChatEdges.chatId]s having messages matching the [query] will be returned, and they'll only contain the
+     * matched [ChatEdges.messageIdList]. The returned [ChatEdges] are sorted in ascending order of their
+     * [ChatEdges.chatId].
+     */
+    fun queryUserChatEdges(userId: Int, query: String): LinkedHashSet<ChatEdges> = GroupChatUsers
+        .readChatIdList(userId)
+        .associateWith { Messages.searchGroupChat(it, query) }
         .filter { (_, edges) -> edges.isNotEmpty() }
         .map { (chatId, edges) -> ChatEdges(chatId, edges) }
-        .toSet()
+        .toLinkedHashSet()
 }

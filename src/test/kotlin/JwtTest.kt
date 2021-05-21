@@ -1,4 +1,4 @@
-package com.neelkamath.omniChat
+package com.neelkamath.omniChatBackend
 
 import com.auth0.jwt.JWT
 import org.junit.jupiter.api.Nested
@@ -26,8 +26,8 @@ class JwtTest {
         fun `The access and refresh tokens must expire in one hour and one week respectively`() {
             val (accessToken, refreshToken) = buildTokenSet(userId = 1)
             val now = LocalDateTime.now()
-            testDateTime(actual = readExpiry(accessToken), expected = now.plusHours(1))
-            testDateTime(actual = readExpiry(refreshToken), expected = now.plusWeeks(1))
+            testDateTime(actual = readExpiry(accessToken.value), expected = now.plusHours(1))
+            testDateTime(actual = readExpiry(refreshToken.value), expected = now.plusWeeks(1))
         }
     }
 }

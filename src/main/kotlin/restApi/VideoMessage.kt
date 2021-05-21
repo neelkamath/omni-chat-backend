@@ -1,7 +1,7 @@
-package com.neelkamath.omniChat.restApi
+package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChat.db.tables.Messages
-import com.neelkamath.omniChat.db.tables.VideoMessages
+import com.neelkamath.omniChatBackend.db.tables.Messages
+import com.neelkamath.omniChatBackend.db.tables.VideoMessages
 import io.ktor.auth.*
 import io.ktor.routing.*
 
