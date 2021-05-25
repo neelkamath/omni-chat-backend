@@ -468,7 +468,7 @@ class QueriesTest {
                 """,
                 mapOf(
                     "chatId" to chatId,
-                    "query" to query.toUpperCase(),
+                    "query" to query.uppercase(),
                     "last" to pagination?.last,
                     "before" to pagination?.before?.toString(),
                 ),

@@ -50,7 +50,7 @@ enum class CursorType {
 class PostgresEnum<T : Enum<T>>(postgresName: String, kotlinName: T?) : PGobject() {
     init {
         type = postgresName
-        value = kotlinName?.name?.toLowerCase()
+        value = kotlinName?.name?.lowercase()
     }
 }
 
@@ -77,7 +77,7 @@ fun searchUsers(userIdList: LinkedHashSet<Int>, query: String): LinkedHashSet<In
     .toLinkedHashSet()
 
 /** Case-insensitively checks if [this] contains the [pattern]. */
-infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.toLowerCase()}%"
+infix fun Expression<String>.iLike(pattern: String): LikeOp = lowerCase() like "%${pattern.lowercase()}%"
 
 /**
  * Whether the [userId] is in the specified private or group chat (the [chatId] needn't be valid). Private chats the

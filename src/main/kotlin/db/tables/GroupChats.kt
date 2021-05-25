@@ -30,7 +30,7 @@ object GroupChats : Table() {
     private val publicity: Column<GroupChatPublicity> = customEnumeration(
         name = "publicity",
         sql = "group_chat_publicity",
-        fromDb = { GroupChatPublicity.valueOf((it as String).toUpperCase()) },
+        fromDb = { GroupChatPublicity.valueOf((it as String).uppercase()) },
         toDb = { PostgresEnum("group_chat_publicity", it) },
     )
     private val inviteCode: Column<UUID> =

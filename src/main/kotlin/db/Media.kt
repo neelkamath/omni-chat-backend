@@ -83,7 +83,7 @@ data class Pic(
 
         companion object {
             /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-            fun build(extension: String): Type = when (extension.toLowerCase()) {
+            fun build(extension: String): Type = when (extension.lowercase()) {
                 "png" -> PNG
                 "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> JPEG
                 else ->

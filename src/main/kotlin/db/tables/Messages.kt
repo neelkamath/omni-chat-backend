@@ -36,7 +36,7 @@ object Messages : IntIdTable() {
     private val type: Column<MessageType> = customEnumeration(
         name = "type",
         sql = "message_type",
-        fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
+        fromDb = { MessageType.valueOf((it as String).uppercase()) },
         toDb = { PostgresEnum("message_type", it) },
     )
 

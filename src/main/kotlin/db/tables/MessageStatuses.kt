@@ -22,7 +22,7 @@ object MessageStatuses : IntIdTable() {
     private val status: Column<MessageStatus> = customEnumeration(
         name = "status",
         sql = "message_status",
-        fromDb = { MessageStatus.valueOf((it as String).toUpperCase()) },
+        fromDb = { MessageStatus.valueOf((it as String).uppercase()) },
         toDb = { PostgresEnum("message_status", it) },
     )
 
