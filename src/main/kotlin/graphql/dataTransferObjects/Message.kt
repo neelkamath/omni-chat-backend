@@ -11,7 +11,7 @@ import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 import java.time.LocalDateTime
 
-interface Message {
+sealed interface Message {
     /** The [Messages.id]. */
     val id: Int
 

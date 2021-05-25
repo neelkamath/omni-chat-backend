@@ -9,7 +9,7 @@ import com.neelkamath.omniChatBackend.db.tables.PrivateChats
 import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 
-interface Chat {
+sealed interface Chat {
     /** The [Chats.id]. */
     val id: Int
 

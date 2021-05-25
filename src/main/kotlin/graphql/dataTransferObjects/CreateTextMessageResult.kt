@@ -1,3 +1,3 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
-interface CreateTextMessageResult
+sealed interface CreateTextMessageResult

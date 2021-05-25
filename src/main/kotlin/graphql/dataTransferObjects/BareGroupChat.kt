@@ -13,7 +13,7 @@ import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import com.neelkamath.omniChatBackend.graphql.routing.GroupChatTitle
 import graphql.schema.DataFetchingEnvironment
 
-interface BareGroupChat {
+sealed interface BareGroupChat {
     /** The [Chats.id]. */
     val id: Int
 

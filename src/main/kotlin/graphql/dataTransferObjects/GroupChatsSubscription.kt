@@ -1,3 +1,3 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
-interface GroupChatsSubscription
+sealed interface GroupChatsSubscription

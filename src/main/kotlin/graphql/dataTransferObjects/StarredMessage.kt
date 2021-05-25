@@ -7,7 +7,7 @@ import com.neelkamath.omniChatBackend.db.tables.Messages
 import com.neelkamath.omniChatBackend.graphql.routing.MessageState
 import java.time.LocalDateTime
 
-interface StarredMessage {
+sealed interface StarredMessage {
     /** The [Messages.id]. */
     val id: Int
 
