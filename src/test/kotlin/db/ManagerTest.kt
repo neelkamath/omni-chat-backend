@@ -8,10 +8,11 @@ import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
+import java.util.*
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
 class ManagerTest {
@@ -92,7 +93,7 @@ class ManagerTest {
             awaitBrokering()
             listOf(contactSubscriber, chatSharerSubscriber).forEach { subscriber ->
                 val actual = subscriber.values().map { if (it is DeletedAccount) it.getUserId() else null }
-                assertTrue(userId in actual)
+                assertContains(actual, userId)
             }
         }
     }
@@ -103,7 +104,8 @@ class ManagerTest {
         fun `Users must be searched case-insensitively`() {
             val (blocker, blocked1, blocked2) = createVerifiedUsers(3)
             listOf(blocked1, blocked2).forEach { BlockedUsers.create(blocker.userId, it.userId) }
-            val actual = BlockedUsers.search(blocker.userId, query = blocked1.username.value.toUpperCase())
+            val actual =
+                BlockedUsers.search(blocker.userId, query = blocked1.username.value.uppercase(Locale.getDefault()))
             assertEquals(linkedHashSetOf(blocked1.userId), actual)
         }
     }

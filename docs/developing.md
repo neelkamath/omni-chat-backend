@@ -157,4 +157,4 @@ Here's a diagram of how the service works. The client application isn't included
 1. Add a [changelog](CHANGELOG.md) entry.
 1. Update the steps to migrate to the new version in [`docker-compose.md`](docker-compose.md).
 1. Update [`cloud.md`](cloud.md).
-1. Commit to the `master` branch to either release a new version or overwriting the previous one.
+1. Commit to the `master` branch to either release a new version or overwrite the previous one.

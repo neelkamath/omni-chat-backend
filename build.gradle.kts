@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "1.4.31"
+    kotlin("jvm") version "1.5.10"
     id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
@@ -19,7 +19,6 @@ dependencies {
     implementation("org.jasypt:jasypt:1.9.3")
     implementation("com.sun.mail:javax.mail:1.6.2")
     testImplementation(kotlin("test-junit5"))
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
 
     val ktorVersion = "1.5.3"
     implementation("io.ktor:ktor-server-core:$ktorVersion")

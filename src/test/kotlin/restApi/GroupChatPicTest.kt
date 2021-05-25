@@ -11,10 +11,7 @@ import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 private fun getGroupChatPic(accessToken: String? = null, chatId: Int, type: PicType): TestApplicationResponse =
     withTestApplication(Application::main) {
@@ -81,7 +78,7 @@ class GroupChatPicTest {
             GroupChats.updatePic(chatId, pic)
             val response = getGroupChatPic(admin.accessToken, chatId, PicType.ORIGINAL)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertTrue(pic.original.contentEquals(response.byteContent))
+            assertContentEquals(pic.original, response.byteContent)
         }
 
         @Test
@@ -108,14 +105,14 @@ class GroupChatPicTest {
         fun `The original pic must be received when requested`() {
             val (chatId, pic) = createGroupChat()
             val response = getGroupChatPic(chatId = chatId, type = PicType.ORIGINAL).byteContent
-            assertTrue(pic.original.contentEquals(response))
+            assertContentEquals(pic.original, response)
         }
 
         @Test
         fun `The thumbnail must be received when requested`() {
             val (chatId, pic) = createGroupChat()
             val response = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).byteContent
-            assertTrue(pic.thumbnail.contentEquals(response))
+            assertContentEquals(pic.thumbnail, response)
         }
 
         @Test

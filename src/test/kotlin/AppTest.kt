@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.util.*
 import kotlin.reflect.KClass
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -690,6 +691,6 @@ class SpecComplianceTest {
         )["data"] as Map<*, *>
         val data = response["readMessage"] as Map<*, *>
         val context = data["context"] as Map<*, *>
-        assertTrue(null in context.values)
+        assertContains(context.values, null)
     }
 }

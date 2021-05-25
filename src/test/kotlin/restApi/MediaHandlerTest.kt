@@ -105,7 +105,7 @@ class MediaHandlerTest {
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(admin.accessToken, messageId)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertTrue(audio.bytes.contentEquals(response.byteContent))
+            assertContentEquals(audio.bytes, response.byteContent)
         }
 
         @Test
@@ -122,7 +122,7 @@ class MediaHandlerTest {
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertTrue(audio.bytes.contentEquals(response.byteContent))
+            assertContentEquals(audio.bytes, response.byteContent)
         }
 
         @Test

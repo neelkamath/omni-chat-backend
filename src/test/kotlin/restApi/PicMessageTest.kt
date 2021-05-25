@@ -45,7 +45,7 @@ class PicMessageTest {
             val messageId = Messages.message(admin.userId, chatId, CaptionedPic(pic, caption = null))
             val response = getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertTrue(pic.original.contentEquals(response.byteContent!!))
+            assertContentEquals(pic.original, response.byteContent!!)
         }
 
         @Test
@@ -66,14 +66,14 @@ class PicMessageTest {
         fun `The original image must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
             val response = getPicMessage(accessToken, messageId, PicType.ORIGINAL).byteContent
-            assertTrue(PicMessages.readPic(messageId, PicType.ORIGINAL).contentEquals(response))
+            assertContentEquals(PicMessages.readPic(messageId, PicType.ORIGINAL), response)
         }
 
         @Test
         fun `The thumbnail must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
             val response = getPicMessage(accessToken, messageId, PicType.THUMBNAIL).byteContent
-            assertTrue(PicMessages.readPic(messageId, PicType.THUMBNAIL).contentEquals(response))
+            assertContentEquals(PicMessages.readPic(messageId, PicType.THUMBNAIL), response)
         }
     }
 
