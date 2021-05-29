@@ -11,8 +11,7 @@ object Placeholder
  * - Must be 1-30 characters.
  * - Must contain only lowercase English letters (a-z), English numbers (0-9), periods, and underscores.
  */
-@JvmInline
-value class Username(val value: String) {
+data class Username(val value: String) {
     init {
         require(!value.contains(Regex("""[^a-z0-9._]"""))) {
             """
@@ -48,8 +47,7 @@ data class GroupChatInput(
  * An [IllegalArgumentException] will be thrown if it contains whitespace, or exceeds [Users.MAX_NAME_LENGTH]
  * characters.
  */
-@JvmInline
-value class Name(val value: String) {
+data class Name(val value: String) {
     init {
         require(!value.contains(Regex("""\s"""))) { """The name ("$value") cannot contain whitespace.""" }
         require(value.length <= Users.MAX_NAME_LENGTH) {
@@ -62,8 +60,7 @@ value class Name(val value: String) {
  * An [IllegalArgumentException] will be thrown if the [value] exceeds [Bio.MAX_LENGTH], contains leading whitespace, or
  * contains trailing whitespace.
  */
-@JvmInline
-value class Bio(val value: String) {
+data class Bio(val value: String) {
     init {
         require(value.length <= MAX_LENGTH) { "The value ($value) cannot exceed $MAX_LENGTH characters." }
         require(value.trim() == value) { "The value ($value) can neither contain leading nor trailing whitespace." }
@@ -75,8 +72,7 @@ value class Bio(val value: String) {
 }
 
 /** An [IllegalArgumentException] will be thrown if the [value] doesn't contain non-whitespace characters. */
-@JvmInline
-value class Password(val value: String) {
+data class Password(val value: String) {
     init {
         require(value.trim().isNotEmpty()) { """The password ("$value") mustn't be empty.""" }
     }
@@ -87,8 +83,7 @@ value class Password(val value: String) {
  * - The [value] isn't 1-[GroupChatTitle.MAX_LENGTH] characters, of which at least one isn't whitespace.
  * - The [value] contains leading or trailing whitespace.
  */
-@JvmInline
-value class GroupChatTitle(val value: String) {
+data class GroupChatTitle(val value: String) {
     init {
         require(value.trim().isNotEmpty() && value.length <= MAX_LENGTH) {
             """The title ("$value") must be 1-$MAX_LENGTH characters, with at least one non-whitespace character."""
@@ -105,8 +100,7 @@ value class GroupChatTitle(val value: String) {
  * An [IllegalArgumentException] will be thrown if the [value] isn't at most [GroupChatDescription.MAX_LENGTH]
  * characters, or it contains leading/trailing whitespace.
  */
-@JvmInline
-value class GroupChatDescription(val value: String) {
+data class GroupChatDescription(val value: String) {
     init {
         require(value.length <= MAX_LENGTH) { """The description ("$value") must be at most $MAX_LENGTH characters""" }
         require(value.trim() == value) { "The value ($value) mustn't contain leading or trailing whitespace." }
@@ -121,8 +115,7 @@ value class GroupChatDescription(val value: String) {
  * An [IllegalArgumentException] will be thrown if the [value] isn't 1-[MessageText.MAX_LENGTH] characters with at least
  * one non-whitespace character, or it contains leading/trailing whitespace.
  */
-@JvmInline
-value class MessageText(val value: String) {
+data class MessageText(val value: String) {
     init {
         require(value.trim().isNotEmpty() && value.length <= MAX_LENGTH) {
             "The text must be 1-$MAX_LENGTH characters, with at least one non-whitespace."
