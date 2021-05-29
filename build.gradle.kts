@@ -1,13 +1,13 @@
 plugins {
     application
     kotlin("jvm") version "1.5.10"
-    id("com.github.johnrengelman.shadow") version "6.1.0"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 version = "0.19.0"
-application.mainClassName = "io.ktor.server.netty.EngineMain"
+application.mainClass.set("io.ktor.server.netty.EngineMain")
 
-repositories { jcenter() }
+repositories { mavenCentral() }
 
 dependencies {
     implementation("com.graphql-java:graphql-java:16.2")
@@ -43,10 +43,10 @@ tasks {
         jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
     withType<Jar> {
-        manifest { attributes(mapOf("Main-Class" to application.mainClassName)) }
+        manifest { attributes(mapOf("Main-Class" to application.mainClass)) }
     }
     register("printVersion") { println(project.version) }
-    val jvmTarget = "15"
+    val jvmTarget = "11"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }
