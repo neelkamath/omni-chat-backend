@@ -26,6 +26,7 @@ fun subscribeToMessageBroker() {
     brokerChatMessages()
     brokerAccounts()
     brokerGroupChats()
+    brokerChatTypingStatuses()
     brokerTypingStatuses()
     brokerOnlineStatuses()
     brokerChatOnlineStatuses()
@@ -76,6 +77,15 @@ private fun brokerTypingStatuses() {
         }
 }
 
+/** [Notifier.notify]s [Notifier.publish]ed updates for [chatTypingStatusesNotifier]. Safe to call multiple times. */
+private fun brokerChatTypingStatuses() {
+    if (redisson.getTopic(Topic.CHAT_TYPING_STATUSES.toString()).countListeners() == 0)
+        redisson.getTopic(Topic.CHAT_TYPING_STATUSES.toString()).addListener(List::class.java) { _, message ->
+            @Suppress("UNCHECKED_CAST")
+            chatTypingStatusesNotifier.notify(message as List<Notification<ChatTypingStatusesSubscription, ChatId>>)
+        }
+}
+
 /** [Notifier.notify]s [Notifier.publish]ed updates for [onlineStatusesNotifier]. Safe to call multiple times. */
 private fun brokerOnlineStatuses() {
     if (redisson.getTopic(Topic.ONLINE_STATUSES.toString()).countListeners() == 0)
@@ -110,6 +120,9 @@ enum class Topic {
     },
     TYPING_STATUSES {
         override fun toString() = "typingStatuses"
+    },
+    CHAT_TYPING_STATUSES {
+        override fun toString() = "chatTypingStatuses"
     },
     ONLINE_STATUSES {
         override fun toString() = "onlineStatuses"
@@ -194,6 +207,8 @@ val accountsNotifier = Notifier<AccountsSubscription, UserId>(Topic.ACCOUNTS)
 val groupChatsNotifier = Notifier<GroupChatsSubscription, UserId>(Topic.GROUP_CHATS)
 
 val typingStatusesNotifier = Notifier<TypingStatusesSubscription, UserId>(Topic.TYPING_STATUSES)
+
+val chatTypingStatusesNotifier = Notifier<ChatTypingStatusesSubscription, ChatId>(Topic.CHAT_TYPING_STATUSES)
 
 val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription, UserId>(Topic.ONLINE_STATUSES)
 

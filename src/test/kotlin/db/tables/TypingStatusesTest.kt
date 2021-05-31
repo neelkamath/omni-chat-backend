@@ -2,11 +2,9 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.UserId
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.count
-import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TypingStatus
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -19,7 +17,18 @@ class TypingStatusesTest {
     @Nested
     inner class Update {
         @Test
-        fun `Only subscribers in the chat must be notified of the status`() {
+        fun `Unauthenticated subscribers must be notified of the status`(): Unit = runBlocking {
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val subscriber = chatTypingStatusesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            TypingStatuses.update(chatId, adminId, isTyping = true)
+            awaitBrokering()
+            val actual = subscriber.values().map { (it as TypingStatus).getChatId() }
+            assertEquals(listOf(chatId), actual)
+        }
+
+        @Test
+        fun `Only (authenticated) subscribers in the chat must be notified of the status`() {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)

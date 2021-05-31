@@ -122,8 +122,8 @@ object GroupChatUsers : Table() {
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
      * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier]. Clients who
-     * have subscribed to the [chatId] via [chatMessagesNotifier] and [chatOnlineStatusesNotifier] will be unsubscribed
-     * if the chat gets deleted.
+     * have subscribed to the [chatId] via [chatMessagesNotifier], [chatOnlineStatusesNotifier], and
+     * [chatTypingStatusesNotifier] will be unsubscribed if the chat gets deleted.
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         require(canUsersLeave(chatId, userIdList)) {
@@ -140,6 +140,7 @@ object GroupChatUsers : Table() {
             GroupChats.delete(chatId)
             chatMessagesNotifier.unsubscribe { it.chatId == chatId }
             chatOnlineStatusesNotifier.unsubscribe { it.chatId == chatId }
+            chatTypingStatusesNotifier.unsubscribe { it.chatId == chatId }
             return true
         }
         return false

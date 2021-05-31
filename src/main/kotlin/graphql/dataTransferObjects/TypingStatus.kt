@@ -4,7 +4,10 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.db.tables.TypingStatuses
 
-class TypingStatus(private val chatId: Int, private val userId: Int) : TypingStatusesSubscription {
+class TypingStatus(private val chatId: Int, private val userId: Int) :
+    TypingStatusesSubscription,
+    ChatTypingStatusesSubscription {
+
     fun getChatId(): Int = chatId
 
     fun getUserId(): Int = userId

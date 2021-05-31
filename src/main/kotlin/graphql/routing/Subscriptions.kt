@@ -40,6 +40,7 @@ fun routeGraphQlSubscriptions(context: Routing) {
         "accounts-subscription" to "subscribeToAccounts",
         "group-chats-subscription" to "subscribeToGroupChats",
         "typing-statuses-subscription" to "subscribeToTypingStatuses",
+        "chat-typing-statuses-subscription" to "subscribeToChatTypingStatuses",
         "online-statuses-subscription" to "subscribeToOnlineStatuses",
         "chat-online-statuses-subscription" to "subscribeToChatOnlineStatuses",
     )
@@ -60,7 +61,11 @@ fun routeGraphQlSubscriptions(context: Routing) {
  */
 private fun routeSubscription(context: Routing, path: String, subscription: GraphQlSubscription): Unit = with(context) {
     webSocket(path) {
-        val unauthenticatedOperations = setOf("subscribeToChatMessages", "subscribeToChatOnlineStatuses")
+        val unauthenticatedOperations = setOf(
+            "subscribeToChatMessages",
+            "subscribeToChatOnlineStatuses",
+            "subscribeToChatTypingStatuses",
+        )
         val token = if (subscription.operation in unauthenticatedOperations) null else incoming.receive() as Frame.Text
         try {
             val result = buildExecutionResult(this, token?.readText())

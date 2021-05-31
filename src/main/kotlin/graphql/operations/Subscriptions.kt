@@ -33,6 +33,9 @@ fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingSta
     return typingStatusesNotifier.subscribe(UserId(env.userId!!))
 }
 
+fun subscribeToChatTypingStatuses(env: DataFetchingEnvironment): Publisher<ChatTypingStatusesSubscription> =
+    subscribeToChat(env, chatTypingStatusesNotifier)
+
 fun subscribeToOnlineStatuses(env: DataFetchingEnvironment): Publisher<OnlineStatusesSubscription> {
     env.verifyAuth()
     return onlineStatusesNotifier.subscribe(UserId(env.userId!!))

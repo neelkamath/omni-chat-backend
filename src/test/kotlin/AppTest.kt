@@ -21,6 +21,7 @@ import kotlin.test.assertTrue
 /** The [objectMapper] for the test source set. */
 val testingObjectMapper: ObjectMapper = objectMapper
     .copy()
+    .register(ChatTypingStatusesSubscriptionDeserializer)
     .register(PlaceholderDeserializer)
     .register(TypingStatusesSubscriptionDeserializer)
     .register(ChatDeserializer)
@@ -130,6 +131,19 @@ private object TypingStatusesSubscriptionDeserializer : JsonDeserializer<TypingS
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
             "TypingStatus" -> TypingStatus::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object ChatTypingStatusesSubscriptionDeserializer : JsonDeserializer<ChatTypingStatusesSubscription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ChatTypingStatusesSubscription {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "CreatedSubscription" -> CreatedSubscription::class
+            "TypingStatus" -> TypingStatus::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
