@@ -29,7 +29,7 @@ class ManagerTest {
         fun `The deleted user must be unsubscribed via the new group chats broker`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = groupChatsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = groupChatsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -48,7 +48,7 @@ class ManagerTest {
         fun `The deleted user must be unsubscribed from contact updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -60,8 +60,8 @@ class ManagerTest {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
                 GroupChats.create(listOf(adminId), listOf(userId))
                 awaitBrokering()
-                val (adminSubscriber, userSubscriber) =
-                    listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
+                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
                 val expected = listOf(listOf(userId))
@@ -75,7 +75,7 @@ class ManagerTest {
         fun `The user must be unsubscribed from message updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = messagesNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -87,8 +87,8 @@ class ManagerTest {
             Contacts.create(contactId, userId)
             PrivateChats.create(userId, chatSharerId)
             awaitBrokering()
-            val (contactSubscriber, chatSharerSubscriber) =
-                listOf(contactId, chatSharerId).map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+            val (contactSubscriber, chatSharerSubscriber) = listOf(contactId, chatSharerId)
+                .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             deleteUser(userId)
             awaitBrokering()
             listOf(contactSubscriber, chatSharerSubscriber).forEach { subscriber ->

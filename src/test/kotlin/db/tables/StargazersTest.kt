@@ -2,10 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.CursorType
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.slice
@@ -33,8 +30,8 @@ class StargazersTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber) =
-                    listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
+                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -156,7 +153,7 @@ class StargazersTest {
                 listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
                 awaitBrokering()
                 val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                    .map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 Stargazers.deleteStar(messageId)
                 awaitBrokering()
                 listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
@@ -178,8 +175,8 @@ class StargazersTest {
                 val messageId = Messages.message(user1Id, chatId)
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber) =
-                    listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
+                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 Stargazers.deleteUserStar(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -195,7 +192,7 @@ class StargazersTest {
                 val chatId = GroupChats.create(listOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 Stargazers.deleteUserStar(adminId, messageId)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -223,7 +220,7 @@ class StargazersTest {
             Stargazers.create(user1Id, messageId)
             awaitBrokering()
             val (user1Subscriber, user2Subscriber) =
-                listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                listOf(user1Id, user2Id).map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, user1Id)
             awaitBrokering()
             val actual = user1Subscriber.values().map { (it as UnstarredChat).getChatId() }

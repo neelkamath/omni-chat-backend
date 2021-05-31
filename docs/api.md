@@ -4,7 +4,7 @@
 
 Here's the usual flow for using the API if you're building a frontend UI:
 
-1. Have the user sign up for an account. Pass the info they give you to `Mutatation.createAccount`.
+1. Have the user sign up for an account. Pass the info they give you to `Mutation.createAccount`.
 1. Have the user verify their email address using `Mutation.verifyEmailAddress`.
 1. Have the user log in. Pass the credentials they give you to `Query.requestTokenSet`. This will give you an access token to authenticate their future actions.
 1. Periodically refresh the token set using `Query.refreshTokenSet`.
@@ -97,39 +97,59 @@ If the user is unauthorized, the server will respond with an HTTP status code of
 
 Each `Subscription` has its own endpoint. The endpoint is the operation's return type styled using kebab-case (e.g., the endpoint for `Subscription.subscribeToMessages` is `/messages-subscription` because it returns a `MessagesSubscription`). `Subscription`s use WebSockets with a ping period of one minute, and a timeout of 15 seconds. Since WebSockets can't transfer JSON directly, the GraphQL documents, which are in JSON, are serialized as text when being sent or received.
 
-It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to be created. Although these delays may be imperceptible to humans,
-it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to be lost during one of the aforementioned delays. Therefore, you should first create the `Subscription` (i.e., await the WebSocket connection to be created), await the `CreatedSubscription` event, and then `Query` for older data if required.
+It takes a small amount of time for the WebSocket connection to be created. After the connection has been created, it takes a small amount of time for the `Subscription` to get created. Although these delays may be imperceptible to humans,
+it's possible that an event, such as a newly created chat message, was sent during one of these delays. For example, if you were opening a user's chat, you might be tempted to first `Query` the previous messages, and then create a `Subscription` to receive new messages. However, this might cause a message another user sent in the chat to get lost during one of the aforementioned delays. Therefore, you should first create the `Subscription`, await the `CreatedSubscription` event, and then `Query` for older data if required.
 
-The server only accepts the first two events you send it (i.e., the GraphQL document you send when you first open the connection, and an access token). Any further events you send to the server will be ignored.
+The server only accepts the first one or two events you send it (i.e., the GraphQL document you send when you first open the connection, and an access token if required). Any further events you send to the server will be ignored.
 
-Here's an example of a `Subscription` using `Subscription.subscribeToMessages`:
+Here's an example of a `Subscription` using `Subscription.subscribeToChatMessages`:
 
-1. Open a WebSocket connection on the path `/messages-subscription` (e.g., `http://localhost/messages-subscription`).
-1. Pass the access token you get from `Query.requestTokenSet` as a text event (
+1. Open a WebSocket connection on the path `/chat-messages-subscription` (e.g., `http://localhost/chat-messages-subscription`).
+1. Skip this step if the operation doesn't require an access token. Pass the access token you get from `Query.requestTokenSet` as a text event (
    e.g., `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0YzI5MjQ3My0yMmQ1LTQ4MjUtOGYzNS0xYWNhNDZjMGNmNTYiLCJhdWQiOiJvbW5pLWNoYXQiLCJpc3MiOiJodHRwOi8vYXV0aDo4MDgwIiwiZXhwIjoxNTg3NzA5OTQ4fQ.w_t9fGjYj_Nw569xG92NCEjmzZC95NP-t0VXCCXuizM`). If the user is unauthorized, the connection will be closed with a status code of 1008.
-1. Send the GraphQL document in JSON serialized as text. Here's an example JSON string:
+1. Send the JSON GraphQL document as a text event. For example:
     ```json
     {
-      "query": "subscription SubscribeToMessages { subscribeToMessages { ... on CreatedSubscription { placeholder } ... on NewTextMessage { chatId, message } } }"
+      "query": "subscription SubscribeToChatMessages($chatId: Int!) { subscribeToChatMessages(chatId: $chatId) { __typename ... on NewTextMessage { chatId, textMessage } } }"
     }
     ```
-1. If the GraphQL document you sent was invalid, the error will be returned, and then the connection will be closed. Here's an example of such a GraphQL document (a JSON string):
+1. If the GraphQL document you sent was invalid, a text event will be received, and the connection will get closed. For example:
     ```json
     {
-      "errors": [
-        {
-           "message": "Invalid type"
+        "errors": [
+            {
+               "message": "Invalid type"
+            }
+        ]
+    }
+    ```
+1. A `CreatedSubscription` text event will be received. For example:
+    ```json
+    {
+        "data": {
+            "subscribeToChatMessages" {
+                "__typename": "CreatedSubscription"
+            }
         }
-      ]
     }
     ```
-1. If the GraphQL document you sent was valid, you will receive events (GraphQL documents in JSON serialized as text). Here's an example of such an event (a JSON string):
+1. If the GraphQL document you sent contained invalid data, the result will be received as a text event, and the connection will get closed. For example:
+    ```json
+    {
+        "data": {
+            "subscribeToChatMessages": {
+                "__typename": "InvalidChatId"
+            }
+        }
+    }
+    ```
+1. You will receive updates as text events. For example:
     ```json
     {
       "data": {
-        "subscribeToMessages": {
+        "subscribeToChatMessages": {
           "chatId": 3,
-          "message": "Hi!"
+          "textMessage": "Hi!"
         }
       }
     }

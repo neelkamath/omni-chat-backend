@@ -9,7 +9,7 @@ import com.neelkamath.omniChatBackend.graphql.routing.MessageState
 import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 
-class UpdatedMessage(private val messageId: Int) : MessagesSubscription {
+class UpdatedMessage(private val messageId: Int) : MessagesSubscription, ChatMessagesSubscription {
     fun getChatId(): Int = Messages.readChatId(messageId)
 
     fun getMessageId(): Int = messageId

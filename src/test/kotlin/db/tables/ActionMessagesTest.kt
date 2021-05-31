@@ -4,6 +4,7 @@ import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.component1
 import com.neelkamath.omniChatBackend.component2
 import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TriggeredAction
@@ -95,8 +96,8 @@ class ActionMessagesTest {
                 ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No"))),
             )
             awaitBrokering()
-            val (adminSubscriber, userSubscriber) =
-                listOf(admin.userId, user.userId).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+            val (adminSubscriber, userSubscriber) = listOf(admin.userId, user.userId)
+                .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             ActionMessages.trigger(user.userId, messageId, action)
             awaitBrokering()
             val values = adminSubscriber.values().map { it as TriggeredAction }

@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
@@ -23,7 +24,7 @@ class TypingStatusesTest {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                    .map { typingStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { typingStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 val isTyping = true
                 TypingStatuses.update(chatId, user1Id, isTyping)
                 awaitBrokering()
@@ -44,7 +45,7 @@ class TypingStatusesTest {
                 val update = { TypingStatuses.update(chatId, adminId, isTyping = true) }
                 update()
                 awaitBrokering()
-                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 update()
                 awaitBrokering()
                 assertEquals(1, TypingStatuses.count())
@@ -58,7 +59,7 @@ class TypingStatusesTest {
                 val chatId = GroupChats.create(listOf(adminId))
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
-                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = false)
                 awaitBrokering()
                 assertEquals(0, TypingStatuses.count())
@@ -72,7 +73,7 @@ class TypingStatusesTest {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
                 val chatId = GroupChats.create(listOf(adminId))
-                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
                 assertEquals(1, TypingStatuses.count())
@@ -86,7 +87,7 @@ class TypingStatusesTest {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
                 val chatId = GroupChats.create(listOf(adminId))
-                val subscriber = typingStatusesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = false)
                 awaitBrokering()
                 assertEquals(0, TypingStatuses.count())

@@ -1,5 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.readUserIdList
 import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TypingStatus
@@ -21,7 +22,7 @@ object TypingStatuses : Table() {
             !isExisting(chatId, userId) && isTyping -> insert(chatId, userId)
             !isExisting(chatId, userId) && !isTyping -> return
         }
-        typingStatusesNotifier.publish(TypingStatus(chatId, userId), readUserIdList(chatId))
+        typingStatusesNotifier.publish(TypingStatus(chatId, userId), readUserIdList(chatId).map(::UserId))
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */

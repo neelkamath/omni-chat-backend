@@ -90,7 +90,7 @@ object Users : IntIdTable() {
             it[lastOnline] = LocalDateTime.now()
         }
         val subscribers = Contacts.readOwnerUserIdList(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(OnlineStatus(userId), subscribers)
+        onlineStatusesNotifier.publish(OnlineStatus(userId), subscribers.map(::UserId))
     }
 
     /**

@@ -12,6 +12,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("NewMessage") { wireType(it, ::readNewMessage) }
     .type("Message") { wireType(it, ::readMessage) }
     .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
+    .type("ChatMessagesSubscription") { wireType(it, ::readChatMessagesSubscription) }
     .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
     .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
     .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
@@ -48,6 +49,23 @@ private inline fun wireType(
 private fun readChat(obj: Any): String = when (obj) {
     is PrivateChat -> "PrivateChat"
     is GroupChat -> "GroupChat"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readChatMessagesSubscription(obj: Any): String = when (obj) {
+    is CreatedSubscription -> "CreatedSubscription"
+    is NewTextMessage -> "NewTextMessage"
+    is NewActionMessage -> "NewActionMessage"
+    is NewPicMessage -> "NewPicMessage"
+    is NewAudioMessage -> "NewAudioMessage"
+    is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
+    is NewDocMessage -> "NewDocMessage"
+    is NewVideoMessage -> "NewVideoMessage"
+    is NewPollMessage -> "NewPollMessage"
+    is UpdatedMessage -> "UpdatedMessage"
+    is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
+    is InvalidChatId -> "InvalidChatId"
+    is DeletedMessage -> "DeletedMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

@@ -2,6 +2,6 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 
-class InvalidAdminId : CreateGroupChatResult {
+object InvalidAdminId : CreateGroupChatResult {
     fun getPlaceholder() = Placeholder
 }

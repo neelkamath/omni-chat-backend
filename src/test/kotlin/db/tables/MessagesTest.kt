@@ -114,8 +114,8 @@ class MessagesTest {
         fun `Subscribers must receive notifications of created messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
             val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
-            val (adminSubscriber, user1Subscriber, user2Subscriber) =
-                listOf(adminId, user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+                .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             val messageIdList = (1..3).map { Messages.message(listOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
             listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { subscriber ->
@@ -125,18 +125,29 @@ class MessagesTest {
         }
 
         @Test
-        fun `A subscriber must be notified of a new message in a private chat they just deleted`() {
+        fun `Authenticated subscribers must be notified of a new message in a private chat they just deleted`(): Unit =
             runBlocking {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 PrivateChatDeletions.create(chatId, user1Id)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(user1Id).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(user1Id)).subscribeWith(TestSubscriber())
                 val messageId = Messages.message(user2Id, chatId)
                 awaitBrokering()
                 val actual = subscriber.values().map { (it as NewTextMessage).getMessageId() }
                 assertEquals(listOf(messageId), actual)
             }
+
+        @Test
+        fun `Unauthenticated subscribers must be notified of new messages in public chats`(): Unit = runBlocking {
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            awaitBrokering()
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val messageId = Messages.message(adminId, chatId)
+            awaitBrokering()
+            val actual = subscriber.values().map { (it as NewTextMessage).getMessageId() }
+            assertEquals(listOf(messageId), actual)
         }
 
         @Test
@@ -509,18 +520,31 @@ class MessagesTest {
     @Nested
     inner class DeleteUserChatMessages {
         @Test
-        fun `A subscriber must be notified when a user's messages have been deleted from the chat`() {
+        fun `Authenticated subscribers must be notified when a user's messages have been deleted from a non-public chat`(): Unit =
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
                 val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-                val subscriber = messagesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
                 val values = subscriber.values().map { it as UserChatMessagesRemoval }
                 assertEquals(listOf(chatId), values.map { it.getChatId() })
                 assertEquals(listOf(userId), values.map { it.getUserId() })
             }
-        }
+
+        @Test
+        fun `Unauthenticated subscribers must receive notifications regarding deleted public chat messages`(): Unit =
+            runBlocking {
+                val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+                val chatId = GroupChats.create(listOf(adminId), listOf(userId), publicity = GroupChatPublicity.PUBLIC)
+                Messages.message(userId, chatId)
+                awaitBrokering()
+                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                Messages.deleteUserChatMessages(chatId, userId)
+                awaitBrokering()
+                val actual = subscriber.values().map { (it as UserChatMessagesRemoval).getChatId() }
+                assertEquals(listOf(chatId), actual)
+            }
     }
 
     @Nested
@@ -535,7 +559,7 @@ class MessagesTest {
             }
             awaitBrokering()
             val (chat1Subscriber, chat2Subscriber) =
-                (1..2).map { messagesNotifier.subscribe(userId).subscribeWith(TestSubscriber()) }
+                (1..2).map { messagesNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             listOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->
@@ -549,20 +573,32 @@ class MessagesTest {
     @Nested
     inner class Delete {
         @Test
-        fun `Deleting a message must trigger a notification`() {
+        fun `Deleting a message must trigger a notification for authenticated subscribers`(): Unit = runBlocking {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val messageId = Messages.message(user1Id, chatId)
+            awaitBrokering()
+            val subscriber = messagesNotifier.subscribe(UserId(user1Id)).subscribeWith(TestSubscriber())
+            Messages.delete(messageId)
+            awaitBrokering()
+            val values = subscriber.values().map { it as DeletedMessage }
+            assertEquals(listOf(chatId), values.map { it.getChatId() })
+            assertEquals(listOf(messageId), values.map { it.getMessageId() })
+        }
+
+        @Test
+        fun `Deleting a message must trigger a notification for unauthenticated users subscribed to a public chat`(): Unit =
             runBlocking {
-                val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
-                val chatId = PrivateChats.create(user1Id, user2Id)
-                val messageId = Messages.message(user1Id, chatId)
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+                val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(user1Id).subscribeWith(TestSubscriber())
+                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
                 Messages.delete(messageId)
                 awaitBrokering()
-                val values = subscriber.values().map { it as DeletedMessage }
-                assertEquals(listOf(chatId), values.map { it.getChatId() })
-                assertEquals(listOf(messageId), values.map { it.getMessageId() })
+                val actual = subscriber.values().map { (it as DeletedMessage).getMessageId() }
+                assertEquals(listOf(messageId), actual)
             }
-        }
     }
 
     @Nested

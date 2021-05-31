@@ -144,7 +144,8 @@ fun deleteUser(userId: Int) {
         The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
         """
     }
-    accountsNotifier.publish(DeletedAccount(userId), Contacts.readOwnerUserIdList(userId) + readChatSharers(userId))
+    val subscribers = Contacts.readOwnerUserIdList(userId).plus(readChatSharers(userId)).map(::UserId)
+    accountsNotifier.publish(DeletedAccount(userId), subscribers)
     Contacts.deleteUserEntries(userId)
     PrivateChats.deleteUserChats(userId)
     GroupChatUsers.removeUser(userId)
@@ -152,9 +153,9 @@ fun deleteUser(userId: Int) {
     Messages.deleteUserMessages(userId)
     BlockedUsers.deleteUser(userId)
     Users.delete(userId)
-    groupChatsNotifier.unsubscribe { it == userId }
-    accountsNotifier.unsubscribe { it == userId }
-    typingStatusesNotifier.unsubscribe { it == userId }
-    messagesNotifier.unsubscribe { it == userId }
-    onlineStatusesNotifier.unsubscribe { it == userId }
+    groupChatsNotifier.unsubscribe { it.userId == userId }
+    accountsNotifier.unsubscribe { it.userId == userId }
+    typingStatusesNotifier.unsubscribe { it.userId == userId }
+    messagesNotifier.unsubscribe { it.userId == userId }
+    onlineStatusesNotifier.unsubscribe { it.userId == userId }
 }

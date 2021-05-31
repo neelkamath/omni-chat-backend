@@ -19,7 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-private typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
+typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
 
 private data class EventData(val __typename: String)
 
@@ -27,11 +27,11 @@ private data class EventData(val __typename: String)
  * Opens a WebSocket connection on the URI's [path] (e.g., `"messages-subscription"`), sends the GraphQL subscription
  * [request], and has the [callback] [ReceiveChannel] and [SendChannel].
  */
-private fun executeGraphQlSubscriptionViaWebSocket(
+inline fun executeGraphQlSubscriptionViaWebSocket(
     path: String,
     request: GraphQlRequest,
     accessToken: String? = null,
-    callback: SubscriptionCallback,
+    crossinline callback: SubscriptionCallback,
 ): Unit = withTestApplication(Application::main) {
     handleWebSocketConversation(path) { incoming, outgoing ->
         if (accessToken != null) outgoing.send(Frame.Text(accessToken))
@@ -43,13 +43,8 @@ private fun executeGraphQlSubscriptionViaWebSocket(
     }
 }
 
-/**
- * Returns the next [Frame.Text] (parsed as a [T]) so that you needn't deal with [Frame.Ping]s, etc.
- *
- * It is assumed that there was only one operation (i.e., that the GraphQL response's `"data"` key contains only one
- * key-value pair).
- */
-private suspend inline fun <reified T> parseFrameData(channel: ReceiveChannel<Frame>): T {
+/** Returns the next [Frame.Text] (parsed as a [T]) so that you needn't deal with [Frame.Ping]s, etc. */
+suspend inline fun <reified T> parseFrameData(channel: ReceiveChannel<Frame>): T {
     for (frame in channel)
         if (frame is Frame.Text) {
             val response = testingObjectMapper.readValue<GraphQlResponse>(frame.readText()).data!!

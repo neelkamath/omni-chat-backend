@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.accountsNotifier
 import com.neelkamath.omniChatBackend.db.awaitBrokering
 import com.neelkamath.omniChatBackend.db.onlineStatusesNotifier
@@ -76,7 +77,8 @@ class UsersTest {
         fun `Updating the user's online status to the current value mustn't cause notifications to be sent`() {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.userId }
-                val subscriber = onlineStatusesNotifier.subscribe(contactOwnerId).subscribeWith(TestSubscriber())
+                val subscriber =
+                    onlineStatusesNotifier.subscribe(UserId(contactOwnerId)).subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.isOnline(contactId))
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -91,7 +93,7 @@ class UsersTest {
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                     listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
-                        .map { onlineStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                        .map { onlineStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 val status = !Users.isOnline(updaterId)
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
@@ -169,7 +171,7 @@ class UsersTest {
         @Test
         fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
-            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
             Users.updatePic(userId, readPic("76px×57px.jpg"))
             awaitBrokering()
             val actual = subscriber.values().map { (it as UpdatedProfilePic).getUserId() }

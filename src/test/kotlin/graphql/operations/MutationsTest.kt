@@ -3,10 +3,7 @@ package com.neelkamath.omniChatBackend.graphql.operations
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.PicType
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.count
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TriggeredAction
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
@@ -2133,7 +2130,7 @@ class MutationsTest {
             val message = ActionMessageInput(MessageText("text"), listOf(action))
             val messageId = Messages.message(adminId, chatId, message)
             awaitBrokering()
-            val subscriber = messagesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
             assertTrue(executeTriggerAction(userId, messageId, action))
             awaitBrokering()
             val values = subscriber.values().map { it as TriggeredAction }

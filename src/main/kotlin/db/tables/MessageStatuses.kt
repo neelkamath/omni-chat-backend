@@ -1,9 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.Notifier
-import com.neelkamath.omniChatBackend.db.PostgresEnum
-import com.neelkamath.omniChatBackend.db.messagesNotifier
-import com.neelkamath.omniChatBackend.db.readUserIdList
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.MessagesSubscription
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.graphql.routing.MessageStatus
@@ -64,7 +61,12 @@ object MessageStatuses : IntIdTable() {
         insertAndNotify(messageId, userId, status)
     }
 
-    /** Inserts the status into the table. Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier]. */
+    /**
+     * Inserts the status into the table.
+     *
+     * Notifies subscribers of the [UpdatedMessage]s via [messagesNotifier]. If the chat the [messageId] belongs to is a
+     * public group chat, then subscribers will also be notified via [chatMessagesNotifier].
+     */
     private fun insertAndNotify(messageId: Int, userId: Int, status: MessageStatus) {
         transaction {
             insert {
@@ -73,8 +75,10 @@ object MessageStatuses : IntIdTable() {
                 it[this.status] = status
             }
         }
-        val userIdList = readUserIdList(Messages.readChatId(messageId))
-        messagesNotifier.publish(UpdatedMessage(messageId), userIdList)
+        val chatId = Messages.readChatId(messageId)
+        val update = UpdatedMessage(messageId)
+        messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+        if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
     }
 
     /** Returns the status IDs of the [messageId] sorted in ascending order. */

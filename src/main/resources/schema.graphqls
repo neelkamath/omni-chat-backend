@@ -576,9 +576,19 @@ type Subscription {
     message from a chat the user wasn't previously in can be sent as well (e.g., when the other user in a private chat
     the user deleted sends a message in it). The subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatMessages` for unauthenticated
+    users, such as an accountless user viewing a public chat.
     """
     subscribeToMessages: MessagesSubscription!
+
+    """
+    Yields created, updated, and deleted messages for the `chatId`. The subscription will be stopped if the chat gets
+    deleted. If the `chatId` isn't an existing public chat, then an `InvalidChatId` will be returned, and the
+    subscription will be closed.
+
+    If the user is authenticated, you probably want to use `Subscription.subscribeToMessages` instead.
+    """
+    subscribeToChatMessages(chatId: Int!): ChatMessagesSubscription!
 
     """
     Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
@@ -627,6 +637,21 @@ union MessagesSubscription =
     | DeletedMessage
     | UserChatMessagesRemoval
     | UnstarredChat
+
+union ChatMessagesSubscription =
+    | CreatedSubscription
+    | NewTextMessage
+    | NewActionMessage
+    | NewPicMessage
+    | NewAudioMessage
+    | NewGroupChatInviteMessage
+    | NewDocMessage
+    | NewVideoMessage
+    | NewPollMessage
+    | UpdatedMessage
+    | DeletedMessage
+    | UserChatMessagesRemoval
+    | InvalidChatId
 
 """Every message in the chat has been unstarred by the user."""
 type UnstarredChat {

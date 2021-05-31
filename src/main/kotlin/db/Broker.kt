@@ -23,6 +23,7 @@ private val redisson: RedissonClient = Redisson.create(
 /** [Notifier.notify]s all [Notifier.publish]ed notifications. This is safe to call multiple times. */
 fun subscribeToMessageBroker() {
     brokerMessages()
+    brokerChatMessages()
     brokerAccounts()
     brokerGroupChats()
     brokerTypingStatuses()
@@ -33,7 +34,17 @@ fun subscribeToMessageBroker() {
 private fun brokerMessages() {
     if (redisson.getTopic(Topic.MESSAGES.toString()).countListeners() == 0)
         redisson.getTopic(Topic.MESSAGES.toString()).addListener(List::class.java) { _, message ->
-            @Suppress("UNCHECKED_CAST") messagesNotifier.notify(message as List<Notification<MessagesSubscription>>)
+            @Suppress("UNCHECKED_CAST")
+            messagesNotifier.notify(message as List<Notification<MessagesSubscription, UserId>>)
+        }
+}
+
+/** [Notifier.notify]s [Notifier.publish]ed updates for [chatMessagesNotifier]. This is safe to call multiple times. */
+private fun brokerChatMessages() {
+    if (redisson.getTopic(Topic.CHAT_MESSAGES.toString()).countListeners() == 0)
+        redisson.getTopic(Topic.CHAT_MESSAGES.toString()).addListener(List::class.java) { _, message ->
+            @Suppress("UNCHECKED_CAST")
+            chatMessagesNotifier.notify(message as List<Notification<ChatMessagesSubscription, ChatId>>)
         }
 }
 
@@ -41,7 +52,8 @@ private fun brokerMessages() {
 private fun brokerAccounts() {
     if (redisson.getTopic(Topic.ACCOUNTS.toString()).countListeners() == 0)
         redisson.getTopic(Topic.ACCOUNTS.toString()).addListener(List::class.java) { _, message ->
-            @Suppress("UNCHECKED_CAST") accountsNotifier.notify(message as List<Notification<AccountsSubscription>>)
+            @Suppress("UNCHECKED_CAST")
+            accountsNotifier.notify(message as List<Notification<AccountsSubscription, UserId>>)
         }
 }
 
@@ -50,7 +62,7 @@ private fun brokerGroupChats() {
     if (redisson.getTopic(Topic.GROUP_CHATS.toString()).countListeners() == 0)
         redisson.getTopic(Topic.GROUP_CHATS.toString()).addListener(List::class.java) { _, message ->
             @Suppress("UNCHECKED_CAST")
-            groupChatsNotifier.notify(message as List<Notification<GroupChatsSubscription>>)
+            groupChatsNotifier.notify(message as List<Notification<GroupChatsSubscription, UserId>>)
         }
 }
 
@@ -59,7 +71,7 @@ private fun brokerTypingStatuses() {
     if (redisson.getTopic(Topic.TYPING_STATUSES.toString()).countListeners() == 0)
         redisson.getTopic(Topic.TYPING_STATUSES.toString()).addListener(List::class.java) { _, message ->
             @Suppress("UNCHECKED_CAST")
-            typingStatusesNotifier.notify(message as List<Notification<TypingStatusesSubscription>>)
+            typingStatusesNotifier.notify(message as List<Notification<TypingStatusesSubscription, UserId>>)
         }
 }
 
@@ -68,7 +80,7 @@ private fun brokerOnlineStatuses() {
     if (redisson.getTopic(Topic.ONLINE_STATUSES.toString()).countListeners() == 0)
         redisson.getTopic(Topic.ONLINE_STATUSES.toString()).addListener(List::class.java) { _, message ->
             @Suppress("UNCHECKED_CAST")
-            onlineStatusesNotifier.notify(message as List<Notification<OnlineStatusesSubscription>>)
+            onlineStatusesNotifier.notify(message as List<Notification<OnlineStatusesSubscription, UserId>>)
         }
 }
 
@@ -76,6 +88,9 @@ private fun brokerOnlineStatuses() {
 enum class Topic {
     MESSAGES {
         override fun toString() = "messages"
+    },
+    CHAT_MESSAGES {
+        override fun toString() = "chatMessages"
     },
     ACCOUNTS {
         override fun toString() = "accounts"
@@ -91,24 +106,30 @@ enum class Topic {
     },
 }
 
-/** [Notifier.subscribe]d clients with the [userId] will receive the corresponding [update]. */
-data class Notification<T>(val userId: Int, val update: T)
+/** Clients [Notifier.subscribe]d with the [data] will receive the [update]. */
+data class Notification<T, D : ClientData>(val update: T, val data: D)
+
+interface ClientData
+
+data class UserId(val userId: Int) : ClientData
+
+data class ChatId(val chatId: Int) : ClientData
 
 /** [subscribe] to be [notify]d of updates. */
-class Notifier<T>(private val topic: Topic) {
+class Notifier<T, D : ClientData>(private val topic: Topic) {
     /** List of [subscribe]rs which must only be mutated in [subscribe] and [unsubscribe]. */
-    private val clients: MutableSet<Client<T>> = mutableSetOf()
+    private val clients: MutableSet<Client<T, D>> = mutableSetOf()
 
-    private data class Client<T>(val userId: Int, val subject: PublishSubject<T>) {
+    private data class Client<T, D : ClientData>(val subject: PublishSubject<T>, val data: D) {
         /** Guaranteed to be unique for every [Client]. */
         val id: Int = clientId.incrementAndGet()
     }
 
-    /** The [userId] is used to filter which clients will get [notify]d. */
-    fun subscribe(userId: Int): Flowable<T> {
+    /** The [data] is used to filter which clients will get [notify]d. */
+    fun subscribe(data: D): Flowable<T> {
         val subject = PublishSubject.create<T>()
-        @Suppress("UNCHECKED_CAST") subject.onNext(CreatedSubscription() as T)
-        val client = Client(userId, subject)
+        @Suppress("UNCHECKED_CAST") subject.onNext(CreatedSubscription as T)
+        val client = Client(subject, data)
         clients.add(client)
         return subject
             .doFinally {
@@ -117,36 +138,32 @@ class Notifier<T>(private val topic: Topic) {
             .toFlowable(BackpressureStrategy.BUFFER)
     }
 
-    /** Publishes [notifications] to the message broker which in turn [notify]s every server. */
-    fun publish(notifications: Collection<Notification<T>>) {
-        redisson.getTopic(topic.toString()).publish(notifications)
+    /**
+     * Notifies the [subscribers] of the [update] by publishing it to the message broker which in turn [notify]s every
+     * server.
+     */
+    fun publish(update: T, subscribers: Collection<D>) {
+        redisson.getTopic(topic.toString()).publish(subscribers.map { Notification(update, it) })
     }
 
-    fun publish(notifications: Map<Int, T>): Unit = publish(notifications.map { Notification(it.key, it.value) })
-
-    fun publish(vararg notifications: Pair<Int, T>): Unit =
-        publish(notifications.map { Notification(it.first, it.second) })
-
-    fun publish(update: T, subscribers: Collection<Int>): Unit = publish(subscribers.map { Notification(it, update) })
-
-    fun publish(update: T, vararg subscribers: Int): Unit = publish(subscribers.map { Notification(it, update) })
+    fun publish(update: T, vararg subscribers: D): Unit = publish(update, subscribers.toList())
 
     /**
      * This must only be called from [subscribeToMessageBroker]. Pass the [notifications] the message broker yielded to
      * [notify] subscribers. [publish] [notifications] to notify subscribers from outside [subscribeToMessageBroker].
      */
-    fun notify(notifications: Collection<Notification<T>>): Unit = clients.forEach { client ->
-        notifications.forEach { if (it.userId == client.userId) client.subject.onNext(it.update) }
+    fun notify(notifications: Collection<Notification<T, D>>): Unit = clients.forEach { client ->
+        notifications.forEach { if (it.data == client.data) client.subject.onNext(it.update) }
     }
 
     /** Removes [filter]ed subscribers after calling [Observer.onComplete]. */
-    fun unsubscribe(filter: (Int) -> Boolean): Unit =
+    fun unsubscribe(filter: (D) -> Boolean): Unit =
         /*
         <subscribe()> removes the notifier from the list once it completes. This means we can't write
         <notifiers.forEach { if (condition) it.subject.onComplete() }> because a <ConcurrentModificationException>
         would get thrown.
          */
-        clients.filter { filter(it.userId) }.forEach { it.subject.onComplete() }
+        clients.filter { filter(it.data) }.forEach { it.subject.onComplete() }
 
     private companion object {
         /** Used to create [Client.id]s. Increment every usage to get a unique ID. */
@@ -154,23 +171,25 @@ class Notifier<T>(private val topic: Topic) {
     }
 }
 
-val messagesNotifier = Notifier<MessagesSubscription>(Topic.MESSAGES)
+val messagesNotifier = Notifier<MessagesSubscription, UserId>(Topic.MESSAGES)
+
+val chatMessagesNotifier = Notifier<ChatMessagesSubscription, ChatId>(Topic.CHAT_MESSAGES)
 
 /** @see negotiateUserUpdate */
-val accountsNotifier = Notifier<AccountsSubscription>(Topic.ACCOUNTS)
+val accountsNotifier = Notifier<AccountsSubscription, UserId>(Topic.ACCOUNTS)
 
-val groupChatsNotifier = Notifier<GroupChatsSubscription>(Topic.GROUP_CHATS)
+val groupChatsNotifier = Notifier<GroupChatsSubscription, UserId>(Topic.GROUP_CHATS)
 
-val typingStatusesNotifier = Notifier<TypingStatusesSubscription>(Topic.TYPING_STATUSES)
+val typingStatusesNotifier = Notifier<TypingStatusesSubscription, UserId>(Topic.TYPING_STATUSES)
 
-val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription>(Topic.ONLINE_STATUSES)
+val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription, UserId>(Topic.ONLINE_STATUSES)
 
 /**
  * Notifies subscribers of the updated [userId] via [accountsNotifier]. If [isProfilePic], an [UpdatedProfilePic] will
  * be sent, and an [UpdatedAccount] otherwise.
  */
 fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
-    val subscribers = Contacts.readOwnerUserIdList(userId) + userId + readChatSharers(userId)
+    val subscribers = Contacts.readOwnerUserIdList(userId).plus(userId).plus(readChatSharers(userId)).map(::UserId)
     val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount(userId)
     accountsNotifier.publish(update, subscribers)
 }

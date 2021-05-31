@@ -36,6 +36,7 @@ fun routeGraphQlSubscriptions(context: Routing) {
     val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
     val subscriptions = mapOf(
         "messages-subscription" to "subscribeToMessages",
+        "chat-messages-subscription" to "subscribeToChatMessages",
         "accounts-subscription" to "subscribeToAccounts",
         "group-chats-subscription" to "subscribeToGroupChats",
         "typing-statuses-subscription" to "subscribeToTypingStatuses",
@@ -58,9 +59,10 @@ fun routeGraphQlSubscriptions(context: Routing) {
  */
 private fun routeSubscription(context: Routing, path: String, subscription: GraphQlSubscription): Unit = with(context) {
     webSocket(path) {
-        val token = incoming.receive() as Frame.Text
+        val unauthenticatedOperations = setOf("subscribeToChatMessages")
+        val token = if (subscription.operation in unauthenticatedOperations) null else incoming.receive() as Frame.Text
         try {
-            val result = buildExecutionResult(this, token.readText())
+            val result = buildExecutionResult(this, token?.readText())
             if (result.errors.isEmpty()) subscribe(this, subscription, result) else closeWithError(this, result)
         } catch (_: UnknownOperationException) {
             val reason = CloseReason(
@@ -79,15 +81,16 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  * Parses the [DefaultWebSocketServerSession.incoming] [Frame.Text] as a [GraphQlRequest], and executes it.
  *
  * @throws UnknownOperationException
- * @throws JWTVerificationException if the [accessToken] couldn't be verified.
+ * @throws JWTVerificationException if the [accessToken] wasn't `null`, and couldn't be verified.
  */
 private suspend fun buildExecutionResult(
     session: DefaultWebSocketServerSession,
-    accessToken: String,
+    accessToken: String?,
 ): ExecutionResult = with(session) {
-    val userId = jwtVerifier.verify(accessToken).subject.toInt()
+    val userId = accessToken?.let { jwtVerifier.verify(it).subject.toInt() }
     // It's possible the user updated their email address just after the token was created.
-    if (!Users.hasVerifiedEmailAddress(userId)) throw JWTVerificationException("The email address is unverified.")
+    if (userId != null && !Users.hasVerifiedEmailAddress(userId))
+        throw JWTVerificationException("The email address is unverified.")
     val frame = incoming.receive() as Frame.Text
     val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val builder = buildExecutionInput(request, userId)

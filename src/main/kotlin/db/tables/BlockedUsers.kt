@@ -1,9 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.CursorType
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.accountsNotifier
-import com.neelkamath.omniChatBackend.db.searchUsers
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.BlockedAccount
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnblockedAccount
 import com.neelkamath.omniChatBackend.graphql.routing.Cursor
@@ -33,7 +30,7 @@ object BlockedUsers : Table() {
                 it[this.blockedUserId] = blockedUserId
             }
         }
-        accountsNotifier.publish(blockerUserId to BlockedAccount(blockedUserId))
+        accountsNotifier.publish(BlockedAccount(blockedUserId), UserId(blockerUserId))
     }
 
     /**
@@ -99,7 +96,7 @@ object BlockedUsers : Table() {
         }
         return if (count == 0) false
         else {
-            accountsNotifier.publish(blockerUserId to UnblockedAccount(blockedUserId))
+            accountsNotifier.publish(UnblockedAccount(blockedUserId), UserId(blockerUserId))
             true
         }
     }

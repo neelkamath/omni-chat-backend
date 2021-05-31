@@ -4,7 +4,7 @@ import com.neelkamath.omniChatBackend.db.tables.GroupChats
 import com.neelkamath.omniChatBackend.db.tables.Messages
 import java.util.*
 
-class NewGroupChatInviteMessage(override val id: Int) : MessagesSubscription, NewMessage {
+class NewGroupChatInviteMessage(override val id: Int) : MessagesSubscription, NewMessage, ChatMessagesSubscription {
     fun getInviteCode(): UUID {
         val chatId = Messages.readChatId(id)
         return GroupChats.readInviteCode(chatId)!!

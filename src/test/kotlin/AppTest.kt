@@ -41,6 +41,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(UuidDeserializer, UuidSerializer)
     .register(OnlineStatusesSubscriptionDeserializer)
     .register(MessagesSubscriptionDeserializer)
+    .register(ChatMessagesSubscriptionDeserializer)
     .register(SearchChatMessagesResultDeserializer)
     .register(ReadChatResultDeserializer)
     .register(CreateActionMessageResultDeserializer)
@@ -232,6 +233,29 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "TriggeredAction" -> TriggeredAction::class
             "DeletedMessage" -> DeletedMessage::class
             "UserChatMessagesRemoval" -> UserChatMessagesRemoval::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object ChatMessagesSubscriptionDeserializer : JsonDeserializer<ChatMessagesSubscription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ChatMessagesSubscription {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out ChatMessagesSubscription> = when (val type = node["__typename"].asText()) {
+            "CreatedSubscription" -> CreatedSubscription::class
+            "NewTextMessage" -> NewTextMessage::class
+            "NewActionMessage" -> NewActionMessage::class
+            "NewPicMessage" -> NewPicMessage::class
+            "NewPollMessage" -> NewPollMessage::class
+            "NewAudioMessage" -> NewAudioMessage::class
+            "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
+            "NewDocMessage" -> NewDocMessage::class
+            "NewVideoMessage" -> NewVideoMessage::class
+            "UpdatedMessage" -> UpdatedMessage::class
+            "DeletedMessage" -> DeletedMessage::class
+            "UserChatMessagesRemoval" -> UserChatMessagesRemoval::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

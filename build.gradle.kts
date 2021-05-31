@@ -18,9 +18,10 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.1")
     implementation("org.jasypt:jasypt:1.9.3")
     implementation("com.sun.mail:javax.mail:1.6.2")
+    implementation(kotlin("reflect"))
     testImplementation(kotlin("test-junit5"))
 
-    val ktorVersion = "1.5.3"
+    val ktorVersion = "1.5.4"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-jackson:$ktorVersion")

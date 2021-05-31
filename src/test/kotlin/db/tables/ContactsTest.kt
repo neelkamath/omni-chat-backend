@@ -2,10 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.CursorType
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.accountsNotifier
-import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedContact
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.NewContact
 import com.neelkamath.omniChatBackend.slice
@@ -29,7 +26,7 @@ class ContactsTest {
         @Test
         fun `Saving a contact must notify subscribers`(): Unit = runBlocking {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
-            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
             assertTrue(Contacts.create(ownerId, contactId))
             awaitBrokering()
             val actual = subscriber.values().map { (it as NewContact).id }
@@ -41,7 +38,7 @@ class ContactsTest {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
             Contacts.create(ownerId, contactId)
             awaitBrokering()
-            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
             assertFalse(Contacts.create(ownerId, contactId))
             awaitBrokering()
             subscriber.assertNoValues()
@@ -148,7 +145,7 @@ class ContactsTest {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
             Contacts.create(ownerId, contactId)
             awaitBrokering()
-            val subscriber = accountsNotifier.subscribe(ownerId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
             assertTrue(Contacts.delete(ownerId, contactId))
             awaitBrokering()
             val actual = subscriber.values().map { (it as DeletedContact).getUserId() }
@@ -158,7 +155,7 @@ class ContactsTest {
         @Test
         fun `Deleting a non-existing contact mustn't notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
-            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
             assertFalse(Contacts.delete(userId, contactUserId = -1))
             awaitBrokering()
             subscriber.assertNoValues()
@@ -173,7 +170,7 @@ class ContactsTest {
             Contacts.create(ownerId, contactId)
             awaitBrokering()
             val (ownerSubscriber, contactSubscriber, userSubscriber) = listOf(ownerId, contactId, userId)
-                .map { accountsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             Contacts.deleteUserEntries(contactId)
             awaitBrokering()
             val actual = ownerSubscriber.values().map { (it as DeletedContact).getUserId() }

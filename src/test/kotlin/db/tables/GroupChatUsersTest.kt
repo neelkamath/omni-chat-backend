@@ -1,10 +1,7 @@
 package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.count
-import com.neelkamath.omniChatBackend.db.groupChatsNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
@@ -47,7 +44,7 @@ class GroupChatUsersTest {
                 awaitBrokering()
                 val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
                     listOf(adminId, toBeAdminId, nonParticipantId)
-                        .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                        .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.makeAdmins(chatId, toBeAdminId)
                 awaitBrokering()
                 listOf(adminSubscriber, toBeAdminSubscriber).forEach { subscriber ->
@@ -187,7 +184,7 @@ class GroupChatUsersTest {
                 val chatId = GroupChats.create(listOf(admin.userId))
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = listOf(admin.userId, user.userId)
-                    .map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 GroupChatUsers.addUsers(chatId, user.userId)
                 awaitBrokering()
                 val values = adminSubscriber.values().map { it as UpdatedGroupChat }
@@ -255,6 +252,19 @@ class GroupChatUsersTest {
     @Nested
     inner class RemoveUsers {
         @Test
+        fun `Unauthenticated users must get unsubscribed only when the chat gets deleted`(): Unit = runBlocking {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            GroupChatUsers.removeUsers(chatId, userId)
+            awaitBrokering()
+            subscriber.assertNoValues()
+            GroupChatUsers.removeUsers(chatId, adminId)
+            awaitBrokering()
+            subscriber.assertComplete()
+        }
+
+        @Test
         fun `An exception must be thrown if the users can't leave the chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
@@ -275,7 +285,7 @@ class GroupChatUsersTest {
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             awaitBrokering()
             val (adminSubscriber, userSubscriber) =
-                listOf(adminId, userId).map { groupChatsNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                listOf(adminId, userId).map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId, userId)
             awaitBrokering()
             listOf(adminSubscriber, userSubscriber).forEach { subscriber ->
@@ -291,7 +301,7 @@ class GroupChatUsersTest {
             val (adminId, userId, nonParticipantId) = createVerifiedUsers(3).map { it.userId }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
             awaitBrokering()
-            val subscriber = groupChatsNotifier.subscribe(nonParticipantId).subscribeWith(TestSubscriber())
+            val subscriber = groupChatsNotifier.subscribe(UserId(nonParticipantId)).subscribeWith(TestSubscriber())
             GroupChatUsers.removeUsers(chatId, userId)
             awaitBrokering()
             subscriber.assertNoValues()

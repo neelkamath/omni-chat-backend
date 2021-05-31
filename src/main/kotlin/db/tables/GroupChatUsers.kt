@@ -1,8 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.groupChatsNotifier
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
@@ -39,7 +37,7 @@ object GroupChatUsers : Table() {
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId).toList())
-            groupChatsNotifier.publish(update, readUserIdList(chatId))
+            groupChatsNotifier.publish(update, readUserIdList(chatId).map(::UserId))
         }
     }
 
@@ -87,9 +85,9 @@ object GroupChatUsers : Table() {
                 this[isAdmin] = false
             }
         }
-        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList)
+        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::UserId))
         val update = UpdatedGroupChat(chatId, newUserIdList = newUserIdList.toList())
-        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList))
+        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UserId))
     }
 
     fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
@@ -123,7 +121,8 @@ object GroupChatUsers : Table() {
      * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
-     * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
+     * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier]. Clients who
+     * have subscribed to the [chatId] via [chatMessagesNotifier] will be unsubscribed if the chat gets deleted.
      */
     fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         require(canUsersLeave(chatId, userIdList)) {
@@ -135,9 +134,10 @@ object GroupChatUsers : Table() {
             deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
         removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
-        groupChatsNotifier.publish(ExitedUsers(chatId, removedIdList), originalIdList)
+        groupChatsNotifier.publish(ExitedUsers(chatId, removedIdList), originalIdList.map(::UserId))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
+            chatMessagesNotifier.unsubscribe { it.chatId == chatId }
             return true
         }
         return false

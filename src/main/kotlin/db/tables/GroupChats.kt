@@ -78,7 +78,7 @@ object GroupChats : Table() {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.title] = title.value }
         }
-        groupChatsNotifier.publish(UpdatedGroupChat(chatId, title), GroupChatUsers.readUserIdList(chatId))
+        groupChatsNotifier.publish(UpdatedGroupChat(chatId, title), GroupChatUsers.readUserIdList(chatId).map(::UserId))
     }
 
     /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
@@ -88,7 +88,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, description = description),
-            GroupChatUsers.readUserIdList(chatId),
+            GroupChatUsers.readUserIdList(chatId).map(::UserId),
         )
     }
 
@@ -100,7 +100,7 @@ object GroupChats : Table() {
             val picId = select(GroupChats.id eq chatId).first()[picId]
             update({ GroupChats.id eq chatId }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId))
+        groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId).map(::UserId))
     }
 
     /** Returns the group chat's pic (`null` if there's no pic). */
@@ -181,7 +181,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, isBroadcast = isBroadcast),
-            GroupChatUsers.readUserIdList(chatId),
+            GroupChatUsers.readUserIdList(chatId).map(::UserId),
         )
     }
 
@@ -197,7 +197,7 @@ object GroupChats : Table() {
         }
         groupChatsNotifier.publish(
             UpdatedGroupChat(chatId, publicity = publicity),
-            GroupChatUsers.readUserIdList(chatId),
+            GroupChatUsers.readUserIdList(chatId).map(::UserId),
         )
     }
 
