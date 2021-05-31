@@ -28,6 +28,7 @@ fun subscribeToMessageBroker() {
     brokerGroupChats()
     brokerTypingStatuses()
     brokerOnlineStatuses()
+    brokerChatOnlineStatuses()
 }
 
 /** [Notifier.notify]s [Notifier.publish]ed updates for [messagesNotifier]. This is safe to call multiple times. */
@@ -84,6 +85,15 @@ private fun brokerOnlineStatuses() {
         }
 }
 
+/** [Notifier.notify]s [Notifier.publish]ed updates for [chatOnlineStatusesNotifier]. Safe to call multiple times. */
+private fun brokerChatOnlineStatuses() {
+    if (redisson.getTopic(Topic.CHAT_ONLINE_STATUSES.toString()).countListeners() == 0)
+        redisson.getTopic(Topic.CHAT_ONLINE_STATUSES.toString()).addListener(List::class.java) { _, message ->
+            @Suppress("UNCHECKED_CAST")
+            chatOnlineStatusesNotifier.notify(message as List<Notification<ChatOnlineStatusesSubscription, ChatId>>)
+        }
+}
+
 /** The message broker channel updates will be sent over to each server. */
 enum class Topic {
     MESSAGES {
@@ -104,6 +114,9 @@ enum class Topic {
     ONLINE_STATUSES {
         override fun toString() = "onlineStatuses"
     },
+    CHAT_ONLINE_STATUSES {
+        override fun toString() = "chatOnlineStatuses"
+    }
 }
 
 /** Clients [Notifier.subscribe]d with the [data] will receive the [update]. */
@@ -183,6 +196,8 @@ val groupChatsNotifier = Notifier<GroupChatsSubscription, UserId>(Topic.GROUP_CH
 val typingStatusesNotifier = Notifier<TypingStatusesSubscription, UserId>(Topic.TYPING_STATUSES)
 
 val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription, UserId>(Topic.ONLINE_STATUSES)
+
+val chatOnlineStatusesNotifier = Notifier<ChatOnlineStatusesSubscription, ChatId>(Topic.CHAT_ONLINE_STATUSES)
 
 /**
  * Notifies subscribers of the updated [userId] via [accountsNotifier]. If [isProfilePic], an [UpdatedProfilePic] will

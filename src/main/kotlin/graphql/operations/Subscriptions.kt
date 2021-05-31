@@ -15,20 +15,8 @@ fun subscribeToMessages(env: DataFetchingEnvironment): Publisher<MessagesSubscri
     return messagesNotifier.subscribe(UserId(env.userId!!))
 }
 
-fun subscribeToChatMessages(env: DataFetchingEnvironment): Publisher<ChatMessagesSubscription> {
-    val chatId = env.getArgument<Int>("chatId")
-    val publisher = chatMessagesNotifier.subscribe(ChatId(chatId))
-    if (!GroupChats.isExistingPublicChat(chatId))
-    /*
-    This block gets executed after a delay because the WebSocket must get created before we can send the
-    error, and close the connection.
-     */
-        Timer().schedule(1_000) {
-            chatMessagesNotifier.publish(InvalidChatId, ChatId(chatId))
-            chatMessagesNotifier.unsubscribe { it.chatId == chatId }
-        }
-    return publisher
-}
+fun subscribeToChatMessages(env: DataFetchingEnvironment): Publisher<ChatMessagesSubscription> =
+    subscribeToChat(env, chatMessagesNotifier)
 
 fun subscribeToAccounts(env: DataFetchingEnvironment): Publisher<AccountsSubscription> {
     env.verifyAuth()
@@ -48,4 +36,23 @@ fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingSta
 fun subscribeToOnlineStatuses(env: DataFetchingEnvironment): Publisher<OnlineStatusesSubscription> {
     env.verifyAuth()
     return onlineStatusesNotifier.subscribe(UserId(env.userId!!))
+}
+
+fun subscribeToChatOnlineStatuses(env: DataFetchingEnvironment): Publisher<ChatOnlineStatusesSubscription> =
+    subscribeToChat(env, chatOnlineStatusesNotifier)
+
+private fun <T> subscribeToChat(env: DataFetchingEnvironment, notifier: Notifier<T, ChatId>): Publisher<T> {
+    val chatId = env.getArgument<Int>("chatId")
+    val publisher = notifier.subscribe(ChatId(chatId))
+    if (!GroupChats.isExistingPublicChat(chatId)) {
+        /*
+        This block gets executed after a delay because the WebSocket must get created before we can send the
+        error, and close the connection.
+         */
+        Timer().schedule(1_000) {
+            @Suppress("UNCHECKED_CAST") notifier.publish(InvalidChatId as T, ChatId(chatId))
+            notifier.unsubscribe { it.chatId == chatId }
+        }
+    }
+    return publisher
 }

@@ -40,6 +40,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(BioDeserializer, BioSerializer)
     .register(UuidDeserializer, UuidSerializer)
     .register(OnlineStatusesSubscriptionDeserializer)
+    .register(ChatOnlineStatusesSubscriptionDeserializer)
     .register(MessagesSubscriptionDeserializer)
     .register(ChatMessagesSubscriptionDeserializer)
     .register(SearchChatMessagesResultDeserializer)
@@ -159,6 +160,19 @@ private object OnlineStatusesSubscriptionDeserializer : JsonDeserializer<OnlineS
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
             "OnlineStatus" -> OnlineStatus::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object ChatOnlineStatusesSubscriptionDeserializer : JsonDeserializer<ChatOnlineStatusesSubscription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ChatOnlineStatusesSubscription {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "CreatedSubscription" -> CreatedSubscription::class
+            "OnlineStatus" -> OnlineStatus::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

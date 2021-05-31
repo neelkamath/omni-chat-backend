@@ -14,6 +14,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
     .type("ChatMessagesSubscription") { wireType(it, ::readChatMessagesSubscription) }
     .type("OnlineStatusesSubscription") { wireType(it, ::readOnlineStatusesSubscription) }
+    .type("readChatOnlineStatusesSubscription") { wireType(it, ::readChatOnlineStatusesSubscription) }
     .type("TypingStatusesSubscription") { wireType(it, ::readTypingStatusesSubscription) }
     .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
     .type("GroupChatsSubscription") { wireType(it, ::readGroupChatsSubscription) }
@@ -231,6 +232,13 @@ private fun readTypingStatusesSubscription(obj: Any): String = when (obj) {
 private fun readOnlineStatusesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is OnlineStatus -> "OnlineStatus"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readChatOnlineStatusesSubscription(obj: Any): String = when (obj) {
+    is CreatedSubscription -> "CreatedSubscription"
+    is OnlineStatus -> "OnlineStatus"
+    is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

@@ -18,7 +18,7 @@ class SubscriptionsTest {
     private data class EventData(val __typename: String)
 
     @Nested
-    inner class SubscribeToChatMessages {
+    inner class SubscribeToChat {
         private fun testSubscription(usesPublicChat: Boolean) {
             val adminId = createVerifiedUsers(1).first().userId
             val publicity = if (usesPublicChat) GroupChatPublicity.PUBLIC else GroupChatPublicity.NOT_INVITABLE

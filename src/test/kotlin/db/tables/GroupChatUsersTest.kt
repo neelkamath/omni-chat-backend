@@ -255,13 +255,14 @@ class GroupChatUsersTest {
         fun `Unauthenticated users must get unsubscribed only when the chat gets deleted`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(listOf(adminId), listOf(userId))
-            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscribers = listOf(chatMessagesNotifier, chatOnlineStatusesNotifier)
+                .map { it.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber()) }
             GroupChatUsers.removeUsers(chatId, userId)
             awaitBrokering()
-            subscriber.assertNoValues()
+            subscribers.forEach { it.assertNoValues() }
             GroupChatUsers.removeUsers(chatId, adminId)
             awaitBrokering()
-            subscriber.assertComplete()
+            subscribers.forEach { it.assertComplete() }
         }
 
         @Test

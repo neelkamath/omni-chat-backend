@@ -577,16 +577,16 @@ type Subscription {
     the user deleted sends a message in it). The subscription will be stopped if the user deletes their account.
 
     An access token must be sent with this request. See `Subscription.subscribeToChatMessages` for unauthenticated
-    users, such as an accountless user viewing a public chat.
+    users such as an accountless user viewing a public chat.
     """
     subscribeToMessages: MessagesSubscription!
 
     """
-    Yields created, updated, and deleted messages for the `chatId`. The subscription will be stopped if the chat gets
-    deleted. If the `chatId` isn't an existing public chat, then an `InvalidChatId` will be returned, and the
-    subscription will be closed.
+    Yields created, updated, and deleted messages for the `chatId`. If the user is authenticated, you probably want to
+    use `Subscription.subscribeToMessages` instead.
 
-    If the user is authenticated, you probably want to use `Subscription.subscribeToMessages` instead.
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
     """
     subscribeToChatMessages(chatId: Int!): ChatMessagesSubscription!
 
@@ -594,9 +594,19 @@ type Subscription {
     Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
     stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatOnlineStatuses` for unauthenticated
+    users such as an accountless user viewing a public chat.
     """
     subscribeToOnlineStatuses: OnlineStatusesSubscription!
+
+    """
+    Yields the online statuses of users in the `chatId`. If the user is authenticated, you probably want to use
+    `Subscription.subscribeToOnlineStatuses` instead.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToChatOnlineStatuses(chatId: Int!): ChatOnlineStatusesSubscription!
 
     """
     Yields typing statuses for chats the user has. The subscription will be stopped if the user deletes their account.
@@ -659,6 +669,8 @@ type UnstarredChat {
 }
 
 union OnlineStatusesSubscription = CreatedSubscription | OnlineStatus
+
+union ChatOnlineStatusesSubscription = CreatedSubscription | OnlineStatus | InvalidChatId
 
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
 
