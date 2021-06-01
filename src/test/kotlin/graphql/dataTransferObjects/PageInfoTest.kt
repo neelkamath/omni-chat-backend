@@ -12,6 +12,7 @@ import com.neelkamath.omniChatBackend.db.tables.create
 import com.neelkamath.omniChatBackend.db.tables.message
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.testingObjectMapper
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
@@ -128,22 +129,24 @@ class PageInfoTest {
         }
 
         @Test
-        fun `Given cursors 5-10, when requesting zero items after the non-existing cursor 3, then 'hasNextPage' must be 'true' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index < 5) deleteUser(userId)
-                userId
-            }[2]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertTrue)
-        }
+        fun `Given cursors 5-10, when requesting zero items after the non-existing cursor 3, then 'hasNextPage' must be 'true' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index < 5) deleteUser(userId)
+                    userId
+                }[2]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertTrue)
+            }
 
         @Test
-        fun `Given cursors 1-5, when requesting items after the non-existing cursor 7, then 'hasNextPage' must be 'false' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index > 4) deleteUser(userId)
-                userId
-            }[6]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertFalse)
-        }
+        fun `Given cursors 1-5, when requesting items after the non-existing cursor 7, then 'hasNextPage' must be 'false' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index > 4) deleteUser(userId)
+                    userId
+                }[6]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertFalse)
+            }
 
         @Test
         fun `Given items, when requesting items with the first item's cursor but no limit, then 'hasNextPage' must be 'true' for backward pagination`() {
@@ -293,22 +296,24 @@ class PageInfoTest {
         }
 
         @Test
-        fun `Given items 1-10 where items 1-5 have been deleted, when requesting zero items after the deleted item 3, then 'hasPreviousPage' must be 'false' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index < 5) deleteUser(userId)
-                userId
-            }[2]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasPreviousPage.let(::assertFalse)
-        }
+        fun `Given items 1-10 where items 1-5 have been deleted, when requesting zero items after the deleted item 3, then 'hasPreviousPage' must be 'false' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index < 5) deleteUser(userId)
+                    userId
+                }[2]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasPreviousPage.let(::assertFalse)
+            }
 
         @Test
-        fun `Given items 1-10 where items 6-10 have been deleted, when requesting items after the deleted item 7, then 'hasPreviousPage' must be 'true' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index > 4) deleteUser(userId)
-                userId
-            }[6]
-            executeSearchUsers(ForwardPagination(after = cursor)).hasPreviousPage.let(::assertTrue)
-        }
+        fun `Given items 1-10 where items 6-10 have been deleted, when requesting items after the deleted item 7, then 'hasPreviousPage' must be 'true' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index > 4) deleteUser(userId)
+                    userId
+                }[6]
+                executeSearchUsers(ForwardPagination(after = cursor)).hasPreviousPage.let(::assertTrue)
+            }
 
         @Test
         fun `Given items, when requesting items with the first item's cursor but no limit, then 'hasPreviousPage' must be 'false' for backward pagination`() {

@@ -115,7 +115,7 @@ class MessagesTest {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), setOf(user1Id, user2Id))
             val (adminSubscriber, user1Subscriber, user2Subscriber) = setOf(adminId, user1Id, user2Id)
-                .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             val messageIdList = (1..3).map { Messages.message(setOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
             setOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { subscriber ->
@@ -131,7 +131,7 @@ class MessagesTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 PrivateChatDeletions.create(chatId, user1Id)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(UserId(user1Id)).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(user1Id)).flowable.subscribeWith(TestSubscriber())
                 val messageId = Messages.message(user2Id, chatId)
                 awaitBrokering()
                 val actual = subscriber.values().map { (it as NewTextMessage).getMessageId() }
@@ -143,7 +143,7 @@ class MessagesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             awaitBrokering()
-            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             val messageId = Messages.message(adminId, chatId)
             awaitBrokering()
             val actual = subscriber.values().map { (it as NewTextMessage).getMessageId() }
@@ -524,7 +524,7 @@ class MessagesTest {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
                 val chatId = GroupChats.create(setOf(adminId), setOf(userId))
-                val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
                 val values = subscriber.values().map { it as UserChatMessagesRemoval }
@@ -539,7 +539,7 @@ class MessagesTest {
                 val chatId = GroupChats.create(setOf(adminId), setOf(userId), publicity = GroupChatPublicity.PUBLIC)
                 Messages.message(userId, chatId)
                 awaitBrokering()
-                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
                 val actual = subscriber.values().map { (it as UserChatMessagesRemoval).getChatId() }
@@ -559,7 +559,7 @@ class MessagesTest {
             }
             awaitBrokering()
             val (chat1Subscriber, chat2Subscriber) =
-                (1..2).map { messagesNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber()) }
+                (1..2).map { messagesNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             setOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->
@@ -578,7 +578,7 @@ class MessagesTest {
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             awaitBrokering()
-            val subscriber = messagesNotifier.subscribe(UserId(user1Id)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.subscribe(UserId(user1Id)).flowable.subscribeWith(TestSubscriber())
             Messages.delete(messageId)
             awaitBrokering()
             val values = subscriber.values().map { it as DeletedMessage }
@@ -593,7 +593,7 @@ class MessagesTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
-                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 Messages.delete(messageId)
                 awaitBrokering()
                 val actual = subscriber.values().map { (it as DeletedMessage).getMessageId() }

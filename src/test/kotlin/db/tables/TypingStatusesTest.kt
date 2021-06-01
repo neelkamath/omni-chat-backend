@@ -20,7 +20,8 @@ class TypingStatusesTest {
         fun `Unauthenticated subscribers must be notified of the status`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            val subscriber = chatTypingStatusesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscriber =
+                chatTypingStatusesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             TypingStatuses.update(chatId, adminId, isTyping = true)
             awaitBrokering()
             val actual = subscriber.values().map { (it as TypingStatus).getChatId() }
@@ -33,7 +34,7 @@ class TypingStatusesTest {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
-                    .map { typingStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { typingStatusesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val isTyping = true
                 TypingStatuses.update(chatId, user1Id, isTyping)
                 awaitBrokering()
@@ -54,7 +55,8 @@ class TypingStatusesTest {
                 val update = { TypingStatuses.update(chatId, adminId, isTyping = true) }
                 update()
                 awaitBrokering()
-                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber =
+                    typingStatusesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 update()
                 awaitBrokering()
                 assertEquals(1, TypingStatuses.count())
@@ -68,7 +70,8 @@ class TypingStatusesTest {
                 val chatId = GroupChats.create(setOf(adminId))
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
-                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber =
+                    typingStatusesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = false)
                 awaitBrokering()
                 assertEquals(0, TypingStatuses.count())
@@ -82,7 +85,8 @@ class TypingStatusesTest {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
                 val chatId = GroupChats.create(setOf(adminId))
-                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber =
+                    typingStatusesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
                 assertEquals(1, TypingStatuses.count())
@@ -96,7 +100,8 @@ class TypingStatusesTest {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
                 val chatId = GroupChats.create(setOf(adminId))
-                val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber =
+                    typingStatusesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = false)
                 awaitBrokering()
                 assertEquals(0, TypingStatuses.count())

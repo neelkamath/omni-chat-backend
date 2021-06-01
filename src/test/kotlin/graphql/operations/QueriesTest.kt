@@ -11,6 +11,7 @@ import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.LocalDateTime
@@ -255,22 +256,24 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val (adminId, chatIdList) = createChats()
-            GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
-            val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
-            assertEquals(listOf(2, 4, 5).map(chatIdList::elementAt), executeReadChats(adminId, pagination))
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createChats()
+                GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
+                val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
+                assertEquals(listOf(2, 4, 5).map(chatIdList::elementAt), executeReadChats(adminId, pagination))
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createChats()
-            val index = 4
-            val chatId = chatIdList.elementAt(index)
-            GroupChatUsers.removeUsers(chatId, adminId)
-            val actual = executeReadChats(adminId, ForwardPagination(after = chatId))
-            assertEquals(chatIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createChats()
+                val index = 4
+                val chatId = chatIdList.elementAt(index)
+                GroupChatUsers.removeUsers(chatId, adminId)
+                val actual = executeReadChats(adminId, ForwardPagination(after = chatId))
+                assertEquals(chatIdList.drop(index + 1), actual)
+            }
     }
 
     private data class ReadContactsResponse(val edges: List<Edge>) {
@@ -581,23 +584,25 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
-            GroupChatUsers.removeUsers(chatIdList[3], adminId)
-            val actual = executeSearchChats(adminId, ForwardPagination(first = 3, after = chatIdList[1]))
-            assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
+                GroupChatUsers.removeUsers(chatIdList[3], adminId)
+                val actual = executeSearchChats(adminId, ForwardPagination(first = 3, after = chatIdList[1]))
+                assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
-            val index = 4
-            GroupChatUsers.removeUsers(chatIdList[index], adminId)
-            val actual = executeSearchChats(adminId, ForwardPagination(after = chatIdList[index]))
-            assertEquals(chatIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
+                val index = 4
+                GroupChatUsers.removeUsers(chatIdList[index], adminId)
+                val actual = executeSearchChats(adminId, ForwardPagination(after = chatIdList[index]))
+                assertEquals(chatIdList.drop(index + 1), actual)
+            }
 
         @Test
         fun `Private and group chats must get paginated together`() {
@@ -917,34 +922,36 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val query = "matched"
-            val chatIdList = (1..10).map {
-                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
-            }
-            GroupChatUsers.removeUsers(chatIdList[3], adminId)
-            val actual = executeSearchMessages(adminId, query, ForwardPagination(first = 3, after = chatIdList[1]))
-                .edges
-                .map { it.node.chat.chatId }
-            assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
-        }
-
-        @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val query = "matched"
-            val chatIdList = (1..10).map {
-                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
-            }
-            val index = 4
-            GroupChatUsers.removeUsers(adminId, chatIdList[index])
-            val paginatedChatIdList =
-                executeSearchMessages(adminId, query, ForwardPagination(after = chatIdList[index]))
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val query = "matched"
+                val chatIdList = (1..10).map {
+                    GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                }
+                GroupChatUsers.removeUsers(chatIdList[3], adminId)
+                val actual = executeSearchMessages(adminId, query, ForwardPagination(first = 3, after = chatIdList[1]))
                     .edges
                     .map { it.node.chat.chatId }
-            assertEquals(chatIdList.drop(index + 1), paginatedChatIdList)
-        }
+                assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
+            }
+
+        @Test
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val query = "matched"
+                val chatIdList = (1..10).map {
+                    GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                }
+                val index = 4
+                GroupChatUsers.removeUsers(adminId, chatIdList[index])
+                val paginatedChatIdList =
+                    executeSearchMessages(adminId, query, ForwardPagination(after = chatIdList[index]))
+                        .edges
+                        .map { it.node.chat.chatId }
+                assertEquals(chatIdList.drop(index + 1), paginatedChatIdList)
+            }
     }
 
     private data class SearchUsersResponse(val edges: List<Edge>) {
@@ -1103,21 +1110,23 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val userIdList = createVerifiedUsers(10).map { it.userId }
-            deleteUser(userIdList[3])
-            val actual = executeSearchUsers(pagination = ForwardPagination(first = 3, after = userIdList[1]))
-            assertEquals(listOf(userIdList[2], userIdList[4], userIdList[5]), actual)
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val userIdList = createVerifiedUsers(10).map { it.userId }
+                deleteUser(userIdList[3])
+                val actual = executeSearchUsers(pagination = ForwardPagination(first = 3, after = userIdList[1]))
+                assertEquals(listOf(userIdList[2], userIdList[4], userIdList[5]), actual)
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val userIdList = createVerifiedUsers(10).map { it.userId }
-            val index = 4
-            deleteUser(userIdList[index])
-            val actual = executeSearchUsers(pagination = ForwardPagination(after = userIdList[index]))
-            assertEquals(userIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val userIdList = createVerifiedUsers(10).map { it.userId }
+                val index = 4
+                deleteUser(userIdList[index])
+                val actual = executeSearchUsers(pagination = ForwardPagination(after = userIdList[index]))
+                assertEquals(userIdList.drop(index + 1), actual)
+            }
     }
 
     private data class SearchBlockedUsersResponse(val edges: List<Edge>) {

@@ -74,7 +74,7 @@ class MessageStatusesTest {
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
                 val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
-                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
                 setOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
@@ -91,7 +91,7 @@ class MessageStatusesTest {
             val chatId = GroupChats.create(setOf(adminId), setOf(userId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             awaitBrokering()
-            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED)
             awaitBrokering()
             val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }

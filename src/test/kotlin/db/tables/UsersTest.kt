@@ -74,7 +74,8 @@ class UsersTest {
         fun `Changing the online status must notify unauthenticated users`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            val subscriber = chatOnlineStatusesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscriber =
+                chatOnlineStatusesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             Users.setOnlineStatus(adminId, isOnline = true)
             awaitBrokering()
             val actual = subscriber.values().map { (it as OnlineStatus).getUserId() }
@@ -86,7 +87,7 @@ class UsersTest {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.userId }
                 val subscriber =
-                    onlineStatusesNotifier.subscribe(UserId(contactOwnerId)).subscribeWith(TestSubscriber())
+                    onlineStatusesNotifier.subscribe(UserId(contactOwnerId)).flowable.subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.isOnline(contactId))
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -101,7 +102,7 @@ class UsersTest {
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
                     setOf(updaterId, contactOwnerId, privateChatSharerId, userId)
-                        .map { onlineStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                        .map { onlineStatusesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val status = !Users.isOnline(updaterId)
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
@@ -179,7 +180,7 @@ class UsersTest {
         @Test
         fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
-            val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
             Users.updatePic(userId, readPic("76px×57px.jpg"))
             awaitBrokering()
             val actual = subscriber.values().map { (it as UpdatedProfilePic).getUserId() }

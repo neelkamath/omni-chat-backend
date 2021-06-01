@@ -39,7 +39,7 @@ class GroupChatsTest {
         fun `Creating a chat must only notify participants`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             val chatId = GroupChats.create(setOf(adminId), listOf(user1Id))
             awaitBrokering()
             listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
@@ -59,9 +59,9 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
-                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val title = GroupChatTitle("New Title")
                 GroupChats.updateTitle(chatId, title)
                 awaitBrokering()
@@ -84,9 +84,9 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
-                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val description = GroupChatDescription("New description.")
                 GroupChats.updateDescription(chatId, description)
                 awaitBrokering()
@@ -110,9 +110,9 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, nonParticipantSubscriber) = setOf(adminId, nonParticipantId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
-                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
                 awaitBrokering()
                 val adminSubscriberValues = adminSubscriber.values().map { (it as UpdatedGroupChatPic).getChatId() }
@@ -144,7 +144,7 @@ class GroupChatsTest {
         }
 
         @Test
-        fun `Deleting a chat must wipe it from the DB`() {
+        fun `Deleting a chat must wipe it from the DB`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
@@ -224,23 +224,25 @@ class GroupChatsTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val (adminId, chatIdList) = createPublicChats()
-            GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
-            val expected = listOf(2, 4, 5).map(chatIdList::elementAt).toLinkedHashSet()
-            val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
-            assertEquals(expected, GroupChats.searchPublicChats(query = "", pagination))
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createPublicChats()
+                GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
+                val expected = listOf(2, 4, 5).map(chatIdList::elementAt).toLinkedHashSet()
+                val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
+                assertEquals(expected, GroupChats.searchPublicChats(query = "", pagination))
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createPublicChats()
-            val index = 4
-            val chatId = chatIdList.elementAt(index)
-            GroupChatUsers.removeUsers(chatId, adminId)
-            val actual = GroupChats.searchPublicChats(query = "", ForwardPagination(after = chatId))
-            assertEquals(chatIdList.drop(index + 1).toLinkedHashSet(), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createPublicChats()
+                val index = 4
+                val chatId = chatIdList.elementAt(index)
+                GroupChatUsers.removeUsers(chatId, adminId)
+                val actual = GroupChats.searchPublicChats(query = "", ForwardPagination(after = chatId))
+                assertEquals(chatIdList.drop(index + 1).toLinkedHashSet(), actual)
+            }
     }
 
     @Nested
@@ -275,9 +277,9 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
-                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+                    groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val isBroadcast = true
                 GroupChats.setBroadcastStatus(chatId, isBroadcast)
                 awaitBrokering()
@@ -306,7 +308,7 @@ class GroupChatsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             GroupChats.setInvitability(chatId, isInvitable = true)
             awaitBrokering()
             val values = adminSubscriber.values().map { it as UpdatedGroupChat }

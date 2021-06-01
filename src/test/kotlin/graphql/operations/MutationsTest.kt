@@ -577,7 +577,7 @@ class MutationsTest {
         @Test
         fun `The group chat invite must be forwarded by a user who isn't in the chat the invitation is for`() {
             val (admin1, admin2) = createVerifiedUsers(2)
-            val (chat1Id, chat2Id, chat3Id) = setOf(admin1, admin1, admin2)
+            val (chat1Id, chat2Id, chat3Id) = listOf(admin1, admin1, admin2)
                 .map { GroupChats.create(setOf(it.userId), publicity = GroupChatPublicity.INVITABLE) }
             val messageId = Messages.message(admin1.userId, chat2Id, invitedChatId = chat3Id)
             assertNull(executeForwardMessage(admin1.accessToken, chat1Id, messageId).__typename)
@@ -2130,7 +2130,7 @@ class MutationsTest {
             val message = ActionMessageInput(MessageText("text"), listOf(action))
             val messageId = Messages.message(adminId, chatId, message)
             awaitBrokering()
-            val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+            val subscriber = messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
             assertTrue(executeTriggerAction(userId, messageId, action))
             awaitBrokering()
             val values = subscriber.values().map { it as TriggeredAction }

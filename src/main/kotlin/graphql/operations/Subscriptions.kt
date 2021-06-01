@@ -1,3 +1,5 @@
+@file:Suppress("BlockingMethodInNonBlockingContext")
+
 package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.neelkamath.omniChatBackend.db.*
@@ -6,13 +8,14 @@ import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
 import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
 import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
+import kotlinx.coroutines.runBlocking
 import org.reactivestreams.Publisher
 import java.util.*
 import kotlin.concurrent.schedule
 
 fun subscribeToMessages(env: DataFetchingEnvironment): Publisher<MessagesSubscription> {
     env.verifyAuth()
-    return messagesNotifier.subscribe(UserId(env.userId!!))
+    return runBlocking { messagesNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToChatMessages(env: DataFetchingEnvironment): Publisher<ChatMessagesSubscription> =
@@ -23,7 +26,7 @@ fun subscribeToChatAccounts(env: DataFetchingEnvironment): Publisher<ChatAccount
 
 fun subscribeToAccounts(env: DataFetchingEnvironment): Publisher<AccountsSubscription> {
     env.verifyAuth()
-    return accountsNotifier.subscribe(UserId(env.userId!!))
+    return runBlocking { accountsNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToGroupChatMetadata(env: DataFetchingEnvironment): Publisher<GroupChatMetadataSubscription> =
@@ -31,12 +34,12 @@ fun subscribeToGroupChatMetadata(env: DataFetchingEnvironment): Publisher<GroupC
 
 fun subscribeToGroupChats(env: DataFetchingEnvironment): Publisher<GroupChatsSubscription> {
     env.verifyAuth()
-    return groupChatsNotifier.subscribe(UserId(env.userId!!))
+    return runBlocking { groupChatsNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingStatusesSubscription> {
     env.verifyAuth()
-    return typingStatusesNotifier.subscribe(UserId(env.userId!!))
+    return runBlocking { typingStatusesNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToChatTypingStatuses(env: DataFetchingEnvironment): Publisher<ChatTypingStatusesSubscription> =
@@ -44,7 +47,7 @@ fun subscribeToChatTypingStatuses(env: DataFetchingEnvironment): Publisher<ChatT
 
 fun subscribeToOnlineStatuses(env: DataFetchingEnvironment): Publisher<OnlineStatusesSubscription> {
     env.verifyAuth()
-    return onlineStatusesNotifier.subscribe(UserId(env.userId!!))
+    return runBlocking { onlineStatusesNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToChatOnlineStatuses(env: DataFetchingEnvironment): Publisher<ChatOnlineStatusesSubscription> =
@@ -52,16 +55,18 @@ fun subscribeToChatOnlineStatuses(env: DataFetchingEnvironment): Publisher<ChatO
 
 private fun <T> subscribeToChat(env: DataFetchingEnvironment, notifier: Notifier<T, ChatId>): Publisher<T> {
     val chatId = env.getArgument<Int>("chatId")
-    val publisher = notifier.subscribe(ChatId(chatId))
+    val (flowable, id) = runBlocking { notifier.subscribe(ChatId(chatId)) }
     if (!GroupChats.isExistingPublicChat(chatId)) {
         /*
         This block gets executed after a delay because the WebSocket must get created before we can send the
         error, and close the connection.
          */
         Timer().schedule(1_000) {
-            @Suppress("UNCHECKED_CAST") notifier.publish(InvalidChatId as T, ChatId(chatId))
-            notifier.unsubscribe { it.chatId == chatId }
+            @Suppress("UNCHECKED_CAST") notifier.notifySubscriber(InvalidChatId as T, id)
+            runBlocking {
+                notifier.unsubscribe { it.id == id }
+            }
         }
     }
-    return publisher
+    return flowable
 }

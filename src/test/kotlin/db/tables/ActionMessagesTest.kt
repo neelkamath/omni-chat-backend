@@ -97,7 +97,7 @@ class ActionMessagesTest {
             )
             awaitBrokering()
             val (adminSubscriber, userSubscriber) = setOf(admin.userId, user.userId)
-                .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             ActionMessages.trigger(user.userId, messageId, action)
             awaitBrokering()
             val values = adminSubscriber.values().map { it as TriggeredAction }

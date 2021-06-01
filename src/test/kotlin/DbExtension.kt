@@ -6,6 +6,7 @@ import com.neelkamath.omniChatBackend.db.subscribeToMessageBroker
 import com.neelkamath.omniChatBackend.db.tables.Users
 import com.neelkamath.omniChatBackend.db.tables.read
 import com.neelkamath.omniChatBackend.db.wipeDb
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -24,6 +25,6 @@ class DbExtension : BeforeAllCallback, BeforeEachCallback {
         suite got run. It's for these reasons we wipe the DB in the <beforeEach()> callback instead.
          */
         wipeDb()
-        userIdList.forEach(::deleteUser)
+        for (userId in userIdList) runBlocking { deleteUser(userId) }
     }
 }

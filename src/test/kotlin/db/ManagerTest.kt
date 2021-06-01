@@ -19,36 +19,38 @@ class ManagerTest {
     @Nested
     inner class DeleteUser {
         @Test
-        fun `An exception must be thrown when the admin of a nonempty group chat deletes their data`() {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            GroupChats.create(setOf(adminId), setOf(userId))
-            assertFailsWith<IllegalArgumentException> { deleteUser(adminId) }
-        }
+        fun `An exception must be thrown when the admin of a nonempty group chat deletes their data`(): Unit =
+            runBlocking {
+                val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+                GroupChats.create(setOf(adminId), setOf(userId))
+                assertFailsWith<IllegalArgumentException> { deleteUser(adminId) }
+            }
 
         @Test
         fun `The deleted user must be unsubscribed via the new group chats broker`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = groupChatsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
+                val subscriber = groupChatsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
         }
 
         @Test
-        fun `A private chat must be deleted for the other user if the user deleted it before deleting their data`() {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            PrivateChatDeletions.create(chatId, user1Id)
-            deleteUser(user1Id)
-            assertEquals(0, PrivateChats.count())
-        }
+        fun `A private chat must be deleted for the other user if the user deleted it before deleting their data`(): Unit =
+            runBlocking {
+                val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+                val chatId = PrivateChats.create(user1Id, user2Id)
+                PrivateChatDeletions.create(chatId, user1Id)
+                deleteUser(user1Id)
+                assertEquals(0, PrivateChats.count())
+            }
 
         @Test
         fun `The deleted user must be unsubscribed from contact updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
+                val subscriber = accountsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -61,7 +63,7 @@ class ManagerTest {
                 GroupChats.create(setOf(adminId), setOf(userId))
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
                 val expected = listOf(listOf(userId))
@@ -75,7 +77,7 @@ class ManagerTest {
         fun `The user must be unsubscribed from message updates`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = messagesNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -88,7 +90,7 @@ class ManagerTest {
             PrivateChats.create(userId, chatSharerId)
             awaitBrokering()
             val (contactSubscriber, chatSharerSubscriber) = setOf(contactId, chatSharerId)
-                .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { accountsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             deleteUser(userId)
             awaitBrokering()
             setOf(contactSubscriber, chatSharerSubscriber).forEach { subscriber ->

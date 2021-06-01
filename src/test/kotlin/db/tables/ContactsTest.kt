@@ -26,7 +26,7 @@ class ContactsTest {
         @Test
         fun `Saving a contact must notify subscribers`(): Unit = runBlocking {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
-            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).flowable.subscribeWith(TestSubscriber())
             assertTrue(Contacts.create(ownerId, contactId))
             awaitBrokering()
             val actual = subscriber.values().map { (it as NewContact).id }
@@ -38,7 +38,7 @@ class ContactsTest {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
             Contacts.create(ownerId, contactId)
             awaitBrokering()
-            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).flowable.subscribeWith(TestSubscriber())
             assertFalse(Contacts.create(ownerId, contactId))
             awaitBrokering()
             subscriber.assertNoValues()
@@ -145,7 +145,7 @@ class ContactsTest {
             val (ownerId, contactId) = createVerifiedUsers(2).map { it.userId }
             Contacts.create(ownerId, contactId)
             awaitBrokering()
-            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(ownerId)).flowable.subscribeWith(TestSubscriber())
             assertTrue(Contacts.delete(ownerId, contactId))
             awaitBrokering()
             val actual = subscriber.values().map { (it as DeletedContact).getUserId() }
@@ -155,7 +155,7 @@ class ContactsTest {
         @Test
         fun `Deleting a non-existing contact mustn't notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
-            val subscriber = accountsNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
             assertFalse(Contacts.delete(userId, contactUserId = -1))
             awaitBrokering()
             subscriber.assertNoValues()
@@ -170,7 +170,7 @@ class ContactsTest {
             Contacts.create(ownerId, contactId)
             awaitBrokering()
             val (ownerSubscriber, contactSubscriber, userSubscriber) = setOf(ownerId, contactId, userId)
-                .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                .map { accountsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             Contacts.deleteUserEntries(contactId)
             awaitBrokering()
             val actual = ownerSubscriber.values().map { (it as DeletedContact).getUserId() }

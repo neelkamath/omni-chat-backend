@@ -14,6 +14,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Subscription.subscribeToChatOnlineStatuses`
 - `Subscription.subscribeToChatTypingStatuses`
 - `Subscription.subscribeToChatAccounts`
+- `Subscription.subscribeToGroupChatMetadata`
 
 ## [0.19.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.19.0) - 2021-05-21
 

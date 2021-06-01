@@ -31,7 +31,7 @@ class StargazersTest {
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
                 val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
-                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -153,7 +153,7 @@ class StargazersTest {
                 listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
                 awaitBrokering()
                 val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.deleteStar(messageId)
                 awaitBrokering()
                 listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
@@ -176,7 +176,7 @@ class StargazersTest {
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
                 val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
-                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.deleteUserStar(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -192,7 +192,7 @@ class StargazersTest {
                 val chatId = GroupChats.create(setOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 Stargazers.deleteUserStar(adminId, messageId)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -203,7 +203,7 @@ class StargazersTest {
     @Nested
     inner class DeleteUserChat {
         @Test
-        fun `Every message the user starred in the chat must be unstarred`() {
+        fun `Every message the user starred in the chat must be unstarred`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
@@ -220,7 +220,11 @@ class StargazersTest {
             Stargazers.create(user1Id, messageId)
             awaitBrokering()
             val (user1Subscriber, user2Subscriber) =
-                listOf(user1Id, user2Id).map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                listOf(user1Id, user2Id).map {
+                    messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(
+                        TestSubscriber()
+                    )
+                }
             GroupChatUsers.removeUsers(chatId, user1Id)
             awaitBrokering()
             val actual = user1Subscriber.values().map { (it as UnstarredChat).getChatId() }

@@ -138,7 +138,7 @@ fun readChatSharers(userId: Int): Set<Int> =
  * - Deletes [TypingStatuses] the [userId] created.
  * - The [userId] will be [Notifier.unsubscribe]d via [typingStatusesNotifier].
  */
-fun deleteUser(userId: Int) {
+suspend fun deleteUser(userId: Int) {
     require(GroupChatUsers.canUserLeave(userId)) {
         """
         The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
@@ -153,9 +153,9 @@ fun deleteUser(userId: Int) {
     Messages.deleteUserMessages(userId)
     BlockedUsers.deleteUser(userId)
     Users.delete(userId)
-    groupChatsNotifier.unsubscribe { it.userId == userId }
-    accountsNotifier.unsubscribe { it.userId == userId }
-    typingStatusesNotifier.unsubscribe { it.userId == userId }
-    messagesNotifier.unsubscribe { it.userId == userId }
-    onlineStatusesNotifier.unsubscribe { it.userId == userId }
+    groupChatsNotifier.unsubscribe { it.data.userId == userId }
+    accountsNotifier.unsubscribe { it.data.userId == userId }
+    typingStatusesNotifier.unsubscribe { it.data.userId == userId }
+    messagesNotifier.unsubscribe { it.data.userId == userId }
+    onlineStatusesNotifier.unsubscribe { it.data.userId == userId }
 }

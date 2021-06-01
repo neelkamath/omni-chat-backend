@@ -129,7 +129,7 @@ object GroupChatUsers : Table() {
      * [chatOnlineStatusesNotifier], [chatAccountsNotifier], [groupChatMetadataNotifier], and
      * [chatTypingStatusesNotifier] will be unsubscribed if the chat gets deleted.
      */
-    fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
+    suspend fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         require(canUsersLeave(chatId, userIdList)) {
             "The users ($userIdList) cannot leave because the chat needs an admin."
         }
@@ -151,14 +151,14 @@ object GroupChatUsers : Table() {
                 chatAccountsNotifier,
                 groupChatMetadataNotifier,
             ).forEach { notifier ->
-                notifier.unsubscribe { it.chatId == chatId }
+                notifier.unsubscribe { it.data.chatId == chatId }
             }
             return true
         }
         return false
     }
 
-    fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toSet())
+    suspend fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toSet())
 
     /**
      * Whether the [userId] can leave every chat they're in. Returns `false` only if they're the last admin of a chat
@@ -167,7 +167,7 @@ object GroupChatUsers : Table() {
     fun canUserLeave(userId: Int): Boolean = readChatIdList(userId).all { canUsersLeave(it, userId) }
 
     /** Calls [removeUsers] on the [userId] for every chat they're in. The [userId] needn't exist. */
-    fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
+    suspend fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
     /**
      * Returns the chat IDs of every chat the [userId] is in, or an empty [LinkedHashSet] if the [userId] doesn't exist.

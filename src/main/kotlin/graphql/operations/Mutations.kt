@@ -12,6 +12,7 @@ import com.neelkamath.omniChatBackend.graphql.engine.parseArgument
 import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
 import com.neelkamath.omniChatBackend.graphql.routing.*
 import graphql.schema.DataFetchingEnvironment
+import kotlinx.coroutines.runBlocking
 import java.util.*
 
 fun verifyEmailAddress(env: DataFetchingEnvironment): VerifyEmailAddressResult? {
@@ -160,7 +161,7 @@ fun createPrivateChat(env: DataFetchingEnvironment): CreatePrivateChatResult {
 fun deleteAccount(env: DataFetchingEnvironment): CannotDeleteAccount? {
     env.verifyAuth()
     if (!GroupChatUsers.canUserLeave(env.userId!!)) return CannotDeleteAccount()
-    deleteUser(env.userId!!)
+    runBlocking { deleteUser(env.userId!!) }
     return null
 }
 
@@ -281,7 +282,7 @@ fun removeGroupChatUsers(env: DataFetchingEnvironment): CannotLeaveChat? {
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
     val userIdList = env.getArgument<List<Int>>("userIdList").toSet()
     try {
-        GroupChatUsers.removeUsers(chatId, userIdList)
+        runBlocking { GroupChatUsers.removeUsers(chatId, userIdList) }
     } catch (_: IllegalArgumentException) {
         return CannotLeaveChat
     }
@@ -293,7 +294,7 @@ fun leaveGroupChat(env: DataFetchingEnvironment): LeaveGroupChatResult? {
     val chatId = env.getArgument<Int>("chatId")
     if (chatId !in GroupChatUsers.readChatIdList(env.userId!!)) return InvalidChatId
     if (!GroupChatUsers.canUsersLeave(chatId, env.userId!!)) return CannotLeaveChat
-    GroupChatUsers.removeUsers(chatId, env.userId!!)
+    runBlocking { GroupChatUsers.removeUsers(chatId, env.userId!!) }
     return null
 }
 

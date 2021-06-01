@@ -28,7 +28,7 @@ class PollMessagesTest {
                 val messageId = Messages.message(adminId, chatId, poll)
                 awaitBrokering()
                 val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
-                    .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 PollMessages.setVote(adminId, messageId, option1, vote = true)
                 awaitBrokering()
                 val actual = adminSubscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -45,7 +45,7 @@ class PollMessagesTest {
             val poll = PollInput(MessageText("Title"), listOf(option, MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             awaitBrokering()
-            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             PollMessages.setVote(adminId, messageId, option, vote = true)
             awaitBrokering()
             val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }
