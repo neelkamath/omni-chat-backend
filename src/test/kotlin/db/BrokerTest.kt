@@ -78,6 +78,21 @@ class BrokerTest {
 @ExtendWith(DbExtension::class)
 class NotifierTest {
     @Nested
+    inner class NotifySubscriber {
+        @Test
+        fun `Only the specified client must receive the notification`(): Unit = runBlocking {
+            val adminId = createVerifiedUsers(1).first().userId
+            val (flowable, id) = accountsNotifier.subscribe(UserId(adminId))
+            val subscriber1 = flowable.subscribeWith(TestSubscriber())
+            val subscriber2 = accountsNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
+            accountsNotifier.notifySubscriber(UpdatedAccount(adminId), id)
+            awaitBrokering()
+            subscriber1.assertValueCount(1)
+            subscriber2.assertNoValues()
+        }
+    }
+
+    @Nested
     inner class Notify {
         @Test
         fun `Clients who have subscribed with a matching asset must be notified`() {
