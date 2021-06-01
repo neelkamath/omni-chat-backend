@@ -628,9 +628,18 @@ type Subscription {
     Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscriber has a chat
     with. The subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatAccounts` for unauthenticated users
+    such as an accountless user viewing a public chat.
     """
     subscribeToAccounts: AccountsSubscription!
+
+    """
+    Yields updates on the accounts of users in the `chatId`.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToChatAccounts(chatId: Int!): ChatAccountsSubscription!
 
     """
     Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
@@ -699,6 +708,13 @@ union AccountsSubscription =
     | BlockedAccount
     | UnblockedAccount
     | DeletedAccount
+
+union ChatAccountsSubscription =
+    | CreatedSubscription
+    | UpdatedAccount
+    | UpdatedProfilePic
+    | DeletedAccount
+    | InvalidChatId
 
 """The `userId` who deleted their account."""
 type DeletedAccount {

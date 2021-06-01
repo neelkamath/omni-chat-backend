@@ -4,6 +4,8 @@ import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedAccount
+import com.neelkamath.omniChatBackend.graphql.routing.AccountUpdate
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.delay
@@ -27,7 +29,19 @@ class BrokerTest {
     @Nested
     inner class NegotiateUserUpdate {
         @Test
-        fun `Updating an account must only notify non-deleted chat sharers, contact owners, and the updater`(): Unit =
+        fun `Unauthenticated subscribers must receive the update`(): Unit = runBlocking {
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val subscriber = chatAccountsNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
+            val emailAddress = "new@example.com"
+            Users.update(adminId, AccountUpdate(emailAddress = emailAddress))
+            awaitBrokering()
+            val actual = subscriber.values().map { (it as UpdatedAccount).getEmailAddress() }
+            assertEquals(listOf(emailAddress), actual)
+        }
+
+        @Test
+        fun `Updating an account must only notify non-deleted chat sharers, contact owners, and the updater for non-public chats`(): Unit =
             runBlocking {
                 val (userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer) =
                     createVerifiedUsers(5).map { it.userId }

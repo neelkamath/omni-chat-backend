@@ -18,6 +18,9 @@ fun subscribeToMessages(env: DataFetchingEnvironment): Publisher<MessagesSubscri
 fun subscribeToChatMessages(env: DataFetchingEnvironment): Publisher<ChatMessagesSubscription> =
     subscribeToChat(env, chatMessagesNotifier)
 
+fun subscribeToChatAccounts(env: DataFetchingEnvironment): Publisher<ChatAccountsSubscription> =
+    subscribeToChat(env, chatAccountsNotifier)
+
 fun subscribeToAccounts(env: DataFetchingEnvironment): Publisher<AccountsSubscription> {
     env.verifyAuth()
     return accountsNotifier.subscribe(UserId(env.userId!!))

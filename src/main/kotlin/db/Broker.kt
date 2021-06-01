@@ -1,6 +1,8 @@
 package com.neelkamath.omniChatBackend.db
 
 import com.neelkamath.omniChatBackend.db.tables.Contacts
+import com.neelkamath.omniChatBackend.db.tables.GroupChatUsers
+import com.neelkamath.omniChatBackend.db.tables.GroupChats
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
 import com.neelkamath.omniChatBackend.objectMapper
 import io.reactivex.rxjava3.core.BackpressureStrategy
@@ -26,6 +28,7 @@ fun subscribeToMessageBroker() {
     brokerChatMessages()
     brokerAccounts()
     brokerGroupChats()
+    brokerChatAccounts()
     brokerChatTypingStatuses()
     brokerTypingStatuses()
     brokerOnlineStatuses()
@@ -56,6 +59,15 @@ private fun brokerAccounts() {
         redisson.getTopic(Topic.ACCOUNTS.toString()).addListener(List::class.java) { _, message ->
             @Suppress("UNCHECKED_CAST")
             accountsNotifier.notify(message as List<Notification<AccountsSubscription, UserId>>)
+        }
+}
+
+/** [Notifier.notify]s [Notifier.publish]ed updates for [chatAccountsNotifier]. This is safe to call multiple times. */
+private fun brokerChatAccounts() {
+    if (redisson.getTopic(Topic.CHAT_ACCOUNTS.toString()).countListeners() == 0)
+        redisson.getTopic(Topic.CHAT_ACCOUNTS.toString()).addListener(List::class.java) { _, message ->
+            @Suppress("UNCHECKED_CAST")
+            chatAccountsNotifier.notify(message as List<Notification<ChatAccountsSubscription, ChatId>>)
         }
 }
 
@@ -114,6 +126,9 @@ enum class Topic {
     },
     ACCOUNTS {
         override fun toString() = "accounts"
+    },
+    CHAT_ACCOUNTS {
+        override fun toString() = "chatAccounts"
     },
     GROUP_CHATS {
         override fun toString() = "groupChats"
@@ -204,6 +219,8 @@ val chatMessagesNotifier = Notifier<ChatMessagesSubscription, ChatId>(Topic.CHAT
 /** @see negotiateUserUpdate */
 val accountsNotifier = Notifier<AccountsSubscription, UserId>(Topic.ACCOUNTS)
 
+val chatAccountsNotifier = Notifier<ChatAccountsSubscription, ChatId>(Topic.CHAT_ACCOUNTS)
+
 val groupChatsNotifier = Notifier<GroupChatsSubscription, UserId>(Topic.GROUP_CHATS)
 
 val typingStatusesNotifier = Notifier<TypingStatusesSubscription, UserId>(Topic.TYPING_STATUSES)
@@ -215,11 +232,13 @@ val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription, UserId>(Topic.
 val chatOnlineStatusesNotifier = Notifier<ChatOnlineStatusesSubscription, ChatId>(Topic.CHAT_ONLINE_STATUSES)
 
 /**
- * Notifies subscribers of the updated [userId] via [accountsNotifier]. If [isProfilePic], an [UpdatedProfilePic] will
- * be sent, and an [UpdatedAccount] otherwise.
+ * Notifies subscribers of the updated [userId] via [accountsNotifier] and [chatAccountsNotifier]. If [isProfilePic], an
+ * [UpdatedProfilePic] will be sent, and an [UpdatedAccount] otherwise.
  */
 fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
     val subscribers = Contacts.readOwnerUserIdList(userId).plus(userId).plus(readChatSharers(userId)).map(::UserId)
     val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount(userId)
     accountsNotifier.publish(update, subscribers)
+    val chatIdList = GroupChatUsers.readChatIdList(userId).filter(GroupChats::isExistingPublicChat).map(::ChatId)
+    chatAccountsNotifier.publish(update, chatIdList)
 }

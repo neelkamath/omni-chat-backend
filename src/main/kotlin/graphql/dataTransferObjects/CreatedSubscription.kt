@@ -5,6 +5,7 @@ import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 object CreatedSubscription :
     ChatOnlineStatusesSubscription,
     ChatTypingStatusesSubscription,
+    ChatAccountsSubscription,
     ChatMessagesSubscription,
     MessagesSubscription,
     AccountsSubscription,
