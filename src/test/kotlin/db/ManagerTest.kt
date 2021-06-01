@@ -21,7 +21,7 @@ class ManagerTest {
         @Test
         fun `An exception must be thrown when the admin of a nonempty group chat deletes their data`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            GroupChats.create(listOf(adminId), listOf(userId))
+            GroupChats.create(setOf(adminId), setOf(userId))
             assertFailsWith<IllegalArgumentException> { deleteUser(adminId) }
         }
 
@@ -58,9 +58,9 @@ class ManagerTest {
         fun `Only the deleted subscriber must be unsubscribed from updated chats`() {
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-                GroupChats.create(listOf(adminId), listOf(userId))
+                GroupChats.create(setOf(adminId), setOf(userId))
                 awaitBrokering()
-                val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
+                val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
                     .map { groupChatsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
@@ -87,11 +87,11 @@ class ManagerTest {
             Contacts.create(contactId, userId)
             PrivateChats.create(userId, chatSharerId)
             awaitBrokering()
-            val (contactSubscriber, chatSharerSubscriber) = listOf(contactId, chatSharerId)
+            val (contactSubscriber, chatSharerSubscriber) = setOf(contactId, chatSharerId)
                 .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             deleteUser(userId)
             awaitBrokering()
-            listOf(contactSubscriber, chatSharerSubscriber).forEach { subscriber ->
+            setOf(contactSubscriber, chatSharerSubscriber).forEach { subscriber ->
                 val actual = subscriber.values().map { if (it is DeletedAccount) it.getUserId() else null }
                 assertContains(actual, userId)
             }
@@ -103,7 +103,7 @@ class ManagerTest {
         @Test
         fun `Users must be searched case-insensitively`() {
             val (blocker, blocked1, blocked2) = createVerifiedUsers(3)
-            listOf(blocked1, blocked2).forEach { BlockedUsers.create(blocker.userId, it.userId) }
+            setOf(blocked1, blocked2).forEach { BlockedUsers.create(blocker.userId, it.userId) }
             val actual =
                 BlockedUsers.search(blocker.userId, query = blocked1.username.value.uppercase(Locale.getDefault()))
             assertEquals(linkedHashSetOf(blocked1.userId), actual)

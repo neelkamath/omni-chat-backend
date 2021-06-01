@@ -22,7 +22,7 @@ class PollMessagesTest {
         fun `Setting a vote must only notify (authenticated) users in the chat`() {
             runBlocking {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.userId }
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val option1 = MessageText("option 1")
                 val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
                 val messageId = Messages.message(adminId, chatId, poll)
@@ -40,7 +40,7 @@ class PollMessagesTest {
         @Test
         fun `Setting a vote must notify unauthenticated users in a public chat`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val option = MessageText("Option 1")
             val poll = PollInput(MessageText("Title"), listOf(option, MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)

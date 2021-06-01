@@ -67,7 +67,7 @@ fun setUpDb() {
  */
 fun searchUsers(userIdList: LinkedHashSet<Int>, query: String): LinkedHashSet<Int> = userIdList
     .filter { userId ->
-        listOf(
+        setOf(
             Users.readUsername(userId).value,
             Users.readFirstName(userId).value,
             Users.readLastName(userId).value,

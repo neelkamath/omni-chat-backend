@@ -49,6 +49,11 @@ fun routeGraphQlSubscriptions(context: Routing) {
         GraphQlSubscription(path = "accounts-subscription", "subscribeToAccounts", isAuthenticated = true),
         GraphQlSubscription(path = "chat-accounts-subscription", "subscribeToChatAccounts", isAuthenticated = false),
         GraphQlSubscription(path = "group-chats-subscription", "subscribeToGroupChats", isAuthenticated = true),
+        GraphQlSubscription(
+            path = "group-chat-metadata-subscription",
+            "subscribeToGroupChatMetadata",
+            isAuthenticated = false,
+        ),
     ).forEach { routeSubscription(context, it) }
 }
 

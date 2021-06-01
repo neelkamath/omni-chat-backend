@@ -19,7 +19,7 @@ class TypingStatusesTest {
         @Test
         fun `Unauthenticated subscribers must be notified of the status`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val subscriber = chatTypingStatusesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
             TypingStatuses.update(chatId, adminId, isTyping = true)
             awaitBrokering()
@@ -32,12 +32,12 @@ class TypingStatusesTest {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
-                val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
+                val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
                     .map { typingStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 val isTyping = true
                 TypingStatuses.update(chatId, user1Id, isTyping)
                 awaitBrokering()
-                listOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
+                setOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
                     val values = subscriber.values().map { it as TypingStatus }
                     assertEquals(listOf(chatId), values.map { it.getChatId() })
                     assertEquals(listOf(user1Id), values.map { it.getUserId() })
@@ -50,7 +50,7 @@ class TypingStatusesTest {
         fun `Given a typing user, when their status gets updated to say they're still typing, then their DB entry must remain, and no notifications must be sent`(): Unit =
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val update = { TypingStatuses.update(chatId, adminId, isTyping = true) }
                 update()
                 awaitBrokering()
@@ -65,7 +65,7 @@ class TypingStatusesTest {
         fun `Given a typing user, when their status gets updated to say they're no longer typing, then their DB entry must get deleted, and a notification must get sent`(): Unit =
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
                 val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
@@ -81,7 +81,7 @@ class TypingStatusesTest {
         fun `Given a user who isn't typing, when their status gets updated to say they're typing, then a DB must get created, and a notification must get sent`(): Unit =
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = true)
                 awaitBrokering()
@@ -95,7 +95,7 @@ class TypingStatusesTest {
         fun `Given a user who isn't typing, when their status gets updated to say they're not typing, then a DB entry musn't get created, and a notification mustn't get sent`() {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val subscriber = typingStatusesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 TypingStatuses.update(chatId, adminId, isTyping = false)
                 awaitBrokering()

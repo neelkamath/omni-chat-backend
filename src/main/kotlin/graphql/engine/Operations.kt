@@ -75,6 +75,7 @@ private fun wireSubscription(builder: TypeRuntimeWiring.Builder): TypeRuntimeWir
     .dataFetcher("subscribeToChatMessages", ::subscribeToChatMessages)
     .dataFetcher("subscribeToChatAccounts", ::subscribeToChatAccounts)
     .dataFetcher("subscribeToAccounts", ::subscribeToAccounts)
+    .dataFetcher("subscribeToGroupChatMetadata", ::subscribeToGroupChatMetadata)
     .dataFetcher("subscribeToGroupChats", ::subscribeToGroupChats)
     .dataFetcher("subscribeToTypingStatuses", ::subscribeToTypingStatuses)
     .dataFetcher("subscribeToChatTypingStatuses", ::subscribeToChatTypingStatuses)

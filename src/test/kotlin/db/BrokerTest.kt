@@ -31,7 +31,7 @@ class BrokerTest {
         @Test
         fun `Unauthenticated subscribers must receive the update`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val subscriber = chatAccountsNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
             val emailAddress = "new@example.com"
             Users.update(adminId, AccountUpdate(emailAddress = emailAddress))
@@ -49,7 +49,7 @@ class BrokerTest {
                 val chatId = PrivateChats.create(userId, deletedPrivateChatSharer)
                 PrivateChatDeletions.create(chatId, userId)
                 PrivateChats.create(userId, privateChatSharer)
-                GroupChats.create(adminIdList = listOf(userId), userIdList = listOf(groupChatSharer))
+                GroupChats.create(adminIdList = setOf(userId), userIdList = listOf(groupChatSharer))
                 awaitBrokering()
                 val (
                     userSubscriber,
@@ -57,12 +57,12 @@ class BrokerTest {
                     deletedPrivateChatSharerSubscriber,
                     privateChatSharerSubscriber,
                     groupChatSharerSubscriber,
-                ) = listOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
+                ) = setOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
                     .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 negotiateUserUpdate(userId, isProfilePic = false)
                 awaitBrokering()
                 deletedPrivateChatSharerSubscriber.assertNoValues()
-                listOf(
+                setOf(
                     userSubscriber,
                     contactOwnerSubscriber,
                     privateChatSharerSubscriber,
@@ -84,14 +84,14 @@ class NotifierTest {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val notifier = Notifier<String, UserId>(Topic.MESSAGES)
-                val (subscriber1, subscriber2, subscriber3, subscriber4) = listOf(user1Id, user1Id, user2Id, user3Id)
+                val (subscriber1, subscriber2, subscriber3, subscriber4) = setOf(user1Id, user1Id, user2Id, user3Id)
                     .map { notifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 val update = "update"
                 val user1Notification = Notification(update, UserId(user1Id))
                 val user2Notification = Notification(update, UserId(user2Id))
                 notifier.notify(listOf(user1Notification, user2Notification))
                 awaitBrokering()
-                listOf(subscriber1, subscriber2, subscriber3).forEach { it.assertValue(update) }
+                setOf(subscriber1, subscriber2, subscriber3).forEach { it.assertValue(update) }
                 subscriber4.assertNoValues()
             }
         }

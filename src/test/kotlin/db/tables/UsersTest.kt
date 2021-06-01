@@ -73,7 +73,7 @@ class UsersTest {
         @Test
         fun `Changing the online status must notify unauthenticated users`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val subscriber = chatOnlineStatusesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
             Users.setOnlineStatus(adminId, isOnline = true)
             awaitBrokering()
@@ -100,13 +100,13 @@ class UsersTest {
                 Contacts.create(contactOwnerId, updaterId)
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
-                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
+                    setOf(updaterId, contactOwnerId, privateChatSharerId, userId)
                         .map { onlineStatusesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 val status = !Users.isOnline(updaterId)
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
-                listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach { subscriber ->
+                setOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
+                setOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach { subscriber ->
                     val actual = subscriber.values().map { (it as OnlineStatus).getUserId() }
                     assertEquals(listOf(updaterId), actual)
                 }

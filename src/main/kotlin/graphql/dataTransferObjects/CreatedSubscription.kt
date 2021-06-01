@@ -6,6 +6,7 @@ object CreatedSubscription :
     ChatOnlineStatusesSubscription,
     ChatTypingStatusesSubscription,
     ChatAccountsSubscription,
+    GroupChatMetadataSubscription,
     ChatMessagesSubscription,
     MessagesSubscription,
     AccountsSubscription,

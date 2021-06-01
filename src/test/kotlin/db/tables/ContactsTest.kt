@@ -169,13 +169,13 @@ class ContactsTest {
             val (ownerId, contactId, userId) = createVerifiedUsers(3).map { it.userId }
             Contacts.create(ownerId, contactId)
             awaitBrokering()
-            val (ownerSubscriber, contactSubscriber, userSubscriber) = listOf(ownerId, contactId, userId)
+            val (ownerSubscriber, contactSubscriber, userSubscriber) = setOf(ownerId, contactId, userId)
                 .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             Contacts.deleteUserEntries(contactId)
             awaitBrokering()
             val actual = ownerSubscriber.values().map { (it as DeletedContact).getUserId() }
             assertEquals(listOf(contactId), actual)
-            listOf(contactSubscriber, userSubscriber).forEach { it.assertNoValues() }
+            setOf(contactSubscriber, userSubscriber).forEach { it.assertNoValues() }
         }
     }
 }

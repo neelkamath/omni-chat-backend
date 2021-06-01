@@ -28,7 +28,7 @@ class BareGroupChatTest {
         fun `Users must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
             val userIdList = createVerifiedUsers(10).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), userIdList)
+            val chatId = GroupChats.create(setOf(adminId), userIdList)
             val first = 3
             val index = 4
             val data = executeGraphQlViaEngine(

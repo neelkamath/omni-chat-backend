@@ -6,6 +6,7 @@ object InvalidChatId :
     ChatOnlineStatusesSubscription,
     ChatTypingStatusesSubscription,
     ChatAccountsSubscription,
+    GroupChatMetadataSubscription,
     CreateTextMessageResult,
     ForwardMessageResult,
     SearchChatMessagesResult,

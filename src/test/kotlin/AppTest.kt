@@ -28,6 +28,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(BareGroupChatDeserializer)
     .register(AccountsSubscriptionDeserializer)
     .register(ChatAccountsSubscriptionDeserializer)
+    .register(GroupChatMetadataSubscriptionDeserializer)
     .register(GroupChatsSubscriptionDeserializer)
     .register(AccountDataDeserializer)
     .register(MessageDeserializer)
@@ -203,6 +204,21 @@ private object GroupChatsSubscriptionDeserializer : JsonDeserializer<GroupChatsS
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
             "ExitedUsers" -> ExitedUsers::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object GroupChatMetadataSubscriptionDeserializer : JsonDeserializer<GroupChatMetadataSubscription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatMetadataSubscription {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "CreatedSubscription" -> CreatedSubscription::class
+            "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
+            "UpdatedGroupChat" -> UpdatedGroupChat::class
+            "ExitedUsers" -> ExitedUsers::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -698,7 +714,7 @@ class EncodingTest {
     @Test
     fun `A message must allow using emoji and multiple languages`() {
         val admin = createVerifiedUsers(1).first()
-        val chatId = GroupChats.create(listOf(admin.userId))
+        val chatId = GroupChats.create(setOf(admin.userId))
         val message = MessageText("Emoji: \uD83D\uDCDA Japanese: 日 Chinese: 传/傳 Kannada: ಘ")
         executeCreateTextMessage(admin.accessToken, chatId, message)
         val messageId = Messages.readGroupChat(chatId).first()
@@ -742,7 +758,7 @@ class SpecComplianceTest {
     @Test
     fun `'null' fields in the data key must be returned`() {
         val admin = createVerifiedUsers(1).first()
-        val chatId = GroupChats.create(listOf(admin.userId))
+        val chatId = GroupChats.create(setOf(admin.userId))
         val messageId = Messages.message(admin.userId, chatId)
         val response = readGraphQlHttpResponse(
             """

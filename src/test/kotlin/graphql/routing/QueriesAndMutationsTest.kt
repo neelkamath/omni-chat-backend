@@ -114,7 +114,7 @@ class QueriesAndMutationsTest {
         @Test
         fun `An HTTP status code of 401 must be received when supplying the token of a user who lacks permissions`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId), listOf(user.userId))
+            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
             val response = executeGraphQlViaHttp(
                 """
                 mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {

@@ -20,7 +20,7 @@ class MessageTest {
     inner class GetHasStar {
         private fun assertHasStar(hasStar: Boolean) {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             val data = executeGraphQlViaEngine(

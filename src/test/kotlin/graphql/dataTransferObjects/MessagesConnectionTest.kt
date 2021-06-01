@@ -64,7 +64,7 @@ class MessagesConnectionTest {
         @Test
         fun `If there are zero items, the page info must indicate such`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val (startCursor, endCursor) = getPageInfo(adminId, chatId)
             assertNull(startCursor)
             assertNull(endCursor)
@@ -73,7 +73,7 @@ class MessagesConnectionTest {
         @Test
         fun `If there's one item, the page info must indicate such`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             val (startCursor, endCursor) = getPageInfo(adminId, chatId)
             assertEquals(messageId, startCursor)

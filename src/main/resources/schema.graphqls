@@ -645,9 +645,18 @@ type Subscription {
     Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
     subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToGroupChatMetadata` for unauthenticated
+    users such as an accountless user viewing a public chat.
     """
     subscribeToGroupChats: GroupChatsSubscription!
+
+    """
+    Yields metadata updates for the `chatId`.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToGroupChatMetadata(chatId: Int!): GroupChatMetadataSubscription!
 }
 
 union MessagesSubscription =
@@ -732,6 +741,13 @@ A `GroupChatId` is the ID of the chat the user was added to.
 If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
 """
 union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUsers
+
+union GroupChatMetadataSubscription =
+    | CreatedSubscription
+    | UpdatedGroupChatPic
+    | UpdatedGroupChat
+    | ExitedUsers
+    | InvalidChatId
 
 """The `chatId` of the group chat whose pic was updated."""
 type UpdatedGroupChatPic {

@@ -19,7 +19,7 @@ class MessageStatusesTest {
         @Test
         fun `Saving a duplicate message status must throw an exception`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             val messageId = Messages.message(adminId, chatId)
             val createStatus = { MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED) }
             createStatus()
@@ -73,11 +73,11 @@ class MessageStatusesTest {
                 PrivateChats.create(user2Id, user3Id)
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
+                val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
                     .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
                 MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
-                listOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
+                setOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
                     val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }
                     assertEquals(listOf(messageId), actual)
                 }
@@ -88,7 +88,7 @@ class MessageStatusesTest {
         @Test
         fun `Unauthenticated subscribers must be notified of updated statuses`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             awaitBrokering()
             val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())

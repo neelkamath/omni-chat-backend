@@ -47,7 +47,7 @@ class StargazersTest {
     /** Creates the number of [messages] in the [StarredChat.messageIdList]. */
     private fun createStarredChat(messages: Int = 10): StarredChat {
         val adminId = createVerifiedUsers(1).first().userId
-        val chatId = GroupChats.create(listOf(adminId))
+        val chatId = GroupChats.create(setOf(adminId))
         repeat(messages) {
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
@@ -148,7 +148,7 @@ class StargazersTest {
         fun `Deleting a message's stars must only notify its stargazers`() {
             runBlocking {
                 val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-                val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+                val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
                 val messageId = Messages.message(adminId, chatId)
                 listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
                 awaitBrokering()
@@ -189,7 +189,7 @@ class StargazersTest {
         fun `Deleting a non-existing star mustn't cause anything to happen`() {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
                 val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
@@ -205,7 +205,7 @@ class StargazersTest {
         @Test
         fun `Every message the user starred in the chat must be unstarred`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, userId)
@@ -215,7 +215,7 @@ class StargazersTest {
         @Test
         fun `Only the user must be notified of the unstarred messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(user1Id, messageId)
             awaitBrokering()

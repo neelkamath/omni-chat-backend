@@ -49,7 +49,7 @@ class StarredMessagesConnectionTest {
         @Test
         fun `If there's one item, the page info must indicate such`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             val (startCursor, endCursor) = getPageInfo(adminId)
@@ -60,7 +60,7 @@ class StarredMessagesConnectionTest {
         @Test
         fun `The start and end cursors must point to the first and last items respectively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map {
                 Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
             }

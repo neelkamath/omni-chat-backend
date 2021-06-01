@@ -39,7 +39,7 @@ data class Audio(
 
         /** Whether the [extension] is one of the supported audio types (i.e., MP3 and MP4). */
         fun isValidExtension(extension: String): Boolean =
-            listOf("mp3", "mp4", "m4a", "m4p", "m4b", "m4r", "m4v").any { it.equals(extension, ignoreCase = true) }
+            setOf("mp3", "mp4", "m4a", "m4p", "m4b", "m4r", "m4v").any { it.equals(extension, ignoreCase = true) }
     }
 }
 

@@ -27,7 +27,7 @@ class ActionMessagesTest {
         @Test
         fun `The message must be said to exist`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val message = ActionMessageInput(MessageText("text"), listOf(MessageText("action")))
             val messageId = Messages.message(adminId, chatId, message)
             assertTrue(ActionMessages.isExisting(messageId))
@@ -42,7 +42,7 @@ class ActionMessagesTest {
         @Test
         fun `Only the existing action must be said to exist`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val action = MessageText("Yes")
             val messageId = Messages.message(
                 adminId,
@@ -59,7 +59,7 @@ class ActionMessagesTest {
         @Test
         fun `The trigger must be said to be valid`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val action = MessageText("Yes")
             val messageId = Messages.message(
                 adminId,
@@ -72,7 +72,7 @@ class ActionMessagesTest {
         @Test
         fun `The trigger must be said to be invalid when the message is from a public chat the user isn't in`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val action = MessageText("Yes")
             val messageId = Messages.message(
                 adminId,
@@ -88,7 +88,7 @@ class ActionMessagesTest {
         @Test
         fun `Only the message's creator must be notified of the triggered action`(): Unit = runBlocking {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId), listOf(user.userId))
+            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
             val action = MessageText("Yes")
             val messageId = Messages.message(
                 admin.userId,
@@ -96,7 +96,7 @@ class ActionMessagesTest {
                 ActionMessageInput(MessageText("Do you code?"), listOf(action, MessageText("No"))),
             )
             awaitBrokering()
-            val (adminSubscriber, userSubscriber) = listOf(admin.userId, user.userId)
+            val (adminSubscriber, userSubscriber) = setOf(admin.userId, user.userId)
                 .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             ActionMessages.trigger(user.userId, messageId, action)
             awaitBrokering()

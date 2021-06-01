@@ -22,7 +22,7 @@ class SubscriptionsTest {
         private fun testSubscription(usesPublicChat: Boolean) {
             val adminId = createVerifiedUsers(1).first().userId
             val publicity = if (usesPublicChat) GroupChatPublicity.PUBLIC else GroupChatPublicity.NOT_INVITABLE
-            val chatId = GroupChats.create(listOf(adminId), publicity = publicity)
+            val chatId = GroupChats.create(setOf(adminId), publicity = publicity)
             val query = """
                 subscription SubscribeToChatMessages(${"$"}chatId: Int!) {
                     subscribeToChatMessages(chatId: ${"$"}chatId) {

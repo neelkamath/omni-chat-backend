@@ -17,7 +17,7 @@ class ActionMessageActionsTest {
         @Test
         fun `Actions must be read in the order they were created`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val actions = listOf(MessageText("action 1"), MessageText("action 2"))
             val messageId = Messages.message(adminId, chatId, ActionMessageInput(MessageText("text"), actions))
             assertEquals(actions.toLinkedHashSet(), ActionMessageActions.read(messageId))

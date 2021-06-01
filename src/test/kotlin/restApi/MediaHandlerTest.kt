@@ -100,7 +100,7 @@ class MediaHandlerTest {
         @Test
         fun `A message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val audio = Audio(ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(admin.accessToken, messageId)
@@ -117,7 +117,7 @@ class MediaHandlerTest {
         @Test
         fun `The message must be read from a public chat sans access token`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
             val audio = Audio(ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
@@ -128,7 +128,7 @@ class MediaHandlerTest {
         @Test
         fun `An access token must be required to read a message which isn't from a public chat`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val audio = Audio(ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
@@ -141,7 +141,7 @@ class MediaHandlerTest {
         @Test
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId), listOf(user.userId), isBroadcast = true)
+            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
             mapOf(admin to HttpStatusCode.NoContent, user to HttpStatusCode.Unauthorized).forEach {
                 val actual = postAudioMessage(it.key.accessToken, chatId, DummyFile("audio.mp3", 1)).status()
                 assertEquals(it.value, actual)
@@ -152,7 +152,7 @@ class MediaHandlerTest {
         @Test
         fun `The message must get created sans context`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val actual = postAudioMessage(admin.accessToken, chatId, DummyFile("audio.mp3", 1)).status()
             assertEquals(HttpStatusCode.NoContent, actual)
             val messageId = Messages.readIdList(chatId).first()
@@ -163,7 +163,7 @@ class MediaHandlerTest {
         @Test
         fun `The message must get created with a context`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val contextMessageId = Messages.message(admin.userId, chatId)
             val actual =
                 postAudioMessage(admin.accessToken, chatId, DummyFile("audio.mp3", 1), contextMessageId).status()
@@ -176,7 +176,7 @@ class MediaHandlerTest {
         @Test
         fun `Attempting to create a message in a chat the user isn't in must fail`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val response = postAudioMessage(user.accessToken, chatId, DummyFile("audio.mp3", 1))
             assertEquals(HttpStatusCode.BadRequest, response.status())
             val result = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!).reason
@@ -187,7 +187,7 @@ class MediaHandlerTest {
         @Test
         fun `Referencing a context message from another chat must fail`() {
             val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(listOf(admin.userId)) }
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
             val contextMessageId = Messages.message(admin.userId, chat1Id)
             val response = postAudioMessage(admin.accessToken, chat2Id, DummyFile("audio.mp3", 1), contextMessageId)
             assertEquals(HttpStatusCode.BadRequest, response.status())
@@ -211,7 +211,7 @@ class MediaHandlerTest {
 
         private fun assertInvalidFile(file: DummyFile) {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val response = postAudioMessage(admin.accessToken, chatId, file)
             assertEquals(HttpStatusCode.BadRequest, response.status())
             val result = testingObjectMapper.readValue<InvalidMediaMessage>(response.content!!).reason

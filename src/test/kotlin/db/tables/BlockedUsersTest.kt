@@ -43,7 +43,7 @@ class BlockedUsersTest {
         @Test
         fun `Blocking the user must notify only the blocker`(): Unit = runBlocking {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.userId }
-            val (blockerSubscriber, blockedSubscriber) = listOf(blockerId, blockedId)
+            val (blockerSubscriber, blockedSubscriber) = setOf(blockerId, blockedId)
                 .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             BlockedUsers.create(blockerId, blockedId)
             awaitBrokering()
@@ -115,7 +115,7 @@ class BlockedUsersTest {
             val first = 3
             val index = 1
             val pagination = ForwardPagination(first, after = blockedUserIdList.elementAt(index))
-            val expected = listOf(2, 4, 5).map(blockedUserIdList::elementAt).toLinkedHashSet()
+            val expected = setOf(2, 4, 5).map(blockedUserIdList::elementAt).toLinkedHashSet()
             val actual = BlockedUsers.readBlockedUserIdList(blockerUserId, pagination)
             assertEquals(expected, actual)
         }
@@ -155,7 +155,7 @@ class BlockedUsersTest {
             val (blockerId, blockedId) = createVerifiedUsers(2).map { it.userId }
             BlockedUsers.create(blockerId, blockedId)
             awaitBrokering()
-            val (blockerSubscriber, blockedSubscriber) = listOf(blockerId, blockedId)
+            val (blockerSubscriber, blockedSubscriber) = setOf(blockerId, blockedId)
                 .map { accountsNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
             assertTrue(BlockedUsers.delete(blockerId, blockedId))
             awaitBrokering()

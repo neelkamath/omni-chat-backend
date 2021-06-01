@@ -40,7 +40,7 @@ class PicMessageTest {
         @Test
         fun `A pic message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val pic = readPic("76px×57px.jpg")
             val messageId = Messages.message(admin.userId, chatId, CaptionedPic(pic, caption = null))
             val response = getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)
@@ -56,7 +56,7 @@ class PicMessageTest {
 
         private fun createMessage(): Pair<String, Int> {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val pic = CaptionedPic(readPic("1008px×756px.jpg"), caption = null)
             val messageId = Messages.message(admin.userId, chatId, pic)
             return admin.accessToken to messageId
@@ -82,7 +82,7 @@ class PicMessageTest {
         @Test
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId), listOf(user.userId), isBroadcast = true)
+            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
             mapOf(admin to HttpStatusCode.NoContent, user to HttpStatusCode.Unauthorized).forEach {
                 val actual = postPicMessage(it.key.accessToken, chatId, "76px×57px.jpg").status()
                 assertEquals(it.value, actual)
@@ -93,7 +93,7 @@ class PicMessageTest {
         @Test
         fun `The message must get created sans context`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val actual = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
             assertEquals(HttpStatusCode.NoContent, actual)
             val messageId = Messages.readIdList(chatId).first()
@@ -104,7 +104,7 @@ class PicMessageTest {
         @Test
         fun `The message must get created with a context`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val contextMessageId = Messages.message(admin.userId, chatId)
             val actual = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg", contextMessageId = contextMessageId)
                 .status()
@@ -117,7 +117,7 @@ class PicMessageTest {
         @Test
         fun `Attempting to create a message in a chat the user isn't in must fail`() {
             val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val response = postPicMessage(user.accessToken, chatId, "76px×57px.jpg")
             assertEquals(HttpStatusCode.BadRequest, response.status())
             val reason = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason
@@ -128,7 +128,7 @@ class PicMessageTest {
         @Test
         fun `Referencing a context message from another chat must fail`() {
             val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(listOf(admin.userId)) }
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
             val contextMessageId = Messages.message(admin.userId, chat1Id)
             val response = postPicMessage(
                 admin.accessToken,
@@ -158,7 +158,7 @@ class PicMessageTest {
         @Test
         fun `The message must get created with a caption`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val filename = "76px×57px.jpg"
             val caption = MessageText("c")
             val actual = postPicMessage(admin.accessToken, chatId, filename, caption.value).status()
@@ -174,7 +174,7 @@ class PicMessageTest {
             caption: String? = null,
         ) {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val response = postPicMessage(admin.accessToken, chatId, filename, caption)
             assertEquals(HttpStatusCode.BadRequest, response.status())
             val actual = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason

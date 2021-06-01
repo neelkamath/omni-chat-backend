@@ -94,7 +94,7 @@ class MessagesTest {
         @Test
         fun `Admins and users messaging in non-broadcast group chats mustn't be invalid broadcasts`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             assertFalse(Messages.isInvalidBroadcast(userId, chatId))
             assertFalse(Messages.isInvalidBroadcast(adminId, chatId))
         }
@@ -102,7 +102,7 @@ class MessagesTest {
         @Test
         fun `Only an admin must be able to message in a broadcast group chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId), isBroadcast = true)
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId), isBroadcast = true)
             assertFalse(Messages.isInvalidBroadcast(adminId, chatId))
             assertTrue(Messages.isInvalidBroadcast(userId, chatId))
         }
@@ -113,12 +113,12 @@ class MessagesTest {
         @Test
         fun `Subscribers must receive notifications of created messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
-            val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
+            val chatId = GroupChats.create(setOf(adminId), setOf(user1Id, user2Id))
+            val (adminSubscriber, user1Subscriber, user2Subscriber) = setOf(adminId, user1Id, user2Id)
                 .map { messagesNotifier.subscribe(UserId(it)).subscribeWith(TestSubscriber()) }
-            val messageIdList = (1..3).map { Messages.message(listOf(adminId, user1Id, user2Id).random(), chatId) }
+            val messageIdList = (1..3).map { Messages.message(setOf(adminId, user1Id, user2Id).random(), chatId) }
             awaitBrokering()
-            listOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { subscriber ->
+            setOf(adminSubscriber, user1Subscriber, user2Subscriber).forEach { subscriber ->
                 val actual = subscriber.values().map { (it as NewTextMessage).getMessageId() }
                 assertEquals(messageIdList, actual)
             }
@@ -141,7 +141,7 @@ class MessagesTest {
         @Test
         fun `Unauthenticated subscribers must be notified of new messages in public chats`(): Unit = runBlocking {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             awaitBrokering()
             val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
             val messageId = Messages.message(adminId, chatId)
@@ -159,14 +159,14 @@ class MessagesTest {
         @Test
         fun `An exception must be thrown if a non-admin messages in a broadcast chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId), isBroadcast = true)
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId), isBroadcast = true)
             assertFailsWith<IllegalArgumentException> { Messages.message(userId, chatId) }
         }
 
         @Test
         fun `An exception must be thrown if the context message isn't in the chat`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertFailsWith<IllegalArgumentException> { Messages.message(adminId, chatId, contextMessageId = 1) }
         }
     }
@@ -176,7 +176,7 @@ class MessagesTest {
         @Test
         fun `Given both searchable and non-searchable messages in a chat appearing one after the other, when searching for searchable messages, then they must get returned`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val query = "matched"
             val messageIdList = (1..10).map {
                 val message = Audio(ByteArray(1))
@@ -194,7 +194,7 @@ class MessagesTest {
         @Test
         fun `Text messages must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId, MessageText("Hi"))
             Messages.message(adminId, chatId, MessageText("Bye"))
             assertEquals(linkedHashSetOf(messageId), Messages.searchGroupChat(chatId, "hi"))
@@ -203,7 +203,7 @@ class MessagesTest {
         @Test
         fun `Pic message captions must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val pic = readPic("76px×57px.jpg")
             val message1 = CaptionedPic(pic, caption = MessageText("Hi"))
             val messageId = Messages.message(adminId, chatId, message1)
@@ -215,7 +215,7 @@ class MessagesTest {
         @Test
         fun `Poll message title and options must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val message1Options = listOf(MessageText("Burger King"), MessageText("Pizza Hut"))
             val message1 = PollInput(title = MessageText("Restaurant"), options = message1Options)
             val message1Id = Messages.message(adminId, chatId, message1)
@@ -231,7 +231,7 @@ class MessagesTest {
         @Test
         fun `Action messages must be searched by their text and actions case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val message1 =
                 ActionMessageInput(MessageText("Order food."), listOf(MessageText("Pizza"), MessageText("Burger")))
             val message1Id = Messages.message(adminId, chatId, message1)
@@ -247,7 +247,7 @@ class MessagesTest {
         @Test
         fun `Messages which don't contain text mustn't be returned`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             Messages.message(adminId, chatId, Audio(ByteArray(1)))
             assertTrue(Messages.searchGroupChat(chatId, query = "").isEmpty())
         }
@@ -255,7 +255,7 @@ class MessagesTest {
         @Test
         fun `Given items, when requesting items with neither a limit nor a cursor, then every item must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }.toLinkedHashSet()
             assertEquals(messageIdList, Messages.searchGroupChat(chatId, query = ""))
         }
@@ -263,7 +263,7 @@ class MessagesTest {
         @Test
         fun `Given items, when requesting items with a limit and cursor, then the number of items specified by the limit must be returned from before the cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }.toLinkedHashSet()
             val last = 3
             val index = 7
@@ -275,7 +275,7 @@ class MessagesTest {
         @Test
         fun `Given items, when requesting items with a limit but no cursor, then the number of items specified by the limit from the last item must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }.toLinkedHashSet()
             val last = 3
             val actual = Messages.searchGroupChat(chatId, query = "", BackwardPagination(last))
@@ -285,7 +285,7 @@ class MessagesTest {
         @Test
         fun `Given items, when requesting items with a cursor but no limit, then every item before the cursor must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val index = 7
             val pagination = BackwardPagination(before = messageIdList[index])
@@ -296,7 +296,7 @@ class MessagesTest {
         @Test
         fun `Given items, when requesting items with the first item's cursor but no limit, then zero items must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[0]
             val actual = Messages.searchGroupChat(chatId, query = "", BackwardPagination(before = cursor)).size
             assertEquals(0, actual)
@@ -305,7 +305,7 @@ class MessagesTest {
         @Test
         fun `Given items 1-10 where item 4 has been deleted, when requesting the last three items before item 6, then items 2, 3, and 5 must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             Messages.delete(messageIdList[3])
             val pagination = BackwardPagination(last = 3, before = messageIdList[5])
@@ -316,7 +316,7 @@ class MessagesTest {
         @Test
         fun `Given items 1-10 where item 6 has been deleted, when requesting items using the deleted item's cursor, then items 1-5 must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val messageId = messageIdList[5]
             Messages.delete(messageId)
@@ -348,7 +348,7 @@ class MessagesTest {
         fun `Messages must only be retrieved from the specified chat`() {
             val adminId = createVerifiedUsers(1).first().userId
             val create = {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it) }
             }
             create()
             assertEquals(1, Messages.readGroupChat(create()).size)
@@ -356,7 +356,7 @@ class MessagesTest {
 
         private fun createPaginatedChat(messages: Int = 10): PaginatedChat {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..messages).map { Messages.message(adminId, chatId) }.toLinkedHashSet()
             return PaginatedChat(chatId, messageIdList)
         }
@@ -398,7 +398,7 @@ class MessagesTest {
         fun `Given items 1-10 where item 4 has been deleted, when requesting the last three items before item 6, then items 2, 3, and 5 must be retrieved`() {
             val (chatId, messageIdList) = createPaginatedChat()
             Messages.delete(messageIdList.elementAt(3))
-            val expected = listOf(1, 2, 4).map(messageIdList::elementAt).toLinkedHashSet()
+            val expected = setOf(1, 2, 4).map(messageIdList::elementAt).toLinkedHashSet()
             val pagination = BackwardPagination(last = 3, before = messageIdList.elementAt(5))
             assertEquals(expected, Messages.readGroupChat(chatId, pagination))
         }
@@ -446,7 +446,7 @@ class MessagesTest {
 
         private fun testGroupChat(state: MessageState) {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+            val chatId = GroupChats.create(setOf(adminId), setOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId)
             when (state) {
                 MessageState.SENT -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
@@ -455,7 +455,7 @@ class MessagesTest {
                     MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 }
                 MessageState.READ ->
-                    listOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
+                    setOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
             }
             assertEquals(state, Messages.readState(messageId))
         }
@@ -475,7 +475,7 @@ class MessagesTest {
         @Test
         fun `A message in a group chat with a single participant must have a 'READ' status`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertEquals(MessageState.READ, Messages.readState(messageId))
         }
@@ -486,7 +486,7 @@ class MessagesTest {
         @Test
         fun `Deleting a chat containing message contexts must be deleted successfully`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val contextMessageId = Messages.message(adminId, chatId)
             Messages.message(adminId, chatId, contextMessageId = contextMessageId)
             Messages.deleteChat(chatId)
@@ -495,7 +495,7 @@ class MessagesTest {
         @Test
         fun `Deleting a message must set messages using it as a context to have a 'null' context`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             val contextId = Messages.message(userId, chatId)
             val messageId = Messages.message(adminId, chatId, contextMessageId = contextId)
             Messages.deleteUserChatMessages(chatId, userId)
@@ -508,7 +508,7 @@ class MessagesTest {
         @Test
         fun `Every message must be deleted until the specified point`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             Messages.message(adminId, chatId)
             val now = LocalDateTime.now()
             val messageId = Messages.message(adminId, chatId)
@@ -523,7 +523,7 @@ class MessagesTest {
         fun `Authenticated subscribers must be notified when a user's messages have been deleted from a non-public chat`(): Unit =
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-                val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+                val chatId = GroupChats.create(setOf(adminId), setOf(userId))
                 val subscriber = messagesNotifier.subscribe(UserId(adminId)).subscribeWith(TestSubscriber())
                 Messages.deleteUserChatMessages(chatId, userId)
                 awaitBrokering()
@@ -536,7 +536,7 @@ class MessagesTest {
         fun `Unauthenticated subscribers must receive notifications regarding deleted public chat messages`(): Unit =
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-                val chatId = GroupChats.create(listOf(adminId), listOf(userId), publicity = GroupChatPublicity.PUBLIC)
+                val chatId = GroupChats.create(setOf(adminId), setOf(userId), publicity = GroupChatPublicity.PUBLIC)
                 Messages.message(userId, chatId)
                 awaitBrokering()
                 val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
@@ -553,7 +553,7 @@ class MessagesTest {
         fun `Subscribers must be notified when every message the user sent is deleted`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) = (1..2).map {
-                val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+                val chatId = GroupChats.create(setOf(adminId), setOf(userId))
                 Messages.message(userId, chatId)
                 chatId
             }
@@ -562,7 +562,7 @@ class MessagesTest {
                 (1..2).map { messagesNotifier.subscribe(UserId(userId)).subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
-            listOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->
+            setOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->
                 val values = subscriber.values().map { it as UserChatMessagesRemoval }
                 assertEquals(listOf(chat1Id, chat2Id), values.map { it.getChatId() })
                 assertEquals(listOf(userId, userId), values.map { it.getUserId() })
@@ -590,7 +590,7 @@ class MessagesTest {
         fun `Deleting a message must trigger a notification for unauthenticated users subscribed to a public chat`(): Unit =
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+                val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
                 val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).subscribeWith(TestSubscriber())
@@ -606,7 +606,7 @@ class MessagesTest {
         @Test
         fun `Searching for messages sent after a particular time must be found`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertFalse(Messages.isExistingFrom(chatId, LocalDateTime.now()))
             val now = LocalDateTime.now()
             Messages.message(adminId, chatId)
@@ -643,7 +643,7 @@ class MessagesTest {
         @Test
         fun `The start and end cursors must point to the first and last items respectively`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             assertEquals(messageIdList.first(), Messages.readGroupChatCursor(chatId, CursorType.START))
             assertEquals(messageIdList.last(), Messages.readGroupChatCursor(chatId, CursorType.END))
@@ -652,7 +652,7 @@ class MessagesTest {
         @Test
         fun `The start and end cursors must be 'null' if there are no messages`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertNull(Messages.readGroupChatCursor(chatId, CursorType.START))
             assertNull(Messages.readGroupChatCursor(chatId, CursorType.END))
         }
@@ -663,7 +663,7 @@ class MessagesTest {
         @Test
         fun `The message must be visible if the chat is public even if the user ID is 'null'`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             assertTrue(Messages.isVisible(userId = null, messageId))
         }
@@ -671,7 +671,7 @@ class MessagesTest {
         @Test
         fun `The message must not be visible if the user is 'null', and the chat isn't public`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertFalse(Messages.isVisible(userId = null, messageId))
         }
@@ -685,7 +685,7 @@ class MessagesTest {
         @Test
         fun `The message mustn't be visible if the user isn't in the chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertFalse(Messages.isVisible(userId, messageId))
         }
@@ -693,7 +693,7 @@ class MessagesTest {
         @Test
         fun `The message must be visible if the user is in the group chat`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertTrue(Messages.isVisible(adminId, messageId))
         }
