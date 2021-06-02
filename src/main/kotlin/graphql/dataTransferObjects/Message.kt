@@ -2,8 +2,8 @@
 
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
+import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.MessageType
-import com.neelkamath.omniChatBackend.db.tables.MessageStatuses
 import com.neelkamath.omniChatBackend.db.tables.Messages
 import com.neelkamath.omniChatBackend.db.tables.Stargazers
 import com.neelkamath.omniChatBackend.graphql.routing.MessageState
@@ -23,7 +23,10 @@ sealed interface Message {
 
     fun getSent(): LocalDateTime = Messages.readSent(id)
 
-    fun getStatuses(): List<MessageDateTimeStatus> = MessageStatuses.readIdList(id).map(::MessageDateTimeStatus)
+    fun getStatuses(env: DataFetchingEnvironment): MessageDateTimeStatusConnection {
+        val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+        return MessageDateTimeStatusConnection(id, pagination)
+    }
 
     fun getContext(): MessageContext = MessageContext(id)
 

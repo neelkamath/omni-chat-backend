@@ -16,7 +16,7 @@ class PageInfo(
     private val endCursor: Cursor?,
     private val firstEdgeCursor: Cursor?,
     private val lastEdgeCursor: Cursor?,
-    private val pagination: Pagination? = null,
+    private val pagination: Pagination?,
 ) {
     fun getHasNextPage(): Boolean = when (pagination) {
         null -> false

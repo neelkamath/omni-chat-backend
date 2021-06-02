@@ -183,13 +183,9 @@ private class Subscriber(
      * [DefaultWebSocketServerSession.send]s the [ExecutionResult.toSpecification], and makes a [Subscription.request].
      */
     override fun onNext(result: ExecutionResult) {
-        sendResult(result)
-        subscription.request(1)
-    }
-
-    private fun sendResult(result: ExecutionResult) {
         val json = objectMapper.writeValueAsString(buildSpecification(result))
         withSession { send(Frame.Text(json)) }
+        subscription.request(1)
     }
 
     /** Closes the connection with the [completionReason]. */

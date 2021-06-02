@@ -1064,12 +1064,22 @@ type MessageContext {
     messageId: Int
 }
 
+type MessageDateTimeStatusConnection {
+    edges: [MessageDateTimeStatusEdge!]!
+    pageInfo: PageInfo!
+}
+
+type MessageDateTimeStatusEdge {
+    node: MessageDateTimeStatus!
+    cursor: Cursor!
+}
+
 interface Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1081,7 +1091,7 @@ type TextMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1094,7 +1104,7 @@ type ActionMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1107,7 +1117,7 @@ type PicMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1120,7 +1130,7 @@ type PollMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1133,7 +1143,7 @@ type AudioMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1145,7 +1155,7 @@ type GroupChatInviteMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1158,7 +1168,7 @@ type DocMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1170,7 +1180,7 @@ type VideoMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1184,7 +1194,7 @@ interface StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1195,7 +1205,7 @@ type StarredTextMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     textMessage: MessageText!
@@ -1207,7 +1217,7 @@ type StarredActionMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     actionableMessage: ActionableMessage!
@@ -1219,7 +1229,7 @@ type StarredPicMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     caption: MessageText
@@ -1231,7 +1241,7 @@ type StarredPollMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     poll: Poll!
@@ -1243,7 +1253,7 @@ type StarredAudioMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1254,7 +1264,7 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     inviteCode: Uuid!
@@ -1266,7 +1276,7 @@ type StarredDocMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1277,7 +1287,7 @@ type StarredVideoMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1382,7 +1392,7 @@ type UpdatedMessage {
     chatId: Int!
     messageId: Int!
     state: MessageState!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }

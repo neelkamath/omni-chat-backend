@@ -15,6 +15,31 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Subscription.subscribeToChatTypingStatuses`
 - `Subscription.subscribeToChatAccounts`
 - `Subscription.subscribeToGroupChatMetadata`
+- `type MessageDateTimeStatusConnection`
+- `type MessageDateTimeStatusEdge`
+
+### Changed
+
+- Update the following to paginate the `statuses` field:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
+    - `type UpdatedMessage`
 
 ## [0.19.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.19.0) - 2021-05-21
 
