@@ -14,7 +14,6 @@ dependencies {
     implementation("org.redisson:redisson:3.15.0")
     implementation("org.postgresql:postgresql:42.2.2")
     implementation("ch.qos.logback:logback-classic:1.2.3")
-    implementation("io.reactivex.rxjava3:rxkotlin:3.0.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.1")
     implementation("org.jasypt:jasypt:1.9.3")
     implementation("com.sun.mail:javax.mail:1.6.2")
