@@ -19,7 +19,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("ChatTypingStatusesSubscription") { wireType(it, ::readChatTypingStatusesSubscription) }
     .type("AccountsSubscription") { wireType(it, ::readAccountsSubscription) }
     .type("ChatAccountsSubscription") { wireType(it, ::readChatAccountsSubscription) }
-    .type("GroupChatsSubscription") { wireType(it, ::readChatsSubscription) }
+    .type("ChatsSubscription") { wireType(it, ::readChatsSubscription) }
     .type("GroupChatMetadataSubscription") { wireType(it, ::readGroupChatMetadataSubscription) }
     .type("SearchChatMessagesResult") { wireType(it, ::readSearchChatMessagesResult) }
     .type("ReadChatResult") { wireType(it, ::readReadChatResult) }

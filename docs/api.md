@@ -192,8 +192,11 @@ Since there are many operations, we've categorized each of them below. The same 
     - `searchUsers`
 - `Subscription`
     - `subscribeToOnlineStatuses`
+    - `subscribeToChatOnlineStatuses`
     - `subscribeToTypingStatuses`
+    - `subscribeToChatTypingStatuses`
     - `subscribeToAccounts`
+    - `subscribeToChatAccounts`
 - REST API
     - `/profile-pic`
 
@@ -250,10 +253,14 @@ Since there are many operations, we've categorized each of them below. The same 
     - `deletePrivateChat`
     - `createPrivateChat`
 - `Subscription`
-    - `subscribeToGroupChats`
+    - `subscribeToChats`
+    - `subscribeToGroupChatMetadata`
     - `subscribeToOnlineStatuses`
+    - `subscribeToChatOnlineStatuses`
     - `subscribeToTypingStatuses`
+    - `subscribeToChatTypingStatuses`
     - `subscribeToAccounts`
+    - `subscribeToChatAccounts`
 - REST API
     - `/group-chat-pic`
 
@@ -278,6 +285,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `deleteMessage`
 - `Subscription`
     - `subscribeToMessages`
+    - `subscribeToChatMessages`
 - REST API
     - `/pic-message`
     - `/audio-message`
