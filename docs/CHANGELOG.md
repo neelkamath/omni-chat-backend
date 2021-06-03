@@ -17,6 +17,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Subscription.subscribeToGroupChatMetadata`
 - `type MessageDateTimeStatusConnection`
 - `type MessageDateTimeStatusEdge`
+- `type DeletedPrivateChat`
 
 ### Changed
 
@@ -40,6 +41,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `type StarredDocMessage`
     - `type StarredVideoMessage`
     - `type UpdatedMessage`
+- Rename `Subscription.subscribeToGroupChats` to `Subscription.subscribeToChats`.
+- Rename `union GroupChatsSubscription` to `union ChatsSubscription`.
+- Add `type DeletedPrivateChat` to `union ChatsSubscription`.
 
 ## [0.19.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.19.0) - 2021-05-21
 

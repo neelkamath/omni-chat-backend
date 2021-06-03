@@ -29,7 +29,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(AccountsSubscriptionDeserializer)
     .register(ChatAccountsSubscriptionDeserializer)
     .register(GroupChatMetadataSubscriptionDeserializer)
-    .register(GroupChatsSubscriptionDeserializer)
+    .register(ChatsSubscriptionDeserializer)
     .register(AccountDataDeserializer)
     .register(MessageDeserializer)
     .register(StarredMessageDeserializer)
@@ -195,8 +195,8 @@ private object ChatOnlineStatusesSubscriptionDeserializer : JsonDeserializer<Cha
     }
 }
 
-private object GroupChatsSubscriptionDeserializer : JsonDeserializer<GroupChatsSubscription>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): GroupChatsSubscription {
+private object ChatsSubscriptionDeserializer : JsonDeserializer<ChatsSubscription>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ChatsSubscription {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
@@ -204,6 +204,7 @@ private object GroupChatsSubscriptionDeserializer : JsonDeserializer<GroupChatsS
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
             "ExitedUsers" -> ExitedUsers::class
+            "DeletedPrivateChat" -> DeletedPrivateChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

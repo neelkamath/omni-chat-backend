@@ -26,7 +26,7 @@ object GroupChatUsers : Table() {
     /**
      * Makes the [userIdList] admins of the [chatId].
      *
-     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier] and
+     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [chatsNotifier] and
      * [groupChatMetadataNotifier]. An [IllegalArgumentException] will be thrown if any of the [userIdList] aren't in
      * the chat.
      */
@@ -38,7 +38,7 @@ object GroupChatUsers : Table() {
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId).toList())
-            groupChatsNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+            chatsNotifier.publish(update, readUserIdList(chatId).map(::UserId))
             groupChatMetadataNotifier.publish(update, ChatId(chatId))
         }
     }
@@ -75,8 +75,8 @@ object GroupChatUsers : Table() {
     /**
      * Adds the [users] who aren't already in the [chatId].
      *
-     * Notifies existing users of the [UpdatedGroupChat] via [groupChatsNotifier], and the [users] of the [GroupChatId]
-     * via [groupChatsNotifier]. Subscribers will be updated of the [UpdatedGroupChat] via [groupChatMetadataNotifier].
+     * Notifies existing users of the [UpdatedGroupChat] via [chatsNotifier], and the [users] of the [GroupChatId]
+     * via [chatsNotifier]. Subscribers will be updated of the [UpdatedGroupChat] via [groupChatMetadataNotifier].
      */
     fun addUsers(chatId: Int, users: Collection<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
@@ -87,9 +87,9 @@ object GroupChatUsers : Table() {
                 this[isAdmin] = false
             }
         }
-        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::UserId))
+        chatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::UserId))
         val update = UpdatedGroupChat(chatId, newUserIdList = newUserIdList.toList())
-        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UserId))
+        chatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UserId))
         groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
@@ -124,7 +124,7 @@ object GroupChatUsers : Table() {
      * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
-     * [groupChatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnstarredChat] via
+     * [chatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnstarredChat] via
      * [messagesNotifier]. Clients who have subscribed to the [chatId] via [chatMessagesNotifier],
      * [chatOnlineStatusesNotifier], [chatAccountsNotifier], [groupChatMetadataNotifier], and
      * [chatTypingStatusesNotifier] will be unsubscribed if the chat gets deleted.
@@ -140,7 +140,7 @@ object GroupChatUsers : Table() {
         }
         removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
         val update = ExitedUsers(chatId, removedIdList)
-        groupChatsNotifier.publish(update, originalIdList.map(::UserId))
+        chatsNotifier.publish(update, originalIdList.map(::UserId))
         groupChatMetadataNotifier.publish(update, ChatId(chatId))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)

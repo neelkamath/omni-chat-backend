@@ -44,7 +44,7 @@ class GroupChatUsersTest {
                 awaitBrokering()
                 val (adminSubscriber, toBeAdminSubscriber, nonParticipantSubscriber) =
                     setOf(adminId, toBeAdminId, nonParticipantId)
-                        .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                        .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 GroupChatUsers.makeAdmins(chatId, toBeAdminId)
@@ -188,7 +188,7 @@ class GroupChatUsersTest {
                 val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(admin.userId, user.userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 GroupChatUsers.addUsers(chatId, user.userId)
@@ -299,7 +299,7 @@ class GroupChatUsersTest {
             awaitBrokering()
             val (adminSubscriber, userSubscriber) =
                 listOf(adminId, userId).map {
-                    groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(
+                    chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(
                         TestSubscriber()
                     )
                 }
@@ -319,7 +319,7 @@ class GroupChatUsersTest {
             val chatId = GroupChats.create(setOf(adminId), listOf(userId), publicity = GroupChatPublicity.PUBLIC)
             awaitBrokering()
             val nonParticipantSubscriber =
-                groupChatsNotifier.subscribe(UserId(nonParticipantId)).flowable.subscribeWith(TestSubscriber())
+                chatsNotifier.subscribe(UserId(nonParticipantId)).flowable.subscribeWith(TestSubscriber())
             val unauthenticatedSubscriber =
                 groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
             GroupChatUsers.removeUsers(chatId, userId)

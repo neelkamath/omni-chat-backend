@@ -13,6 +13,21 @@ import kotlin.test.*
 @ExtendWith(DbExtension::class)
 class PrivateChatsTest {
     @Nested
+    inner class ReadOtherUserChatIdList {
+        @Test
+        fun `The chats must be read`() {
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
+            val (chat1Id, chat2Id) = setOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }
+            PrivateChats.create(user2Id, user3Id)
+            val expected =
+                setOf(PrivateChats.ChatWithUserId(chat1Id, user2Id), PrivateChats.ChatWithUserId(chat2Id, user3Id))
+            val actual = PrivateChats.readOtherUserChatIdList(user1Id)
+            assertEquals(expected.size, actual.size)
+            expected.forEach { assertContains(actual, it) }
+        }
+    }
+
+    @Nested
     inner class Create {
         @Test
         fun `Creating an existing chat must throw an exception`() {

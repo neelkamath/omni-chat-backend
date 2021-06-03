@@ -3,7 +3,7 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 class ExitedUsers(private val chatId: Int, private val userIdList: List<Int>) :
-    GroupChatsSubscription,
+    ChatsSubscription,
     GroupChatMetadataSubscription {
 
     fun getChatId(): Int = chatId

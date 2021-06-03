@@ -642,13 +642,13 @@ type Subscription {
     subscribeToChatAccounts(chatId: Int!): ChatAccountsSubscription!
 
     """
-    Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
-    subscription will be stopped if the user deletes their account.
+    Yields group chats the user was added to (including chats they created), group chat metadata updates, and private
+    chat deletions. The subscription will be stopped if the user deletes their account.
 
     An access token must be sent with this request. See `Subscription.subscribeToGroupChatMetadata` for unauthenticated
     users such as an accountless user viewing a public chat.
     """
-    subscribeToGroupChats: GroupChatsSubscription!
+    subscribeToChats: ChatsSubscription!
 
     """
     Yields metadata updates for the `chatId`.
@@ -740,7 +740,13 @@ A `GroupChatId` is the ID of the chat the user was added to.
 
 If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
 """
-union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUsers
+union ChatsSubscription =
+    | CreatedSubscription
+    | GroupChatId
+    | UpdatedGroupChatPic
+    | UpdatedGroupChat
+    | ExitedUsers
+    | DeletedPrivateChat
 
 union GroupChatMetadataSubscription =
     | CreatedSubscription
@@ -902,6 +908,11 @@ type AccountsConnection {
 type AccountEdge {
     node: Account!
     cursor: Cursor!
+}
+
+"""The user deleted the `chatId`."""
+type DeletedPrivateChat {
+    chatId: Int!
 }
 
 interface AccountData {

@@ -39,7 +39,7 @@ class GroupChatsTest {
         fun `Creating a chat must only notify participants`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
             val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             val chatId = GroupChats.create(setOf(adminId), listOf(user1Id))
             awaitBrokering()
             listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
@@ -59,7 +59,7 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val title = GroupChatTitle("New Title")
@@ -84,7 +84,7 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val description = GroupChatDescription("New description.")
@@ -110,7 +110,7 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, nonParticipantSubscriber) = setOf(adminId, nonParticipantId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
@@ -277,7 +277,7 @@ class GroupChatsTest {
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
                 val isBroadcast = true
@@ -308,7 +308,7 @@ class GroupChatsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
-                .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
             GroupChats.setInvitability(chatId, isInvitable = true)
             awaitBrokering()
             val values = adminSubscriber.values().map { it as UpdatedGroupChat }

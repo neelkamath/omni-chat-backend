@@ -32,9 +32,9 @@ fun subscribeToAccounts(env: DataFetchingEnvironment): Publisher<AccountsSubscri
 fun subscribeToGroupChatMetadata(env: DataFetchingEnvironment): Publisher<GroupChatMetadataSubscription> =
     subscribeToChat(env, groupChatMetadataNotifier)
 
-fun subscribeToGroupChats(env: DataFetchingEnvironment): Publisher<GroupChatsSubscription> {
+fun subscribeToChats(env: DataFetchingEnvironment): Publisher<ChatsSubscription> {
     env.verifyAuth()
-    return runBlocking { groupChatsNotifier.subscribe(UserId(env.userId!!)).flowable }
+    return runBlocking { chatsNotifier.subscribe(UserId(env.userId!!)).flowable }
 }
 
 fun subscribeToTypingStatuses(env: DataFetchingEnvironment): Publisher<TypingStatusesSubscription> {

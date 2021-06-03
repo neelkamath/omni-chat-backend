@@ -160,7 +160,7 @@ fun createPrivateChat(env: DataFetchingEnvironment): CreatePrivateChatResult {
 
 fun deleteAccount(env: DataFetchingEnvironment): CannotDeleteAccount? {
     env.verifyAuth()
-    if (!GroupChatUsers.canUserLeave(env.userId!!)) return CannotDeleteAccount()
+    if (!GroupChatUsers.canUserLeave(env.userId!!)) return CannotDeleteAccount
     runBlocking { deleteUser(env.userId!!) }
     return null
 }

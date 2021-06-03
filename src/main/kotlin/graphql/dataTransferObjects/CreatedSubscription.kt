@@ -10,7 +10,7 @@ object CreatedSubscription :
     ChatMessagesSubscription,
     MessagesSubscription,
     AccountsSubscription,
-    GroupChatsSubscription,
+    ChatsSubscription,
     OnlineStatusesSubscription,
     TypingStatusesSubscription {
 

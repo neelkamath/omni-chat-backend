@@ -3,6 +3,7 @@ package com.neelkamath.omniChatBackend.db
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedAccount
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedContact
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UserChatMessagesRemoval
 import com.neelkamath.omniChatBackend.graphql.routing.Cursor
 import com.neelkamath.omniChatBackend.toLinkedHashSet
@@ -102,7 +103,7 @@ fun readChatSharers(userId: Int): Set<Int> =
  *
  * - The [userId] will be deleted from the [Users].
  * - Users who have the [userId] in their contacts or chats will be notified of the [DeletedAccount].
- * - Clients who have [Notifier.subscribe]d via [groupChatsNotifier] will be [Notifier.unsubscribe]d.
+ * - Clients who have [Notifier.subscribe]d via [chatsNotifier] will be [Notifier.unsubscribe]d.
  *
  * ## Blocked Users
  *
@@ -119,13 +120,14 @@ fun readChatSharers(userId: Int): Set<Int> =
  * ## Private Chats
  *
  * - Deletes every record the [userId] has in [PrivateChats] and [PrivateChatDeletions].
+ * - Subscribers will be notified of their [DeletedPrivateChat]s with the [userId] via [chatsNotifier].
  *
  * ## Group Chats
  *
  * - The [userId] will be removed from [GroupChats] they're in.
  * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
  *   [Messages], and [MessageStatuses].
- * - Clients will be [Notifier.unsubscribe]d via [groupChatsNotifier].
+ * - Clients will be [Notifier.unsubscribe]d via [chatsNotifier].
  *
  * ## Messages
  *
@@ -144,6 +146,9 @@ suspend fun deleteUser(userId: Int) {
         The user's (ID: $userId) data can't be deleted because they're the last admin of a group chat with other users. 
         """
     }
+    PrivateChats.readOtherUserChatIdList(userId).forEach { (chatId, otherUserId) ->
+        chatsNotifier.publish(DeletedPrivateChat(chatId), UserId(otherUserId))
+    }
     val subscribers = Contacts.readOwnerUserIdList(userId).plus(readChatSharers(userId)).map(::UserId)
     accountsNotifier.publish(DeletedAccount(userId), subscribers)
     Contacts.deleteUserEntries(userId)
@@ -153,7 +158,7 @@ suspend fun deleteUser(userId: Int) {
     Messages.deleteUserMessages(userId)
     BlockedUsers.deleteUser(userId)
     Users.delete(userId)
-    groupChatsNotifier.unsubscribe { it.data.userId == userId }
+    chatsNotifier.unsubscribe { it.data.userId == userId }
     accountsNotifier.unsubscribe { it.data.userId == userId }
     typingStatusesNotifier.unsubscribe { it.data.userId == userId }
     messagesNotifier.unsubscribe { it.data.userId == userId }

@@ -3,6 +3,7 @@ package com.neelkamath.omniChatBackend.db
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedAccount
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -19,6 +20,23 @@ class ManagerTest {
     @Nested
     inner class DeleteUser {
         @Test
+        fun `The other users must get notified of the deleted private chats`(): Unit = runBlocking {
+            val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
+            val (chat1Id, chat2Id) = setOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }
+            PrivateChats.create(user2Id, user3Id)
+            awaitBrokering()
+            val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
+                .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+            deleteUser(user1Id)
+            awaitBrokering()
+            user1Subscriber.assertNoValues()
+            mapOf(user2Subscriber to chat1Id, user3Subscriber to chat2Id).forEach { (subscriber, chatId) ->
+                val actual = subscriber.values().filterIsInstance<DeletedPrivateChat>().map { it.getChatId() }
+                assertEquals(listOf(chatId), actual)
+            }
+        }
+
+        @Test
         fun `An exception must be thrown when the admin of a nonempty group chat deletes their data`(): Unit =
             runBlocking {
                 val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
@@ -30,7 +48,7 @@ class ManagerTest {
         fun `The deleted user must be unsubscribed via the new group chats broker`() {
             runBlocking {
                 val userId = createVerifiedUsers(1).first().userId
-                val subscriber = groupChatsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
+                val subscriber = chatsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
                 deleteUser(userId)
                 subscriber.assertComplete()
             }
@@ -63,7 +81,7 @@ class ManagerTest {
                 GroupChats.create(setOf(adminId), setOf(userId))
                 awaitBrokering()
                 val (adminSubscriber, userSubscriber) = setOf(adminId, userId)
-                    .map { groupChatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+                    .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 deleteUser(userId)
                 awaitBrokering()
                 val expected = listOf(listOf(userId))

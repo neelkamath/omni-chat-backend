@@ -13,7 +13,7 @@ class UpdatedGroupChat(
     private val adminIdList: List<Int>? = null,
     private val isBroadcast: Boolean? = null,
     private val publicity: GroupChatPublicity? = null,
-) : GroupChatsSubscription, GroupChatMetadataSubscription {
+) : ChatsSubscription, GroupChatMetadataSubscription {
     fun getChatId(): Int = chatId
 
     fun getTitle(): GroupChatTitle? = title

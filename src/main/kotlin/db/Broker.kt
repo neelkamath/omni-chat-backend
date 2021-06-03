@@ -29,7 +29,7 @@ fun subscribeToMessageBroker() {
     brokerMessages()
     brokerChatMessages()
     brokerAccounts()
-    brokerGroupChats()
+    brokerChats()
     brokerGroupChatMetadata()
     brokerChatAccounts()
     brokerChatTypingStatuses()
@@ -74,12 +74,12 @@ private fun brokerChatAccounts() {
         }
 }
 
-/** [Notifier.notify]s [Notifier.publish]ed updates for [groupChatsNotifier]. This is safe to call multiple times. */
-private fun brokerGroupChats() {
-    if (redisson.getTopic(Topic.GROUP_CHATS.toString()).countListeners() == 0)
-        redisson.getTopic(Topic.GROUP_CHATS.toString()).addListener(List::class.java) { _, message ->
+/** [Notifier.notify]s [Notifier.publish]ed updates for [chatsNotifier]. This is safe to call multiple times. */
+private fun brokerChats() {
+    if (redisson.getTopic(Topic.CHATS.toString()).countListeners() == 0)
+        redisson.getTopic(Topic.CHATS.toString()).addListener(List::class.java) { _, message ->
             @Suppress("UNCHECKED_CAST")
-            groupChatsNotifier.notify(message as List<Notification<GroupChatsSubscription, UserId>>)
+            chatsNotifier.notify(message as List<Notification<ChatsSubscription, UserId>>)
         }
 }
 
@@ -144,8 +144,8 @@ enum class Topic {
     CHAT_ACCOUNTS {
         override fun toString() = "chatAccounts"
     },
-    GROUP_CHATS {
-        override fun toString() = "groupChats"
+    CHATS {
+        override fun toString() = "chats"
     },
     GROUP_CHAT_METADATA {
         override fun toString() = "groupChatMetadata"
@@ -265,7 +265,7 @@ val accountsNotifier = Notifier<AccountsSubscription, UserId>(Topic.ACCOUNTS)
 /** @see negotiateUserUpdate */
 val chatAccountsNotifier = Notifier<ChatAccountsSubscription, ChatId>(Topic.CHAT_ACCOUNTS)
 
-val groupChatsNotifier = Notifier<GroupChatsSubscription, UserId>(Topic.GROUP_CHATS)
+val chatsNotifier = Notifier<ChatsSubscription, UserId>(Topic.CHATS)
 
 val groupChatMetadataNotifier = Notifier<GroupChatMetadataSubscription, ChatId>(Topic.GROUP_CHAT_METADATA)
 
