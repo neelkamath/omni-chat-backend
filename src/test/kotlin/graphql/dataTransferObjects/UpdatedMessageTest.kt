@@ -15,8 +15,10 @@ import kotlin.test.assertEquals
 class UpdatedMessageTest {
     private data class CreatedSubscriptionResponse(val __typename: String)
 
-    private data class UpdatedMessageResponse(val statuses: List<Edge>) {
-        data class Edge(val cursor: Cursor)
+    private data class UpdatedMessageResponse(val statuses: Statuses) {
+        data class Statuses(val edges: List<Edge>) {
+            data class Edge(val cursor: Cursor)
+        }
     }
 
     @Nested
@@ -56,7 +58,7 @@ class UpdatedMessageTest {
                 assertEquals("CreatedSubscription", parseFrameData<CreatedSubscriptionResponse>(incoming).__typename)
                 MessageStatuses.create(userIdList.last(), messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
-                val actual = parseFrameData<UpdatedMessageResponse>(incoming).statuses.map { it.cursor }
+                val actual = parseFrameData<UpdatedMessageResponse>(incoming).statuses.edges.map { it.cursor }
                 assertEquals(statusIdList.slice(index + 1..index + first).toList(), actual)
             }
         }

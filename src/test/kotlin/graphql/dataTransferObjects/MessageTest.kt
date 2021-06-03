@@ -18,8 +18,10 @@ import kotlin.test.assertEquals
 
 @ExtendWith(DbExtension::class)
 class MessageTest {
-    private data class ReadMessageResponse(val hasStar: Boolean, val statuses: List<Edge>) {
-        data class Edge(val cursor: Cursor)
+    private data class ReadMessageResponse(val hasStar: Boolean, val statuses: Statuses) {
+        data class Statuses(val edges: List<Edge>) {
+            data class Edge(val cursor: Cursor)
+        }
     }
 
     private fun readMessage(userId: Int?, messageId: Int, pagination: ForwardPagination? = null): ReadMessageResponse {
@@ -36,7 +38,7 @@ class MessageTest {
                 }
             }
             """,
-            mapOf("messageId" to messageId, "first" to pagination?.first, "after" to pagination?.after),
+            mapOf("messageId" to messageId, "first" to pagination?.first, "after" to pagination?.after?.toString()),
             userId,
         ).data!!["readMessage"] as Map<*, *>
         return testingObjectMapper.convertValue(data)
@@ -54,7 +56,7 @@ class MessageTest {
             val statusIdList = MessageStatuses.readIdList(messageId)
             val index = 4
             val pagination = ForwardPagination(first = 3, after = statusIdList.elementAt(index))
-            val actual = readMessage(adminId, messageId, pagination).statuses.map { it.cursor }
+            val actual = readMessage(adminId, messageId, pagination).statuses.edges.map { it.cursor }
             assertEquals(statusIdList.slice(index + 1..index + pagination.first!!).toList(), actual)
         }
     }

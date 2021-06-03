@@ -9,7 +9,7 @@ class MessageDateTimeStatusConnection(private val messageId: Int, private val pa
     private val messageIdList: LinkedHashSet<Int> by lazy { MessageStatuses.readIdList(messageId) }
     private val edgeIdList: List<Int> by lazy {
         messageIdList
-            .dropWhile { if (pagination.after == null) false else it < pagination.after }
+            .dropWhile { if (pagination.after == null) false else it <= pagination.after }
             .let { if (pagination.first == null) it else it.take(pagination.first) }
     }
 

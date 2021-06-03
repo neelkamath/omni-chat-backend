@@ -17,7 +17,7 @@ class UpdatedMessage(private val messageId: Int) : MessagesSubscription, ChatMes
     fun getState(): MessageState = Messages.readState(messageId)
 
     fun getStatuses(env: DataFetchingEnvironment): MessageDateTimeStatusConnection {
-        val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("last"))
+        val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
         return MessageDateTimeStatusConnection(messageId, pagination)
     }
 

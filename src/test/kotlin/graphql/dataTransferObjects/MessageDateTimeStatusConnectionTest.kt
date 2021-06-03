@@ -19,8 +19,10 @@ import kotlin.test.assertEquals
 
 @ExtendWith(DbExtension::class)
 class MessageDateTimeStatusConnectionTest {
-    private data class ReadMessageResponse(val statuses: List<Edge>) {
-        data class Edge(val cursor: Cursor)
+    private data class ReadMessageResponse(val statuses: Edges) {
+        data class Edges(val edges: List<Edge>) {
+            data class Edge(val cursor: Cursor)
+        }
     }
 
     private data class CreatedMessageStatuses(val adminId: Int, val messageId: Int)
@@ -44,7 +46,7 @@ class MessageDateTimeStatusConnectionTest {
                     }
                 }
                 """,
-                mapOf("messageId" to messageId, "first" to pagination?.first, "after" to pagination?.after),
+                mapOf("messageId" to messageId, "first" to pagination?.first, "after" to pagination?.after?.toString()),
                 userId,
             ).data!!["readMessage"] as Map<*, *>
             return testingObjectMapper.convertValue(data)
@@ -62,7 +64,7 @@ class MessageDateTimeStatusConnectionTest {
         @Test
         fun `Given items, when requesting items with neither a limit nor a cursor, then every item must be retrieved`() {
             val (adminId, messageId) = createMessageStatuses()
-            val actual = readMessage(adminId, messageId).statuses.map { it.cursor }
+            val actual = readMessage(adminId, messageId).statuses.edges.map { it.cursor }
             assertEquals(MessageStatuses.readIdList(messageId).toList(), actual)
         }
 
@@ -72,7 +74,7 @@ class MessageDateTimeStatusConnectionTest {
             val statusIdList = MessageStatuses.readIdList(messageId)
             val index = 4
             val pagination = ForwardPagination(first = 3, after = statusIdList.elementAt(index))
-            val actual = readMessage(adminId, messageId, pagination).statuses.map { it.cursor }
+            val actual = readMessage(adminId, messageId, pagination).statuses.edges.map { it.cursor }
             assertEquals(statusIdList.slice(index + 1..index + pagination.first!!).toList(), actual)
         }
 
@@ -80,7 +82,7 @@ class MessageDateTimeStatusConnectionTest {
         fun `Given items, when requesting items with a limit but no cursor, then the number of items specified by the limit from the first item must be retrieved`() {
             val (adminId, messageId) = createMessageStatuses()
             val pagination = ForwardPagination(first = 3)
-            val actual = readMessage(adminId, messageId, pagination).statuses.map { it.cursor }
+            val actual = readMessage(adminId, messageId, pagination).statuses.edges.map { it.cursor }
             assertEquals(MessageStatuses.readIdList(messageId).take(pagination.first!!), actual)
         }
 
@@ -90,7 +92,7 @@ class MessageDateTimeStatusConnectionTest {
             val statusIdList = MessageStatuses.readIdList(messageId)
             val index = 4
             val pagination = ForwardPagination(after = statusIdList.elementAt(index))
-            val actual = readMessage(adminId, messageId, pagination).statuses.map { it.cursor }
+            val actual = readMessage(adminId, messageId, pagination).statuses.edges.map { it.cursor }
             assertEquals(statusIdList.drop(index + 1), actual)
         }
 
@@ -99,7 +101,7 @@ class MessageDateTimeStatusConnectionTest {
             val (adminId, messageId) = createMessageStatuses()
             val statusIdList = MessageStatuses.readIdList(messageId)
             val pagination = ForwardPagination(after = statusIdList.last())
-            assertEquals(0, readMessage(adminId, messageId, pagination).statuses.size)
+            assertEquals(0, readMessage(adminId, messageId, pagination).statuses.edges.size)
         }
 
         @Test
@@ -110,7 +112,7 @@ class MessageDateTimeStatusConnectionTest {
                 val userId = MessageStatuses.readUserId(statusIdList.elementAt(3))
                 deleteUser(userId)
                 val pagination = ForwardPagination(first = 3, after = statusIdList.elementAt(1))
-                val actual = readMessage(adminId, messageId, pagination).statuses.map { it.cursor }
+                val actual = readMessage(adminId, messageId, pagination).statuses.edges.map { it.cursor }
                 assertEquals(setOf(2, 4, 5).map(statusIdList::elementAt), actual)
             }
 
@@ -122,9 +124,8 @@ class MessageDateTimeStatusConnectionTest {
                 val statusId = statusIdList.elementAt(3)
                 val userId = MessageStatuses.readUserId(statusId)
                 deleteUser(userId)
-                val actual =
-                    readMessage(adminId, messageId, ForwardPagination(after = statusId)).statuses.map { it.cursor }
-                assertEquals(statusIdList.drop(4), actual)
+                val response = readMessage(adminId, messageId, ForwardPagination(after = statusId))
+                assertEquals(statusIdList.drop(4), response.statuses.edges.map { it.cursor })
             }
     }
 }

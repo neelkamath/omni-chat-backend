@@ -7,6 +7,8 @@ import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.graphql.routing.Cursor
+import com.neelkamath.omniChatBackend.graphql.routing.MessageStatus
+import com.neelkamath.omniChatBackend.slice
 import com.neelkamath.omniChatBackend.testingObjectMapper
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
@@ -17,8 +19,10 @@ import kotlin.test.assertEquals
 class StarredMessageTest {
     private data class ReadStarsResponse(val edges: List<Edge>) {
         data class Edge(val node: Node) {
-            data class Node(val statuses: List<Edge>) {
-                data class Edge(val cursor: Cursor)
+            data class Node(val statuses: Statuses) {
+                data class Statuses(val edges: List<Edge>) {
+                    data class Edge(val cursor: Cursor)
+                }
             }
         }
     }
@@ -29,7 +33,7 @@ class StarredMessageTest {
             val data = executeGraphQlViaEngine(
                 """
                 query ReadStars(${"$"}first: Int, ${"$"}after: Cursor) {
-                    readStars() {
+                    readStars {
                         edges {
                             node {
                                 statuses(first: ${"$"}first, after: ${"$"}after) {
@@ -44,23 +48,25 @@ class StarredMessageTest {
                 """,
                 mapOf("first" to pagination.first, "after" to pagination.after?.toString()),
                 userId,
-            ).data as Map<*, *>
+            ).data!!["readStars"] as Map<*, *>
             return testingObjectMapper.convertValue(data)
         }
 
         @Test
         fun `Statuses must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId))
-            val messageIdList = (1..10).map {
-                Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
-            }
+            val userIdList = createVerifiedUsers(10).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), userIdList)
+            val messageId = Messages.message(adminId, chatId)
+            Stargazers.create(adminId, messageId)
+            userIdList.forEach { MessageStatuses.create(it, messageId, MessageStatus.DELIVERED) }
+            val statusIdList = MessageStatuses.readIdList(messageId)
             val index = 4
-            val pagination = ForwardPagination(first = 3, after = messageIdList.elementAt(index))
+            val pagination = ForwardPagination(first = 3, after = statusIdList.elementAt(index))
             val actual = readStars(adminId, pagination).edges.flatMap { edge ->
-                edge.node.statuses.map { it.cursor }
+                edge.node.statuses.edges.map { it.cursor }
             }
-            assertEquals(messageIdList.slice(index + 1..index + pagination.first!!), actual)
+            assertEquals(statusIdList.slice(index + 1..index + pagination.first!!).toList(), actual)
         }
     }
 }
