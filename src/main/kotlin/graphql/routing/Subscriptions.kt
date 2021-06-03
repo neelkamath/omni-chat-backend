@@ -24,29 +24,41 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
-private data class GraphQlSubscription(
-    /** Operation name (e.g., `"subscribeToMessages"`). */
-    val operation: String,
-    /** The [CloseReason] to send the client when the subscription is successfully completed. */
-    val completionReason: CloseReason,
-)
+private data class GraphQlSubscription(val path: String, val name: String, val isAuthenticated: Boolean)
+
+/** The [CloseReason] to send the client when the subscription is successfully completed. */
+private val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
 
 /** Adds routes to the [context] which deal with GraphQL subscriptions. */
 fun routeGraphQlSubscriptions(context: Routing) {
-    val completionReason = CloseReason(CloseReason.Codes.NORMAL, "The user deleted their account.")
-    val subscriptions = mapOf(
-        "messages-subscription" to "subscribeToMessages",
-        "accounts-subscription" to "subscribeToAccounts",
-        "group-chats-subscription" to "subscribeToGroupChats",
-        "typing-statuses-subscription" to "subscribeToTypingStatuses",
-        "online-statuses-subscription" to "subscribeToOnlineStatuses",
-    )
-    for ((path, operation) in subscriptions)
-        routeSubscription(context, path, GraphQlSubscription(operation, completionReason))
+    setOf(
+        GraphQlSubscription(path = "messages-subscription", "subscribeToMessages", isAuthenticated = true),
+        GraphQlSubscription(path = "chat-messages-subscription", "subscribeToChatMessages", isAuthenticated = false),
+        GraphQlSubscription(path = "online-statuses-subscription", "subscribeToOnlineStatuses", isAuthenticated = true),
+        GraphQlSubscription(
+            path = "chat-online-statuses-subscription",
+            "subscribeToChatOnlineStatuses",
+            isAuthenticated = false,
+        ),
+        GraphQlSubscription(path = "typing-statuses-subscription", "subscribeToTypingStatuses", isAuthenticated = true),
+        GraphQlSubscription(
+            path = "chat-typing-statuses-subscription",
+            "subscribeToChatTypingStatuses",
+            isAuthenticated = false,
+        ),
+        GraphQlSubscription(path = "accounts-subscription", "subscribeToAccounts", isAuthenticated = true),
+        GraphQlSubscription(path = "chat-accounts-subscription", "subscribeToChatAccounts", isAuthenticated = false),
+        GraphQlSubscription(path = "chats-subscription", "subscribeToChats", isAuthenticated = true),
+        GraphQlSubscription(
+            path = "group-chat-metadata-subscription",
+            "subscribeToGroupChatMetadata",
+            isAuthenticated = false,
+        ),
+    ).forEach { routeSubscription(context, it) }
 }
 
 /**
- * Binds a WebSocket for the GraphQL [subscription] at the [path] (e.g., `"messages-subscription"`).
+ * Binds a WebSocket for the GraphQL [subscription].
  *
  * Once subscribed, the client will receive a [CreatedSubscription].
  *
@@ -56,11 +68,11 @@ fun routeGraphQlSubscriptions(context: Routing) {
  * with the [CloseReason.Codes.VIOLATED_POLICY]. If the subscription completes due to a server-side error, the
  * connection will be closed with the [CloseReason.Codes.INTERNAL_ERROR].
  */
-private fun routeSubscription(context: Routing, path: String, subscription: GraphQlSubscription): Unit = with(context) {
-    webSocket(path) {
-        val token = incoming.receive() as Frame.Text
+private fun routeSubscription(context: Routing, subscription: GraphQlSubscription): Unit = with(context) {
+    webSocket(subscription.path) {
+        val token = if (subscription.isAuthenticated) incoming.receive() as Frame.Text else null
         try {
-            val result = buildExecutionResult(this, token.readText())
+            val result = buildExecutionResult(this, token?.readText())
             if (result.errors.isEmpty()) subscribe(this, subscription, result) else closeWithError(this, result)
         } catch (_: UnknownOperationException) {
             val reason = CloseReason(
@@ -79,15 +91,16 @@ private fun routeSubscription(context: Routing, path: String, subscription: Grap
  * Parses the [DefaultWebSocketServerSession.incoming] [Frame.Text] as a [GraphQlRequest], and executes it.
  *
  * @throws UnknownOperationException
- * @throws JWTVerificationException if the [accessToken] couldn't be verified.
+ * @throws JWTVerificationException if the [accessToken] wasn't `null`, and couldn't be verified.
  */
 private suspend fun buildExecutionResult(
     session: DefaultWebSocketServerSession,
-    accessToken: String,
+    accessToken: String?,
 ): ExecutionResult = with(session) {
-    val userId = jwtVerifier.verify(accessToken).subject.toInt()
+    val userId = accessToken?.let { jwtVerifier.verify(it).subject.toInt() }
     // It's possible the user updated their email address just after the token was created.
-    if (!Users.hasVerifiedEmailAddress(userId)) throw JWTVerificationException("The email address is unverified.")
+    if (userId != null && !Users.hasVerifiedEmailAddress(userId))
+        throw JWTVerificationException("The email address is unverified.")
     val frame = incoming.receive() as Frame.Text
     val request = objectMapper.readValue<GraphQlRequest>(frame.readText())
     val builder = buildExecutionInput(request, userId)
@@ -159,7 +172,7 @@ private class Subscriber(
     private fun sendCreatedSubscription() {
         val doc = mapOf(
             "data" to mapOf(
-                graphQlSubscription.operation to mapOf("__typename" to "CreatedSubscription", "placeholder" to ""),
+                graphQlSubscription.name to mapOf("__typename" to "CreatedSubscription", "placeholder" to ""),
             ),
         )
         val json = objectMapper.writeValueAsString(doc)
@@ -170,17 +183,13 @@ private class Subscriber(
      * [DefaultWebSocketServerSession.send]s the [ExecutionResult.toSpecification], and makes a [Subscription.request].
      */
     override fun onNext(result: ExecutionResult) {
-        sendResult(result)
+        val json = objectMapper.writeValueAsString(buildSpecification(result))
+        withSession { send(Frame.Text(json)) }
         subscription.request(1)
     }
 
-    private fun sendResult(result: ExecutionResult) {
-        val json = objectMapper.writeValueAsString(buildSpecification(result))
-        withSession { send(Frame.Text(json)) }
-    }
-
-    /** Closes the connection with the [GraphQlSubscription.completionReason]. */
-    override fun onComplete(): Unit = withSession { close(graphQlSubscription.completionReason) }
+    /** Closes the connection with the [completionReason]. */
+    override fun onComplete(): Unit = withSession { close(completionReason) }
 
     /** Closes the connection with a [CloseReason.Codes.INTERNAL_ERROR]. */
     override fun onError(throwable: Throwable): Unit = withSession {

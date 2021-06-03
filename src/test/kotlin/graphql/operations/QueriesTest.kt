@@ -11,6 +11,7 @@ import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.LocalDateTime
@@ -61,7 +62,7 @@ class QueriesTest {
         @Test
         fun `Only users (including the user themselves) who are typing must have their typing statuses read`() {
             val (admin1Id, admin2Id, admin3Id) = createVerifiedUsers(3).map { it.userId }
-            val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(listOf(admin1Id, admin2Id, admin3Id)) }
+            val (chat1Id, chat2Id, chat3Id) = (1..3).map { GroupChats.create(setOf(admin1Id, admin2Id, admin3Id)) }
             TypingStatuses.update(chat1Id, admin1Id, isTyping = true)
             TypingStatuses.update(chat2Id, admin2Id, isTyping = true)
             val data = executeGraphQlViaEngine(
@@ -136,7 +137,7 @@ class QueriesTest {
         @Test
         fun `Reading a public chat mustn't require an access token`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val data = executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId)).data!!["readChat"] as Map<*, *>
             assertEquals("GroupChat", data["__typename"])
         }
@@ -144,7 +145,7 @@ class QueriesTest {
         @Test
         fun `Reading a public chat with an access token must return the chat as it's viewed by the user`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             val data =
@@ -163,7 +164,7 @@ class QueriesTest {
         @Test
         fun `Reading a non-public chat must require authorization`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val status = executeGraphQlViaHttp(readChatQuery, mapOf("id" to chatId)).status()
             assertEquals(HttpStatusCode.Unauthorized, status)
         }
@@ -171,7 +172,7 @@ class QueriesTest {
         @Test
         fun `The user's chat must be read`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val data =
                 executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), adminId).data!!["readChat"] as Map<*, *>
             assertEquals("GroupChat", data["__typename"])
@@ -192,7 +193,7 @@ class QueriesTest {
         /** Creates the [count] of [CreatedChats.chatIdList]. */
         private fun createChats(count: Int = 10): CreatedChats {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..count).map { GroupChats.create(listOf(adminId)) }.toLinkedHashSet()
+            val chatIdList = (1..count).map { GroupChats.create(setOf(adminId)) }.toLinkedHashSet()
             return CreatedChats(adminId, chatIdList)
         }
 
@@ -255,22 +256,24 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val (adminId, chatIdList) = createChats()
-            GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
-            val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
-            assertEquals(listOf(2, 4, 5).map(chatIdList::elementAt), executeReadChats(adminId, pagination))
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createChats()
+                GroupChatUsers.removeUsers(chatIdList.elementAt(3), adminId)
+                val pagination = ForwardPagination(first = 3, after = chatIdList.elementAt(1))
+                assertEquals(listOf(2, 4, 5).map(chatIdList::elementAt), executeReadChats(adminId, pagination))
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, chatIdList) = createChats()
-            val index = 4
-            val chatId = chatIdList.elementAt(index)
-            GroupChatUsers.removeUsers(chatId, adminId)
-            val actual = executeReadChats(adminId, ForwardPagination(after = chatId))
-            assertEquals(chatIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val (adminId, chatIdList) = createChats()
+                val index = 4
+                val chatId = chatIdList.elementAt(index)
+                GroupChatUsers.removeUsers(chatId, adminId)
+                val actual = executeReadChats(adminId, ForwardPagination(after = chatId))
+                assertEquals(chatIdList.drop(index + 1), actual)
+            }
     }
 
     private data class ReadContactsResponse(val edges: List<Edge>) {
@@ -468,7 +471,7 @@ class QueriesTest {
                 """,
                 mapOf(
                     "chatId" to chatId,
-                    "query" to query.toUpperCase(),
+                    "query" to query.uppercase(),
                     "last" to pagination?.last,
                     "before" to pagination?.before?.toString(),
                 ),
@@ -480,7 +483,7 @@ class QueriesTest {
         @Test
         fun `The chat must be searched case-insensitively as per the pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val query = "matched"
             val messageIdList = (1..10).map {
                 Messages.message(adminId, chatId, MessageText("not matching"))
@@ -503,7 +506,7 @@ class QueriesTest {
         @Test
         fun `Searching a public chat with an access token must return the chat as it's viewed by the user`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             executeSearchChatMessages(adminId, chatId).edges!![0].node.hasStar.let(::assertTrue)
@@ -540,14 +543,14 @@ class QueriesTest {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
             assertEquals(chatIdList, executeSearchChats(adminId))
         }
 
         @Test
         fun `The number of items specified by the limit must be returned from after the cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
             val first = 3
             val index = 4
             val pagination = ForwardPagination(first, after = chatIdList[index])
@@ -557,7 +560,7 @@ class QueriesTest {
         @Test
         fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
             val first = 3
             val actual = executeSearchChats(adminId, ForwardPagination(first))
             assertEquals(chatIdList.take(first), actual)
@@ -566,7 +569,7 @@ class QueriesTest {
         @Test
         fun `Every item after the cursor must be retrieved when there's no limit`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
             val index = 4
             val actual = executeSearchChats(adminId, ForwardPagination(after = chatIdList[index]))
             assertEquals(chatIdList.drop(index + 1), actual)
@@ -575,29 +578,31 @@ class QueriesTest {
         @Test
         fun `Zero items must be retrieved when using the last item's cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
             val pagination = ForwardPagination(after = chatIdList.last())
             assertEquals(0, executeSearchChats(adminId, pagination).size)
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
-            GroupChatUsers.removeUsers(chatIdList[3], adminId)
-            val actual = executeSearchChats(adminId, ForwardPagination(first = 3, after = chatIdList[1]))
-            assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
+                GroupChatUsers.removeUsers(chatIdList[3], adminId)
+                val actual = executeSearchChats(adminId, ForwardPagination(first = 3, after = chatIdList[1]))
+                assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId)) }
-            val index = 4
-            GroupChatUsers.removeUsers(chatIdList[index], adminId)
-            val actual = executeSearchChats(adminId, ForwardPagination(after = chatIdList[index]))
-            assertEquals(chatIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val chatIdList = (1..10).map { GroupChats.create(setOf(adminId)) }
+                val index = 4
+                GroupChatUsers.removeUsers(chatIdList[index], adminId)
+                val actual = executeSearchChats(adminId, ForwardPagination(after = chatIdList[index]))
+                assertEquals(chatIdList.drop(index + 1), actual)
+            }
 
         @Test
         fun `Private and group chats must get paginated together`() {
@@ -634,7 +639,7 @@ class QueriesTest {
         @Test
         fun `Messages must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map {
                 Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
             }
@@ -772,7 +777,7 @@ class QueriesTest {
         @Test
         fun `Searchable messages must be found`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val query = "Kotlin"
             val expected = listOf(query, "C++")
                 .map {
@@ -853,7 +858,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "matched"
             val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
             }
             val paginatedChatIdList = executeSearchMessages(adminId, query).edges.map { it.node.chat.chatId }
             assertEquals(chatIdList, paginatedChatIdList)
@@ -864,7 +869,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "matched"
             val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
             }
             val first = 3
             val index = 4
@@ -880,7 +885,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "matched"
             val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
             }
             val first = 3
             val paginatedChatIdList =
@@ -893,7 +898,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "matched"
             val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
             }
             val index = 4
             val paginatedChatIdList =
@@ -908,7 +913,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "matched"
             val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
             }
             val pagination = ForwardPagination(after = chatIdList.last())
             val paginatedChatIdList =
@@ -917,34 +922,36 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val query = "matched"
-            val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
-            }
-            GroupChatUsers.removeUsers(chatIdList[3], adminId)
-            val actual = executeSearchMessages(adminId, query, ForwardPagination(first = 3, after = chatIdList[1]))
-                .edges
-                .map { it.node.chat.chatId }
-            assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
-        }
-
-        @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val query = "matched"
-            val chatIdList = (1..10).map {
-                GroupChats.create(listOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
-            }
-            val index = 4
-            GroupChatUsers.removeUsers(adminId, chatIdList[index])
-            val paginatedChatIdList =
-                executeSearchMessages(adminId, query, ForwardPagination(after = chatIdList[index]))
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val query = "matched"
+                val chatIdList = (1..10).map {
+                    GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                }
+                GroupChatUsers.removeUsers(chatIdList[3], adminId)
+                val actual = executeSearchMessages(adminId, query, ForwardPagination(first = 3, after = chatIdList[1]))
                     .edges
                     .map { it.node.chat.chatId }
-            assertEquals(chatIdList.drop(index + 1), paginatedChatIdList)
-        }
+                assertEquals(listOf(chatIdList[2], chatIdList[4], chatIdList[5]), actual)
+            }
+
+        @Test
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val adminId = createVerifiedUsers(1).first().userId
+                val query = "matched"
+                val chatIdList = (1..10).map {
+                    GroupChats.create(setOf(adminId)).also { Messages.message(adminId, it, MessageText(query)) }
+                }
+                val index = 4
+                GroupChatUsers.removeUsers(adminId, chatIdList[index])
+                val paginatedChatIdList =
+                    executeSearchMessages(adminId, query, ForwardPagination(after = chatIdList[index]))
+                        .edges
+                        .map { it.node.chat.chatId }
+                assertEquals(chatIdList.drop(index + 1), paginatedChatIdList)
+            }
     }
 
     private data class SearchUsersResponse(val edges: List<Edge>) {
@@ -1034,7 +1041,7 @@ class QueriesTest {
         @Test
         fun `The public chat message must be read as viewed by the user and anonymous user`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(admin.userId, chatId)
             Stargazers.create(admin.userId, messageId)
             assertEquals(
@@ -1050,7 +1057,7 @@ class QueriesTest {
         @Test
         fun `Attempting to read a message the user can't see must fail`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
             assertEquals(HttpStatusCode.Unauthorized, executeReadMessage(messageId = messageId).statusCode)
         }
@@ -1103,21 +1110,23 @@ class QueriesTest {
         }
 
         @Test
-        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val userIdList = createVerifiedUsers(10).map { it.userId }
-            deleteUser(userIdList[3])
-            val actual = executeSearchUsers(pagination = ForwardPagination(first = 3, after = userIdList[1]))
-            assertEquals(listOf(userIdList[2], userIdList[4], userIdList[5]), actual)
-        }
+        fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`(): Unit =
+            runBlocking {
+                val userIdList = createVerifiedUsers(10).map { it.userId }
+                deleteUser(userIdList[3])
+                val actual = executeSearchUsers(pagination = ForwardPagination(first = 3, after = userIdList[1]))
+                assertEquals(listOf(userIdList[2], userIdList[4], userIdList[5]), actual)
+            }
 
         @Test
-        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val userIdList = createVerifiedUsers(10).map { it.userId }
-            val index = 4
-            deleteUser(userIdList[index])
-            val actual = executeSearchUsers(pagination = ForwardPagination(after = userIdList[index]))
-            assertEquals(userIdList.drop(index + 1), actual)
-        }
+        fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`(): Unit =
+            runBlocking {
+                val userIdList = createVerifiedUsers(10).map { it.userId }
+                val index = 4
+                deleteUser(userIdList[index])
+                val actual = executeSearchUsers(pagination = ForwardPagination(after = userIdList[index]))
+                assertEquals(userIdList.drop(index + 1), actual)
+            }
     }
 
     private data class SearchBlockedUsersResponse(val edges: List<Edge>) {
@@ -1254,7 +1263,7 @@ class QueriesTest {
         @Test
         fun `Using an invite code from a non-invitable must fail`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             val inviteCode = GroupChats.readInviteCode(chatId)!!
             GroupChats.setInvitability(chatId, isInvitable = false)
             assertEquals("InvalidInviteCode", executeReadGroupChat(inviteCode))
@@ -1263,7 +1272,7 @@ class QueriesTest {
         @Test
         fun `The chat must be read`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.INVITABLE)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             val inviteCode = GroupChats.readInviteCode(chatId)!!
             assertEquals("GroupChatInfo", executeReadGroupChat(inviteCode))
         }
@@ -1318,8 +1327,8 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val query = "Kotlin"
             val chatIdList = (1..5).map {
-                GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-                GroupChats.create(listOf(adminId), title = GroupChatTitle(query), publicity = GroupChatPublicity.PUBLIC)
+                GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+                GroupChats.create(setOf(adminId), title = GroupChatTitle(query), publicity = GroupChatPublicity.PUBLIC)
             }
             assertEquals(chatIdList, executeSearchPublicChats(adminId, query).edges.map { it.node.chatId })
         }
@@ -1327,7 +1336,7 @@ class QueriesTest {
         @Test
         fun `Chats must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatIdList = (1..10).map { GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC) }
+            val chatIdList = (1..10).map { GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC) }
             val first = 3
             val index = 4
             val pagination = ForwardPagination(first, after = chatIdList[index])
@@ -1338,7 +1347,7 @@ class QueriesTest {
         @Test
         fun `Searching chats with an access token must return chats as viewed by the user`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
             val hasStar = executeSearchPublicChats(adminId).edges[0].node.messages.edges.first().node.hasStar

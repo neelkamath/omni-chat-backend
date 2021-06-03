@@ -1,8 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.groupChatsNotifier
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
@@ -28,8 +26,9 @@ object GroupChatUsers : Table() {
     /**
      * Makes the [userIdList] admins of the [chatId].
      *
-     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [groupChatsNotifier]. An
-     * [IllegalArgumentException] will be thrown if any of the [userIdList] aren't in the chat.
+     * If [shouldNotify], subscribers will receive the [UpdatedGroupChat] via [chatsNotifier] and
+     * [groupChatMetadataNotifier]. An [IllegalArgumentException] will be thrown if any of the [userIdList] aren't in
+     * the chat.
      */
     fun makeAdmins(chatId: Int, userIdList: Collection<Int>, shouldNotify: Boolean = true) {
         val invalidUsers = userIdList.filterNot { isUserInChat(it, chatId) }
@@ -39,7 +38,8 @@ object GroupChatUsers : Table() {
         }
         if (shouldNotify) {
             val update = UpdatedGroupChat(chatId, adminIdList = readAdminIdList(chatId).toList())
-            groupChatsNotifier.publish(update, readUserIdList(chatId))
+            chatsNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+            groupChatMetadataNotifier.publish(update, ChatId(chatId))
         }
     }
 
@@ -75,8 +75,8 @@ object GroupChatUsers : Table() {
     /**
      * Adds the [users] who aren't already in the [chatId].
      *
-     * Notifies existing users of the [UpdatedGroupChat] via [groupChatsNotifier], and the [users] of the [GroupChatId]
-     * via [groupChatsNotifier].
+     * Notifies existing users of the [UpdatedGroupChat] via [chatsNotifier], and the [users] of the [GroupChatId]
+     * via [chatsNotifier]. Subscribers will be updated of the [UpdatedGroupChat] via [groupChatMetadataNotifier].
      */
     fun addUsers(chatId: Int, users: Collection<Int>) {
         val newUserIdList = users.filterNot { isUserInChat(it, chatId) }.toSet()
@@ -87,9 +87,10 @@ object GroupChatUsers : Table() {
                 this[isAdmin] = false
             }
         }
-        groupChatsNotifier.publish(GroupChatId(chatId), newUserIdList)
+        chatsNotifier.publish(GroupChatId(chatId), newUserIdList.map(::UserId))
         val update = UpdatedGroupChat(chatId, newUserIdList = newUserIdList.toList())
-        groupChatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList))
+        chatsNotifier.publish(update, readUserIdList(chatId).minus(newUserIdList).map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
     fun addUsers(chatId: Int, vararg users: Int): Unit = addUsers(chatId, users.toList())
@@ -123,9 +124,12 @@ object GroupChatUsers : Table() {
      * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
-     * [groupChatsNotifier]. Removed users will be notified of the [UnstarredChat] via [messagesNotifier].
+     * [chatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnstarredChat] via
+     * [messagesNotifier]. Clients who have subscribed to the [chatId] via [chatMessagesNotifier],
+     * [chatOnlineStatusesNotifier], [chatAccountsNotifier], [groupChatMetadataNotifier], and
+     * [chatTypingStatusesNotifier] will be unsubscribed if the chat gets deleted.
      */
-    fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
+    suspend fun removeUsers(chatId: Int, userIdList: Set<Int>): Boolean {
         require(canUsersLeave(chatId, userIdList)) {
             "The users ($userIdList) cannot leave because the chat needs an admin."
         }
@@ -135,15 +139,26 @@ object GroupChatUsers : Table() {
             deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
         removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
-        groupChatsNotifier.publish(ExitedUsers(chatId, removedIdList), originalIdList)
+        val update = ExitedUsers(chatId, removedIdList)
+        chatsNotifier.publish(update, originalIdList.map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
         if (readUserIdList(chatId).isEmpty()) {
             GroupChats.delete(chatId)
+            setOf(
+                chatMessagesNotifier,
+                chatOnlineStatusesNotifier,
+                chatTypingStatusesNotifier,
+                chatAccountsNotifier,
+                groupChatMetadataNotifier,
+            ).forEach { notifier ->
+                notifier.unsubscribe { it.data.chatId == chatId }
+            }
             return true
         }
         return false
     }
 
-    fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toSet())
+    suspend fun removeUsers(chatId: Int, vararg userIdList: Int): Boolean = removeUsers(chatId, userIdList.toSet())
 
     /**
      * Whether the [userId] can leave every chat they're in. Returns `false` only if they're the last admin of a chat
@@ -152,7 +167,7 @@ object GroupChatUsers : Table() {
     fun canUserLeave(userId: Int): Boolean = readChatIdList(userId).all { canUsersLeave(it, userId) }
 
     /** Calls [removeUsers] on the [userId] for every chat they're in. The [userId] needn't exist. */
-    fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
+    suspend fun removeUser(userId: Int): Unit = readChatIdList(userId).forEach { removeUsers(it, userId) }
 
     /**
      * Returns the chat IDs of every chat the [userId] is in, or an empty [LinkedHashSet] if the [userId] doesn't exist.

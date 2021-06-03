@@ -2,6 +2,6 @@
 
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
-class NewActionMessage(override val id: Int) : MessagesSubscription, NewMessage {
+class NewActionMessage(override val id: Int) : MessagesSubscription, NewMessage, ChatMessagesSubscription {
     fun getActionableMessage(): ActionableMessage = ActionableMessage(id)
 }

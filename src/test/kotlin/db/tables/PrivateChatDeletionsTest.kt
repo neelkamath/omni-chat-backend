@@ -2,8 +2,14 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
+import com.neelkamath.omniChatBackend.db.UserId
+import com.neelkamath.omniChatBackend.db.awaitBrokering
+import com.neelkamath.omniChatBackend.db.chatsNotifier
 import com.neelkamath.omniChatBackend.db.count
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
 import com.neelkamath.omniChatBackend.linkedHashSetOf
+import io.reactivex.rxjava3.subscribers.TestSubscriber
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
@@ -12,6 +18,20 @@ import kotlin.test.*
 class PrivateChatDeletionsTest {
     @Nested
     inner class Create {
+        @Test
+        fun `Deleting a chat must only notify the user who deleted it`(): Unit = runBlocking {
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            awaitBrokering()
+            val (user1Subscriber, user2Subscriber) = setOf(user1Id, user2Id)
+                .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
+            PrivateChatDeletions.create(chatId, user1Id)
+            awaitBrokering()
+            val actual = user1Subscriber.values().map { (it as DeletedPrivateChat).getChatId() }
+            assertEquals(listOf(chatId), actual)
+            user2Subscriber.assertNoValues()
+        }
+
         @Test
         fun `Deleting a chat the user was never in must fail`() {
             val userId = createVerifiedUsers(1).first().userId

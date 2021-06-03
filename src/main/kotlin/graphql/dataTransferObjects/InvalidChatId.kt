@@ -2,7 +2,11 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 
-class InvalidChatId :
+object InvalidChatId :
+    ChatOnlineStatusesSubscription,
+    ChatTypingStatusesSubscription,
+    ChatAccountsSubscription,
+    GroupChatMetadataSubscription,
     CreateTextMessageResult,
     ForwardMessageResult,
     SearchChatMessagesResult,
@@ -11,7 +15,8 @@ class InvalidChatId :
     CreatePrivateChatResult,
     CreateActionMessageResult,
     CreatePollMessageResult,
-    CreateGroupChatInviteMessageResult {
+    CreateGroupChatInviteMessageResult,
+    ChatMessagesSubscription {
 
     fun getPlaceholder() = Placeholder
 }

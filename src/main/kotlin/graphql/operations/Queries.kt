@@ -19,7 +19,7 @@ import java.util.*
 
 fun readOnlineStatus(env: DataFetchingEnvironment): ReadOnlineStatusResult {
     val userId = env.getArgument<Int>("userId")
-    return if (Users.isExisting(userId)) OnlineStatus(userId) else InvalidUserId()
+    return if (Users.isExisting(userId)) OnlineStatus(userId) else InvalidUserId
 }
 
 fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
@@ -40,7 +40,7 @@ fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     return when (chatId) {
         in PrivateChats.readIdList(env.userId!!) -> PrivateChat(chatId)
         in GroupChatUsers.readChatIdList(env.userId!!) -> GroupChat(chatId)
-        else -> InvalidChatId()
+        else -> InvalidChatId
     }
 }
 
@@ -80,10 +80,10 @@ fun readMessage(env: DataFetchingEnvironment): Message {
 
 fun requestTokenSet(env: DataFetchingEnvironment): RequestTokenSetResult {
     val login = env.parseArgument<Login>("login")
-    if (!Users.isUsernameTaken(login.username)) return NonexistingUser()
+    if (!Users.isUsernameTaken(login.username)) return NonexistingUser
     val userId = Users.readId(login.username)
-    if (!Users.hasVerifiedEmailAddress(userId)) return UnverifiedEmailAddress()
-    if (!Users.isValidLogin(login)) return IncorrectPassword()
+    if (!Users.hasVerifiedEmailAddress(userId)) return UnverifiedEmailAddress
+    if (!Users.isValidLogin(login)) return IncorrectPassword
     return TokenSet(buildTokenSet(userId))
 }
 
@@ -109,7 +109,7 @@ fun searchChatMessages(env: DataFetchingEnvironment): SearchChatMessagesResult {
             in PrivateChats.readIdList(env.userId!!) ->
                 Messages.searchPrivateChat(chatId, env.userId!!, query, pagination)
             in GroupChatUsers.readChatIdList(env.userId!!) -> Messages.searchGroupChat(chatId, query, pagination)
-            else -> return InvalidChatId()
+            else -> return InvalidChatId
         }
     }
     return MessageEdges(edges)
@@ -216,7 +216,7 @@ fun readGroupChat(env: DataFetchingEnvironment): ReadGroupChatResult {
     val inviteCode = env.getArgument<UUID>("inviteCode")
     return if (GroupChats.isExistingInviteCode(inviteCode))
         GroupChatInfo(GroupChats.readChatIdFromInviteCode(inviteCode)!!)
-    else InvalidInviteCode()
+    else InvalidInviteCode
 }
 
 fun searchPublicChats(env: DataFetchingEnvironment): GroupChatsConnection {

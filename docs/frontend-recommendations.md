@@ -5,6 +5,7 @@ Since this repo is for the backend API, here are recommendations for a developer
 - Have a _Developers_ section which states the URL Omni Chat instance is running on (e.g., `api.example.com`), and links to Omni Chat's [docs](../README.md) so that third party developers can create and run bots, etc. for your app.
 - Messages consisting solely of a single emoji should have the emoji enlarged.
 - Optionally require a password or biometric to unlock the app.
+- Have a mode for accountless users where they can search for users, view public chats, etc.
 - Allow the user to draw messages in-app. You could convert it to an image before sending.
 - Allow the user to send their location in-app. For example, an option to send their location via a Google Maps URL could be included.
 - Show link previews so that URLs show relevant info about websites shared in messages, such as a Google Maps URL. For example, you could use [SwiftLinkPreview](https://github.com/LeonardoCardoso/SwiftLinkPreview) for iOS.

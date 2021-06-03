@@ -2,10 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.CursorType
-import com.neelkamath.omniChatBackend.db.ForwardPagination
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.slice
@@ -33,8 +30,8 @@ class StargazersTest {
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber) =
-                    listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -50,7 +47,7 @@ class StargazersTest {
     /** Creates the number of [messages] in the [StarredChat.messageIdList]. */
     private fun createStarredChat(messages: Int = 10): StarredChat {
         val adminId = createVerifiedUsers(1).first().userId
-        val chatId = GroupChats.create(listOf(adminId))
+        val chatId = GroupChats.create(setOf(adminId))
         repeat(messages) {
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(adminId, messageId)
@@ -151,12 +148,12 @@ class StargazersTest {
         fun `Deleting a message's stars must only notify its stargazers`() {
             runBlocking {
                 val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-                val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+                val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
                 val messageId = Messages.message(adminId, chatId)
                 listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
                 awaitBrokering()
                 val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
-                    .map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.deleteStar(messageId)
                 awaitBrokering()
                 listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
@@ -178,8 +175,8 @@ class StargazersTest {
                 val messageId = Messages.message(user1Id, chatId)
                 Stargazers.create(user1Id, messageId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber) =
-                    listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 Stargazers.deleteUserStar(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -192,10 +189,10 @@ class StargazersTest {
         fun `Deleting a non-existing star mustn't cause anything to happen`() {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
-                val chatId = GroupChats.create(listOf(adminId))
+                val chatId = GroupChats.create(setOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
-                val subscriber = messagesNotifier.subscribe(adminId).subscribeWith(TestSubscriber())
+                val subscriber = messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
                 Stargazers.deleteUserStar(adminId, messageId)
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -206,9 +203,9 @@ class StargazersTest {
     @Nested
     inner class DeleteUserChat {
         @Test
-        fun `Every message the user starred in the chat must be unstarred`() {
+        fun `Every message the user starred in the chat must be unstarred`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, userId)
@@ -218,12 +215,16 @@ class StargazersTest {
         @Test
         fun `Only the user must be notified of the unstarred messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(user1Id, user2Id))
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId)
             Stargazers.create(user1Id, messageId)
             awaitBrokering()
             val (user1Subscriber, user2Subscriber) =
-                listOf(user1Id, user2Id).map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                listOf(user1Id, user2Id).map {
+                    messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(
+                        TestSubscriber()
+                    )
+                }
             GroupChatUsers.removeUsers(chatId, user1Id)
             awaitBrokering()
             val actual = user1Subscriber.values().map { (it as UnstarredChat).getChatId() }

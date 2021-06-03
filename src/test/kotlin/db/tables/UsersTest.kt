@@ -2,9 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.accountsNotifier
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.onlineStatusesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.OnlineStatus
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedProfilePic
 import com.neelkamath.omniChatBackend.graphql.routing.*
@@ -73,10 +71,23 @@ class UsersTest {
     @Nested
     inner class SetOnlineStatus {
         @Test
+        fun `Changing the online status must notify unauthenticated users`(): Unit = runBlocking {
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val subscriber =
+                chatOnlineStatusesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
+            Users.setOnlineStatus(adminId, isOnline = true)
+            awaitBrokering()
+            val actual = subscriber.values().map { (it as OnlineStatus).getUserId() }
+            assertEquals(listOf(adminId), actual)
+        }
+
+        @Test
         fun `Updating the user's online status to the current value mustn't cause notifications to be sent`() {
             runBlocking {
                 val (contactOwnerId, contactId) = createVerifiedUsers(2).map { it.userId }
-                val subscriber = onlineStatusesNotifier.subscribe(contactOwnerId).subscribeWith(TestSubscriber())
+                val subscriber =
+                    onlineStatusesNotifier.subscribe(UserId(contactOwnerId)).flowable.subscribeWith(TestSubscriber())
                 Users.setOnlineStatus(contactId, Users.isOnline(contactId))
                 awaitBrokering()
                 subscriber.assertNoValues()
@@ -84,19 +95,19 @@ class UsersTest {
         }
 
         @Test
-        fun `Updating the user's status must only notify users who have them in their contacts or chats`(): Unit =
+        fun `Updating the user's status must only notify (authenticated) users who have them in their contacts or chats`(): Unit =
             runBlocking {
                 val (updaterId, contactOwnerId, privateChatSharerId, userId) = createVerifiedUsers(4).map { it.userId }
                 Contacts.create(contactOwnerId, updaterId)
                 PrivateChats.create(privateChatSharerId, updaterId)
                 val (updaterSubscriber, contactOwnerSubscriber, privateChatSharerSubscriber, userSubscriber) =
-                    listOf(updaterId, contactOwnerId, privateChatSharerId, userId)
-                        .map { onlineStatusesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                    setOf(updaterId, contactOwnerId, privateChatSharerId, userId)
+                        .map { onlineStatusesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val status = !Users.isOnline(updaterId)
                 Users.setOnlineStatus(updaterId, status)
                 awaitBrokering()
-                listOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
-                listOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach { subscriber ->
+                setOf(updaterSubscriber, userSubscriber).forEach { it.assertNoValues() }
+                setOf(contactOwnerSubscriber, privateChatSharerSubscriber).forEach { subscriber ->
                     val actual = subscriber.values().map { (it as OnlineStatus).getUserId() }
                     assertEquals(listOf(updaterId), actual)
                 }
@@ -169,7 +180,7 @@ class UsersTest {
         @Test
         fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
-            val subscriber = accountsNotifier.subscribe(userId).subscribeWith(TestSubscriber())
+            val subscriber = accountsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
             Users.updatePic(userId, readPic("76px×57px.jpg"))
             awaitBrokering()
             val actual = subscriber.values().map { (it as UpdatedProfilePic).getUserId() }

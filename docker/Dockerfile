@@ -1,11 +1,11 @@
-FROM gradle:6.8.2-jdk15-hotspot AS builder
+FROM gradle:7.0.2-jdk11-hotspot AS builder
 WORKDIR /home/gradle/project
 COPY build.gradle.kts gradle.properties settings.gradle.kts ./
 RUN gradle shadowJar
 COPY src/main/ src/main/
 RUN gradle shadowJar
 
-FROM adoptopenjdk:15-jre-hotspot
+FROM adoptopenjdk:11-jre-hotspot
 WORKDIR /app
 COPY --from=builder /home/gradle/project/build/libs/*.jar omni-chat-backend.jar
 COPY src/main/resources/db/migration/ .

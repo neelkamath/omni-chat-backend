@@ -39,7 +39,7 @@ data class Audio(
 
         /** Whether the [extension] is one of the supported audio types (i.e., MP3 and MP4). */
         fun isValidExtension(extension: String): Boolean =
-            listOf("mp3", "mp4", "m4a", "m4p", "m4b", "m4r", "m4v").any { it.equals(extension, ignoreCase = true) }
+            setOf("mp3", "mp4", "m4a", "m4p", "m4b", "m4r", "m4v").any { it.equals(extension, ignoreCase = true) }
     }
 }
 
@@ -83,7 +83,7 @@ data class Pic(
 
         companion object {
             /** Throws an [IllegalArgumentException] if the [extension] (e.g., `"pjpeg"`) isn't one of the [Type]s. */
-            fun build(extension: String): Type = when (extension.toLowerCase()) {
+            fun build(extension: String): Type = when (extension.lowercase()) {
                 "png" -> PNG
                 "jpg", "jpeg", "jfif", "pjpeg", "pjp" -> JPEG
                 else ->

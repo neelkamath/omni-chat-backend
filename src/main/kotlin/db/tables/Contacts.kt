@@ -32,7 +32,7 @@ object Contacts : Table() {
                 it[this.contactUserId] = contactUserId
             }
         }
-        accountsNotifier.publish(NewContact(contactUserId), ownerUserId)
+        accountsNotifier.publish(NewContact(contactUserId), UserId(ownerUserId))
         return true
     }
 
@@ -99,7 +99,7 @@ object Contacts : Table() {
         }
         return if (count == 0) false
         else {
-            accountsNotifier.publish(DeletedContact(contactUserId), ownerUserId)
+            accountsNotifier.publish(DeletedContact(contactUserId), UserId(ownerUserId))
             true
         }
     }
@@ -110,7 +110,7 @@ object Contacts : Table() {
      * [DeletedContact] via [accountsNotifier].
      */
     fun deleteUserEntries(userId: Int) {
-        accountsNotifier.publish(DeletedContact(userId), readOwnerUserIdList(userId))
+        accountsNotifier.publish(DeletedContact(userId), readOwnerUserIdList(userId).map(::UserId))
         transaction {
             deleteWhere { (contactOwnerUserId eq userId) or (contactUserId eq userId) }
         }

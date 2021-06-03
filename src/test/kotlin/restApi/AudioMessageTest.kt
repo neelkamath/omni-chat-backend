@@ -20,7 +20,7 @@ fun postAudioMessage(
     dummy: DummyFile,
     contextMessageId: Int? = null,
 ): TestApplicationResponse {
-    val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
+    val parameters = setOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
         .filter { it.second != null }
         .formUrlEncode()
     return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
@@ -33,7 +33,7 @@ class AudioMessageTest {
         @Test
         fun `Using a capitalized file extensions mustn't fail`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val dummy = DummyFile("audio.MP3", bytes = 1)
             assertEquals(HttpStatusCode.NoContent, postAudioMessage(admin.accessToken, chatId, dummy).status())
         }

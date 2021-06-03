@@ -81,7 +81,10 @@ object Users : IntIdTable() {
 
     fun readLastOnline(userId: Int): LocalDateTime? = transaction { select(Users.id eq userId).first()[lastOnline] }
 
-    /** Notifies subscribers of the [OnlineStatus] only if [isOnline] differs from the [userId]'s current status. */
+    /**
+     * Subscribers get notified via [onlineStatusesNotifier] and [chatOnlineStatusesNotifier] unless the [userId]'s
+     * status was already [isOnline].
+     */
     fun setOnlineStatus(userId: Int, isOnline: Boolean): Unit = transaction {
         val status = transaction { select(Users.id eq userId).first()[Users.isOnline] }
         if (status == isOnline) return@transaction
@@ -89,8 +92,11 @@ object Users : IntIdTable() {
             it[Users.isOnline] = isOnline
             it[lastOnline] = LocalDateTime.now()
         }
-        val subscribers = Contacts.readOwnerUserIdList(userId) + readChatSharers(userId)
-        onlineStatusesNotifier.publish(OnlineStatus(userId), subscribers)
+        val update = OnlineStatus(userId)
+        val subscribers = Contacts.readOwnerUserIdList(userId).plus(readChatSharers(userId)).map(::UserId)
+        onlineStatusesNotifier.publish(update, subscribers)
+        val chatIdList = GroupChatUsers.readChatIdList(userId).filter(GroupChats::isExistingPublicChat).map(::ChatId)
+        chatOnlineStatusesNotifier.publish(update, chatIdList)
     }
 
     /**

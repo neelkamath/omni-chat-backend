@@ -576,40 +576,87 @@ type Subscription {
     message from a chat the user wasn't previously in can be sent as well (e.g., when the other user in a private chat
     the user deleted sends a message in it). The subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatMessages` for unauthenticated
+    users such as an accountless user viewing a public chat.
     """
     subscribeToMessages: MessagesSubscription!
+
+    """
+    Yields created, updated, and deleted messages for the `chatId`. If the user is authenticated, you probably want to
+    use `Subscription.subscribeToMessages` instead.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToChatMessages(chatId: Int!): ChatMessagesSubscription!
 
     """
     Yields the online statuses of users the user has in their contacts, or has a chat with. The subscription will be
     stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatOnlineStatuses` for unauthenticated
+    users such as an accountless user viewing a public chat.
     """
     subscribeToOnlineStatuses: OnlineStatusesSubscription!
 
     """
+    Yields the online statuses of users in the `chatId`. If the user is authenticated, you probably want to use
+    `Subscription.subscribeToOnlineStatuses` instead.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToChatOnlineStatuses(chatId: Int!): ChatOnlineStatusesSubscription!
+
+    """
     Yields typing statuses for chats the user has. The subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatTypingStatuses` for unauthenticated
+    users such as an accountless user viewing a public chat.
     """
     subscribeToTypingStatuses: TypingStatusesSubscription!
+
+    """
+    Yields typing statuses for the `chatId`.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToChatTypingStatuses(chatId: Int!): ChatTypingStatusesSubscription!
 
     """
     Yields updates on the user's contacts, the subscriber's account, and accounts of users the subscriber has a chat
     with. The subscription will be stopped if the user deletes their account.
 
-    An access token must be sent with this request.
+    An access token must be sent with this request. See `Subscription.subscribeToChatAccounts` for unauthenticated users
+    such as an accountless user viewing a public chat.
     """
     subscribeToAccounts: AccountsSubscription!
 
     """
-    Yields group chats the user was added to (including chats they created), and group chat metadata updates. The
-    subscription will be stopped if the user deletes their account.
+    Yields updates on the accounts of users in the `chatId`.
 
-    An access token must be sent with this request.
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
     """
-    subscribeToGroupChats: GroupChatsSubscription!
+    subscribeToChatAccounts(chatId: Int!): ChatAccountsSubscription!
+
+    """
+    Yields group chats the user was added to (including chats they created), group chat metadata updates, and private
+    chat deletions. The subscription will be stopped if the user deletes their account.
+
+    An access token must be sent with this request. See `Subscription.subscribeToGroupChatMetadata` for unauthenticated
+    users such as an accountless user viewing a public chat.
+    """
+    subscribeToChats: ChatsSubscription!
+
+    """
+    Yields metadata updates for the `chatId`.
+
+    The subscription will be stopped if the chat gets deleted. If the `chatId` isn't an existing public chat, then an
+    `InvalidChatId` will be returned, and the subscription will be closed.
+    """
+    subscribeToGroupChatMetadata(chatId: Int!): GroupChatMetadataSubscription!
 }
 
 union MessagesSubscription =
@@ -628,6 +675,21 @@ union MessagesSubscription =
     | UserChatMessagesRemoval
     | UnstarredChat
 
+union ChatMessagesSubscription =
+    | CreatedSubscription
+    | NewTextMessage
+    | NewActionMessage
+    | NewPicMessage
+    | NewAudioMessage
+    | NewGroupChatInviteMessage
+    | NewDocMessage
+    | NewVideoMessage
+    | NewPollMessage
+    | UpdatedMessage
+    | DeletedMessage
+    | UserChatMessagesRemoval
+    | InvalidChatId
+
 """Every message in the chat has been unstarred by the user."""
 type UnstarredChat {
     chatId: Int!
@@ -635,7 +697,11 @@ type UnstarredChat {
 
 union OnlineStatusesSubscription = CreatedSubscription | OnlineStatus
 
+union ChatOnlineStatusesSubscription = CreatedSubscription | OnlineStatus | InvalidChatId
+
 union TypingStatusesSubscription = CreatedSubscription | TypingStatus
+
+union ChatTypingStatusesSubscription = CreatedSubscription | TypingStatus | InvalidChatId
 
 """
 A user will be automatically unblocked when they delete their account. In this scenario, an `UnblockedAccount` will not
@@ -652,6 +718,13 @@ union AccountsSubscription =
     | UnblockedAccount
     | DeletedAccount
 
+union ChatAccountsSubscription =
+    | CreatedSubscription
+    | UpdatedAccount
+    | UpdatedProfilePic
+    | DeletedAccount
+    | InvalidChatId
+
 """The `userId` who deleted their account."""
 type DeletedAccount {
     userId: Int!
@@ -667,7 +740,20 @@ A `GroupChatId` is the ID of the chat the user was added to.
 
 If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
 """
-union GroupChatsSubscription = CreatedSubscription | GroupChatId | UpdatedGroupChatPic |  UpdatedGroupChat | ExitedUsers
+union ChatsSubscription =
+    | CreatedSubscription
+    | GroupChatId
+    | UpdatedGroupChatPic
+    | UpdatedGroupChat
+    | ExitedUsers
+    | DeletedPrivateChat
+
+union GroupChatMetadataSubscription =
+    | CreatedSubscription
+    | UpdatedGroupChatPic
+    | UpdatedGroupChat
+    | ExitedUsers
+    | InvalidChatId
 
 """The `chatId` of the group chat whose pic was updated."""
 type UpdatedGroupChatPic {
@@ -822,6 +908,11 @@ type AccountsConnection {
 type AccountEdge {
     node: Account!
     cursor: Cursor!
+}
+
+"""The user deleted the `chatId`."""
+type DeletedPrivateChat {
+    chatId: Int!
 }
 
 interface AccountData {
@@ -984,12 +1075,22 @@ type MessageContext {
     messageId: Int
 }
 
+type MessageDateTimeStatusConnection {
+    edges: [MessageDateTimeStatusEdge!]!
+    pageInfo: PageInfo!
+}
+
+type MessageDateTimeStatusEdge {
+    node: MessageDateTimeStatus!
+    cursor: Cursor!
+}
+
 interface Message {
     messageId: Int!
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1001,7 +1102,7 @@ type TextMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1014,7 +1115,7 @@ type ActionMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1027,7 +1128,7 @@ type PicMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1040,7 +1141,7 @@ type PollMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1053,7 +1154,7 @@ type AudioMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1065,7 +1166,7 @@ type GroupChatInviteMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1078,7 +1179,7 @@ type DocMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1090,7 +1191,7 @@ type VideoMessage implements Message {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1104,7 +1205,7 @@ interface StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1115,7 +1216,7 @@ type StarredTextMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     textMessage: MessageText!
@@ -1127,7 +1228,7 @@ type StarredActionMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     actionableMessage: ActionableMessage!
@@ -1139,7 +1240,7 @@ type StarredPicMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     caption: MessageText
@@ -1151,7 +1252,7 @@ type StarredPollMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     poll: Poll!
@@ -1163,7 +1264,7 @@ type StarredAudioMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1174,7 +1275,7 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     inviteCode: Uuid!
@@ -1186,7 +1287,7 @@ type StarredDocMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1197,7 +1298,7 @@ type StarredVideoMessage implements StarredMessage {
     sender: Account!
     state: MessageState!
     sent: DateTime!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1302,7 +1403,7 @@ type UpdatedMessage {
     chatId: Int!
     messageId: Int!
     state: MessageState!
-    statuses: [MessageDateTimeStatus!]!
+    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
 }

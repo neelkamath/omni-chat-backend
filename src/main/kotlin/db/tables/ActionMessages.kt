@@ -1,5 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TriggeredAction
 import com.neelkamath.omniChatBackend.graphql.routing.ActionMessageInput
@@ -63,7 +64,7 @@ object ActionMessages : Table() {
                 "The user (ID: $userId) cannot trigger the action ($action) on the message (ID: $messageId).",
             )
         val senderId = Messages.readSenderId(messageId)
-        messagesNotifier.publish(senderId to TriggeredAction(messageId, action, userId))
+        messagesNotifier.publish(TriggeredAction(messageId, action, userId), UserId(senderId))
     }
 
     fun readText(messageId: Int): MessageText =

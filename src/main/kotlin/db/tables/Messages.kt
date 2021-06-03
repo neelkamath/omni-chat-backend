@@ -36,7 +36,7 @@ object Messages : IntIdTable() {
     private val type: Column<MessageType> = customEnumeration(
         name = "type",
         sql = "message_type",
-        fromDb = { MessageType.valueOf((it as String).toUpperCase()) },
+        fromDb = { MessageType.valueOf((it as String).uppercase()) },
         toDb = { PostgresEnum("message_type", it) },
     )
 
@@ -66,7 +66,8 @@ object Messages : IntIdTable() {
     fun readSenderId(messageId: Int): Int = transaction { select(Messages.id eq messageId).first()[senderId] }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -84,7 +85,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -102,7 +104,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -120,7 +123,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -138,7 +142,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -156,7 +161,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -174,7 +180,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -192,7 +199,8 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewTextMessage] via [messagesNotifier].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
      * or the [contextMessageId] isn't in the [chatId].
@@ -210,9 +218,11 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. An [IllegalArgumentException] will be
-     * thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast], or the [contextMessageId] isn't in the
-     * [chatId].
+     * Subscribers will be notified of the [NewMessage] via [messagesNotifier]. If the [chatId] is a public group chat,
+     * subscribers will be notified via [chatMessagesNotifier].
+     *
+     * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId], if it [isInvalidBroadcast],
+     * or the [contextMessageId] isn't in the [chatId].
      *
      * @see createTextMessage
      * @see createActionMessage
@@ -260,7 +270,8 @@ object Messages : IntIdTable() {
             MessageType.POLL -> NewPollMessage(row[id].value)
             MessageType.VIDEO -> NewVideoMessage(row[id].value)
         }
-        messagesNotifier.publish(message, readUserIdList(chatId))
+        messagesNotifier.publish(message, readUserIdList(chatId).map(::UserId))
+        if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(message, ChatId(chatId))
     }
 
     /**
@@ -454,13 +465,17 @@ object Messages : IntIdTable() {
         deleteChatMessages(readMessageIdList(chatId, sent less until))
 
     /**
-     * Deletes all messages the [userId] created in the [chatId]. Subscribers will be notified of the
-     * [UserChatMessagesRemoval] via [messagesNotifier].
+     * Deletes all messages the [userId] created in the [chatId].
+     *
+     * Subscribers will be notified of the [UserChatMessagesRemoval] via [messagesNotifier]. If the [chatId] is a public
+     * group chat, subscribers will also be notified via [chatMessagesNotifier].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
         MessageStatuses.deleteUserChatStatuses(chatId, userId)
         deleteChatMessages(readMessageIdList(chatId, senderId eq userId))
-        messagesNotifier.publish(UserChatMessagesRemoval(chatId, userId), readUserIdList(chatId))
+        val update = UserChatMessagesRemoval(chatId, userId)
+        messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+        if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
     }
 
     /**
@@ -474,13 +489,17 @@ object Messages : IntIdTable() {
     }
 
     /**
-     * Deletes the [messageId] in the [chatId] from messages. Subscribers will be notified of the [DeletedMessage] via
-     * [messagesNotifier].
+     * Deletes the [messageId] in the [chatId] from messages.
+     *
+     * Subscribers will be notified of the [DeletedMessage] via [messagesNotifier]. If the [messageId] is from a public
+     * group chat, then subscribers will be notified via [chatMessagesNotifier] as well.
      */
     fun delete(messageId: Int) {
         val chatId = readChatId(messageId)
         deleteChatMessages(messageId)
-        messagesNotifier.publish(DeletedMessage(chatId, messageId), readUserIdList(chatId))
+        val update = DeletedMessage(chatId, messageId)
+        messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+        if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
     }
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */

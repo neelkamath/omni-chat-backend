@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.CursorType
 import com.neelkamath.omniChatBackend.db.ForwardPagination
+import com.neelkamath.omniChatBackend.db.UserId
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
@@ -28,7 +29,7 @@ object Stargazers : Table() {
                 it[this.messageId] = messageId
             }
         }
-        messagesNotifier.publish(UpdatedMessage(messageId), userId)
+        messagesNotifier.publish(UpdatedMessage(messageId), UserId(userId))
     }
 
     /** Returns the IDs (sorted in ascending order) of messages the [userId] starred as per the [pagination]. */
@@ -80,7 +81,7 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { Stargazers.messageId eq messageId }
         }
-        stargazers.forEach { messagesNotifier.publish(UpdatedMessage(messageId), it) }
+        stargazers.forEach { messagesNotifier.publish(UpdatedMessage(messageId), UserId(it)) }
     }
 
     /**
@@ -94,7 +95,7 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (Stargazers.messageId eq messageId) }
         }
-        messagesNotifier.publish(UpdatedMessage(messageId), userId)
+        messagesNotifier.publish(UpdatedMessage(messageId), UserId(userId))
     }
 
     /**
@@ -115,6 +116,6 @@ object Stargazers : Table() {
         transaction {
             deleteWhere { (Stargazers.userId eq userId) and (messageId inList Messages.readIdList(chatId)) }
         }
-        messagesNotifier.publish(UnstarredChat(chatId), userId)
+        messagesNotifier.publish(UnstarredChat(chatId), UserId(userId))
     }
 }

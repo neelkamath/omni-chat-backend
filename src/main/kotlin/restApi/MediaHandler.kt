@@ -93,7 +93,7 @@ fun <T> postMediaMessage(
  */
 suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartMp4(): Mp4? {
     val (extension, bytes) = readMultipartFile()
-    return if (extension.toLowerCase() != "mp4" || bytes.size > Mp4.MAX_BYTES) null else Mp4(bytes)
+    return if (extension.lowercase() != "mp4" || bytes.size > Mp4.MAX_BYTES) null else Mp4(bytes)
 }
 
 /**

@@ -65,7 +65,7 @@ class ChatMessagesTest {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             assertEquals(messageIdList, getMessages(adminId))
         }
@@ -73,7 +73,7 @@ class ChatMessagesTest {
         @Test
         fun `The number of items specified by the limit must be returned from before the cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val last = 3
             val index = 7
@@ -84,7 +84,7 @@ class ChatMessagesTest {
         @Test
         fun `The number of items specified by the limit from the last item must be retrieved when there's no cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val last = 3
             val actual = getMessages(adminId, BackwardPagination(last))
@@ -94,7 +94,7 @@ class ChatMessagesTest {
         @Test
         fun `Every item before the cursor must be retrieved when there's no limit`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val index = 7
             val actual = getMessages(adminId, BackwardPagination(before = messageIdList[index]))
@@ -104,7 +104,7 @@ class ChatMessagesTest {
         @Test
         fun `Zero items must be retrieved when using the first item's cursor`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val actual = getMessages(adminId, BackwardPagination(before = messageIdList[0])).size
             assertEquals(0, actual)
@@ -113,7 +113,7 @@ class ChatMessagesTest {
         @Test
         fun `Given items 1-10 where item 4 has been deleted, when requesting the last three items before item 6, then items 2, 3, and 5 must be retrieved`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             Messages.delete(messageIdList[3])
             val actual = getMessages(adminId, BackwardPagination(last = 3, before = messageIdList[5]))
@@ -123,7 +123,7 @@ class ChatMessagesTest {
         @Test
         fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val index = 4
             Messages.delete(messageIdList[index])

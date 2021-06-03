@@ -2,6 +2,6 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 
-class InvalidInviteCode : ReadGroupChatResult {
+object InvalidInviteCode : ReadGroupChatResult {
     fun getPlaceholder() = Placeholder
 }

@@ -2,10 +2,15 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 
-class CreatedSubscription :
+object CreatedSubscription :
+    ChatOnlineStatusesSubscription,
+    ChatTypingStatusesSubscription,
+    ChatAccountsSubscription,
+    GroupChatMetadataSubscription,
+    ChatMessagesSubscription,
     MessagesSubscription,
     AccountsSubscription,
-    GroupChatsSubscription,
+    ChatsSubscription,
     OnlineStatusesSubscription,
     TypingStatusesSubscription {
 

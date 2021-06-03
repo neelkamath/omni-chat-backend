@@ -73,6 +73,15 @@ object PrivateChats : Table() {
     fun readIdList(userId: Int): Set<Int> =
         transaction { select((user1Id eq userId) or (user2Id eq userId)).map { it[PrivateChats.id] }.toSet() }
 
+    data class ChatWithUserId(val chatId: Int, val otherUserId: Int)
+
+    /** This includes chats which had no new messages post-deletion. */
+    fun readOtherUserChatIdList(userId: Int): Set<ChatWithUserId> = transaction {
+        select((user1Id eq userId) or (user2Id eq userId))
+            .map { ChatWithUserId(it[PrivateChats.id], if (userId == it[user1Id]) it[user2Id] else it[user1Id]) }
+            .toSet()
+    }
+
     /**
      * Case-insensitively [query]s the messages in the chats the [userId] is in, excluding ones the [userId] deleted.
      *

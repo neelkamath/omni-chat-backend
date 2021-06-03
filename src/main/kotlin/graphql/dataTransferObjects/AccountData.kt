@@ -7,7 +7,7 @@ import com.neelkamath.omniChatBackend.graphql.routing.Bio
 import com.neelkamath.omniChatBackend.graphql.routing.Name
 import com.neelkamath.omniChatBackend.graphql.routing.Username
 
-interface AccountData {
+sealed interface AccountData {
     /** The [Users.id]. */
     val id: Int
 

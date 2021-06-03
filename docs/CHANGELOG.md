@@ -6,7 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
-## 0.19.0
+## [0.20.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.20.0) - 2021-06-03
+
+### Added
+
+- `Subscription.subscribeToChatMessages`
+- `Subscription.subscribeToChatOnlineStatuses`
+- `Subscription.subscribeToChatTypingStatuses`
+- `Subscription.subscribeToChatAccounts`
+- `Subscription.subscribeToGroupChatMetadata`
+- `type MessageDateTimeStatusConnection`
+- `type MessageDateTimeStatusEdge`
+- `type DeletedPrivateChat`
+
+### Changed
+
+- Update the following to paginate the `statuses` field:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `interface StarredMessage`
+    - `type StarredTextMessage`
+    - `type StarredActionMessage`
+    - `type StarredPicMessage`
+    - `type StarredPollMessage`
+    - `type StarredAudioMessage`
+    - `type StarredGroupChatInviteMessage`
+    - `type StarredDocMessage`
+    - `type StarredVideoMessage`
+    - `type UpdatedMessage`
+- Rename `Subscription.subscribeToGroupChats` to `Subscription.subscribeToChats`.
+- Rename `union GroupChatsSubscription` to `union ChatsSubscription`.
+- Add `type DeletedPrivateChat` to `union ChatsSubscription`.
+
+## [0.19.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.19.0) - 2021-05-21
 
 ### Added
 
@@ -21,9 +60,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Disallow using `Mutations.forwardMessage` on group chat invite messages when its `chatId` argument is the same as the ID of the group chat the invitation is for.
 - Rename Docker Hub image from `neelkamath/omni-chat` to `neelkamath/omni-chat-backend`.
 - Make `Mutation.triggerAction` return a `Boolean!` instead of a `TriggerActionResult` for indicating whether the operation was successful.
-- `Subscription.subscribeToTypingStatuses` now yields the user's own typing status.
-- `Query.readTypingUsers` can now return the user's own ID.
-- Give `description` have a default value of `""` in `input GroupChatInput`.
+- Yield the user's own typing statuses in `Subscription.subscribeToTypingStatuses`.
+- Return the user's own ID in `Query.readTypingUsers`.
+- Give `description` a default value of `""` in `input GroupChatInput`.
 - Rename `NonexistentUser` to `NonexistingUser`.
 - Rename `NonexistentOption` to `NonexistingOption`.
 - Rename the `idList` argument to `userIdList` in `Mutation.addGroupChatUsers`.

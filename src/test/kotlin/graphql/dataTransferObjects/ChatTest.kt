@@ -29,7 +29,7 @@ class ChatTest {
         @Test
         fun `Messages must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map { Messages.message(adminId, chatId) }
             val last = 3
             val index = 7

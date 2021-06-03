@@ -1,7 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.readUserIdList
-import com.neelkamath.omniChatBackend.db.typingStatusesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TypingStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -13,7 +12,10 @@ object TypingStatuses : Table() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
     private val userId: Column<Int> = integer("user_id").references(Users.id)
 
-    /** Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier] if necessary. */
+    /**
+     * Notifies subscribers of the [TypingStatus] via [typingStatusesNotifier] and [chatTypingStatusesNotifier] unless
+     * the status hasn't changed.
+     */
     fun update(chatId: Int, userId: Int, isTyping: Boolean) {
         when {
             isExisting(chatId, userId) && isTyping -> return
@@ -21,7 +23,9 @@ object TypingStatuses : Table() {
             !isExisting(chatId, userId) && isTyping -> insert(chatId, userId)
             !isExisting(chatId, userId) && !isTyping -> return
         }
-        typingStatusesNotifier.publish(TypingStatus(chatId, userId), readUserIdList(chatId))
+        val update = TypingStatus(chatId, userId)
+        typingStatusesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+        if (GroupChats.isExistingPublicChat(chatId)) chatTypingStatusesNotifier.publish(update, ChatId(chatId))
     }
 
     /** Whether the [userId] has a record in this table for the [chatId]. */

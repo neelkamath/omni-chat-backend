@@ -1,7 +1,10 @@
 package com.neelkamath.omniChatBackend.db.tables
 
+import com.neelkamath.omniChatBackend.db.UserId
+import com.neelkamath.omniChatBackend.db.chatsNotifier
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
@@ -40,6 +43,7 @@ object PrivateChatDeletions : IntIdTable() {
         insert(chatId, userId)
         Stargazers.deleteUserChat(userId, chatId)
         deleteUnusedChatData(chatId, userId)
+        chatsNotifier.publish(DeletedPrivateChat(chatId), UserId(userId))
     }
 
     /** Records in the DB that the [userId] deleted the [chatId]. */

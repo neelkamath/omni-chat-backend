@@ -2,10 +2,9 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
-import com.neelkamath.omniChatBackend.db.awaitBrokering
-import com.neelkamath.omniChatBackend.db.count
-import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
 import com.neelkamath.omniChatBackend.graphql.routing.MessageStatus
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -20,7 +19,7 @@ class MessageStatusesTest {
         @Test
         fun `Saving a duplicate message status must throw an exception`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             val messageId = Messages.message(adminId, chatId)
             val createStatus = { MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED) }
             createStatus()
@@ -67,23 +66,36 @@ class MessageStatusesTest {
     @Nested
     inner class InsertAndNotify {
         @Test
-        fun `Only subscribers in the chat must be notified of updated statuses`() {
+        fun `Only (authenticated) subscribers in the (non-public) chat must be notified of updated statuses`() {
             runBlocking {
                 val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 PrivateChats.create(user2Id, user3Id)
                 val messageId = Messages.message(user1Id, chatId)
                 awaitBrokering()
-                val (user1Subscriber, user2Subscriber, user3Subscriber) = listOf(user1Id, user2Id, user3Id)
-                    .map { messagesNotifier.subscribe(it).subscribeWith(TestSubscriber()) }
+                val (user1Subscriber, user2Subscriber, user3Subscriber) = setOf(user1Id, user2Id, user3Id)
+                    .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
                 awaitBrokering()
-                listOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
+                setOf(user1Subscriber, user2Subscriber).forEach { subscriber ->
                     val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }
                     assertEquals(listOf(messageId), actual)
                 }
                 user3Subscriber.assertNoValues()
             }
+        }
+
+        @Test
+        fun `Unauthenticated subscribers must be notified of updated statuses`(): Unit = runBlocking {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId), publicity = GroupChatPublicity.PUBLIC)
+            val messageId = Messages.message(adminId, chatId)
+            awaitBrokering()
+            val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
+            MessageStatuses.create(userId, messageId, MessageStatus.DELIVERED)
+            awaitBrokering()
+            val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }
+            assertEquals(listOf(messageId), actual)
         }
     }
 

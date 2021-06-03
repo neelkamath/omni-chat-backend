@@ -30,7 +30,7 @@ class VideoMessageTest {
         @Test
         fun `Using a capitalized file extension mustn't fail`() {
             val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(listOf(admin.userId))
+            val chatId = GroupChats.create(setOf(admin.userId))
             val dummy = DummyFile("video.MP4", bytes = 1)
             assertEquals(HttpStatusCode.NoContent, postVideoMessage(admin.accessToken, chatId, dummy).status())
         }

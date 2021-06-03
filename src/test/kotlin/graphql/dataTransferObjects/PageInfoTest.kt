@@ -12,6 +12,7 @@ import com.neelkamath.omniChatBackend.db.tables.create
 import com.neelkamath.omniChatBackend.db.tables.message
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.testingObjectMapper
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
@@ -128,27 +129,29 @@ class PageInfoTest {
         }
 
         @Test
-        fun `Given cursors 5-10, when requesting zero items after the non-existing cursor 3, then 'hasNextPage' must be 'true' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index < 5) deleteUser(userId)
-                userId
-            }[2]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertTrue)
-        }
+        fun `Given cursors 5-10, when requesting zero items after the non-existing cursor 3, then 'hasNextPage' must be 'true' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index < 5) deleteUser(userId)
+                    userId
+                }[2]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertTrue)
+            }
 
         @Test
-        fun `Given cursors 1-5, when requesting items after the non-existing cursor 7, then 'hasNextPage' must be 'false' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index > 4) deleteUser(userId)
-                userId
-            }[6]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertFalse)
-        }
+        fun `Given cursors 1-5, when requesting items after the non-existing cursor 7, then 'hasNextPage' must be 'false' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index > 4) deleteUser(userId)
+                    userId
+                }[6]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasNextPage.let(::assertFalse)
+            }
 
         @Test
         fun `Given items, when requesting items with the first item's cursor but no limit, then 'hasNextPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[0]
             executeReadChat(adminId, chatId, BackwardPagination(before = cursor)).hasNextPage.let(::assertTrue)
         }
@@ -156,7 +159,7 @@ class PageInfoTest {
         @Test
         fun `Retrieving the first of many items must cause 'hasNextPage' to be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[4]
             executeReadChat(adminId, chatId, BackwardPagination(before = cursor)).hasNextPage.let(::assertTrue)
         }
@@ -164,7 +167,7 @@ class PageInfoTest {
         @Test
         fun `Retrieving the last of many items must cause 'hasNextPage' to be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             repeat(10) { Messages.message(adminId, chatId) }
             executeReadChat(adminId, chatId, BackwardPagination(last = 3)).hasNextPage.let(::assertFalse)
         }
@@ -172,14 +175,14 @@ class PageInfoTest {
         @Test
         fun `Given zero items, when requesting every item, then 'hasNextPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertFalse(executeReadChat(adminId, chatId).hasNextPage)
         }
 
         @Test
         fun `Given one item, when requesting every item, then 'hasNextPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             Messages.message(adminId, chatId)
             assertFalse(executeReadChat(adminId, chatId).hasNextPage)
         }
@@ -187,14 +190,14 @@ class PageInfoTest {
         @Test
         fun `Given items, when requesting zero items sans cursor, then 'hasNextPage' must be 'false'`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             executeReadChat(adminId, chatId, BackwardPagination(last = 0)).hasNextPage.let(::assertFalse)
         }
 
         @Test
         fun `Given items, when requesting zero items before the start cursor, then 'hasNextPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val startCursor = (1..10).map { Messages.message(adminId, chatId) }[0]
             val pagination = BackwardPagination(last = 0, before = startCursor)
             assertTrue(executeReadChat(adminId, chatId, pagination).hasNextPage)
@@ -203,7 +206,7 @@ class PageInfoTest {
         @Test
         fun `Given items, when requesting items before the end cursor, then 'hasNextPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val endCursor = (1..10).map { Messages.message(adminId, chatId) }.last()
             executeReadChat(adminId, chatId, BackwardPagination(before = endCursor)).hasNextPage.let(::assertTrue)
         }
@@ -211,7 +214,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10, when requesting zero items before item 5, then 'hasNextPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[4]
             val pagination = BackwardPagination(last = 0, before = cursor)
             assertTrue(executeReadChat(adminId, chatId, pagination).hasNextPage)
@@ -220,7 +223,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10 where items 1-5 have been deleted, when requesting items before the deleted item 3, then 'hasNextPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { index ->
                 Messages.message(adminId, chatId).also { if (index < 5) Messages.delete(it) }
             }[2]
@@ -230,7 +233,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10 where items 6-10 have been deleted, when requesting zero items before the deleted item 7, then 'hasNextPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { index ->
                 Messages.message(adminId, chatId).also { if (index > 4) Messages.delete(it) }
             }[6]
@@ -293,27 +296,29 @@ class PageInfoTest {
         }
 
         @Test
-        fun `Given items 1-10 where items 1-5 have been deleted, when requesting zero items after the deleted item 3, then 'hasPreviousPage' must be 'false' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index < 5) deleteUser(userId)
-                userId
-            }[2]
-            executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasPreviousPage.let(::assertFalse)
-        }
+        fun `Given items 1-10 where items 1-5 have been deleted, when requesting zero items after the deleted item 3, then 'hasPreviousPage' must be 'false' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index < 5) deleteUser(userId)
+                    userId
+                }[2]
+                executeSearchUsers(ForwardPagination(first = 0, after = cursor)).hasPreviousPage.let(::assertFalse)
+            }
 
         @Test
-        fun `Given items 1-10 where items 6-10 have been deleted, when requesting items after the deleted item 7, then 'hasPreviousPage' must be 'true' for forward pagination`() {
-            val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
-                if (index > 4) deleteUser(userId)
-                userId
-            }[6]
-            executeSearchUsers(ForwardPagination(after = cursor)).hasPreviousPage.let(::assertTrue)
-        }
+        fun `Given items 1-10 where items 6-10 have been deleted, when requesting items after the deleted item 7, then 'hasPreviousPage' must be 'true' for forward pagination`(): Unit =
+            runBlocking {
+                val cursor = createVerifiedUsers(10).mapIndexed { index, (userId) ->
+                    if (index > 4) deleteUser(userId)
+                    userId
+                }[6]
+                executeSearchUsers(ForwardPagination(after = cursor)).hasPreviousPage.let(::assertTrue)
+            }
 
         @Test
         fun `Given items, when requesting items with the first item's cursor but no limit, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[0]
             executeReadChat(adminId, chatId, BackwardPagination(before = cursor)).hasPreviousPage.let(::assertFalse)
         }
@@ -321,7 +326,7 @@ class PageInfoTest {
         @Test
         fun `Retrieving the first of many items must cause 'hasPreviousPage' to be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[3]
             executeReadChat(adminId, chatId, BackwardPagination(before = cursor)).hasPreviousPage.let(::assertFalse)
         }
@@ -329,7 +334,7 @@ class PageInfoTest {
         @Test
         fun `Retrieving the last of many items must cause 'hasPreviousPage' to be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             repeat(10) { Messages.message(adminId, chatId) }
             executeReadChat(adminId, chatId, BackwardPagination(last = 3)).hasPreviousPage.let(::assertTrue)
         }
@@ -337,14 +342,14 @@ class PageInfoTest {
         @Test
         fun `Given zero items, when requesting every item, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertFalse(executeReadChat(adminId, chatId).hasPreviousPage)
         }
 
         @Test
         fun `Given one item, when requesting every item, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             Messages.message(adminId, chatId)
             assertFalse(executeReadChat(adminId, chatId).hasPreviousPage)
         }
@@ -352,7 +357,7 @@ class PageInfoTest {
         @Test
         fun `Given items, when requesting zero items sans cursor, then 'hasPreviousPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             repeat(10) { Messages.message(adminId, chatId) }
             executeReadChat(adminId, chatId, BackwardPagination(last = 0)).hasPreviousPage.let(::assertTrue)
         }
@@ -360,7 +365,7 @@ class PageInfoTest {
         @Test
         fun `Given items, when requesting zero items before the start cursor, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[0]
             val pagination = BackwardPagination(last = 0, before = cursor)
             assertFalse(executeReadChat(adminId, chatId, pagination).hasPreviousPage)
@@ -369,7 +374,7 @@ class PageInfoTest {
         @Test
         fun `Given items, when requesting items before the end cursor, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }.last()
             executeReadChat(adminId, chatId, BackwardPagination(before = cursor)).hasPreviousPage.let(::assertFalse)
         }
@@ -377,7 +382,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10, when requesting zero items before item 5, then 'hasPreviousPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { Messages.message(adminId, chatId) }[4]
             val pagination = BackwardPagination(last = 0, before = cursor)
             executeReadChat(adminId, chatId, pagination).hasPreviousPage.let(::assertTrue)
@@ -386,7 +391,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10 where items 1-5 have been deleted, when requesting items before the deleted item 3, then 'hasPreviousPage' must be 'false' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { index ->
                 Messages.message(adminId, chatId).also { if (index < 5) Messages.delete(it) }
             }[4]
@@ -396,7 +401,7 @@ class PageInfoTest {
         @Test
         fun `Given items 1-10 where items 6-10 have been deleted, when requesting zero items before the deleted item 7, then 'hasPreviousPage' must be 'true' for backward pagination`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             val cursor = (1..10).map { index ->
                 Messages.message(adminId, chatId).also { if (index > 4) Messages.delete(it) }
             }[6]

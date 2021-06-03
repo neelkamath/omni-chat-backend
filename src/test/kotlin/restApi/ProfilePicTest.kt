@@ -9,6 +9,7 @@ import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -32,7 +33,7 @@ class ProfilePicTest {
             Users.updatePic(userId, pic)
             val response = getProfilePic(userId, PicType.ORIGINAL)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertTrue(pic.original.contentEquals(response.byteContent!!))
+            assertContentEquals(pic.original, response.byteContent!!)
         }
 
         @Test
@@ -50,7 +51,7 @@ class ProfilePicTest {
             val userId = createVerifiedUsers(1).first().userId
             Users.updatePic(userId, readPic("1008px×756px.jpg"))
             val response = getProfilePic(userId, PicType.ORIGINAL).byteContent
-            assertTrue(Users.readPic(userId, PicType.ORIGINAL).contentEquals(response))
+            assertContentEquals(Users.readPic(userId, PicType.ORIGINAL), response)
         }
 
         @Test
@@ -58,7 +59,7 @@ class ProfilePicTest {
             val userId = createVerifiedUsers(1).first().userId
             Users.updatePic(userId, readPic("1008px×756px.jpg"))
             val response = getProfilePic(userId, PicType.THUMBNAIL).byteContent!!
-            assertTrue(Users.readPic(userId, PicType.THUMBNAIL).contentEquals(response))
+            assertContentEquals(Users.readPic(userId, PicType.THUMBNAIL), response)
         }
     }
 

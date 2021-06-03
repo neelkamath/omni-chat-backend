@@ -30,7 +30,7 @@ object GroupChats : Table() {
     private val publicity: Column<GroupChatPublicity> = customEnumeration(
         name = "publicity",
         sql = "group_chat_publicity",
-        fromDb = { GroupChatPublicity.valueOf((it as String).toUpperCase()) },
+        fromDb = { GroupChatPublicity.valueOf((it as String).uppercase()) },
         toDb = { PostgresEnum("group_chat_publicity", it) },
     )
     private val inviteCode: Column<UUID> =
@@ -39,7 +39,7 @@ object GroupChats : Table() {
     /**
      * Returns the newly created [chat]'s ID.
      *
-     * Notifies the [GroupChatInput.userIdList] of the [GroupChatId] via [groupChatsNotifier].
+     * Notifies the [GroupChatInput.userIdList] of the [GroupChatId] via [chatsNotifier].
      */
     fun create(chat: GroupChatInput): Int {
         val chatId = transaction {
@@ -73,26 +73,30 @@ object GroupChats : Table() {
     fun readDescription(chatId: Int): GroupChatDescription =
         transaction { select(GroupChats.id eq chatId).first()[description].let(::GroupChatDescription) }
 
-    /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and [groupChatMetadataNotifier]. */
     fun updateTitle(chatId: Int, title: GroupChatTitle) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.title] = title.value }
         }
-        groupChatsNotifier.publish(UpdatedGroupChat(chatId, title), GroupChatUsers.readUserIdList(chatId))
+        val update = UpdatedGroupChat(chatId, title)
+        chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
-    /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and [groupChatMetadataNotifier]. */
     fun updateDescription(chatId: Int, description: GroupChatDescription) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.description] = description.value }
         }
-        groupChatsNotifier.publish(
-            UpdatedGroupChat(chatId, description = description),
-            GroupChatUsers.readUserIdList(chatId),
-        )
+        val update = UpdatedGroupChat(chatId, description = description)
+        chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
-    /** Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
+    /**
+     * Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and
+     * [groupChatMetadataNotifier].
+     */
     fun updatePic(chatId: Int, pic: Pic?) {
         transaction {
             // If the pic is to be deleted, its reference must be cleared before we can delete the referenced data.
@@ -100,7 +104,9 @@ object GroupChats : Table() {
             val picId = select(GroupChats.id eq chatId).first()[picId]
             update({ GroupChats.id eq chatId }) { it[this.picId] = Pics.update(picId, pic) }
         }
-        groupChatsNotifier.publish(UpdatedGroupChatPic(chatId), GroupChatUsers.readUserIdList(chatId))
+        val update = UpdatedGroupChatPic(chatId)
+        chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
     /** Returns the group chat's pic (`null` if there's no pic). */
@@ -174,20 +180,19 @@ object GroupChats : Table() {
         }
     }
 
-    /** Notifies subscribers of the [UpdatedGroupChat] via [groupChatsNotifier]. */
+    /** Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and [groupChatMetadataNotifier]. */
     fun setBroadcastStatus(chatId: Int, isBroadcast: Boolean) {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.isBroadcast] = isBroadcast }
         }
-        groupChatsNotifier.publish(
-            UpdatedGroupChat(chatId, isBroadcast = isBroadcast),
-            GroupChatUsers.readUserIdList(chatId),
-        )
+        val update = UpdatedGroupChat(chatId, isBroadcast = isBroadcast)
+        chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
+        groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
     /**
      * Throws an [IllegalArgumentException] if the [chatId] is public. Subscribers are notified of the
-     * [UpdatedGroupChat] via [groupChatsNotifier].
+     * [UpdatedGroupChat] via [chatsNotifier].
      */
     fun setInvitability(chatId: Int, isInvitable: Boolean) {
         require(!isExistingPublicChat(chatId)) { "A public chat's invitability cannot be updated." }
@@ -195,10 +200,8 @@ object GroupChats : Table() {
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.publicity] = publicity }
         }
-        groupChatsNotifier.publish(
-            UpdatedGroupChat(chatId, publicity = publicity),
-            GroupChatUsers.readUserIdList(chatId),
-        )
+        val update = UpdatedGroupChat(chatId, publicity = publicity)
+        chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
     }
 
     /** Returns `false` if the [chatId] either doesn't exist or isn't invitable. */
