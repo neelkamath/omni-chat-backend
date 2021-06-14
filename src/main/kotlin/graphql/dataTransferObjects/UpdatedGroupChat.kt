@@ -14,6 +14,7 @@ class UpdatedGroupChat(
     private val isBroadcast: Boolean? = null,
     private val publicity: GroupChatPublicity? = null,
 ) : ChatsSubscription, GroupChatMetadataSubscription {
+
     fun getChatId(): Int = chatId
 
     fun getTitle(): GroupChatTitle? = title

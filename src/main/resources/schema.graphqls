@@ -354,7 +354,8 @@ type Mutation {
     removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): CannotLeaveChat
 
     """
-    Leaves the chat the user is in. Every message the user has starred in the specified chat will be unstarred for them.
+    Leaves the chat the user is in. Messages sent by, and polls voted on, by removed users will remain. Every message
+    the user has starred in the specified chat will be unstarred for them.
 
     Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified group
     chat.
@@ -372,7 +373,7 @@ type Mutation {
     makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
 
     """
-    Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
+    Creates a group chat. Nonexisting users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
     `GroupChatInput.adminIdList` needn't contain the user's own ID, as it is implicitly included.
 
     If an `InvalidAdminId` is returned, it indicates that the `chat` parameter's `GroupChatInput.adminIdList` wasn't a
@@ -1171,7 +1172,8 @@ type GroupChatInviteMessage implements Message {
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type DocMessage implements Message {
@@ -1278,7 +1280,8 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type StarredDocMessage implements StarredMessage {
@@ -1375,7 +1378,8 @@ type NewGroupChatInviteMessage implements NewMessage {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type NewDocMessage implements NewMessage {
