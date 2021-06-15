@@ -98,8 +98,7 @@ fun searchChatMessages(env: DataFetchingEnvironment): SearchChatMessagesResult {
     val chatId = env.getArgument<Int>("chatId")
     val query = env.getArgument<String>("query")
     val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
-    val edges = if (env.userId == null && GroupChats.isExistingPublicChat(chatId))
-        Messages.searchGroupChat(chatId, query, pagination)
+    val edges = if (GroupChats.isExistingPublicChat(chatId)) Messages.searchGroupChat(chatId, query, pagination)
     else {
         env.verifyAuth()
         when (chatId) {

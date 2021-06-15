@@ -27,7 +27,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Fixed
 
 - Make `type UpdatedGroupChat` return removed users in its `removedUsers` field.
-- Allow reading a public chat the specified user isn't a participant of even if they send an access token to `Query.readChat`.
+- Allow reading a public chat the specified user isn't a participant of even if they send an access token to `Query.readChat` or `Query.searchChatMessages`.
 
 ## [0.20.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.20.0) - 2021-06-03
 
