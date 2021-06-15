@@ -14,6 +14,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
+- Update `Query.readAccount` to take the ID of the user to read, and stop requiring an access token.
 - Make the `inviteCode` field of `type GroupChatInviteMessage`, `type StarredGroupChatInviteMessage`, and `type NewGroupChatInviteMessage` nullable.
 - Send a `type UpdatedPollMessage` instead of a `type UpdatedMessage` when a user votes on a poll.
 - Add `type UpdatedPollMessage` to `union MessagesSubscription` and `union ChatMessagesSubscription`.

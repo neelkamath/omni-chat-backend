@@ -107,12 +107,8 @@ type Query {
     """
     searchMessages(query: String!, first: Int, after: Cursor): ChatMessagesConnection!
 
-    """
-    Returns the user's account info.
-
-    An access token must be sent with this request.
-    """
-    readAccount: Account!
+    """Returns the specified user's account info."""
+    readAccount(userId: Int!): Account!
 
     """
     Returns the chats the user is in.

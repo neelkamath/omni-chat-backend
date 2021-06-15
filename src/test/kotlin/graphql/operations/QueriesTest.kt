@@ -91,17 +91,17 @@ class QueriesTest {
     @Nested
     inner class ReadAccount {
         @Test
-        fun `The user's account must be read`() {
+        fun `The specified user's account must be read`() {
             val userId = createVerifiedUsers(1).first().userId
             val data = executeGraphQlViaEngine(
                 """
-                query ReadAccount {
-                    readAccount {
+                query ReadAccount(${"$"}userId: Int!) {
+                    readAccount(userId: ${"$"}userId) {
                         __typename
                     }
                 }
                 """,
-                userId = userId
+                mapOf("userId" to userId),
             ).data!!["readAccount"] as Map<*, *>
             assertEquals("Account", data["__typename"])
         }

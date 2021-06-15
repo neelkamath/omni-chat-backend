@@ -28,10 +28,7 @@ fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
     return chatIdList.map(::TypingUsers)
 }
 
-fun readAccount(env: DataFetchingEnvironment): Account {
-    env.verifyAuth()
-    return Account(env.userId!!)
-}
+fun readAccount(env: DataFetchingEnvironment): Account = Account(env.getArgument("userId"))
 
 fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     val chatId = env.getArgument<Int>("id")
