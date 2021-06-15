@@ -14,7 +14,8 @@ class AccountsConnection(
     private val endCursor: Cursor?,
     private val userIdList: LinkedHashSet<Int>,
     private val pagination: ForwardPagination? = null,
-) {
+) : SearchGroupChatUsersResult {
+
     fun getEdges(): List<AccountEdge> = userIdList.map(::AccountEdge)
 
     fun getPageInfo(): PageInfo = PageInfo(

@@ -53,6 +53,76 @@ class QueriesTest {
         }
     }
 
+    private data class SearchGroupChatUsersResponse(val __typename: String, val edges: List<AccountEdge>?) {
+        data class AccountEdge(val node: Account) {
+            data class Account(val userId: Int)
+        }
+    }
+
+    @Nested
+    inner class SearchGroupChatUsers {
+        private fun executeSearchGroupChatUsers(
+            userId: Int?,
+            chatId: Int,
+            query: String,
+            pagination: ForwardPagination? = null,
+        ): SearchGroupChatUsersResponse {
+            val data = executeGraphQlViaEngine(
+                """
+                query SearchGroupChatUsers(
+                    ${"$"}chatId: Int!
+                    ${"$"}query: String!
+                    ${"$"}first: Int
+                    ${"$"}after: Cursor
+                ) {
+                    searchGroupChatUsers(
+                        chatId: ${"$"}chatId
+                        query: ${"$"}query
+                        first: ${"$"}first
+                        after: ${"$"}after
+                    ) {
+                        __typename
+                        ... on AccountsConnection {
+                            edges {
+                                node {
+                                    userId
+                                }
+                            }
+                        }
+                    }
+                }
+                """,
+                mapOf(
+                    "chatId" to chatId,
+                    "query" to query,
+                    "first" to pagination?.first,
+                    "after" to pagination?.after?.toString()
+                ),
+                userId,
+            ).data!!["searchGroupChatUsers"] as Map<*, *>
+            return testingObjectMapper.convertValue(data)
+        }
+
+        @Test
+        fun `Searching a non-public chat sans access token must fail`() {
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(listOf(adminId))
+            assertEquals("InvalidChatId", executeSearchGroupChatUsers(userId = null, chatId, query = "").__typename)
+        }
+
+        @Test
+        fun `Users must be paginated`() {
+            val userIdList = createVerifiedUsers(10).map { it.userId }
+            val adminId = userIdList[0]
+            val chatId = GroupChats.create(listOf(adminId), userIdList)
+            val index = 4
+            val pagination = ForwardPagination(first = 3, after = userIdList[index])
+            val actual =
+                executeSearchGroupChatUsers(adminId, chatId, query = "", pagination).edges!!.map { it.node.userId }
+            assertEquals(userIdList.slice(index + 1..index + pagination.first!!), actual)
+        }
+    }
+
     private data class ReadTypingUsersResponse(val chatId: Int, val users: List<Account>) {
         data class Account(val userId: Int)
     }

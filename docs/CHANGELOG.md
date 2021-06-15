@@ -10,6 +10,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Added
 
+- `union SearchGroupChatUsersResult`
+- `Query.searchGroupChatUsers`
 - `type UpdatedPollMessage`
 
 ### Changed

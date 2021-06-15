@@ -138,6 +138,14 @@ fun readStars(env: DataFetchingEnvironment): StarredMessagesConnection {
     return StarredMessagesConnection(messageIdList, pagination)
 }
 
+fun searchGroupChatUsers(env: DataFetchingEnvironment): SearchGroupChatUsersResult {
+    val chatId = env.getArgument<Int>("chatId")
+    if (env.userId == null && !GroupChats.isExistingPublicChat(chatId)) return InvalidChatId
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    val userIdList = Users.search(env.getArgument("query"), GroupChatUsers.readUserIdList(chatId))
+    return paginateUserIdList(userIdList, pagination)
+}
+
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
@@ -169,7 +177,7 @@ fun searchMessages(env: DataFetchingEnvironment): ChatMessagesConnection {
 fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     val query = env.getArgument<String>("query")
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    val userIdList = Users.search(query)
+    val userIdList = Users.searchAll(query)
     return paginateUserIdList(userIdList, pagination)
 }
 

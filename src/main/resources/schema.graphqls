@@ -166,6 +166,13 @@ type Query {
     searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
 
     """
+    Case-insensitively searches contacts by `query`ing their usernames, first names, last names, and email addresses.
+
+    An access token must be sent with this request if the chat isn't public.
+    """
+    searchGroupChatUsers(chatId: Int!, query: String!, first: Int, after: Cursor): SearchGroupChatUsersResult!
+
+    """
     Operations such as `Query.updateAccount` require authentication via an access token. An access token can be acquired
     by passing the user's `Login` to this operation. Once the access token has expired, the `TokenSet.refreshToken` can
     be passed to `Query.refreshTokenSet`.
@@ -1624,3 +1631,5 @@ union SetPollVoteResult = InvalidMessageId | NonexistingOption
 union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat
 
 union ReadOnlineStatusResult = OnlineStatus | InvalidUserId
+
+union SearchGroupChatUsersResult = AccountsConnection | InvalidChatId

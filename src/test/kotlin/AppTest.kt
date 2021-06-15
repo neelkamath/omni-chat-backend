@@ -53,6 +53,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(RequestTokenSetResultDeserializer)
     .register(ReadGroupChatResultDeserializer)
     .register(VerifyEmailAddressResultDeserializer)
+    .register(SearchGroupChatUsersResultDeserializer)
     .register(ResetPasswordResultDeserializer)
     .register(UpdateAccountResultDeserializer)
     .register(CreateAccountResultDeserializer)
@@ -417,6 +418,18 @@ private object CreateAccountResultDeserializer : JsonDeserializer<CreateAccountR
             "UsernameTaken" -> UsernameTaken::class
             "EmailAddressTaken" -> EmailAddressTaken::class
             "InvalidDomain" -> InvalidDomain::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object SearchGroupChatUsersResultDeserializer : JsonDeserializer<SearchGroupChatUsersResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): SearchGroupChatUsersResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out SearchGroupChatUsersResult> = when (val type = node["__typename"].asText()) {
+            "InvalidChatId" -> InvalidChatId::class
+            "AccountsConnection" -> AccountsConnection::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

@@ -4,6 +4,7 @@ import com.neelkamath.omniChatBackend.graphql.routing.Placeholder
 
 object InvalidChatId :
     ChatOnlineStatusesSubscription,
+    SearchGroupChatUsersResult,
     ChatTypingStatusesSubscription,
     ChatAccountsSubscription,
     GroupChatMetadataSubscription,

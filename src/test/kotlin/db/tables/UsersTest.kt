@@ -189,7 +189,7 @@ class UsersTest {
     }
 
     @Nested
-    inner class Search {
+    inner class BuildQuery {
         /** Creates users, and returns their IDs. */
         private fun createUsers(): Set<Int> = setOf(
             AccountInput(Username("tony"), Password("p"), emailAddress = "tony@example.com", Name("Tony")),
@@ -206,7 +206,7 @@ class UsersTest {
         @Test
         fun `Users must be searched case-insensitively`() {
             val infoList = createUsers()
-            val search = { query: String, userIdList: Set<Int> -> assertEquals(userIdList, Users.search(query)) }
+            val search = { query: String, userIdList: Set<Int> -> assertEquals(userIdList, Users.searchAll(query)) }
             search("tOnY", setOf(infoList.first()))
             search("doe", setOf(infoList.elementAt(1)))
             search("john", setOf(infoList.elementAt(1), infoList.elementAt(2), infoList.elementAt(3)))
@@ -223,7 +223,7 @@ class UsersTest {
                     Users.readId(it.username)
                 }
                 .toLinkedHashSet()
-            assertEquals(userIdList, Users.search("tony"))
+            assertEquals(userIdList, Users.searchAll("tony"))
         }
     }
 }
