@@ -17,14 +17,14 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object PollMessages : Table() {
     override val tableName = "poll_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val title: Column<String> = varchar("title", MessageText.MAX_LENGTH)
+    private val question: Column<String> = varchar("title", MessageText.MAX_LENGTH)
 
     /** @see Messages.createPollMessage */
     fun create(messageId: Int, poll: PollInput) {
         transaction {
             insert {
                 it[this.messageId] = messageId
-                it[title] = poll.title.value
+                it[question] = poll.question.value
             }
         }
         PollMessageOptions.create(messageId, poll.options.toLinkedHashSet())
@@ -32,8 +32,8 @@ object PollMessages : Table() {
 
     fun isExisting(messageId: Int): Boolean = transaction { select(PollMessages.messageId eq messageId).empty().not() }
 
-    fun readTitle(messageId: Int): MessageText =
-        transaction { select(PollMessages.messageId eq messageId).first()[title].let(::MessageText) }
+    fun readQuestion(messageId: Int): MessageText =
+        transaction { select(PollMessages.messageId eq messageId).first()[question].let(::MessageText) }
 
     /**
      * Sets the [userId]'s vote on the [messageId]'s [option]. If [vote], a vote will be added if the [userId] hasn't

@@ -867,7 +867,7 @@ class QueriesTest {
                         Messages.message(
                             adminId,
                             chatId,
-                            PollInput(title = MessageText(it), listOf(MessageText("Yes"), MessageText("No"))),
+                            PollInput(question = MessageText(it), listOf(MessageText("Yes"), MessageText("No"))),
                         ),
                         // Testing poll message options.
                         Messages.message(

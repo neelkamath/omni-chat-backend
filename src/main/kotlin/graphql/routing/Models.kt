@@ -129,7 +129,7 @@ data class MessageText(val value: String) {
 }
 
 /** An [IllegalArgumentException] will be thrown if there aren't at least two [options], each of which are unique. */
-data class PollInput(val title: MessageText, val options: List<MessageText>) {
+data class PollInput(val question: MessageText, val options: List<MessageText>) {
     init {
         require(options.size > 1) { "There must be at least two options ($options)." }
         require(options.toSet().size == options.size) { "Options ($options) must be unique." }

@@ -87,8 +87,8 @@ type Query {
     readTypingUsers: [TypingUsers!]!
 
     """
-    Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
-    message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
+    Case-insensitively `query`s text messages, poll message question and options, action message text and actions, and
+    pic message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
 
     A returned `InvalidChatId` indicates that the chat isn't public, and the user isn't in the chat.
 
@@ -98,10 +98,10 @@ type Query {
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): SearchChatMessagesResult!
 
     """
-    Case-insensitively `query`s every text message, poll message's title and options, action message's text and actions,
-    and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be for a
-    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's messages
-    are chronologically ordered.
+    Case-insensitively `query`s every text message, poll message's question and options, action message's text and
+    actions, and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be
+    for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's
+    messages are chronologically ordered.
 
     An access token must be sent with this request.
     """
@@ -851,7 +851,7 @@ type DeletedMessage {
 
 input PollInput {
     """For example, `"Where should we meet?"`."""
-    title: MessageText!
+    question: MessageText!
     """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
     options: [MessageText!]!
 }
@@ -864,7 +864,7 @@ type PollOption {
 
 """A user can vote for each option at most once, but can vote for multiple options."""
 type Poll {
-    title: MessageText!
+    question: MessageText!
     """There are at least two options, each of which are unique."""
     options: [PollOption!]!
 }

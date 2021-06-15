@@ -1295,7 +1295,7 @@ class MutationsTest {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
             Messages.message(user.userId, chatId)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val pollId = Messages.message(admin.userId, chatId, poll)
             PollMessages.setVote(user.userId, pollId, poll.options[0], vote = true)
             executeRemoveGroupChatUsers(admin.accessToken, chatId, listOf(user.userId)).__typename.let(::assertNull)
@@ -1505,7 +1505,7 @@ class MutationsTest {
         fun `A non-admin must be allowed to create a message in a non-broadcast chat`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             assertEquals(HttpStatusCode.OK, executeCreatePollMessage(user.accessToken, chatId, poll).statusCode)
         }
 
@@ -1513,7 +1513,7 @@ class MutationsTest {
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val actual = executeCreatePollMessage(user.accessToken, chatId, poll).statusCode
             assertEquals(HttpStatusCode.Unauthorized, actual)
             assertEquals(0, Messages.count())
