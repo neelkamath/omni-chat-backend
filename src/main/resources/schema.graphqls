@@ -1469,11 +1469,11 @@ input AccountUpdate {
 
 input GroupChatInput {
     title: GroupChatTitle!
-    description: GroupChatDescription!
-    userIdList: [Int!]!
-    adminIdList: [Int!]!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
+    description: GroupChatDescription! = ""
+    userIdList: [Int!]! = []
+    adminIdList: [Int!]! = []
+    isBroadcast: Boolean! = false
+    publicity: GroupChatPublicity! = INVITABLE
 }
 
 """The username doesn't exist."""
