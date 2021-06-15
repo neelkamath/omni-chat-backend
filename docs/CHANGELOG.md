@@ -8,9 +8,15 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.21.0
 
+### Added
+
+- `type UpdatedPollMessage`
+
 ### Changed
 
 - Make the `inviteCode` field of `type GroupChatInviteMessage`, `type StarredGroupChatInviteMessage`, and `type NewGroupChatInviteMessage` nullable.
+- Send a `type UpdatedPollMessage` instead of a `type UpdatedMessage` when a user votes on a poll.
+- Add `type UpdatedPollMessage` to `union MessagesSubscription` and `union ChatMessagesSubscription`.
 
 ### Fixed
 

@@ -286,6 +286,7 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
             "NewPollMessage" -> NewPollMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
@@ -309,6 +310,7 @@ private object ChatMessagesSubscriptionDeserializer : JsonDeserializer<ChatMessa
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
             "NewPollMessage" -> NewPollMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class

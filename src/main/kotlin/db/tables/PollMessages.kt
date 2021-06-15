@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedPollMessage
 import com.neelkamath.omniChatBackend.graphql.routing.MessageText
 import com.neelkamath.omniChatBackend.graphql.routing.PollInput
 import com.neelkamath.omniChatBackend.toLinkedHashSet
@@ -45,7 +46,7 @@ object PollMessages : Table() {
         val optionId = PollMessageOptions.readOptionId(messageId, option)
         if (vote) PollMessageVotes.create(userId, optionId) else PollMessageVotes.deleteVote(userId, optionId)
         val chatId = Messages.readChatId(messageId)
-        val update = UpdatedMessage(messageId)
+        val update = UpdatedPollMessage(userId, messageId, option, vote)
         messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
         if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
     }

@@ -671,6 +671,7 @@ union MessagesSubscription =
     | NewVideoMessage
     | NewPollMessage
     | UpdatedMessage
+    | UpdatedPollMessage
     | TriggeredAction
     | DeletedMessage
     | UserChatMessagesRemoval
@@ -687,6 +688,7 @@ union ChatMessagesSubscription =
     | NewVideoMessage
     | NewPollMessage
     | UpdatedMessage
+    | UpdatedPollMessage
     | DeletedMessage
     | UserChatMessagesRemoval
     | InvalidChatId
@@ -1402,7 +1404,7 @@ type NewVideoMessage implements NewMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which has been updated."""
+"""An existing `messageId` in the `chatId` which has been starred, unstarred, delivered to a user, or read by a user."""
 type UpdatedMessage {
     chatId: Int!
     messageId: Int!
@@ -1582,6 +1584,15 @@ the last admin of an otherwise nonempty chat.
 """
 type CannotLeaveChat {
     placeholder: Placeholder!
+}
+
+"""The `userId` in the `chatId` updated their `vote` on the `messageId`'s `option`."""
+type UpdatedPollMessage {
+    chatId: Int!
+    messageId: Int!
+    userId: Int!
+    option: MessageText!
+    vote: Boolean!
 }
 
 union SearchChatMessagesResult = MessageEdges | InvalidChatId
