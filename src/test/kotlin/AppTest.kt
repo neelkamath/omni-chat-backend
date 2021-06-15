@@ -203,7 +203,6 @@ private object ChatsSubscriptionDeserializer : JsonDeserializer<ChatsSubscriptio
             "GroupChatId" -> GroupChatId::class
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
-            "ExitedUsers" -> ExitedUsers::class
             "DeletedPrivateChat" -> DeletedPrivateChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
@@ -218,7 +217,6 @@ private object GroupChatMetadataSubscriptionDeserializer : JsonDeserializer<Grou
             "CreatedSubscription" -> CreatedSubscription::class
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
-            "ExitedUsers" -> ExitedUsers::class
             "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }

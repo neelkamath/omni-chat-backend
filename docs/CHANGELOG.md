@@ -18,8 +18,13 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Send a `type UpdatedPollMessage` instead of a `type UpdatedMessage` when a user votes on a poll.
 - Add `type UpdatedPollMessage` to `union MessagesSubscription` and `union ChatMessagesSubscription`.
 
+### Removed
+
+- Remove `type ExitedUsers` in favor of `type UpdatedGroupChat`'s `removedUsers` field.
+
 ### Fixed
 
+- Make `type UpdatedGroupChat` return removed users in its `removedUsers` field.
 - Allow reading a public chat the specified user isn't a participant of even if they send an access token to `Query.readChat`.
 
 ## [0.20.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.20.0) - 2021-06-03

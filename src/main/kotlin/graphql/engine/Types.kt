@@ -97,7 +97,6 @@ private fun readChatsSubscription(obj: Any): String = when (obj) {
     is GroupChatId -> "GroupChatId"
     is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
     is UpdatedGroupChat -> "UpdatedGroupChat"
-    is ExitedUsers -> "ExitedUsers"
     is DeletedPrivateChat -> "DeletedPrivateChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
@@ -107,7 +106,6 @@ private fun readGroupChatMetadataSubscription(obj: Any): String = when (obj) {
     is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
     is UpdatedGroupChat -> "UpdatedGroupChat"
     is InvalidChatId -> "InvalidChatId"
-    is ExitedUsers -> "ExitedUsers"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

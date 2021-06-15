@@ -1,7 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.*
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
@@ -123,7 +122,7 @@ object GroupChatUsers : Table() {
      * Users who aren't in the chat are ignored. If every user is removed, the [chatId] will be [GroupChats.delete]d.
      * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
-     * Subscribers in the chat (including the [userIdList]) will be notified of the [ExitedUsers]s via
+     * Subscribers in the chat (including the [userIdList]) will be notified of the [UpdatedGroupChat]s via
      * [chatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnstarredChat] via
      * [messagesNotifier]. Clients who have subscribed to the [chatId] via [chatMessagesNotifier],
      * [chatOnlineStatusesNotifier], [chatAccountsNotifier], [groupChatMetadataNotifier], and
@@ -139,7 +138,7 @@ object GroupChatUsers : Table() {
             deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
         removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
-        val update = ExitedUsers(chatId, removedIdList)
+        val update = UpdatedGroupChat(chatId, removedUserIdList = removedIdList)
         chatsNotifier.publish(update, originalIdList.map(::UserId))
         groupChatMetadataNotifier.publish(update, ChatId(chatId))
         if (readUserIdList(chatId).isEmpty()) {

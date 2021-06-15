@@ -741,21 +741,19 @@ type UpdatedProfilePic {
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
+If the subscriber leaves the chat, they will receive an `UpdatedGroupChat` event specifying such.
 """
 union ChatsSubscription =
     | CreatedSubscription
     | GroupChatId
     | UpdatedGroupChatPic
     | UpdatedGroupChat
-    | ExitedUsers
     | DeletedPrivateChat
 
 union GroupChatMetadataSubscription =
     | CreatedSubscription
     | UpdatedGroupChatPic
     | UpdatedGroupChat
-    | ExitedUsers
     | InvalidChatId
 
 """The `chatId` of the group chat whose pic was updated."""
@@ -795,12 +793,6 @@ type TypingUsers {
 
 type GroupChatId {
     chatId: Int!
-}
-
-"""The users who left the group chat."""
-type ExitedUsers {
-    chatId: Int!
-    userIdList: [Int!]!
 }
 
 """This will not be sent if the profile pic was updated."""
