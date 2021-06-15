@@ -212,7 +212,7 @@ class GroupChatUsersTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             val inviteCode = GroupChats.readInviteCode(chatId)!!
-            GroupChats.setInvitability(chatId, isInvitable = false)
+            GroupChats.setPublicity(chatId, isInvitable = false)
             assertFailsWith<IllegalArgumentException> { GroupChatUsers.addUserViaInviteCode(adminId, inviteCode) }
         }
     }

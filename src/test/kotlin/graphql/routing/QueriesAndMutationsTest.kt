@@ -117,8 +117,8 @@ class QueriesAndMutationsTest {
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
             val response = executeGraphQlViaHttp(
                 """
-                mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
-                    setInvitability(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
+                mutation SetPublicity(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
+                    setPublicity(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
                         __typename
                     }
                 }

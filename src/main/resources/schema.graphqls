@@ -403,7 +403,7 @@ type Mutation {
 
     An access token must be sent with this request. The user must be an admin to perform this operation.
     """
-    setInvitability(chatId: Int!, isInvitable: Boolean!): InvalidChatId
+    setPublicity(chatId: Int!, isInvitable: Boolean!): InvalidChatId
 
     """
     Joins the chat the `inviteCode` is for.

@@ -53,7 +53,7 @@ class QueriesTest {
         }
     }
 
-    private data class SearchGroupChatUsersResponse(val __typename: String, val edges: List<AccountEdge>?) {
+    private data class SearchGroupChatUsersResult(val __typename: String, val edges: List<AccountEdge>?) {
         data class AccountEdge(val node: Account) {
             data class Account(val userId: Int)
         }
@@ -66,7 +66,7 @@ class QueriesTest {
             chatId: Int,
             query: String,
             pagination: ForwardPagination? = null,
-        ): SearchGroupChatUsersResponse {
+        ): SearchGroupChatUsersResult {
             val data = executeGraphQlViaEngine(
                 """
                 query SearchGroupChatUsers(
@@ -123,7 +123,7 @@ class QueriesTest {
         }
     }
 
-    private data class ReadTypingUsersResponse(val chatId: Int, val users: List<Account>) {
+    private data class ReadTypingUsersResult(val chatId: Int, val users: List<Account>) {
         data class Account(val userId: Int)
     }
 
@@ -149,11 +149,11 @@ class QueriesTest {
                 userId = admin1Id,
             ).data!!["readTypingUsers"] as List<*>
             val expected = listOf(
-                ReadTypingUsersResponse(chat1Id, listOf(ReadTypingUsersResponse.Account(admin1Id))),
-                ReadTypingUsersResponse(chat2Id, listOf(ReadTypingUsersResponse.Account(admin2Id))),
-                ReadTypingUsersResponse(chat3Id, listOf()),
+                ReadTypingUsersResult(chat1Id, listOf(ReadTypingUsersResult.Account(admin1Id))),
+                ReadTypingUsersResult(chat2Id, listOf(ReadTypingUsersResult.Account(admin2Id))),
+                ReadTypingUsersResult(chat3Id, listOf()),
             )
-            val actual = testingObjectMapper.convertValue<List<ReadTypingUsersResponse>>(data)
+            val actual = testingObjectMapper.convertValue<List<ReadTypingUsersResult>>(data)
             assertEquals(expected, actual)
         }
     }
@@ -177,7 +177,7 @@ class QueriesTest {
         }
     }
 
-    private data class ReadChatResponse(val __typename: String, val messages: Messages?) {
+    private data class ReadChatResult(val __typename: String, val messages: Messages?) {
         data class Messages(val edges: List<Edge>) {
             data class Edge(val node: Node) {
                 data class Node(val hasStar: Boolean)
@@ -220,7 +220,7 @@ class QueriesTest {
             Stargazers.create(adminId, messageId)
             val data =
                 executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), adminId).data!!["readChat"] as Map<*, *>
-            testingObjectMapper.convertValue<ReadChatResponse>(data).messages!!.edges[0].node.hasStar.let(::assertTrue)
+            testingObjectMapper.convertValue<ReadChatResult>(data).messages!!.edges[0].node.hasStar.let(::assertTrue)
         }
 
         @Test
@@ -229,7 +229,7 @@ class QueriesTest {
             val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val data =
                 executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), userId).data!!["readChat"] as Map<*, *>
-            assertEquals("GroupChat", testingObjectMapper.convertValue<ReadChatResponse>(data).__typename)
+            assertEquals("GroupChat", testingObjectMapper.convertValue<ReadChatResult>(data).__typename)
         }
 
         @Test
@@ -261,7 +261,7 @@ class QueriesTest {
     /** The [adminId] of the group [chatIdList] which are sorted in ascending order. */
     private data class CreatedChats(val adminId: Int, val chatIdList: LinkedHashSet<Int>)
 
-    private data class ReadChatsResponse(val edges: List<Edge>) {
+    private data class ReadChatsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val chatId: Int)
         }
@@ -292,7 +292,7 @@ class QueriesTest {
                 mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
                 adminId,
             ).data!!["readChats"] as Map<*, *>
-            return testingObjectMapper.convertValue<ReadChatsResponse>(data).edges.map { it.node.chatId }
+            return testingObjectMapper.convertValue<ReadChatsResult>(data).edges.map { it.node.chatId }
         }
 
         @Test
@@ -355,7 +355,7 @@ class QueriesTest {
             }
     }
 
-    private data class ReadContactsResponse(val edges: List<Edge>) {
+    private data class ReadContactsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val userId: Int)
         }
@@ -385,7 +385,7 @@ class QueriesTest {
                 mapOf("first" to first, "after" to contactUserIdList.elementAt(index).toString()),
                 contactOwnerId,
             ).data!!["readContacts"] as Map<*, *>
-            val actual = testingObjectMapper.convertValue<ReadContactsResponse>(data).edges.map { it.node.userId }
+            val actual = testingObjectMapper.convertValue<ReadContactsResult>(data).edges.map { it.node.userId }
             assertEquals(contactUserIdList.slice(index + 1..index + first), actual)
         }
     }
@@ -508,7 +508,7 @@ class QueriesTest {
         }
     }
 
-    private data class SearchChatMessagesResponse(val __typename: String, val edges: List<Edge>?) {
+    private data class SearchChatMessagesResult(val __typename: String, val edges: List<Edge>?) {
         data class Edge(val node: Node) {
             data class Node(val messageId: Int, val hasStar: Boolean)
         }
@@ -521,7 +521,7 @@ class QueriesTest {
             chatId: Int,
             query: String = "",
             pagination: BackwardPagination? = null,
-        ): SearchChatMessagesResponse {
+        ): SearchChatMessagesResult {
             val data = executeGraphQlViaEngine(
                 """
                 query SearchChatMessages(
@@ -592,7 +592,7 @@ class QueriesTest {
         }
     }
 
-    private data class SearchChatsResponse(val edges: List<Edge>) {
+    private data class SearchChatsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val chatId: Int)
         }
@@ -616,7 +616,7 @@ class QueriesTest {
                 mapOf("query" to "", "first" to pagination?.first, "after" to pagination?.after?.toString()),
                 userId,
             ).data!!["searchChats"] as Map<*, *>
-            return testingObjectMapper.convertValue<SearchChatsResponse>(data).edges.map { it.node.chatId }
+            return testingObjectMapper.convertValue<SearchChatsResult>(data).edges.map { it.node.chatId }
         }
 
         @Test
@@ -707,7 +707,7 @@ class QueriesTest {
         }
     }
 
-    private data class ReadStarsResponse(val edges: List<Edge>) {
+    private data class ReadStarsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val messageId: Int)
         }
@@ -739,12 +739,12 @@ class QueriesTest {
                 mapOf("first" to first, "after" to messageIdList[index].toString()),
                 adminId,
             ).data!!["readStars"] as Map<*, *>
-            val actual = testingObjectMapper.convertValue<ReadStarsResponse>(data).edges.map { it.node.messageId }
+            val actual = testingObjectMapper.convertValue<ReadStarsResult>(data).edges.map { it.node.messageId }
             assertEquals(messageIdList.slice(index + 1..index + first), actual)
         }
     }
 
-    private data class SearchContactsResponse(val edges: List<Edge>) {
+    private data class SearchContactsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val userId: Int)
         }
@@ -772,7 +772,7 @@ class QueriesTest {
                 mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
                 userId,
             ).data!!["searchContacts"] as Map<*, *>
-            return testingObjectMapper.convertValue<SearchContactsResponse>(data).edges.map { it.node.userId }
+            return testingObjectMapper.convertValue<SearchContactsResult>(data).edges.map { it.node.userId }
         }
 
         @Test
@@ -810,7 +810,7 @@ class QueriesTest {
         }
     }
 
-    private data class SearchMessagesResponse(val edges: List<Edge>) {
+    private data class SearchMessagesResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val chat: Chat, val messages: List<Message>) {
                 data class Chat(val chatId: Int)
@@ -827,7 +827,7 @@ class QueriesTest {
             userId: Int,
             query: String = "",
             pagination: ForwardPagination? = null,
-        ): SearchMessagesResponse {
+        ): SearchMessagesResult {
             val data = executeGraphQlViaEngine(
                 """
                 query SearchMessages(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {
@@ -1033,7 +1033,7 @@ class QueriesTest {
             }
     }
 
-    private data class SearchUsersResponse(val edges: List<Edge>) {
+    private data class SearchUsersResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val userId: Int)
         }
@@ -1054,7 +1054,7 @@ class QueriesTest {
             """,
             mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
         ).data!!["searchUsers"] as Map<*, *>
-        return testingObjectMapper.convertValue<SearchUsersResponse>(data).edges.map { it.node.userId }
+        return testingObjectMapper.convertValue<SearchUsersResult>(data).edges.map { it.node.userId }
     }
 
     @Nested
@@ -1208,7 +1208,7 @@ class QueriesTest {
             }
     }
 
-    private data class SearchBlockedUsersResponse(val edges: List<Edge>) {
+    private data class SearchBlockedUsersResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val userId: Int)
         }
@@ -1236,7 +1236,7 @@ class QueriesTest {
                 mapOf("query" to query, "first" to pagination?.first, "after" to pagination?.after?.toString()),
                 userId,
             ).data!!["searchBlockedUsers"] as Map<*, *>
-            return testingObjectMapper.convertValue<SearchBlockedUsersResponse>(data).edges.map { it.node.userId }
+            return testingObjectMapper.convertValue<SearchBlockedUsersResult>(data).edges.map { it.node.userId }
         }
 
         @Test
@@ -1275,7 +1275,7 @@ class QueriesTest {
         }
     }
 
-    private data class ReadBlockedUsersResponse(val edges: List<Edge>) {
+    private data class ReadBlockedUsersResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val userId: Int)
         }
@@ -1299,7 +1299,7 @@ class QueriesTest {
                 mapOf("first" to pagination?.first, "after" to pagination?.after?.toString()),
                 userId,
             ).data!!["readBlockedUsers"] as Map<*, *>
-            return testingObjectMapper.convertValue<ReadBlockedUsersResponse>(data).edges.map { it.node.userId }
+            return testingObjectMapper.convertValue<ReadBlockedUsersResult>(data).edges.map { it.node.userId }
         }
 
         @Test
@@ -1344,7 +1344,7 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             val inviteCode = GroupChats.readInviteCode(chatId)!!
-            GroupChats.setInvitability(chatId, isInvitable = false)
+            GroupChats.setPublicity(chatId, isInvitable = false)
             assertEquals("InvalidInviteCode", executeReadGroupChat(inviteCode))
         }
 
@@ -1357,7 +1357,7 @@ class QueriesTest {
         }
     }
 
-    private data class SearchPublicChatsResponse(val edges: List<Edge>) {
+    private data class SearchPublicChatsResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val chatId: Int, val messages: Messages) {
                 data class Messages(val edges: List<Edge>) {
@@ -1375,7 +1375,7 @@ class QueriesTest {
             userId: Int,
             query: String = "",
             pagination: ForwardPagination? = null,
-        ): SearchPublicChatsResponse {
+        ): SearchPublicChatsResult {
             val data = executeGraphQlViaEngine(
                 """
                 query SearchPublicChats(${"$"}query: String!, ${"$"}first: Int, ${"$"}after: Cursor) {

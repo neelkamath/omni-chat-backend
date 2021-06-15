@@ -16,6 +16,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
+- Rename `Mutation.setInvitability` to `Mutation.setPublicity`.
 - Add default values to `input GroupChatInput`.
 - Update `Query.readAccount` to take the ID of the user to read, and stop requiring an access token.
 - Make the `inviteCode` field of `type GroupChatInviteMessage`, `type StarredGroupChatInviteMessage`, and `type NewGroupChatInviteMessage` nullable.

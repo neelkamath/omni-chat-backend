@@ -53,7 +53,7 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("joinGroupChat", ::joinGroupChat)
     .dataFetcher("joinPublicChat", ::joinPublicChat)
     .dataFetcher("createGroupChatInviteMessage", ::createGroupChatInviteMessage)
-    .dataFetcher("setInvitability", ::setInvitability)
+    .dataFetcher("setPublicity", ::setPublicity)
     .dataFetcher("forwardMessage", ::forwardMessage)
     .dataFetcher("createActionMessage", ::createActionMessage)
     .dataFetcher("triggerAction", ::triggerAction)

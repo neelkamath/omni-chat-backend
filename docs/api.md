@@ -246,7 +246,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `makeGroupChatAdmins`
     - `createGroupChat`
     - `setBroadcast`
-    - `setInvitability`
+    - `setPublicity`
     - `joinGroupChat`
     - `joinPublicChat`
     - `leaveGroupChat`
