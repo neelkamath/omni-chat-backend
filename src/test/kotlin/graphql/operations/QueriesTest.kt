@@ -154,6 +154,15 @@ class QueriesTest {
         }
 
         @Test
+        fun `Reading a public chat the user isn't in using an access token must work`() {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val data =
+                executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), userId).data!!["readChat"] as Map<*, *>
+            assertEquals("GroupChat", testingObjectMapper.convertValue<ReadChatResponse>(data).__typename)
+        }
+
+        @Test
         fun `The chat must be said to not exist when a non-existing chat is trying to be read`() {
             val adminId = createVerifiedUsers(1).first().userId
             val data =

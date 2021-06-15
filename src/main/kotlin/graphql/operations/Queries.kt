@@ -35,7 +35,7 @@ fun readAccount(env: DataFetchingEnvironment): Account {
 
 fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     val chatId = env.getArgument<Int>("id")
-    if (env.userId == null && GroupChats.isExistingPublicChat(chatId)) return GroupChat(chatId)
+    if (GroupChats.isExistingPublicChat(chatId)) return GroupChat(chatId)
     env.verifyAuth()
     return when (chatId) {
         in PrivateChats.readIdList(env.userId!!) -> PrivateChat(chatId)

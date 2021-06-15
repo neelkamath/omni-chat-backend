@@ -12,6 +12,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 - Make the `inviteCode` field of `type GroupChatInviteMessage`, `type StarredGroupChatInviteMessage`, and `type NewGroupChatInviteMessage` nullable.
 
+### Fixed
+
+- Allow reading a public chat the specified user isn't a participant of even if they send an access token to `Query.readChat`.
+
 ## [0.20.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.20.0) - 2021-06-03
 
 ### Added
