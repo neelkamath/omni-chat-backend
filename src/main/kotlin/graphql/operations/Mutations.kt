@@ -354,9 +354,9 @@ fun joinPublicChat(env: DataFetchingEnvironment): InvalidChatId? {
 fun createGroupChatInviteMessage(env: DataFetchingEnvironment): CreateGroupChatInviteMessageResult? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!isUserInChat(env.userId!!, chatId)) return InvalidChatId
     val invitedChatId = env.getArgument<Int>("invitedChatId")
-    if (chatId == invitedChatId || !isUserInChat(env.userId!!, invitedChatId)) return InvalidInvitedChat
+    if (!isUserInChat(env.userId!!, chatId) || !isUserInChat(env.userId!!, invitedChatId) || chatId == invitedChatId)
+        return InvalidChatId
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
     if (!GroupChats.isInvitable(invitedChatId)) return InvalidInvitedChat
     val contextMessageId = env.getArgument<Int?>("contextMessageId")

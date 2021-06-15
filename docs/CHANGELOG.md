@@ -18,6 +18,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Make the `inviteCode` field of `type GroupChatInviteMessage`, `type StarredGroupChatInviteMessage`, and `type NewGroupChatInviteMessage` nullable.
 - Send a `type UpdatedPollMessage` instead of a `type UpdatedMessage` when a user votes on a poll.
 - Add `type UpdatedPollMessage` to `union MessagesSubscription` and `union ChatMessagesSubscription`.
+- Return a `type InvalidChatId` instead of a `type InvalidInvitedChat` when `Mutation.createGroupChatInviteMessage` gets called with a chat the user isn't in.
 
 ### Removed
 

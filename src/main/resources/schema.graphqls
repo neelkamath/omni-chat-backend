@@ -118,6 +118,8 @@ type Query {
     readChats(first: Int, after: Cursor): ChatsConnection!
 
     """
+    An `InvalidChatId` will be returned if the user isn't in the chat, and the chat isn't public.
+
     An access token must be sent with this request if the chat being read isn't a public chat. Sending an access token
     for a public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
     """
@@ -126,6 +128,9 @@ type Query {
     """
     Returns the `GroupChatInfo` the `inviteCode` is for. This could be used to display a chat the user isn't in but was
     invited to, so that they can check whether they'd like to join.
+
+    An `InvalidInviteCode` will be returned if there's no such invitable chat. This may happen if the user was invited
+    to a chat but before they accepted the invitations, invites were switched off.
     """
     readGroupChat(inviteCode: Uuid!): ReadGroupChatResult!
 
@@ -353,8 +358,7 @@ type Mutation {
     Leaves the chat the user is in. Messages sent by, and polls voted on, by removed users will remain. Every message
     the user has starred in the specified chat will be unstarred for them.
 
-    Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified group
-    chat.
+    Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified chat.
 
     An access token must be sent with this request.
     """
@@ -398,9 +402,10 @@ type Mutation {
     Joins the chat the `inviteCode` is for.
 
     Nothing will happen if the user is already in the chat. `null` will be returned if the operation succeeded. An
-    `InvalidInviteCode` will be returned if there's no invitable chat having the `inviteCode` (e.g., the `inviteCode` is
-    now invalid because the admin of its group chat switched off invites). You can easily join a public chat using
-    `Mutation.joinPublicChat`.
+    `InvalidInviteCode` will be returned if there's no invitable chat having the `inviteCode`. This happens either
+    because the admin switched off invites or the chat was deleted.
+
+    You can easily join a public chat using `Mutation.joinPublicChat`.
 
     An access token must be sent with this request.
     """
@@ -468,10 +473,10 @@ type Mutation {
     when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
     message being replied to.
 
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the user isn't in
-    the `chatId` or the `chatId` is the same as the `invitedChatId`. An `InvalidInvitedChat` will be returned if the
-    `invitedChatId` isn't a group chat, the chat has turned off invitations, or the user isn't in it. An
-    `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
+    `chatId`, the user isn't in the `invitedChatId`, or the `chatId` is the same as the `invitedChatId`. An
+    `InvalidInvitedChat` will be returned if the `invitedChatId` isn't a group chat, the chat has turned off
+    invitations. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
 
     Users aren't allowed to create invite messages for chats they aren't in because there's no use case for it, and
     hackers could brute force joining many invitable chats in this manner. Users can, however, forward group chat
@@ -511,7 +516,7 @@ type Mutation {
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     `chatId`, the `messageId` is from the `chatId` (messages can't be forwarded in their own chats), or the `messageId`
     is a group chat invite for the `chatId`. An `InvalidMessageId` will be returned if the `messageId` or
-    `contextMessageId` doesn't exist.
+    `contextMessageId` don't exist.
 
     An access token must be sent with this request.
     """
@@ -520,9 +525,8 @@ type Mutation {
     """
     Triggers the `action` on the `messageId`'s action message. Returns whether the operation was successful.
 
-    `false` will be returned if there's no such action message, the user can't see the message (e.g., the message is
-    from a private chat which they had deleted), the user isn't in the chat, or the `action` doesn't exist on the
-    `messageId`.
+    `false` will be returned if there's no such action message (e.g., the user can't see the message because it's from
+    a private chat they deleted), the user isn't in the chat, or the `action` doesn't exist on the `messageId`.
 
     An access token must be sent with this request.
     """

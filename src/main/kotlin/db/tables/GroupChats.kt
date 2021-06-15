@@ -204,7 +204,7 @@ object GroupChats : Table() {
         chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
     }
 
-    /** Returns `false` if the [chatId] either doesn't exist or isn't invitable. */
+    /** Returns `false` if the [chatId] either doesn't exist or isn't an invitable group chat. */
     fun isInvitable(chatId: Int): Boolean = transaction {
         val publicity = select(GroupChats.id eq chatId).firstOrNull()?.get(publicity) ?: return@transaction false
         publicity != GroupChatPublicity.NOT_INVITABLE

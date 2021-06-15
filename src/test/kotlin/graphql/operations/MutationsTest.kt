@@ -402,7 +402,7 @@ class MutationsTest {
                 "isBroadcast" to false,
                 "publicity" to GroupChatPublicity.NOT_INVITABLE,
             )
-            val actual = executeCreateGroupChat(adminId,chat).__typename
+            val actual = executeCreateGroupChat(adminId, chat).__typename
             assertEquals("InvalidAdminId", actual)
             assertEquals(0, GroupChats.count())
         }
@@ -537,7 +537,7 @@ class MutationsTest {
         }
     }
 
-    private data class ForwardMessageResult(val data: Data){
+    private data class ForwardMessageResult(val data: Data) {
         data class Data(val forwardMessage: ForwardMessage?) {
             data class ForwardMessage(val __typename: String?)
         }
@@ -1787,12 +1787,12 @@ class MutationsTest {
                 accessToken,
             )
             val type = response.content?.let {
-                    testingObjectMapper
-                        .readValue<CreateGroupChatInviteMessageResult>(it)
-                        .data
-                        .createGroupChatInviteMessage
-                        ?.__typename
-                }
+                testingObjectMapper
+                    .readValue<CreateGroupChatInviteMessageResult>(it)
+                    .data
+                    .createGroupChatInviteMessage
+                    ?.__typename
+            }
             return CreateGroupChatInviteMessageResponse(response.status()!!, type)
         }
 
@@ -1811,7 +1811,7 @@ class MutationsTest {
             val (chatId, invitedChatId) = listOf(admin1, admin2)
                 .map { GroupChats.create(setOf(it.userId), publicity = GroupChatPublicity.INVITABLE) }
             val actual = executeCreateGroupChatInviteMessage(admin1.accessToken, chatId, invitedChatId).__typename
-            assertEquals("InvalidInvitedChat", actual)
+            assertEquals("InvalidChatId", actual)
         }
 
         @Test
