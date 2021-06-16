@@ -471,9 +471,9 @@ type Mutation {
 
     """
     Sends the `text` in the `chatId`. For example, a restaurant's bot asks if the user wants a burger or a pizza in the
-    `text`, and the `actions` are `"burger"` and `"pizza"`. If the `chatId` is a broadcast chat, the user must be an
-    admin to message. The user might want to give their message a context, such as when replying to a message sent
-    several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
+    `text`, and the `actions` are `"burger"` and `"pizza"`. The user might want to give their message a context, such as
+    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
+    message being replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidAction` will be returned if either there were zero `actions` or the `actions` weren't unique. An
@@ -1635,7 +1635,7 @@ union CreatePrivateChatResult = CreatedChatId | InvalidUserId
 
 union CreateTextMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
-union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId
+union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId | MustBeAdmin
 
 union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId | MustBeAdmin
 

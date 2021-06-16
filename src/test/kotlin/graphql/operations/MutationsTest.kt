@@ -1,14 +1,12 @@
 package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.TriggeredAction
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
 import com.neelkamath.omniChatBackend.graphql.routing.*
-import io.ktor.http.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -1905,23 +1903,15 @@ class MutationsTest {
         }
     }
 
-    private data class CreateActionMessageResult(val data: Data) {
-        data class Data(val createActionMessage: CreateActionMessage?) {
-            data class CreateActionMessage(val __typename: String?)
-        }
-    }
-
-    private data class CreateActionMessageResponse(val statusCode: HttpStatusCode, val __typename: String?)
-
     @Nested
     inner class CreateActionMessage {
         private fun executeCreateActionMessage(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             message: Map<String, Any>,
             contextMessageId: Int? = null,
-        ): CreateActionMessageResponse {
-            val response = executeGraphQlViaHttp(
+        ): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation CreateActionMessage(
                     ${"$"}chatId: Int!
@@ -1938,21 +1928,18 @@ class MutationsTest {
                 }
                 """,
                 mapOf("chatId" to chatId, "message" to message, "contextMessageId" to contextMessageId),
-                accessToken,
-            )
-            val type = response.content?.let {
-                testingObjectMapper.readValue<CreateActionMessageResult>(it).data.createActionMessage?.__typename
-            }
-            return CreateActionMessageResponse(response.status()!!, type)
+                userId,
+            ).data!!["createActionMessage"] as Map<*, *>?
+            return data?.get("__typename") as String?
         }
 
         private fun executeCreateActionMessage(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             message: ActionMessageInput,
             contextMessageId: Int? = null,
-        ): CreateActionMessageResponse = executeCreateActionMessage(
-            accessToken,
+        ): String? = executeCreateActionMessage(
+            userId,
             chatId,
             testingObjectMapper.convertValue<Map<String, Any>>(message),
             contextMessageId,
@@ -1960,20 +1947,19 @@ class MutationsTest {
 
         @Test
         fun `Only admins must be allowed to message in broadcast chats`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId), isBroadcast = true)
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            assertNull(executeCreateActionMessage(admin.accessToken, chatId, message).__typename)
-            val actual = executeCreateActionMessage(user.accessToken, chatId, message).statusCode
-            assertEquals(HttpStatusCode.Unauthorized, actual)
+            assertNull(executeCreateActionMessage(adminId, chatId, message))
+            assertEquals("MustBeAdmin", executeCreateActionMessage(userId, chatId, message))
         }
 
         @Test
         fun `The message must get created sans context`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            assertNull(executeCreateActionMessage(admin.accessToken, chatId, message).__typename)
+            assertNull(executeCreateActionMessage(adminId, chatId, message))
             val messageId = Messages.readIdList(chatId).first()
             assertFalse(Messages.hasContext(messageId))
             assertNull(Messages.readContextMessageId(messageId))
@@ -1981,11 +1967,11 @@ class MutationsTest {
 
         @Test
         fun `The message must get created with a context`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val contextMessageId = Messages.message(admin.userId, chatId)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            val contextMessageId = Messages.message(adminId, chatId)
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            assertNull(executeCreateActionMessage(admin.accessToken, chatId, message, contextMessageId).__typename)
+            assertNull(executeCreateActionMessage(adminId, chatId, message, contextMessageId))
             val messageId = Messages.readIdList(chatId).last()
             assertTrue(Messages.hasContext(messageId))
             assertEquals(contextMessageId, Messages.readContextMessageId(messageId))
@@ -1993,41 +1979,39 @@ class MutationsTest {
 
         @Test
         fun `Attempting to create a message in a chat the user isn't in must fail`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId))
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            assertEquals("InvalidChatId", executeCreateActionMessage(user.accessToken, chatId, message).__typename)
+            assertEquals("InvalidChatId", executeCreateActionMessage(userId, chatId, message))
             assertEquals(0, Messages.count())
         }
 
         @Test
         fun `Referencing a context message from another chat must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
-            val contextMessageId = Messages.message(admin.userId, chat1Id)
+            val adminId = createVerifiedUsers(1).first().userId
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(adminId)) }
+            val contextMessageId = Messages.message(adminId, chat1Id)
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            val actual = executeCreateActionMessage(admin.accessToken, chat2Id, message, contextMessageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            assertEquals("InvalidMessageId", executeCreateActionMessage(adminId, chat2Id, message, contextMessageId))
             assertEquals(1, Messages.count())
         }
 
         @Test
         fun `Using a message the user can't see as a context must fail`() {
-            val (user1, user2) = createVerifiedUsers(2)
-            val chatId = PrivateChats.create(user1.userId, user2.userId)
-            val contextMessageId = Messages.message(user1.userId, chatId)
-            PrivateChatDeletions.create(chatId, user1.userId)
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val contextMessageId = Messages.message(user1Id, chatId)
+            PrivateChatDeletions.create(chatId, user1Id)
             val message = ActionMessageInput(MessageText("Title"), listOf(MessageText("Action 1")))
-            val actual = executeCreateActionMessage(user1.accessToken, chatId, message, contextMessageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            assertEquals("InvalidMessageId", executeCreateActionMessage(user1Id, chatId, message, contextMessageId))
         }
 
         private fun assertActions(hasDuplicateAction: Boolean) {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
             val actions = if (hasDuplicateAction) listOf(MessageText("a"), MessageText("a")) else listOf()
             val message = mapOf("text" to MessageText("t"), "actions" to actions)
-            assertEquals("InvalidAction", executeCreateActionMessage(admin.accessToken, chatId, message).__typename)
+            assertEquals("InvalidAction", executeCreateActionMessage(adminId, chatId, message))
         }
 
         @Test

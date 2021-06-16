@@ -8,6 +8,7 @@ object MustBeAdmin :
     CreateTextMessageResult,
     CreateGroupChatInviteMessageResult,
     SetPublicityResult,
+    CreateActionMessageResult,
     ForwardMessageResult {
 
     fun getPlaceholder() = Placeholder

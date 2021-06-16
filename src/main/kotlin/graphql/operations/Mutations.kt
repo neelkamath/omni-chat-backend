@@ -7,7 +7,6 @@ import com.neelkamath.omniChatBackend.db.deleteUser
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
-import com.neelkamath.omniChatBackend.graphql.engine.UnauthorizedException
 import com.neelkamath.omniChatBackend.graphql.engine.parseArgument
 import com.neelkamath.omniChatBackend.graphql.engine.verifyAuth
 import com.neelkamath.omniChatBackend.graphql.routing.*
@@ -378,7 +377,7 @@ fun createActionMessage(env: DataFetchingEnvironment): CreateActionMessageResult
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) return InvalidChatId
-    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return MustBeAdmin
     val message = try {
         env.parseArgument<ActionMessageInput>("message")
     } catch (_: IllegalArgumentException) {

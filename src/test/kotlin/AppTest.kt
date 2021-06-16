@@ -589,6 +589,7 @@ private object CreateActionMessageResultDeserializer : JsonDeserializer<CreateAc
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidAction" -> InvalidAction::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

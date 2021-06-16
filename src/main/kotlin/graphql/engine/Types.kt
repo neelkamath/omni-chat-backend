@@ -219,6 +219,7 @@ private fun readCreateActionMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidAction -> "InvalidAction"
     is InvalidMessageId -> "InvalidMessageId"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
