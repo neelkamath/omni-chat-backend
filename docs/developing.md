@@ -127,8 +127,8 @@ Here's how to create Kotlin [models](../src/main/kotlin/graphql/routing/Models.k
 |---|---|
 |`type`|`class`|
 |`input`|`data class`|
-|`interface`|`interface`|
-|`union`|Create an `interface` sans body, and have the `union`'s `type`s implement it.|
+|`interface`|`sealed interface`|
+|`union`|Create a `sealed interface` sans body, and have the `union`'s `type`s implement it.|
 |`enum`|`enum class`|
 |`scalar`|A `data class`, `typealias` for a predefined class (e.g., `String`, `LocalDateTime`), or `object`.|
 

@@ -194,8 +194,8 @@ object GroupChats : Table() {
      * Throws an [IllegalArgumentException] if the [chatId] is public. Subscribers are notified of the
      * [UpdatedGroupChat] via [chatsNotifier].
      */
-    fun setInvitability(chatId: Int, isInvitable: Boolean) {
-        require(!isExistingPublicChat(chatId)) { "A public chat's invitability cannot be updated." }
+    fun setPublicity(chatId: Int, isInvitable: Boolean) {
+        require(!isExistingPublicChat(chatId)) { "A public chat's publicity cannot be updated." }
         val publicity = if (isInvitable) GroupChatPublicity.INVITABLE else GroupChatPublicity.NOT_INVITABLE
         transaction {
             update({ GroupChats.id eq chatId }) { it[this.publicity] = publicity }
@@ -204,7 +204,7 @@ object GroupChats : Table() {
         chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
     }
 
-    /** Returns `false` if the [chatId] either doesn't exist or isn't invitable. */
+    /** Returns `false` if the [chatId] either doesn't exist or isn't an invitable group chat. */
     fun isInvitable(chatId: Int): Boolean = transaction {
         val publicity = select(GroupChats.id eq chatId).firstOrNull()?.get(publicity) ?: return@transaction false
         publicity != GroupChatPublicity.NOT_INVITABLE

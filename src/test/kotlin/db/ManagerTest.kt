@@ -4,7 +4,7 @@ import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedAccount
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -85,7 +85,9 @@ class ManagerTest {
                 deleteUser(userId)
                 awaitBrokering()
                 val expected = listOf(listOf(userId))
-                val actual = adminSubscriber.values().map { (it as ExitedUsers).getUserIdList() }
+                val actual = adminSubscriber.values().map { value ->
+                    (value as UpdatedGroupChat).getRemovedUsers()!!.map { it.getUserId() }
+                }
                 assertEquals(expected, actual)
                 userSubscriber.assertComplete()
             }

@@ -38,10 +38,6 @@ sealed interface Message {
     }
 
     companion object {
-        /**
-         * Returns one of [TextMessage], [ActionMessage], [AudioMessage], [DocMessage], [GroupChatInviteMessage],
-         * [PicMessage], [PollMessage], and [VideoMessage] based on the [messageId]'s type.
-         */
         fun build(messageId: Int): Message = when (Messages.readType(messageId)) {
             MessageType.TEXT -> TextMessage(messageId)
             MessageType.ACTION -> ActionMessage(messageId)

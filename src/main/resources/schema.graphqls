@@ -53,11 +53,13 @@ schema {
 
 type Query {
     """
+    If there's no such `messageId` visible to the user (including anonymous users), then an `InvalidMessageId` will get
+    returned.
+
     An access token must be sent with this request if the `messageId` isn't from a public chat. Sending an access token
     for a public chat will return the message as viewed by the user (e.g., the message may be stated as being starred).
-    If there's no such `messageId` visible to the user (including anonymous users), then the user will be unauthorized.
     """
-    readMessage(messageId: Int!): Message!
+    readMessage(messageId: Int!): ReadMessageResult!
 
     """
     Returns the user's starred messages.
@@ -87,8 +89,8 @@ type Query {
     readTypingUsers: [TypingUsers!]!
 
     """
-    Case-insensitively `query`s text messages, poll message title and options, action message text and actions, and pic
-    message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
+    Case-insensitively `query`s text messages, poll message question and options, action message text and actions, and
+    pic message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
 
     A returned `InvalidChatId` indicates that the chat isn't public, and the user isn't in the chat.
 
@@ -98,21 +100,17 @@ type Query {
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): SearchChatMessagesResult!
 
     """
-    Case-insensitively `query`s every text message, poll message's title and options, action message's text and actions,
-    and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be for a
-    particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's messages
-    are chronologically ordered.
+    Case-insensitively `query`s every text message, poll message's question and options, action message's text and
+    actions, and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be
+    for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's
+    messages are chronologically ordered.
 
     An access token must be sent with this request.
     """
     searchMessages(query: String!, first: Int, after: Cursor): ChatMessagesConnection!
 
-    """
-    Returns the user's account info.
-
-    An access token must be sent with this request.
-    """
-    readAccount: Account!
+    """Returns the specified user's account info."""
+    readAccount(userId: Int!): Account!
 
     """
     Returns the chats the user is in.
@@ -122,6 +120,8 @@ type Query {
     readChats(first: Int, after: Cursor): ChatsConnection!
 
     """
+    An `InvalidChatId` will be returned if the user isn't in the chat, and the chat isn't public.
+
     An access token must be sent with this request if the chat being read isn't a public chat. Sending an access token
     for a public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
     """
@@ -130,6 +130,9 @@ type Query {
     """
     Returns the `GroupChatInfo` the `inviteCode` is for. This could be used to display a chat the user isn't in but was
     invited to, so that they can check whether they'd like to join.
+
+    An `InvalidInviteCode` will be returned if there's no such invitable chat. This may happen if the user was invited
+    to a chat but before they accepted the invitations, invites were switched off.
     """
     readGroupChat(inviteCode: Uuid!): ReadGroupChatResult!
 
@@ -165,6 +168,13 @@ type Query {
     searchContacts(query: String!, first: Int, after: Cursor): AccountsConnection!
 
     """
+    Case-insensitively searches contacts by `query`ing their usernames, first names, last names, and email addresses.
+
+    An access token must be sent with this request if the chat isn't public.
+    """
+    searchGroupChatUsers(chatId: Int!, query: String!, first: Int, after: Cursor): SearchGroupChatUsersResult!
+
+    """
     Operations such as `Query.updateAccount` require authentication via an access token. An access token can be acquired
     by passing the user's `Login` to this operation. Once the access token has expired, the `TokenSet.refreshToken` can
     be passed to `Query.refreshTokenSet`.
@@ -174,6 +184,8 @@ type Query {
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
     passing the `TokenSet.refreshToken` from `Query.requestTokenSet` as the `refreshToken` to request a new `TokenSet`.
+
+    The user will be unauthorized if the `refreshToken` is invalid.
     """
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
@@ -274,11 +286,11 @@ type Mutation {
     deleteProfilePic: Placeholder!
 
     """
-    Deletes the group chat's profile pic. The user must be the admin.
+    Deletes the group chat's profile pic. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
-    deleteGroupChatPic(chatId: Int!): Placeholder!
+    deleteGroupChatPic(chatId: Int!): MustBeAdmin
 
     """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
@@ -330,18 +342,27 @@ type Mutation {
     """
     emailPasswordResetCode(emailAddress: String!): UnregisteredEmailAddress
 
-    """An access token must be sent with this request. Only an admin can perform this operation."""
-    updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): Placeholder!
+    """
+    `null` gets returned if the operation succeeded.
 
-    """An access token must be sent with this request. Only an admin can perform this operation."""
-    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
+    An access token must be sent with this request.
+    """
+    updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): MustBeAdmin
 
     """
-    Nonexisting users, and users who are already in the chat will be ignored.
+    `null` gets returned if the operation succeeded.
 
-    An access token must be sent with this request. Only an admin can perform this operation.
+    An access token must be sent with this request.
     """
-    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): MustBeAdmin
+
+    """
+    Nonexisting users, and users who are already in the chat will be ignored. `null` will get returned if the operation
+    succeeded.
+
+    An access token must be sent with this request.
+    """
+    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): MustBeAdmin
 
     """
     Removes the specified users from the `chatId` which may include admins including the user themself. Messages sent
@@ -351,13 +372,13 @@ type Mutation {
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): CannotLeaveChat
+    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): RemoveGroupChatUsersResult
 
     """
-    Leaves the chat the user is in. Every message the user has starred in the specified chat will be unstarred for them.
+    Leaves the chat the user is in. Messages sent by, and polls voted on, by removed users will remain. Every message
+    the user has starred in the specified chat will be unstarred for them.
 
-    Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified group
-    chat.
+    Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified chat.
 
     An access token must be sent with this request.
     """
@@ -367,12 +388,12 @@ type Mutation {
     Makes every user in the `idList` an admin of the `chatId`. Nonexisting users, users who aren't in the chat, and
     users who are already admins, are ignored.
 
-    An access token must be sent with this request. Only an admin can perform this operation.
+    An access token must be sent with this request.
     """
-    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): MustBeAdmin
 
     """
-    Creates a group chat. Nonexistent users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
+    Creates a group chat. Nonexisting users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and
     `GroupChatInput.adminIdList` needn't contain the user's own ID, as it is implicitly included.
 
     If an `InvalidAdminId` is returned, it indicates that the `chat` parameter's `GroupChatInput.adminIdList` wasn't a
@@ -383,27 +404,28 @@ type Mutation {
     createGroupChat(chat: GroupChatInput!): CreateGroupChatResult!
 
     """
-    Sets whether the `chatId` `isBroadcast`. The user must be an admin to perform this operation.
+    Sets whether the `chatId` `isBroadcast`. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
-    setBroadcast(chatId: Int!, isBroadcast: Boolean!): Placeholder!
+    setBroadcast(chatId: Int!, isBroadcast: Boolean!): MustBeAdmin
 
     """
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the chat isn't a
     group chat or the chat is a public chat.
 
-    An access token must be sent with this request. The user must be an admin to perform this operation.
+    An access token must be sent with this request.
     """
-    setInvitability(chatId: Int!, isInvitable: Boolean!): InvalidChatId
+    setPublicity(chatId: Int!, isInvitable: Boolean!): SetPublicityResult
 
     """
     Joins the chat the `inviteCode` is for.
 
     Nothing will happen if the user is already in the chat. `null` will be returned if the operation succeeded. An
-    `InvalidInviteCode` will be returned if there's no invitable chat having the `inviteCode` (e.g., the `inviteCode` is
-    now invalid because the admin of its group chat switched off invites). You can easily join a public chat using
-    `Mutation.joinPublicChat`.
+    `InvalidInviteCode` will be returned if there's no invitable chat having the `inviteCode`. This happens either
+    because the admin switched off invites or the chat was deleted.
+
+    You can easily join a public chat using `Mutation.joinPublicChat`.
 
     An access token must be sent with this request.
     """
@@ -436,9 +458,9 @@ type Mutation {
     createPrivateChat(userId: Int!): CreatePrivateChatResult!
 
     """
-    Sends the `text` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
-    user might want to give their message a context, such as when replying to a message sent several messages ago. In
-    this case, the `contextMessageId` is to be the ID of the message being replied to.
+    Sends the `text` in the `chatId`. The user might want to give their message a context, such as when replying to a
+    message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied
+    to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
@@ -449,9 +471,9 @@ type Mutation {
 
     """
     Sends the `text` in the `chatId`. For example, a restaurant's bot asks if the user wants a burger or a pizza in the
-    `text`, and the `actions` are `"burger"` and `"pizza"`. If the `chatId` is a broadcast chat, the user must be an
-    admin to message. The user might want to give their message a context, such as when replying to a message sent
-    several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied to.
+    `text`, and the `actions` are `"burger"` and `"pizza"`. The user might want to give their message a context, such as
+    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
+    message being replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidAction` will be returned if either there were zero `actions` or the `actions` weren't unique. An
@@ -466,15 +488,14 @@ type Mutation {
     createActionMessage(chatId: Int!, message: ActionMessageInput!, contextMessageId: Int): CreateActionMessageResult
 
     """
-    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
-    broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
-    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
-    message being replied to.
+    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. The user might want
+    to give their message a context, such as when replying to a message sent several messages ago. In this case, the
+    `contextMessageId` is to be the ID of the message being replied to.
 
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the user isn't in
-    the `chatId` or the `chatId` is the same as the `invitedChatId`. An `InvalidInvitedChat` will be returned if the
-    `invitedChatId` isn't a group chat, the chat has turned off invitations, or the user isn't in it. An
-    `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
+    `chatId`, the user isn't in the `invitedChatId`, or the `chatId` is the same as the `invitedChatId`. An
+    `InvalidInvitedChat` will be returned if the `invitedChatId` isn't a group chat, the chat has turned off
+    invitations. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
 
     Users aren't allowed to create invite messages for chats they aren't in because there's no use case for it, and
     hackers could brute force joining many invitable chats in this manner. Users can, however, forward group chat
@@ -495,9 +516,9 @@ type Mutation {
     ): CreateGroupChatInviteMessageResult
 
     """
-    Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
-    user might want to give their message a context, such as when replying to a message sent several messages ago. In
-    this case, the `contextMessageId` is to be the ID of the message being replied to.
+    Sends the `poll` in the `chatId`. The user might want to give their message a context, such as when replying to a
+    message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied
+    to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
@@ -507,14 +528,14 @@ type Mutation {
     createPollMessage(chatId: Int!, poll: PollInput!, contextMessageId: Int): CreatePollMessageResult
 
     """
-    Forwards the `messageId` to the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message.
-    The user might want to give their message a context, such as when replying to a message sent several messages ago.
-    In this case, the `contextMessageId` is to be the ID of the message being replied to.
+    Forwards the `messageId` to the `chatId`. The user might want to give their message a context, such as when replying
+    to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the message being
+    replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     `chatId`, the `messageId` is from the `chatId` (messages can't be forwarded in their own chats), or the `messageId`
     is a group chat invite for the `chatId`. An `InvalidMessageId` will be returned if the `messageId` or
-    `contextMessageId` doesn't exist.
+    `contextMessageId` don't exist.
 
     An access token must be sent with this request.
     """
@@ -523,9 +544,8 @@ type Mutation {
     """
     Triggers the `action` on the `messageId`'s action message. Returns whether the operation was successful.
 
-    `false` will be returned if there's no such action message, the user can't see the message (e.g., the message is
-    from a private chat which they had deleted), the user isn't in the chat, or the `action` doesn't exist on the
-    `messageId`.
+    `false` will be returned if there's no such action message (e.g., the user can't see the message because it's from
+    a private chat they deleted), the user isn't in the chat, or the `action` doesn't exist on the `messageId`.
 
     An access token must be sent with this request.
     """
@@ -670,6 +690,7 @@ union MessagesSubscription =
     | NewVideoMessage
     | NewPollMessage
     | UpdatedMessage
+    | UpdatedPollMessage
     | TriggeredAction
     | DeletedMessage
     | UserChatMessagesRemoval
@@ -686,6 +707,7 @@ union ChatMessagesSubscription =
     | NewVideoMessage
     | NewPollMessage
     | UpdatedMessage
+    | UpdatedPollMessage
     | DeletedMessage
     | UserChatMessagesRemoval
     | InvalidChatId
@@ -738,21 +760,19 @@ type UpdatedProfilePic {
 """
 A `GroupChatId` is the ID of the chat the user was added to.
 
-If the subscriber leaves the chat, they will receive their own `ExitedUsers` message.
+If the subscriber leaves the chat, they will receive an `UpdatedGroupChat` event specifying such.
 """
 union ChatsSubscription =
     | CreatedSubscription
     | GroupChatId
     | UpdatedGroupChatPic
     | UpdatedGroupChat
-    | ExitedUsers
     | DeletedPrivateChat
 
 union GroupChatMetadataSubscription =
     | CreatedSubscription
     | UpdatedGroupChatPic
     | UpdatedGroupChat
-    | ExitedUsers
     | InvalidChatId
 
 """The `chatId` of the group chat whose pic was updated."""
@@ -792,12 +812,6 @@ type TypingUsers {
 
 type GroupChatId {
     chatId: Int!
-}
-
-"""The users who left the group chat."""
-type ExitedUsers {
-    chatId: Int!
-    userIdList: [Int!]!
 }
 
 """This will not be sent if the profile pic was updated."""
@@ -849,7 +863,7 @@ type DeletedMessage {
 
 input PollInput {
     """For example, `"Where should we meet?"`."""
-    title: MessageText!
+    question: MessageText!
     """There must be at least two options. Each option must be unique. For example, `["Burger King", "Pizza Hut"]`."""
     options: [MessageText!]!
 }
@@ -862,7 +876,7 @@ type PollOption {
 
 """A user can vote for each option at most once, but can vote for multiple options."""
 type Poll {
-    title: MessageText!
+    question: MessageText!
     """There are at least two options, each of which are unique."""
     options: [PollOption!]!
 }
@@ -878,6 +892,11 @@ type ActionableMessage {
     text: MessageText!
     """There's at least one action. Each action is unique."""
     actions: [MessageText!]!
+}
+
+"""The user failed to perform the operation because they need to be the chat's admin."""
+type MustBeAdmin {
+    placeholder: Placeholder!
 }
 
 type GroupChatsConnection {
@@ -1171,7 +1190,8 @@ type GroupChatInviteMessage implements Message {
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type DocMessage implements Message {
@@ -1278,7 +1298,8 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type StarredDocMessage implements StarredMessage {
@@ -1375,7 +1396,8 @@ type NewGroupChatInviteMessage implements NewMessage {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    inviteCode: Uuid!
+    """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
+    inviteCode: Uuid
 }
 
 type NewDocMessage implements NewMessage {
@@ -1398,7 +1420,7 @@ type NewVideoMessage implements NewMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which has been updated."""
+"""An existing `messageId` in the `chatId` which has been starred, unstarred, delivered to a user, or read by a user."""
 type UpdatedMessage {
     chatId: Int!
     messageId: Int!
@@ -1464,11 +1486,11 @@ input AccountUpdate {
 
 input GroupChatInput {
     title: GroupChatTitle!
-    description: GroupChatDescription!
-    userIdList: [Int!]!
-    adminIdList: [Int!]!
-    isBroadcast: Boolean!
-    publicity: GroupChatPublicity!
+    description: GroupChatDescription! = ""
+    userIdList: [Int!]! = []
+    adminIdList: [Int!]! = []
+    isBroadcast: Boolean! = false
+    publicity: GroupChatPublicity! = INVITABLE
 }
 
 """The username doesn't exist."""
@@ -1580,6 +1602,15 @@ type CannotLeaveChat {
     placeholder: Placeholder!
 }
 
+"""The `userId` in the `chatId` updated their `vote` on the `messageId`'s `option`."""
+type UpdatedPollMessage {
+    chatId: Int!
+    messageId: Int!
+    userId: Int!
+    option: MessageText!
+    vote: Boolean!
+}
+
 union SearchChatMessagesResult = MessageEdges | InvalidChatId
 
 union ReadChatResult = PrivateChat | GroupChat | InvalidChatId
@@ -1602,18 +1633,35 @@ union CreateGroupChatResult = CreatedChatId | InvalidAdminId
 
 union CreatePrivateChatResult = CreatedChatId | InvalidUserId
 
-union CreateTextMessageResult = InvalidChatId | InvalidMessageId
+union CreateTextMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
-union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId
+union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId | MustBeAdmin
 
-union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId
+union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId | MustBeAdmin
 
-union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll
+union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll | MustBeAdmin
 
-union ForwardMessageResult = InvalidChatId | InvalidMessageId
+union ForwardMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
 union SetPollVoteResult = InvalidMessageId | NonexistingOption
 
 union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat
 
 union ReadOnlineStatusResult = OnlineStatus | InvalidUserId
+
+union SearchGroupChatUsersResult = AccountsConnection | InvalidChatId
+
+union ReadMessageResult =
+    | TextMessage
+    | ActionMessage
+    | PicMessage
+    | PollMessage
+    | AudioMessage
+    | GroupChatInviteMessage
+    | VideoMessage
+    | DocMessage
+    | InvalidMessageId
+
+union RemoveGroupChatUsersResult = CannotLeaveChat | MustBeAdmin
+
+union SetPublicityResult = InvalidChatId | MustBeAdmin

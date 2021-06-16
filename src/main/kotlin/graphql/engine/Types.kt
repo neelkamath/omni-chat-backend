@@ -6,6 +6,7 @@ import graphql.schema.idl.TypeRuntimeWiring
 
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
     .type("AccountData") { wireType(it, ::readAccountData) }
+    .type("SetPublicityResult") { wireType(it, ::readSetPublicityResult) }
     .type("Chat") { wireType(it, ::readChat) }
     .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
     .type("StarredMessage") { wireType(it, ::readStarredMessage) }
@@ -23,12 +24,15 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("GroupChatMetadataSubscription") { wireType(it, ::readGroupChatMetadataSubscription) }
     .type("SearchChatMessagesResult") { wireType(it, ::readSearchChatMessagesResult) }
     .type("ReadChatResult") { wireType(it, ::readReadChatResult) }
+    .type("RemoveGroupChatUsersResult") { wireType(it, ::readRemoveGroupChatUsersResult) }
     .type("ReadGroupChatResult") { wireType(it, ::readReadGroupChatResult) }
     .type("RequestTokenSetResult") { wireType(it, ::readRequestTokenSetResult) }
     .type("VerifyEmailAddressResult") { wireType(it, ::readVerifyEmailAddressResult) }
     .type("ResetPasswordResult") { wireType(it, ::readResetPasswordResult) }
     .type("UpdateAccountResult") { wireType(it, ::readUpdateAccountResult) }
     .type("CreateAccountResult") { wireType(it, ::readCreateAccountResult) }
+    .type("ReadMessageResult") { wireType(it, ::readReadMessageResult) }
+    .type("SearchGroupChatUsersResult") { wireType(it, ::readSearchGroupChatUsersResult) }
     .type("EmailEmailAddressVerificationResult") { wireType(it, ::readEmailEmailAddressVerificationResult) }
     .type("CreateGroupChatResult") { wireType(it, ::readCreateGroupChatResult) }
     .type("CreatePrivateChatResult") { wireType(it, ::readCreatePrivateChatResult) }
@@ -66,6 +70,7 @@ private fun readChatMessagesSubscription(obj: Any): String = when (obj) {
     is NewDocMessage -> "NewDocMessage"
     is NewVideoMessage -> "NewVideoMessage"
     is NewPollMessage -> "NewPollMessage"
+    is UpdatedPollMessage -> "UpdatedPollMessage"
     is UpdatedMessage -> "UpdatedMessage"
     is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
     is InvalidChatId -> "InvalidChatId"
@@ -83,6 +88,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is NewDocMessage -> "NewDocMessage"
     is NewVideoMessage -> "NewVideoMessage"
     is NewPollMessage -> "NewPollMessage"
+    is UpdatedPollMessage -> "UpdatedPollMessage"
     is UpdatedMessage -> "UpdatedMessage"
     is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
@@ -95,7 +101,6 @@ private fun readChatsSubscription(obj: Any): String = when (obj) {
     is GroupChatId -> "GroupChatId"
     is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
     is UpdatedGroupChat -> "UpdatedGroupChat"
-    is ExitedUsers -> "ExitedUsers"
     is DeletedPrivateChat -> "DeletedPrivateChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
@@ -105,7 +110,6 @@ private fun readGroupChatMetadataSubscription(obj: Any): String = when (obj) {
     is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
     is UpdatedGroupChat -> "UpdatedGroupChat"
     is InvalidChatId -> "InvalidChatId"
-    is ExitedUsers -> "ExitedUsers"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -119,6 +123,12 @@ private fun readReadChatResult(obj: Any): String = when (obj) {
     is PrivateChat -> "PrivateChat"
     is GroupChat -> "GroupChat"
     is InvalidChatId -> "InvalidChatId"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readRemoveGroupChatUsersResult(obj: Any): String = when (obj) {
+    is CannotLeaveChat -> "CannotLeaveChat"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -161,6 +171,25 @@ private fun readCreateAccountResult(obj: Any): String = when (obj) {
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
+private fun readReadMessageResult(obj: Any): String = when (obj) {
+    is InvalidMessageId -> "InvalidMessageId"
+    is TextMessage -> "TextMessage"
+    is ActionMessage -> "ActionMessage"
+    is PicMessage -> "PicMessage"
+    is PollMessage -> "PollMessage"
+    is AudioMessage -> "AudioMessage"
+    is GroupChatInviteMessage -> "GroupChatInviteMessage"
+    is DocMessage -> "DocMessage"
+    is VideoMessage -> "VideoMessage"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readSearchGroupChatUsersResult(obj: Any): String = when (obj) {
+    is InvalidChatId -> "InvalidChatId"
+    is AccountsConnection -> "AccountsConnection"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
 private fun readEmailEmailAddressVerificationResult(obj: Any): String = when (obj) {
     is UnregisteredEmailAddress -> "UnregisteredEmailAddress"
     is EmailAddressVerified -> "EmailAddressVerified"
@@ -182,6 +211,7 @@ private fun readCreatePrivateChatResult(obj: Any): String = when (obj) {
 private fun readCreateTextMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -189,6 +219,7 @@ private fun readCreateActionMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidAction -> "InvalidAction"
     is InvalidMessageId -> "InvalidMessageId"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -196,6 +227,7 @@ private fun readCreateGroupChatInviteMessageResult(obj: Any): String = when (obj
     is InvalidChatId -> "InvalidChatId"
     is InvalidInvitedChat -> "InvalidInvitedChat"
     is InvalidMessageId -> "InvalidMessageId"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -203,10 +235,12 @@ private fun readCreatePollMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
     is InvalidPoll -> "InvalidPoll"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
 private fun readForwardMessageResult(obj: Any): String = when (obj) {
+    is MustBeAdmin -> "MustBeAdmin"
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -287,6 +321,12 @@ private fun readAccountData(obj: Any): String = when (obj) {
     is Account -> "Account"
     is BlockedAccount -> "BlockedAccount"
     is NewContact -> "NewContact"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readSetPublicityResult(obj: Any): String = when (obj) {
+    is MustBeAdmin -> "MustBeAdmin"
+    is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

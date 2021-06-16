@@ -8,6 +8,7 @@ import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
@@ -156,11 +157,23 @@ object Users : IntIdTable() {
      * Case-insensitively [query]s every user's username, first name, last name, and email address. Returns the IDs
      * of the matched users sorted in ascending order.
      */
-    fun search(query: String): LinkedHashSet<Int> = transaction {
-        select(
-            (username iLike query) or (firstName iLike query) or (lastName iLike query) or (emailAddress iLike query)
-        ).orderBy(Users.id).map { it[Users.id].value }.toLinkedHashSet()
+    fun searchAll(query: String): LinkedHashSet<Int> = transaction {
+        select(buildQuery(query)).orderBy(Users.id).map { it[Users.id].value }.toLinkedHashSet()
     }
+
+    /**
+     * Case-insensitively [query]s the username, first name, last name, and email address of each user in the
+     * [userIdList]. Returns the IDs of the matched users sorted in ascending order.
+     */
+    fun search(query: String, userIdList: Collection<Int>): LinkedHashSet<Int> = transaction {
+        select((Users.id inList userIdList) and buildQuery(query))
+            .orderBy(Users.id)
+            .map { it[Users.id].value }
+            .toLinkedHashSet()
+    }
+
+    private fun buildQuery(query: String): Op<Boolean> =
+        (username iLike query) or (firstName iLike query) or (lastName iLike query) or (emailAddress iLike query)
 
     /**
      * Deletes the specified user if they exist.

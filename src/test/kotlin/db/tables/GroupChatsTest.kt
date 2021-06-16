@@ -295,12 +295,12 @@ class GroupChatsTest {
     }
 
     @Nested
-    inner class SetInvitability {
+    inner class SetPublicity {
         @Test
         fun `An exception must be thrown if the chat is public`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            assertFailsWith<IllegalArgumentException> { GroupChats.setInvitability(chatId, isInvitable = true) }
+            assertFailsWith<IllegalArgumentException> { GroupChats.setPublicity(chatId, isInvitable = true) }
         }
 
         @Test
@@ -309,7 +309,7 @@ class GroupChatsTest {
             val chatId = GroupChats.create(setOf(adminId))
             val (adminSubscriber, userSubscriber) = listOf(adminId, userId)
                 .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
-            GroupChats.setInvitability(chatId, isInvitable = true)
+            GroupChats.setPublicity(chatId, isInvitable = true)
             awaitBrokering()
             val values = adminSubscriber.values().map { it as UpdatedGroupChat }
             assertEquals(listOf(chatId), values.map { it.getChatId() })

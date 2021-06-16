@@ -28,14 +28,11 @@ fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
     return chatIdList.map(::TypingUsers)
 }
 
-fun readAccount(env: DataFetchingEnvironment): Account {
-    env.verifyAuth()
-    return Account(env.userId!!)
-}
+fun readAccount(env: DataFetchingEnvironment): Account = Account(env.getArgument("userId"))
 
 fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     val chatId = env.getArgument<Int>("id")
-    if (env.userId == null && GroupChats.isExistingPublicChat(chatId)) return GroupChat(chatId)
+    if (GroupChats.isExistingPublicChat(chatId)) return GroupChat(chatId)
     env.verifyAuth()
     return when (chatId) {
         in PrivateChats.readIdList(env.userId!!) -> PrivateChat(chatId)
@@ -73,9 +70,10 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
     return AccountsConnection(startCursor, endCursor, userIdList, pagination)
 }
 
-fun readMessage(env: DataFetchingEnvironment): Message {
+fun readMessage(env: DataFetchingEnvironment): ReadMessageResult {
     val messageId = env.getArgument<Int>("messageId")
-    return if (Messages.isVisible(env.userId, messageId)) Message.build(messageId) else throw UnauthorizedException
+    if (Messages.isVisible(env.userId, messageId)) return Message.build(messageId) as ReadMessageResult
+    return InvalidMessageId
 }
 
 fun requestTokenSet(env: DataFetchingEnvironment): RequestTokenSetResult {
@@ -101,8 +99,7 @@ fun searchChatMessages(env: DataFetchingEnvironment): SearchChatMessagesResult {
     val chatId = env.getArgument<Int>("chatId")
     val query = env.getArgument<String>("query")
     val pagination = BackwardPagination(env.getArgument("last"), env.getArgument("before"))
-    val edges = if (env.userId == null && GroupChats.isExistingPublicChat(chatId))
-        Messages.searchGroupChat(chatId, query, pagination)
+    val edges = if (GroupChats.isExistingPublicChat(chatId)) Messages.searchGroupChat(chatId, query, pagination)
     else {
         env.verifyAuth()
         when (chatId) {
@@ -142,6 +139,14 @@ fun readStars(env: DataFetchingEnvironment): StarredMessagesConnection {
     return StarredMessagesConnection(messageIdList, pagination)
 }
 
+fun searchGroupChatUsers(env: DataFetchingEnvironment): SearchGroupChatUsersResult {
+    val chatId = env.getArgument<Int>("chatId")
+    if (env.userId == null && !GroupChats.isExistingPublicChat(chatId)) return InvalidChatId
+    val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
+    val userIdList = Users.search(env.getArgument("query"), GroupChatUsers.readUserIdList(chatId))
+    return paginateUserIdList(userIdList, pagination)
+}
+
 fun searchContacts(env: DataFetchingEnvironment): AccountsConnection {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
@@ -173,7 +178,7 @@ fun searchMessages(env: DataFetchingEnvironment): ChatMessagesConnection {
 fun searchUsers(env: DataFetchingEnvironment): AccountsConnection {
     val query = env.getArgument<String>("query")
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    val userIdList = Users.search(query)
+    val userIdList = Users.searchAll(query)
     return paginateUserIdList(userIdList, pagination)
 }
 

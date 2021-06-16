@@ -310,7 +310,8 @@ object Messages : IntIdTable() {
             createDocMessage(userId, chatId, DocMessages.read(messageId), contextMessageId, isForwarded = true)
 
         MessageType.POLL -> {
-            val poll = PollInput(PollMessages.readTitle(messageId), PollMessageOptions.readOptions(messageId).toList())
+            val poll =
+                PollInput(PollMessages.readQuestion(messageId), PollMessageOptions.readOptions(messageId).toList())
             createPollMessage(userId, chatId, poll, contextMessageId, isForwarded = true)
         }
     }
@@ -360,7 +361,7 @@ object Messages : IntIdTable() {
                 MessageType.PIC ->
                     PicMessages.readCaption(messageId)?.value?.contains(query, ignoreCase = true) ?: false
                 MessageType.POLL -> {
-                    PollMessages.readTitle(messageId).value.contains(query, ignoreCase = true) ||
+                    PollMessages.readQuestion(messageId).value.contains(query, ignoreCase = true) ||
                             PollMessageOptions.readOptions(messageId).any {
                                 it.value.contains(query, ignoreCase = true)
                             }

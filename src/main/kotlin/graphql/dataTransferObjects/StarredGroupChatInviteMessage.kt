@@ -7,5 +7,5 @@ import java.util.*
 class StarredGroupChatInviteMessage(override val id: Int) : StarredMessage {
     override val chatId: Lazy<Int> = lazy { Messages.readChatId(id) }
 
-    fun getInviteCode(): UUID = GroupChats.readInviteCode(chatId.value)!!
+    fun getInviteCode(): UUID? = GroupChats.readInviteCode(chatId.value)
 }

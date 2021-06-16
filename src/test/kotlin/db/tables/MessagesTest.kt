@@ -213,17 +213,17 @@ class MessagesTest {
         }
 
         @Test
-        fun `Poll message title and options must be searched case insensitively`() {
+        fun `Poll message question and options must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val message1Options = listOf(MessageText("Burger King"), MessageText("Pizza Hut"))
-            val message1 = PollInput(title = MessageText("Restaurant"), options = message1Options)
+            val message1 = PollInput(question = MessageText("Restaurant"), options = message1Options)
             val message1Id = Messages.message(adminId, chatId, message1)
             val message2Options = listOf(MessageText("Japanese Restaurant"), MessageText("Thai Restaurant"))
-            val message2 = PollInput(MessageText("Title"), message2Options)
+            val message2 = PollInput(MessageText("Question"), message2Options)
             val message2Id = Messages.message(adminId, chatId, message2)
             val message3Options = listOf(MessageText("option 1"), MessageText("option 2"))
-            val message3 = PollInput(MessageText("Title"), message3Options)
+            val message3 = PollInput(MessageText("Question"), message3Options)
             Messages.message(adminId, chatId, message3)
             assertEquals(linkedHashSetOf(message1Id, message2Id), Messages.searchGroupChat(chatId, "restaurant"))
         }

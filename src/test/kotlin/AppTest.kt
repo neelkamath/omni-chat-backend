@@ -31,6 +31,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(GroupChatMetadataSubscriptionDeserializer)
     .register(ChatsSubscriptionDeserializer)
     .register(AccountDataDeserializer)
+    .register(SetPublicityResultDeserializer)
     .register(MessageDeserializer)
     .register(StarredMessageDeserializer)
     .register(NewMessageDeserializer)
@@ -47,15 +48,18 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(MessagesSubscriptionDeserializer)
     .register(ChatMessagesSubscriptionDeserializer)
     .register(SearchChatMessagesResultDeserializer)
+    .register(RemoveGroupChatUsersResultDeserializer)
     .register(ReadChatResultDeserializer)
     .register(CreateActionMessageResultDeserializer)
     .register(CreateGroupChatInviteMessageResultDeserializer)
     .register(RequestTokenSetResultDeserializer)
     .register(ReadGroupChatResultDeserializer)
     .register(VerifyEmailAddressResultDeserializer)
+    .register(SearchGroupChatUsersResultDeserializer)
     .register(ResetPasswordResultDeserializer)
     .register(UpdateAccountResultDeserializer)
     .register(CreateAccountResultDeserializer)
+    .register(ReadMessageResultDeserializer)
     .register(CreateGroupChatResultDeserializer)
     .register(CreatePrivateChatResultDeserializer)
     .register(CreateTextMessageResultDeserializer)
@@ -91,6 +95,18 @@ private object AccountDataDeserializer : JsonDeserializer<AccountData>() {
             "Account" -> Account::class
             "NewContact" -> NewContact::class
             "BlockedAccount" -> BlockedAccount::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object SetPublicityResultDeserializer : JsonDeserializer<SetPublicityResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): SetPublicityResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "MustBeAdmin" -> MustBeAdmin::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -203,7 +219,6 @@ private object ChatsSubscriptionDeserializer : JsonDeserializer<ChatsSubscriptio
             "GroupChatId" -> GroupChatId::class
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
-            "ExitedUsers" -> ExitedUsers::class
             "DeletedPrivateChat" -> DeletedPrivateChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
@@ -218,7 +233,6 @@ private object GroupChatMetadataSubscriptionDeserializer : JsonDeserializer<Grou
             "CreatedSubscription" -> CreatedSubscription::class
             "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
-            "ExitedUsers" -> ExitedUsers::class
             "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
@@ -286,6 +300,7 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
             "NewPollMessage" -> NewPollMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
@@ -309,6 +324,7 @@ private object ChatMessagesSubscriptionDeserializer : JsonDeserializer<ChatMessa
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
             "NewPollMessage" -> NewPollMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
@@ -329,6 +345,18 @@ private object SearchChatMessagesResultDeserializer : JsonDeserializer<SearchCha
         val clazz: KClass<out SearchChatMessagesResult> = when (val type = node["__typename"].asText()) {
             "MessageEdges" -> MessageEdges::class
             "InvalidChatId" -> InvalidChatId::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object RemoveGroupChatUsersResultDeserializer : JsonDeserializer<RemoveGroupChatUsersResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): RemoveGroupChatUsersResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out RemoveGroupChatUsersResult> = when (val type = node["__typename"].asText()) {
+            "CannotLeaveChat" -> CannotLeaveChat::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -423,6 +451,37 @@ private object CreateAccountResultDeserializer : JsonDeserializer<CreateAccountR
     }
 }
 
+private object ReadMessageResultDeserializer : JsonDeserializer<ReadMessageResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ReadMessageResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out ReadMessageResult> = when (val type = node["__typename"].asText()) {
+            "InvalidMessageId" -> InvalidMessageId::class
+            "TextMessage" -> TextMessage::class
+            "ActionMessage" -> ActionMessage::class
+            "PicMessage" -> PicMessage::class
+            "PollMessage" -> PollMessage::class
+            "AudioMessage" -> AudioMessage::class
+            "GroupChatInviteMessage" -> GroupChatInviteMessage::class
+            "DocMessage" -> DocMessage::class
+            "VideoMessage" -> VideoMessage::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object SearchGroupChatUsersResultDeserializer : JsonDeserializer<SearchGroupChatUsersResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): SearchGroupChatUsersResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out SearchGroupChatUsersResult> = when (val type = node["__typename"].asText()) {
+            "InvalidChatId" -> InvalidChatId::class
+            "AccountsConnection" -> AccountsConnection::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
 private object CreateGroupChatResultDeserializer : JsonDeserializer<CreateGroupChatResult>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): CreateGroupChatResult {
         val node = parser.codec.readTree<JsonNode>(parser)
@@ -453,6 +512,7 @@ private object CreateTextMessageResultDeserializer : JsonDeserializer<CreateText
         val clazz: KClass<out CreateTextMessageResult> = when (val type = node["__typename"].asText()) {
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -466,6 +526,7 @@ private object CreatePollMessageResultDeserializer : JsonDeserializer<CreatePoll
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidPoll" -> InvalidPoll::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -476,6 +537,7 @@ private object ForwardMessageResultDeserializer : JsonDeserializer<ForwardMessag
     override fun deserialize(parser: JsonParser, context: DeserializationContext): ForwardMessageResult {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out ForwardMessageResult> = when (val type = node["__typename"].asText()) {
+            "MustBeAdmin" -> MustBeAdmin::class
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
@@ -527,6 +589,7 @@ private object CreateActionMessageResultDeserializer : JsonDeserializer<CreateAc
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidAction" -> InvalidAction::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -540,6 +603,7 @@ private object CreateGroupChatInviteMessageResultDeserializer : JsonDeserializer
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidInvitedChat" -> InvalidInvitedChat::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -765,8 +829,10 @@ class SpecComplianceTest {
             """
             query ReadMessage(${"$"}messageId: Int!) {
                 readMessage(messageId: ${"$"}messageId) {
-                    context {
-                        messageId
+                    ... on Message {
+                        context {
+                            messageId
+                        }
                     }
                 }
             }

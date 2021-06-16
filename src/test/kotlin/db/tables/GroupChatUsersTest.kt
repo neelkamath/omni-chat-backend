@@ -2,7 +2,6 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.*
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.ExitedUsers
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
 import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
@@ -213,7 +212,7 @@ class GroupChatUsersTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
             val inviteCode = GroupChats.readInviteCode(chatId)!!
-            GroupChats.setInvitability(chatId, isInvitable = false)
+            GroupChats.setPublicity(chatId, isInvitable = false)
             assertFailsWith<IllegalArgumentException> { GroupChatUsers.addUserViaInviteCode(adminId, inviteCode) }
         }
     }
@@ -306,10 +305,13 @@ class GroupChatUsersTest {
             GroupChatUsers.removeUsers(chatId, userId, userId)
             awaitBrokering()
             listOf(adminSubscriber, userSubscriber).forEach { subscriber ->
-                val values = subscriber.values().map { it as ExitedUsers }
+                val values = subscriber.values().map { it as UpdatedGroupChat }
                 assertEquals(listOf(chatId), values.map { it.getChatId() })
                 val expected = listOf(listOf(userId))
-                assertEquals(expected, values.map { it.getUserIdList() })
+                val actual = values.map { value ->
+                    value.getRemovedUsers()!!.map { it.getUserId() }
+                }
+                assertEquals(expected, actual)
             }
         }
 
@@ -325,7 +327,7 @@ class GroupChatUsersTest {
             GroupChatUsers.removeUsers(chatId, userId)
             awaitBrokering()
             nonParticipantSubscriber.assertNoValues()
-            val actual = unauthenticatedSubscriber.values().map { (it as ExitedUsers).getChatId() }
+            val actual = unauthenticatedSubscriber.values().map { (it as UpdatedGroupChat).getChatId() }
             assertEquals(listOf(chatId), actual)
         }
 

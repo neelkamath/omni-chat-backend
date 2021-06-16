@@ -1,10 +1,11 @@
 package com.neelkamath.omniChatBackend.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.tables.GroupChats
-import com.neelkamath.omniChatBackend.db.tables.create
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChatBackend.main
+import com.neelkamath.omniChatBackend.testingObjectMapper
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -49,16 +50,16 @@ class QueriesAndMutationsTest {
             val user = createVerifiedUsers(1).first()
             val response = readGraphQlHttpResponse(
                 """
-                query ReadAccount {
-                    readAccount {
-                        userId
+                query ReadStars {
+                    readStars {
+                        __typename
                     }
                 }
                 """,
                 accessToken = user.accessToken,
             )["data"] as Map<*, *>
-            val account = response["readAccount"] as Map<*, *>
-            assertEquals(user.userId, account["userId"])
+            val result = response["readStars"] as Map<*, *>
+            assertEquals("StarredMessagesConnection", result["__typename"])
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
@@ -66,8 +67,8 @@ class QueriesAndMutationsTest {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query ReadAccount {
-                            readAccount {
+                        query ReadStars {
+                            readStars {
                                 __typename
                             }
                         }
@@ -80,7 +81,7 @@ class QueriesAndMutationsTest {
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    val operationName = "ReadAccount".takeIf { mustSupplyOperationName }
+                    val operationName = "ReadStars".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }
@@ -100,8 +101,8 @@ class QueriesAndMutationsTest {
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {
             val response = executeGraphQlViaHttp(
                 """
-                query ReadAccount {
-                    readAccount {
+                query ReadStars {
+                    readStars {
                         __typename
                     }
                 }
@@ -113,18 +114,17 @@ class QueriesAndMutationsTest {
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying the token of a user who lacks permissions`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
+            val accessToken = createVerifiedUsers(1).first().accessToken
             val response = executeGraphQlViaHttp(
                 """
-                mutation SetInvitability(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
-                    setInvitability(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
+                query RefreshTokenSet(${"$"}refreshToken: ID!) {
+                    refreshTokenSet(refreshToken: ${"$"}refreshToken) {
                         __typename
                     }
                 }
                 """,
-                mapOf("chatId" to chatId, "isInvitable" to true),
-                user.accessToken,
+                mapOf("refreshToken" to "invalid"),
+                accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }

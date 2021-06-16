@@ -85,7 +85,7 @@ CREATE TABLE group_chat_invite_messages
 CREATE TABLE poll_messages
 (
     message_id INTEGER        NOT NULL UNIQUE REFERENCES messages (id),
-    title      VARCHAR(10000) NOT NULL
+    question VARCHAR(10000) NOT NULL
 );
 CREATE TABLE poll_message_options
 (

@@ -108,7 +108,7 @@ class PrivateChatsTest {
                 AccountInput(Username("steve_rogers"), Password("p"), emailAddress = "steve@example.com"),
             ).map {
                 Users.create(it)
-                val otherUserId = Users.search(it.username.value).first()
+                val otherUserId = Users.searchAll(it.username.value).first()
                 PrivateChats.create(userId, otherUserId)
                 otherUserId
             }

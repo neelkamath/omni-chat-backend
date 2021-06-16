@@ -20,7 +20,7 @@ Here's the usual flow for using the API if you're building a bot:
 ## Notes
 
 - If Omni Chat is running using [Docker Compose](docker-compose.md), the base URL is http://localhost by default. If Omni Chat is being run [in the cloud](cloud.md), the base URL is whatever the server admin is running it on (e.g., `https://example.com`).
-- If the user creates a private chat, and doesn't send a message, it'll still exist the next time the chats get read. However, if the chat gets deleted, and then recreated, but no messages get sent after the recreation, it won't show up the next time the chats get read. Therefore, despite not receiving deleted private chats when reading every chat the user is in, it's still possible to read the particular chat's db when supplying its ID. Of course, none of the messages sent before the chat got deleted will be retrieved. This is neither a feature nor a bug. It simply doesn't matter.
+- Message IDs are unique across chats.
 - Though the server knows which users have been blocked, it doesn't treat blocked users differently. The client chooses what to do with messages, etc. from a blocked user. For example, if a blocked user creates a chat with the user, the client could hide it in a page away from the main chats where the user would have to explicitly navigate to should they want to (e.g., the way Gmail handles spam email).
 
 ## Security
@@ -127,7 +127,7 @@ Here's an example of a `Subscription` using `Subscription.subscribeToChatMessage
     ```json
     {
         "data": {
-            "subscribeToChatMessages" {
+            "subscribeToChatMessages": {
                 "__typename": "CreatedSubscription"
             }
         }
@@ -190,6 +190,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `readOnlineStatus`
     - `readTypingUsers`
     - `searchUsers`
+    - `searchGroupChatUsers`
 - `Subscription`
     - `subscribeToOnlineStatuses`
     - `subscribeToChatOnlineStatuses`
@@ -237,6 +238,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `searchChats`
     - `searchPublicChats`
     - `readOnlineStatus`
+    - `searchGroupChatUsers`
 - `Mutation`
     - `deleteGroupChatPic`
     - `updateGroupChatTitle`
@@ -246,7 +248,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `makeGroupChatAdmins`
     - `createGroupChat`
     - `setBroadcast`
-    - `setInvitability`
+    - `setPublicity`
     - `joinGroupChat`
     - `joinPublicChat`
     - `leaveGroupChat`
