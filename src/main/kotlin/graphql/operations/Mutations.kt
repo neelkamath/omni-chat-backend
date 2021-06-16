@@ -251,12 +251,12 @@ fun resetPassword(env: DataFetchingEnvironment): ResetPasswordResult? {
     return if (isReset) null else InvalidPasswordResetCode
 }
 
-fun updateGroupChatTitle(env: DataFetchingEnvironment): Placeholder {
+fun updateGroupChatTitle(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     GroupChats.updateTitle(chatId, env.getArgument("title"))
-    return Placeholder
+    return null
 }
 
 fun updateGroupChatDescription(env: DataFetchingEnvironment): Placeholder {

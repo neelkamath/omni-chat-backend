@@ -1150,28 +1150,33 @@ class MutationsTest {
     @Nested
     inner class UpdateGroupChatTitle {
         private fun executeUpdateGroupChatTitle(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             title: GroupChatTitle,
-        ): HttpStatusCode = executeGraphQlViaHttp(
-            """
-            mutation UpdateGroupChatTitle(${"$"}chatId: Int!, ${"$"}title: GroupChatTitle!) {
-                updateGroupChatTitle(chatId: ${"$"}chatId, title: ${"$"}title)
-            }
-            """,
-            mapOf("chatId" to chatId, "title" to title),
-            accessToken,
-        ).status()!!
+        ): String? {
+            val data = executeGraphQlViaEngine(
+                """
+                mutation UpdateGroupChatTitle(${"$"}chatId: Int!, ${"$"}title: GroupChatTitle!) {
+                    updateGroupChatTitle(chatId: ${"$"}chatId, title: ${"$"}title) {
+                        __typename
+                    }
+                }
+                """,
+                mapOf("chatId" to chatId, "title" to title),
+                userId,
+            ).data!!["updateGroupChatTitle"] as Map<*, *>?
+            return data?.get("__typename") as String?
+        }
 
         @Test
         fun `Only the admin must be allowed to update the title`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             val original = GroupChats.readTitle(chatId)
             val new = GroupChatTitle("new")
-            assertEquals(HttpStatusCode.Unauthorized, executeUpdateGroupChatTitle(user.accessToken, chatId, new))
+            assertEquals("MustBeAdmin", executeUpdateGroupChatTitle(userId, chatId, new))
             assertEquals(original, GroupChats.readTitle(chatId))
-            assertEquals(HttpStatusCode.OK, executeUpdateGroupChatTitle(admin.accessToken, chatId, new))
+            assertNull(executeUpdateGroupChatTitle(adminId, chatId, new))
             assertEquals(new, GroupChats.readTitle(chatId))
         }
     }
