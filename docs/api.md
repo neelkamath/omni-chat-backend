@@ -190,6 +190,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `readOnlineStatus`
     - `readTypingUsers`
     - `searchUsers`
+    - `searchGroupChatUsers`
 - `Subscription`
     - `subscribeToOnlineStatuses`
     - `subscribeToChatOnlineStatuses`
@@ -237,6 +238,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `searchChats`
     - `searchPublicChats`
     - `readOnlineStatus`
+    - `searchGroupChatUsers`
 - `Mutation`
     - `deleteGroupChatPic`
     - `updateGroupChatTitle`

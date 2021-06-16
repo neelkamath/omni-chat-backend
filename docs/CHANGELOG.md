@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
-## 0.21.0
+## [0.21.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.21.0) - 2021-06-16
 
 ### Added
 
@@ -26,7 +26,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `union ForwardMessageResult`
     - `union CreateGroupChatInviteMessageResult`
     - `union CreateActionMessageResult`
-- Return a `type MustBeAdmin` instead of an HTTP status code of 401 from the following:
+- Return a `type MustBeAdmin` in place of an HTTP status code of 401 from the following:
     - `Mutation.createPollMessage`
     - `Mutation.createTextMessage`
     - `Mutation.forwardMessage`
@@ -40,7 +40,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `Mutation.removeGroupChatUsers`
     - `Mutation.setPublicity`
     - `Mutation.createActionMessage`
-- Return a `type RemoveGroupChatUsersResult` instead of a `type CannotLeaveChat` from `Mutation.removeGroupChatUsers`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
 - Rename the `title` field to `question` in `type Poll` and `input PollInput`.
 - Rename `Mutation.setInvitability` to `Mutation.setPublicity`.
