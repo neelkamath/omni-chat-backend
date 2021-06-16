@@ -28,13 +28,18 @@ class PollInputTest {
     inner class Init {
         @Test
         fun `Having fewer than two options must fail`() {
-            assertFailsWith<IllegalArgumentException> { PollInput(MessageText("title"), listOf(MessageText("option"))) }
+            assertFailsWith<IllegalArgumentException> {
+                PollInput(
+                    MessageText("Question"),
+                    listOf(MessageText("option"))
+                )
+            }
         }
 
         @Test
         fun `Having non-unique options must fail`() {
             val option = MessageText("option")
-            assertFailsWith<IllegalArgumentException> { PollInput(MessageText("title"), listOf(option, option)) }
+            assertFailsWith<IllegalArgumentException> { PollInput(MessageText("Question"), listOf(option, option)) }
         }
     }
 }

@@ -499,7 +499,7 @@ private object CreateTextMessageResultDeserializer : JsonDeserializer<CreateText
         val clazz: KClass<out CreateTextMessageResult> = when (val type = node["__typename"].asText()) {
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
-            "InvalidBroadcast" -> InvalidBroadcast::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -513,6 +513,7 @@ private object CreatePollMessageResultDeserializer : JsonDeserializer<CreatePoll
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidPoll" -> InvalidPoll::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -523,7 +524,7 @@ private object ForwardMessageResultDeserializer : JsonDeserializer<ForwardMessag
     override fun deserialize(parser: JsonParser, context: DeserializationContext): ForwardMessageResult {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out ForwardMessageResult> = when (val type = node["__typename"].asText()) {
-            "InvalidBroadcast" -> InvalidBroadcast::class
+            "MustBeAdmin" -> MustBeAdmin::class
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")

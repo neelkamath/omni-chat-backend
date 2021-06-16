@@ -1433,23 +1433,15 @@ class MutationsTest {
         }
     }
 
-    private data class CreatePollMessageResult(val data: Data) {
-        data class Data(val createPollMessage: CreatePollMessage?) {
-            data class CreatePollMessage(val __typename: String?)
-        }
-    }
-
-    private data class CreatePollMessageResponse(val statusCode: HttpStatusCode, val __typename: String?)
-
     @Nested
     inner class CreatePollMessage {
         private fun executeCreatePollMessage(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             poll: Map<String, Any>,
             contextMessageId: Int? = null,
-        ): CreatePollMessageResponse {
-            val response = executeGraphQlViaHttp(
+        ): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation CreatePollMessage(${"$"}chatId: Int!, ${"$"}poll: PollInput!, ${"$"}contextMessageId: Int) {
                     createPollMessage(
@@ -1462,21 +1454,18 @@ class MutationsTest {
                 }
                 """,
                 mapOf("chatId" to chatId, "poll" to poll, "contextMessageId" to contextMessageId),
-                accessToken,
-            )
-            val type = response
-                .content
-                ?.let { testingObjectMapper.readValue<CreatePollMessageResult>(it).data.createPollMessage?.__typename }
-            return CreatePollMessageResponse(response.status()!!, type)
+                userId,
+            ).data!!["createPollMessage"] as Map<*, *>?
+            return data?.get("__typename") as String?
         }
 
         private fun executeCreatePollMessage(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             poll: PollInput,
             contextMessageId: Int? = null,
-        ): CreatePollMessageResponse = executeCreatePollMessage(
-            accessToken,
+        ): String? = executeCreatePollMessage(
+            userId,
             chatId,
             testingObjectMapper.convertValue<Map<String, Any>>(poll),
             contextMessageId,
@@ -1484,30 +1473,29 @@ class MutationsTest {
 
         @Test
         fun `A non-admin must be allowed to create a message in a non-broadcast chat`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            assertEquals(HttpStatusCode.OK, executeCreatePollMessage(user.accessToken, chatId, poll).statusCode)
+            assertNull(executeCreatePollMessage(userId, chatId, poll))
         }
 
         @Test
         fun `Only admins must be allowed to message in broadcast chats`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId), isBroadcast = true)
             val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            val actual = executeCreatePollMessage(user.accessToken, chatId, poll).statusCode
-            assertEquals(HttpStatusCode.Unauthorized, actual)
+            assertEquals("MustBeAdmin", executeCreatePollMessage(userId, chatId, poll))
             assertEquals(0, Messages.count())
-            assertEquals(HttpStatusCode.OK, executeCreatePollMessage(admin.accessToken, chatId, poll).statusCode)
+            assertNull(executeCreatePollMessage(adminId, chatId, poll))
             assertEquals(1, Messages.count())
         }
 
         @Test
         fun `The message must get created sans context`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            assertNull(executeCreatePollMessage(admin.accessToken, chatId, poll).__typename)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            assertNull(executeCreatePollMessage(adminId, chatId, poll))
             val messageId = Messages.readIdList(chatId).first()
             assertFalse(Messages.hasContext(messageId))
             assertNull(Messages.readContextMessageId(messageId))
@@ -1515,11 +1503,11 @@ class MutationsTest {
 
         @Test
         fun `The message must get created with a context`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val contextMessageId = Messages.message(admin.userId, chatId)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            assertNull(executeCreatePollMessage(admin.accessToken, chatId, poll, contextMessageId).__typename)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            val contextMessageId = Messages.message(adminId, chatId)
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            assertNull(executeCreatePollMessage(adminId, chatId, poll, contextMessageId))
             val messageId = Messages.readIdList(chatId).last()
             assertTrue(Messages.hasContext(messageId))
             assertEquals(contextMessageId, Messages.readContextMessageId(messageId))
@@ -1527,41 +1515,39 @@ class MutationsTest {
 
         @Test
         fun `Attempting to create a message in a chat the user isn't in must fail`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            assertEquals("InvalidChatId", executeCreatePollMessage(user.accessToken, chatId, poll).__typename)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            assertEquals("InvalidChatId", executeCreatePollMessage(userId, chatId, poll))
             assertEquals(0, Messages.count())
         }
 
         @Test
         fun `Referencing a context message from another chat must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
-            val contextMessageId = Messages.message(admin.userId, chat1Id)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            val actual = executeCreatePollMessage(admin.accessToken, chat2Id, poll, contextMessageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            val adminId = createVerifiedUsers(1).first().userId
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(adminId)) }
+            val contextMessageId = Messages.message(adminId, chat1Id)
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            assertEquals("InvalidMessageId", executeCreatePollMessage(adminId, chat2Id, poll, contextMessageId))
             assertEquals(1, Messages.count())
         }
 
         @Test
         fun `Using a message the user can't see as a context must fail`() {
-            val (user1, user2) = createVerifiedUsers(2)
-            val chatId = PrivateChats.create(user1.userId, user2.userId)
-            val contextMessageId = Messages.message(user1.userId, chatId)
-            PrivateChatDeletions.create(chatId, user1.userId)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            val actual = executeCreatePollMessage(user1.accessToken, chatId, poll, contextMessageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            val contextMessageId = Messages.message(user1Id, chatId)
+            PrivateChatDeletions.create(chatId, user1Id)
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            assertEquals("InvalidMessageId", executeCreatePollMessage(user1Id, chatId, poll, contextMessageId))
         }
 
         private fun assertInvalidPoll(hasDuplicateOption: Boolean) {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
             val options = if (hasDuplicateOption) listOf("option", "option") else listOf("option")
-            val poll = mapOf("title" to "T", "options" to options)
-            assertEquals("InvalidPoll", executeCreatePollMessage(admin.accessToken, chatId, poll).__typename)
+            val poll = mapOf("question" to "Q", "options" to options)
+            assertEquals("InvalidPoll", executeCreatePollMessage(adminId, chatId, poll))
         }
 
         @Test
@@ -1594,7 +1580,7 @@ class MutationsTest {
         fun `A non-admin must be able to vote in a broadcast chat`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId), isBroadcast = true)
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             assertNull(executeSetPollVote(userId, messageId, poll.options[0], vote = true))
             assertEquals(1, PollMessageVotes.count())
@@ -1604,7 +1590,7 @@ class MutationsTest {
         fun `A user must be allowed to vote for multiple options but not multiple times for the same option`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             repeat(2) {
                 assertNull(executeSetPollVote(adminId, messageId, poll.options[0], vote = true))
@@ -1618,7 +1604,7 @@ class MutationsTest {
         fun `A user must be allowed to vote on their own poll`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             assertNull(executeSetPollVote(adminId, messageId, poll.options[0], vote = true))
             assertEquals(1, PollMessageVotes.count())
@@ -1628,7 +1614,7 @@ class MutationsTest {
         fun `Deleting votes, including votes the user never made, must succeed`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             val option = poll.options[0]
             val verify = {
@@ -1651,7 +1637,7 @@ class MutationsTest {
         fun `Attempting to vote on a non-existing option must fail`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val poll = PollInput(MessageText("Title"), listOf(MessageText("Option 1"), MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             val actual = executeSetPollVote(adminId, messageId, MessageText("Non-existing option"), vote = true)
             assertEquals("NonexistingOption", actual)

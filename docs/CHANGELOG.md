@@ -14,13 +14,19 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `Query.searchGroupChatUsers`
 - `type UpdatedPollMessage`
 - `union ReadMessageResult`
-- `type InvalidBroadcast`
 - `type MustBeAdmin`
 - `type RemoveGroupChatUsersResult`
 
 ### Changed
 
-- Return a `type MustBeAdmin` instead of a `type Placeholder` from the following:
+- Add `type MustBeAdmin` to the following:
+    - `union CreatePollMessageResult`
+    - `union CreateTextMessageResult`
+    - `union ForwardMessageResult`
+- Return a `type MustBeAdmin` instead of an authorization error from the following:
+    - `Mutation.createPollMessage`
+    - `Mutation.createTextMessage`
+    - `Mutation.forwardMessageResult`
     - `Mutation.setBroadcast`
     - `Mutation.deleteGroupChatPic`
     - `Mutation.updateGroupChatDescription`
@@ -28,8 +34,6 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `Mutation.updateGroupChatTitle`
     - `Mutation.makeGroupChatAdmins`
 - Return a `type RemoveGroupChatUsersResult` instead of a `type CannotLeaveChat` from `Mutation.removeGroupChatUsers`.
-- Add `type InvalidBroadcast` to `union CreateTextMessageResult` and `union ForwardMessageResult`.
-- Return a `type InvalidBroadcast` instead of an authorization error in `Mutation.createTextMessage` and `Mutation.forwardMessageResult`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
 - Rename the `title` field to `question` in `type Poll` and `input PollInput`.
 - Rename `Mutation.setInvitability` to `Mutation.setPublicity`.

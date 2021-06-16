@@ -517,9 +517,9 @@ type Mutation {
     ): CreateGroupChatInviteMessageResult
 
     """
-    Sends the `poll` in the `chatId`. If the `chatId` is a broadcast chat, the user must be an admin to message. The
-    user might want to give their message a context, such as when replying to a message sent several messages ago. In
-    this case, the `contextMessageId` is to be the ID of the message being replied to.
+    Sends the `poll` in the `chatId`. The user might want to give their message a context, such as when replying to a
+    message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the message being replied
+    to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
@@ -1081,11 +1081,6 @@ type PrivateChat implements Chat {
     user: Account!
 }
 
-"""The user isn't allowed to message because they're not an admin, and the chat is a broadcast chat."""
-type InvalidBroadcast {
-    placeholder: Placeholder!
-}
-
 type MessageContext {
     """Whether this message was in reply to a particular message."""
     hasContext: Boolean!
@@ -1639,15 +1634,15 @@ union CreateGroupChatResult = CreatedChatId | InvalidAdminId
 
 union CreatePrivateChatResult = CreatedChatId | InvalidUserId
 
-union CreateTextMessageResult = InvalidChatId | InvalidMessageId | InvalidBroadcast
+union CreateTextMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
 union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId
 
 union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId
 
-union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll
+union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll | MustBeAdmin
 
-union ForwardMessageResult = InvalidChatId | InvalidMessageId | InvalidBroadcast
+union ForwardMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
 union SetPollVoteResult = InvalidMessageId | NonexistingOption
 

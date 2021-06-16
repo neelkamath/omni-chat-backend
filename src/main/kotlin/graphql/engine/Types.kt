@@ -210,7 +210,7 @@ private fun readCreatePrivateChatResult(obj: Any): String = when (obj) {
 private fun readCreateTextMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
-    is InvalidBroadcast -> "InvalidBroadcast"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -232,11 +232,12 @@ private fun readCreatePollMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
     is InvalidPoll -> "InvalidPoll"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
 private fun readForwardMessageResult(obj: Any): String = when (obj) {
-    is InvalidBroadcast -> "InvalidBroadcast"
+    is MustBeAdmin -> "MustBeAdmin"
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")

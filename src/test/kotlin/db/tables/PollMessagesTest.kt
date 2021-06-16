@@ -24,7 +24,7 @@ class PollMessagesTest {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.userId }
                 val chatId = GroupChats.create(setOf(adminId))
                 val option1 = MessageText("option 1")
-                val poll = PollInput(MessageText("Title"), listOf(option1, MessageText("option 2")))
+                val poll = PollInput(MessageText("Question"), listOf(option1, MessageText("option 2")))
                 val messageId = Messages.message(adminId, chatId, poll)
                 awaitBrokering()
                 val (adminSubscriber, nonParticipantSubscriber) = listOf(adminId, nonParticipantId)
@@ -42,7 +42,7 @@ class PollMessagesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val option = MessageText("Option 1")
-            val poll = PollInput(MessageText("Title"), listOf(option, MessageText("Option 2")))
+            val poll = PollInput(MessageText("Question"), listOf(option, MessageText("Option 2")))
             val messageId = Messages.message(adminId, chatId, poll)
             awaitBrokering()
             val subscriber = chatMessagesNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
