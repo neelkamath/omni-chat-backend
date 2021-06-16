@@ -357,11 +357,12 @@ type Mutation {
     updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): MustBeAdmin
 
     """
-    Nonexisting users, and users who are already in the chat will be ignored.
+    Nonexisting users, and users who are already in the chat will be ignored. `null` will get returned if the operation
+    succeeded.
 
-    An access token must be sent with this request. Only an admin can perform this operation.
+    An access token must be sent with this request.
     """
-    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    addGroupChatUsers(chatId: Int!, userIdList: [Int!]!): MustBeAdmin
 
     """
     Removes the specified users from the `chatId` which may include admins including the user themself. Messages sent

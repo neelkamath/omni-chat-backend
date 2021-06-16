@@ -267,13 +267,13 @@ fun updateGroupChatDescription(env: DataFetchingEnvironment): MustBeAdmin? {
     return null
 }
 
-fun addGroupChatUsers(env: DataFetchingEnvironment): Placeholder {
+fun addGroupChatUsers(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     val userIdList = env.getArgument<List<Int>>("userIdList").filter(Users::isExisting)
     GroupChatUsers.addUsers(chatId, userIdList)
-    return Placeholder
+    return null
 }
 
 fun removeGroupChatUsers(env: DataFetchingEnvironment): CannotLeaveChat? {

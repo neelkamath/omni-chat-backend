@@ -19,7 +19,12 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Return a `type MustBeAdmin` instead of a `type Placeholder` from `Mutation.setBroadcast`, `Mutation.deleteGroupChatPic`, `Mutation.updateGroupChatDescription`, and `Mutation.updateGroupChatTitle`.
+- Return a `type MustBeAdmin` instead of a `type Placeholder` from the following:
+    - `Mutation.setBroadcast`
+    - `Mutation.deleteGroupChatPic`
+    - `Mutation.updateGroupChatDescription`
+    - `Mutation.addGroupChatUsers`
+    - `Mutation.updateGroupChatTitle`
 - Add `type InvalidBroadcast` to `union CreateTextMessageResult` and `union ForwardMessageResult`.
 - Return a `type InvalidBroadcast` instead of an authorization error in `Mutation.createTextMessage` and `Mutation.forwardMessageResult`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
