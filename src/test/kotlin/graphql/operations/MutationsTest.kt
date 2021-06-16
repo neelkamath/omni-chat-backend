@@ -1248,22 +1248,14 @@ class MutationsTest {
         }
     }
 
-    private data class RemoveGroupChatUsersResponse(val statusCode: HttpStatusCode, val __typename: String?)
-
-    private data class RemoveGroupChatUsersResult(val data: Data) {
-        data class Data(val removeGroupChatUsers: RemoveGroupChatUsers?) {
-            data class RemoveGroupChatUsers(val __typename: String?)
-        }
-    }
-
     @Nested
     inner class RemoveGroupChatUsers {
         private fun executeRemoveGroupChatUsers(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             userIdList: List<Int>,
-        ): RemoveGroupChatUsersResponse {
-            val response = executeGraphQlViaHttp(
+        ): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation RemoveGroupChatUsers(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
                     removeGroupChatUsers(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList) {
@@ -1272,84 +1264,80 @@ class MutationsTest {
                 }
                 """,
                 mapOf("chatId" to chatId, "userIdList" to userIdList),
-                accessToken,
-            )
-            val type = response.content?.let {
-                testingObjectMapper.readValue<RemoveGroupChatUsersResult>(it).data.removeGroupChatUsers?.__typename
-            }
-            return RemoveGroupChatUsersResponse(response.status()!!, type)
+                userId,
+            ).data!!["removeGroupChatUsers"] as Map<*, *>?
+            return data?.get("__typename") as String?
         }
 
         @Test
         fun `A removed user's messages and votes mustn't get deleted`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
-            Messages.message(user.userId, chatId)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
+            Messages.message(userId, chatId)
             val poll = PollInput(MessageText("Question"), listOf(MessageText("Option 1"), MessageText("Option 2")))
-            val pollId = Messages.message(admin.userId, chatId, poll)
-            PollMessages.setVote(user.userId, pollId, poll.options[0], vote = true)
-            executeRemoveGroupChatUsers(admin.accessToken, chatId, listOf(user.userId)).__typename.let(::assertNull)
-            assertEquals(linkedHashSetOf(admin.userId), GroupChatUsers.readUserIdList(chatId))
+            val pollId = Messages.message(adminId, chatId, poll)
+            PollMessages.setVote(userId, pollId, poll.options[0], vote = true)
+            executeRemoveGroupChatUsers(adminId, chatId, listOf(userId)).let(::assertNull)
+            assertEquals(linkedHashSetOf(adminId), GroupChatUsers.readUserIdList(chatId))
             assertEquals(2, Messages.count())
             assertEquals(1, PollMessageVotes.count())
         }
 
         @Test
         fun `Only the removed user's stars must get deleted`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
-            val messageId = Messages.message(admin.userId, chatId)
-            listOf(admin, user).forEach { Stargazers.create(it.userId, messageId) }
-            executeRemoveGroupChatUsers(admin.accessToken, chatId, listOf(user.userId)).__typename.let(::assertNull)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
+            val messageId = Messages.message(adminId, chatId)
+            listOf(adminId, userId).forEach { Stargazers.create(it, messageId) }
+            executeRemoveGroupChatUsers(adminId, chatId, listOf(userId)).let(::assertNull)
             assertEquals(1, Stargazers.count())
         }
 
         @Test
         fun `A non-admin mustn't be allowed to remove users`() {
-            val (admin, user1, user2) = createVerifiedUsers(3)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user1.userId, user2.userId))
-            val actual = executeRemoveGroupChatUsers(user1.accessToken, chatId, listOf(user2.userId)).statusCode
-            assertEquals(HttpStatusCode.Unauthorized, actual)
-            val expected = linkedHashSetOf(admin.userId, user1.userId, user2.userId)
-            assertEquals(expected, GroupChatUsers.readUserIdList(chatId))
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
+            val actual = executeRemoveGroupChatUsers(user1Id, chatId, listOf(user2Id))
+            assertEquals("MustBeAdmin", actual)
+            assertEquals(linkedHashSetOf(adminId, user1Id, user2Id), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
         fun `Non-existing users, and users who aren't in the chat will be ignored while removing users`() {
-            val (admin, user1, user2) = createVerifiedUsers(3)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user1.userId))
-            val userIdList = listOf(user1.userId, user2.userId, -1)
-            assertNull(executeRemoveGroupChatUsers(admin.accessToken, chatId, userIdList).__typename)
-            assertEquals(linkedHashSetOf(admin.userId), GroupChatUsers.readUserIdList(chatId))
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id))
+            val userIdList = listOf(user1Id, user2Id, -1)
+            assertNull(executeRemoveGroupChatUsers(adminId, chatId, userIdList))
+            assertEquals(linkedHashSetOf(adminId), GroupChatUsers.readUserIdList(chatId))
         }
 
         @Test
         fun `Attempting to remove the last admin of an otherwise nonempty chat must fail`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
-            val actual = executeRemoveGroupChatUsers(admin.accessToken, chatId, listOf(admin.userId)).__typename
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
+            val actual = executeRemoveGroupChatUsers(adminId, chatId, listOf(adminId))
             assertEquals("CannotLeaveChat", actual)
         }
 
         @Test
         fun `Removing the last admin of an otherwise empty chat must succeed`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            executeRemoveGroupChatUsers(admin.accessToken, chatId, listOf(admin.userId)).__typename.let(::assertNull)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            executeRemoveGroupChatUsers(adminId, chatId, listOf(adminId)).let(::assertNull)
         }
 
         @Test
         fun `Removing another admin from the chat must succeed`() {
-            val (admin1, admin2) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin1.userId, admin2.userId))
-            executeRemoveGroupChatUsers(admin1.accessToken, chatId, listOf(admin2.userId)).__typename.let(::assertNull)
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(admin1Id, admin2Id))
+            executeRemoveGroupChatUsers(admin1Id, chatId, listOf(admin2Id)).let(::assertNull)
         }
 
         @Test
         fun `The user must be able to remove themselves from an otherwise nonempty chat`() {
-            val (admin1, admin2) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin1.userId, admin2.userId))
-            executeRemoveGroupChatUsers(admin1.accessToken, chatId, listOf(admin1.userId)).__typename.let(::assertNull)
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(admin1Id, admin2Id))
+            executeRemoveGroupChatUsers(admin1Id, chatId, listOf(admin1Id)).let(::assertNull)
         }
     }
 

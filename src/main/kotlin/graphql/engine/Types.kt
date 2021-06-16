@@ -23,6 +23,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("GroupChatMetadataSubscription") { wireType(it, ::readGroupChatMetadataSubscription) }
     .type("SearchChatMessagesResult") { wireType(it, ::readSearchChatMessagesResult) }
     .type("ReadChatResult") { wireType(it, ::readReadChatResult) }
+    .type("RemoveGroupChatUsersResult") { wireType(it, ::readRemoveGroupChatUsersResult) }
     .type("ReadGroupChatResult") { wireType(it, ::readReadGroupChatResult) }
     .type("RequestTokenSetResult") { wireType(it, ::readRequestTokenSetResult) }
     .type("VerifyEmailAddressResult") { wireType(it, ::readVerifyEmailAddressResult) }
@@ -121,6 +122,12 @@ private fun readReadChatResult(obj: Any): String = when (obj) {
     is PrivateChat -> "PrivateChat"
     is GroupChat -> "GroupChat"
     is InvalidChatId -> "InvalidChatId"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readRemoveGroupChatUsersResult(obj: Any): String = when (obj) {
+    is CannotLeaveChat -> "CannotLeaveChat"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

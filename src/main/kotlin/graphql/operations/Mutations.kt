@@ -276,10 +276,10 @@ fun addGroupChatUsers(env: DataFetchingEnvironment): MustBeAdmin? {
     return null
 }
 
-fun removeGroupChatUsers(env: DataFetchingEnvironment): CannotLeaveChat? {
+fun removeGroupChatUsers(env: DataFetchingEnvironment): RemoveGroupChatUsersResult? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     val userIdList = env.getArgument<List<Int>>("userIdList").toSet()
     try {
         runBlocking { GroupChatUsers.removeUsers(chatId, userIdList) }

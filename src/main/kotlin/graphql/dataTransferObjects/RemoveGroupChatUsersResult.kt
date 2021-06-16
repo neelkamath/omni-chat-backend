@@ -1,3 +1,3 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
-sealed interface SearchGroupChatUsersResult
+sealed interface RemoveGroupChatUsersResult

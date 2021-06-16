@@ -47,6 +47,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(MessagesSubscriptionDeserializer)
     .register(ChatMessagesSubscriptionDeserializer)
     .register(SearchChatMessagesResultDeserializer)
+    .register(RemoveGroupChatUsersResultDeserializer)
     .register(ReadChatResultDeserializer)
     .register(CreateActionMessageResultDeserializer)
     .register(CreateGroupChatInviteMessageResultDeserializer)
@@ -331,6 +332,18 @@ private object SearchChatMessagesResultDeserializer : JsonDeserializer<SearchCha
         val clazz: KClass<out SearchChatMessagesResult> = when (val type = node["__typename"].asText()) {
             "MessageEdges" -> MessageEdges::class
             "InvalidChatId" -> InvalidChatId::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object RemoveGroupChatUsersResultDeserializer : JsonDeserializer<RemoveGroupChatUsersResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): RemoveGroupChatUsersResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out RemoveGroupChatUsersResult> = when (val type = node["__typename"].asText()) {
+            "CannotLeaveChat" -> CannotLeaveChat::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

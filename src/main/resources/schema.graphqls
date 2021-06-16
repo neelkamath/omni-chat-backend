@@ -372,7 +372,7 @@ type Mutation {
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
-    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): CannotLeaveChat
+    removeGroupChatUsers(chatId: Int!, userIdList: [Int!]!): RemoveGroupChatUsersResult
 
     """
     Leaves the chat the user is in. Messages sent by, and polls voted on, by removed users will remain. Every message
@@ -1667,3 +1667,5 @@ union ReadMessageResult =
     | VideoMessage
     | DocMessage
     | InvalidMessageId
+
+union RemoveGroupChatUsersResult = CannotLeaveChat | MustBeAdmin
