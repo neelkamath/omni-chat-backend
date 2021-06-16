@@ -13,9 +13,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union SearchGroupChatUsersResult`
 - `Query.searchGroupChatUsers`
 - `type UpdatedPollMessage`
+- `union ReadMessageResult`
 
 ### Changed
 
+- Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
 - Rename the `title` field to `question` in `type Poll` and `input PollInput`.
 - Rename `Mutation.setInvitability` to `Mutation.setPublicity`.
 - Add default values to `input GroupChatInput`.

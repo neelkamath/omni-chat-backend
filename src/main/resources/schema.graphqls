@@ -53,11 +53,13 @@ schema {
 
 type Query {
     """
+    If there's no such `messageId` visible to the user (including anonymous users), then an `InvalidMessageId` will get
+    returned.
+
     An access token must be sent with this request if the `messageId` isn't from a public chat. Sending an access token
     for a public chat will return the message as viewed by the user (e.g., the message may be stated as being starred).
-    If there's no such `messageId` visible to the user (including anonymous users), then the user will be unauthorized.
     """
-    readMessage(messageId: Int!): Message!
+    readMessage(messageId: Int!): ReadMessageResult!
 
     """
     Returns the user's starred messages.
@@ -1633,3 +1635,5 @@ union LeaveGroupChatResult = InvalidChatId | CannotLeaveChat
 union ReadOnlineStatusResult = OnlineStatus | InvalidUserId
 
 union SearchGroupChatUsersResult = AccountsConnection | InvalidChatId
+
+union ReadMessageResult = Message | InvalidMessageId

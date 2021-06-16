@@ -57,6 +57,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(ResetPasswordResultDeserializer)
     .register(UpdateAccountResultDeserializer)
     .register(CreateAccountResultDeserializer)
+    .register(ReadMessageResultDeserializer)
     .register(CreateGroupChatResultDeserializer)
     .register(CreatePrivateChatResultDeserializer)
     .register(CreateTextMessageResultDeserializer)
@@ -418,6 +419,18 @@ private object CreateAccountResultDeserializer : JsonDeserializer<CreateAccountR
             "UsernameTaken" -> UsernameTaken::class
             "EmailAddressTaken" -> EmailAddressTaken::class
             "InvalidDomain" -> InvalidDomain::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object ReadMessageResultDeserializer : JsonDeserializer<ReadMessageResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): ReadMessageResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz: KClass<out ReadMessageResult> = when (val type = node["__typename"].asText()) {
+            "InvalidMessageId" -> InvalidMessageId::class
+            "Message" -> Message::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

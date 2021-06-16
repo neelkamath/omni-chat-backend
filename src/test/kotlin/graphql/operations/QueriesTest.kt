@@ -1,7 +1,6 @@
 package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.Audio
 import com.neelkamath.omniChatBackend.db.BackwardPagination
@@ -1087,50 +1086,36 @@ class QueriesTest {
         }
     }
 
-    private data class ReadMessageResponse(
-        val statusCode: HttpStatusCode,
-        val result: ReadMessageResult.Data.ReadMessage?,
-    )
-
-    private data class ReadMessageResult(val data: Data) {
-        data class Data(val readMessage: ReadMessage) {
-            data class ReadMessage(val __typename: String, val hasStar: Boolean)
-        }
-    }
+    private data class ReadMessageResult(val __typename: String, val hasStar: Boolean?)
 
     @Nested
     inner class ReadMessage {
-        private fun executeReadMessage(accessToken: String? = null, messageId: Int): ReadMessageResponse {
-            val response = executeGraphQlViaHttp(
+        private fun executeReadMessage(userId: Int? = null, messageId: Int): ReadMessageResult {
+            val data = executeGraphQlViaEngine(
                 """
                 query ReadMessage(${"$"}messageId: Int!) {
                     readMessage(messageId: ${"$"}messageId) {
                         __typename
-                        hasStar
+                        ... on Message {
+                            hasStar
+                        }
                     }
                 }
                 """,
                 mapOf("messageId" to messageId),
-                accessToken,
-            )
-            val result = response.content?.let { testingObjectMapper.readValue<ReadMessageResult>(it).data.readMessage }
-            return ReadMessageResponse(response.status()!!, result)
+                userId,
+            ).data!!["readMessage"] as Map<*, *>
+            return testingObjectMapper.convertValue<ReadMessageResult>(data)
         }
 
         @Test
         fun `The public chat message must be read as viewed by the user and anonymous user`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
-            val messageId = Messages.message(admin.userId, chatId)
-            Stargazers.create(admin.userId, messageId)
-            assertEquals(
-                ReadMessageResult.Data.ReadMessage("TextMessage", hasStar = true),
-                executeReadMessage(admin.accessToken, messageId).result,
-            )
-            assertEquals(
-                ReadMessageResult.Data.ReadMessage("TextMessage", hasStar = false),
-                executeReadMessage(messageId = messageId).result,
-            )
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val messageId = Messages.message(adminId, chatId)
+            Stargazers.create(adminId, messageId)
+            assertEquals(ReadMessageResult("TextMessage", hasStar = true), executeReadMessage(adminId, messageId))
+            assertEquals(ReadMessageResult("TextMessage", hasStar = false), executeReadMessage(messageId = messageId))
         }
 
         @Test
@@ -1138,13 +1123,13 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertEquals(HttpStatusCode.Unauthorized, executeReadMessage(messageId = messageId).statusCode)
+            assertEquals("InvalidMessageId", executeReadMessage(messageId = messageId).__typename)
         }
 
         @Test
         fun `Attempting to read a non-existing message must fail`() {
-            val token = createVerifiedUsers(1).first().accessToken
-            assertEquals(HttpStatusCode.Unauthorized, executeReadMessage(token, messageId = -1).statusCode)
+            val adminId = createVerifiedUsers(1).first().userId
+            assertEquals("InvalidMessageId", executeReadMessage(adminId, messageId = -1).__typename)
         }
     }
 

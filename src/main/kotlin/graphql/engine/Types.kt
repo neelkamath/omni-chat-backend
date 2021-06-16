@@ -29,6 +29,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("ResetPasswordResult") { wireType(it, ::readResetPasswordResult) }
     .type("UpdateAccountResult") { wireType(it, ::readUpdateAccountResult) }
     .type("CreateAccountResult") { wireType(it, ::readCreateAccountResult) }
+    .type("ReadMessageResult") { wireType(it, ::readReadMessageResult) }
     .type("SearchGroupChatUsersResult") { wireType(it, ::readSearchGroupChatUsersResult) }
     .type("EmailEmailAddressVerificationResult") { wireType(it, ::readEmailEmailAddressVerificationResult) }
     .type("CreateGroupChatResult") { wireType(it, ::readCreateGroupChatResult) }
@@ -159,6 +160,12 @@ private fun readCreateAccountResult(obj: Any): String = when (obj) {
     is UsernameTaken -> "UsernameTaken"
     is EmailAddressTaken -> "EmailAddressTaken"
     is InvalidDomain -> "InvalidDomain"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readReadMessageResult(obj: Any): String = when (obj) {
+    is InvalidMessageId -> "InvalidMessageId"
+    is Message -> "Message"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

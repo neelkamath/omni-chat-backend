@@ -70,9 +70,9 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
     return AccountsConnection(startCursor, endCursor, userIdList, pagination)
 }
 
-fun readMessage(env: DataFetchingEnvironment): Message {
+fun readMessage(env: DataFetchingEnvironment): ReadMessageResult {
     val messageId = env.getArgument<Int>("messageId")
-    return if (Messages.isVisible(env.userId, messageId)) Message.build(messageId) else throw UnauthorizedException
+    return if (Messages.isVisible(env.userId, messageId)) Message.build(messageId) else InvalidMessageId
 }
 
 fun requestTokenSet(env: DataFetchingEnvironment): RequestTokenSetResult {
