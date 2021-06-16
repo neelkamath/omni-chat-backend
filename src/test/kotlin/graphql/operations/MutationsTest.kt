@@ -657,36 +657,40 @@ class MutationsTest {
 
     @Nested
     inner class SetBroadcast {
-        private fun executeSetBroadcast(accessToken: String, chatId: Int, isBroadcast: Boolean): HttpStatusCode =
-            executeGraphQlViaHttp(
+        private fun executeSetBroadcast(userId: Int, chatId: Int, isBroadcast: Boolean): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation SetBroadcast(${"$"}chatId: Int!, ${"$"}isBroadcast: Boolean!) {
-                    setBroadcast(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast)
+                    setBroadcast(chatId: ${"$"}chatId, isBroadcast: ${"$"}isBroadcast) {
+                        __typename
+                    }
                 }
                 """,
                 mapOf("chatId" to chatId, "isBroadcast" to isBroadcast),
-                accessToken,
-            ).status()!!
+                userId,
+            ).data!!["setBroadcast"] as Map<*, *>?
+            return data?.get("__typename") as String?
+        }
 
         @Test
         fun `The chat must become a broadcast chat`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            assertEquals(HttpStatusCode.OK, executeSetBroadcast(admin.accessToken, chatId, isBroadcast = true))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            assertNull(executeSetBroadcast(adminId, chatId, isBroadcast = true))
         }
 
         @Test
         fun `The chat must stop being a broadcast chat`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId), isBroadcast = true)
-            assertEquals(HttpStatusCode.OK, executeSetBroadcast(admin.accessToken, chatId, isBroadcast = false))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId), isBroadcast = true)
+            assertNull(executeSetBroadcast(adminId, chatId, isBroadcast = false))
         }
 
         @Test
         fun `A non-admin mustn't be allowed to update the broadcast status`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
-            assertEquals(HttpStatusCode.Unauthorized, executeSetBroadcast(user.accessToken, chatId, isBroadcast = true))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
+            assertEquals("CannotSetBroadcast", executeSetBroadcast(userId, chatId, isBroadcast = true))
         }
     }
 

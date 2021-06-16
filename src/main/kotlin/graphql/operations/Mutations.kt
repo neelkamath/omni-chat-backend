@@ -132,12 +132,12 @@ fun forwardMessage(env: DataFetchingEnvironment): ForwardMessageResult? {
     return null
 }
 
-fun setBroadcast(env: DataFetchingEnvironment): Placeholder {
+fun setBroadcast(env: DataFetchingEnvironment): CannotSetBroadcast? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return CannotSetBroadcast
     GroupChats.setBroadcastStatus(chatId, env.getArgument("isBroadcast"))
-    return Placeholder
+    return null
 }
 
 fun star(env: DataFetchingEnvironment): InvalidMessageId? {

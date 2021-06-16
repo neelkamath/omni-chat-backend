@@ -15,9 +15,11 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `type UpdatedPollMessage`
 - `union ReadMessageResult`
 - `type InvalidBroadcast`
+- `type CannotSetBroadcast`
 
 ### Changed
 
+- Return a `type CannotSetBroadcast` instead of a `type Placeholder` from `Mutation.setBroadcast`.
 - Add `type InvalidBroadcast` to `union CreateTextMessageResult` and `union ForwardMessageResult`.
 - Return a `type InvalidBroadcast` instead of an authorization error in `Mutation.createTextMessage` and `Mutation.forwardMessageResult`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
