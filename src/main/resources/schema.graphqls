@@ -286,11 +286,11 @@ type Mutation {
     deleteProfilePic: Placeholder!
 
     """
-    Deletes the group chat's profile pic. The user must be the admin.
+    Deletes the group chat's profile pic. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
-    deleteGroupChatPic(chatId: Int!): Placeholder!
+    deleteGroupChatPic(chatId: Int!): MustBeAdmin
 
     """
     Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no

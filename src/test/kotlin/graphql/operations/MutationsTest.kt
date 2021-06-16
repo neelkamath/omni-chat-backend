@@ -1034,24 +1034,29 @@ class MutationsTest {
 
     @Nested
     inner class DeleteGroupChatPic {
-        private fun executeDeleteGroupChatPic(accessToken: String, chatId: Int): HttpStatusCode = executeGraphQlViaHttp(
-            """
-            mutation DeleteGroupChatPic(${"$"}chatId: Int!) {
-                deleteGroupChatPic(chatId: ${"$"}chatId)
-            }
-            """,
-            mapOf("chatId" to chatId),
-            accessToken,
-        ).status()!!
+        private fun executeDeleteGroupChatPic(userId: Int, chatId: Int): String? {
+            val data = executeGraphQlViaEngine(
+                """
+                mutation DeleteGroupChatPic(${"$"}chatId: Int!) {
+                    deleteGroupChatPic(chatId: ${"$"}chatId) {
+                        __typename
+                    }
+                }
+                """,
+                mapOf("chatId" to chatId),
+                userId,
+            ).data!!["deleteGroupChatPic"] as Map<*, *>?
+            return data?.get("__typename") as String?
+        }
 
         @Test
         fun `Only the admin must be allowed to delete the pic`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
-            assertEquals(HttpStatusCode.Unauthorized, executeDeleteGroupChatPic(user.accessToken, chatId))
+            assertEquals("MustBeAdmin", executeDeleteGroupChatPic(userId, chatId))
             assertNotNull(GroupChats.readPic(chatId, PicType.THUMBNAIL))
-            assertEquals(HttpStatusCode.OK, executeDeleteGroupChatPic(admin.accessToken, chatId))
+            assertNull(executeDeleteGroupChatPic(adminId, chatId))
             assertNull(GroupChats.readPic(chatId, PicType.THUMBNAIL))
         }
     }

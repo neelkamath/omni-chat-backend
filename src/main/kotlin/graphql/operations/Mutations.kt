@@ -220,12 +220,12 @@ fun deleteProfilePic(env: DataFetchingEnvironment): Placeholder {
     return Placeholder
 }
 
-fun deleteGroupChatPic(env: DataFetchingEnvironment): Placeholder {
+fun deleteGroupChatPic(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     GroupChats.updatePic(chatId, pic = null)
-    return Placeholder
+    return null
 }
 
 private fun wantsTakenUsername(userId: Int, wantedUsername: Username?): Boolean =
