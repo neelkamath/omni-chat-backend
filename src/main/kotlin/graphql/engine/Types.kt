@@ -203,6 +203,7 @@ private fun readCreatePrivateChatResult(obj: Any): String = when (obj) {
 private fun readCreateTextMessageResult(obj: Any): String = when (obj) {
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
+    is InvalidBroadcast -> "InvalidBroadcast"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

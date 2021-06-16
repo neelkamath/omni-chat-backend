@@ -486,6 +486,7 @@ private object CreateTextMessageResultDeserializer : JsonDeserializer<CreateText
         val clazz: KClass<out CreateTextMessageResult> = when (val type = node["__typename"].asText()) {
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
+            "InvalidBroadcast" -> InvalidBroadcast::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

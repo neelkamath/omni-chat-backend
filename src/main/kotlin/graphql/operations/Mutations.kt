@@ -108,7 +108,7 @@ fun createTextMessage(env: DataFetchingEnvironment): CreateTextMessageResult? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!isUserInChat(env.userId!!, chatId)) return InvalidChatId
-    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return InvalidBroadcast
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (!Messages.isValidContext(env.userId!!, chatId, contextMessageId)) return InvalidMessageId
     Messages.createTextMessage(env.userId!!, chatId, env.getArgument("text"), contextMessageId)

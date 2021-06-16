@@ -105,7 +105,7 @@ class QueriesTest {
         @Test
         fun `Searching a non-public chat sans access token must fail`() {
             val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(listOf(adminId))
+            val chatId = GroupChats.create(setOf(adminId))
             assertEquals("InvalidChatId", executeSearchGroupChatUsers(userId = null, chatId, query = "").__typename)
         }
 
@@ -113,7 +113,7 @@ class QueriesTest {
         fun `Users must be paginated`() {
             val userIdList = createVerifiedUsers(10).map { it.userId }
             val adminId = userIdList[0]
-            val chatId = GroupChats.create(listOf(adminId), userIdList)
+            val chatId = GroupChats.create(setOf(adminId), userIdList)
             val index = 4
             val pagination = ForwardPagination(first = 3, after = userIdList[index])
             val actual =
@@ -225,7 +225,7 @@ class QueriesTest {
         @Test
         fun `Reading a public chat the user isn't in using an access token must work`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(listOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val data =
                 executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), userId).data!!["readChat"] as Map<*, *>
             assertEquals("GroupChat", testingObjectMapper.convertValue<ReadChatResult>(data).__typename)
