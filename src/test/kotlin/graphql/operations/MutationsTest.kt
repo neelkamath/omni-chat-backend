@@ -524,23 +524,15 @@ class MutationsTest {
         }
     }
 
-    private data class ForwardMessageResult(val data: Data) {
-        data class Data(val forwardMessage: ForwardMessage?) {
-            data class ForwardMessage(val __typename: String?)
-        }
-    }
-
-    private data class ForwardMessageResponse(val statusCode: HttpStatusCode, val __typename: String?)
-
     @Nested
     inner class ForwardMessage {
         private fun executeForwardMessage(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             messageId: Int,
             contextMessageId: Int? = null,
-        ): ForwardMessageResponse {
-            val response = executeGraphQlViaHttp(
+        ): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation ForwardMessage(${"$"}chatId: Int!, ${"$"}messageId: Int!, ${"$"}contextMessageId: Int) {
                     forwardMessage(
@@ -553,49 +545,45 @@ class MutationsTest {
                 }
                 """,
                 mapOf("chatId" to chatId, "messageId" to messageId, "contextMessageId" to contextMessageId),
-                accessToken,
-            )
-            val type = response.content?.let {
-                testingObjectMapper.readValue<ForwardMessageResult>(it).data.forwardMessage?.__typename
-            }
-            return ForwardMessageResponse(response.status()!!, type)
+                userId,
+            ).data!!["forwardMessage"] as Map<*, *>?
+            return data?.get("__typename") as String?
         }
 
         @Test
         fun `The group chat invite must be forwarded by a user who isn't in the chat the invitation is for`() {
-            val (admin1, admin2) = createVerifiedUsers(2)
-            val (chat1Id, chat2Id, chat3Id) = listOf(admin1, admin1, admin2)
-                .map { GroupChats.create(setOf(it.userId), publicity = GroupChatPublicity.INVITABLE) }
-            val messageId = Messages.message(admin1.userId, chat2Id, invitedChatId = chat3Id)
-            assertNull(executeForwardMessage(admin1.accessToken, chat1Id, messageId).__typename)
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.userId }
+            val (chat1Id, chat2Id, chat3Id) = listOf(admin1Id, admin1Id, admin2Id)
+                .map { GroupChats.create(setOf(it), publicity = GroupChatPublicity.INVITABLE) }
+            val messageId = Messages.message(admin1Id, chat2Id, invitedChatId = chat3Id)
+            assertNull(executeForwardMessage(admin1Id, chat1Id, messageId))
         }
 
         @Test
         fun `Attempting to forward a group chat invite to the chat being invited to must fail`() {
-            val admin = createVerifiedUsers(1).first()
+            val adminId = createVerifiedUsers(1).first().userId
             val (chat1Id, chat2Id) =
-                (1..2).map { GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.INVITABLE) }
-            val messageId = Messages.message(admin.userId, chat1Id, invitedChatId = chat2Id)
-            assertEquals("InvalidChatId", executeForwardMessage(admin.accessToken, chat2Id, messageId).__typename)
+                (1..2).map { GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
+            val messageId = Messages.message(adminId, chat1Id, invitedChatId = chat2Id)
+            assertEquals("InvalidChatId", executeForwardMessage(adminId, chat2Id, messageId))
         }
 
         @Test
         fun `Only admins must be allowed to forward messages to broadcast chats`() {
-            val (admin, user) = createVerifiedUsers(2)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) =
-                (1..2).map { GroupChats.create(setOf(admin.userId), setOf(user.userId), isBroadcast = true) }
-            val messageId = Messages.message(admin.userId, chat1Id)
-            assertNull(executeForwardMessage(admin.accessToken, chat2Id, messageId).__typename)
-            val actual = executeForwardMessage(user.accessToken, chat2Id, messageId).statusCode
-            assertEquals(HttpStatusCode.Unauthorized, actual)
+                (1..2).map { GroupChats.create(setOf(adminId), setOf(userId), isBroadcast = true) }
+            val messageId = Messages.message(adminId, chat1Id)
+            assertNull(executeForwardMessage(adminId, chat2Id, messageId))
+            assertEquals("InvalidBroadcast", executeForwardMessage(userId, chat2Id, messageId))
         }
 
         @Test
         fun `The message must get created sans context`() {
-            val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
-            val message1Id = Messages.message(admin.userId, chat1Id)
-            assertNull(executeForwardMessage(admin.accessToken, chat2Id, message1Id).__typename)
+            val adminId = createVerifiedUsers(1).first().userId
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(adminId)) }
+            val message1Id = Messages.message(adminId, chat1Id)
+            assertNull(executeForwardMessage(adminId, chat2Id, message1Id))
             val message2Id = Messages.readIdList(chat2Id).first()
             assertFalse(Messages.hasContext(message2Id))
             assertNull(Messages.readContextMessageId(message2Id))
@@ -603,11 +591,11 @@ class MutationsTest {
 
         @Test
         fun `The message must get created with a context`() {
-            val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
-            val message1Id = Messages.message(admin.userId, chat1Id)
-            val contextMessageId = Messages.message(admin.userId, chat2Id)
-            assertNull(executeForwardMessage(admin.accessToken, chat2Id, message1Id, contextMessageId).__typename)
+            val adminId = createVerifiedUsers(1).first().userId
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(adminId)) }
+            val message1Id = Messages.message(adminId, chat1Id)
+            val contextMessageId = Messages.message(adminId, chat2Id)
+            assertNull(executeForwardMessage(adminId, chat2Id, message1Id, contextMessageId))
             val message2Id = Messages.readIdList(chat2Id).last()
             assertTrue(Messages.hasContext(message2Id))
             assertEquals(contextMessageId, Messages.readContextMessageId(message2Id))
@@ -615,60 +603,55 @@ class MutationsTest {
 
         @Test
         fun `Forwarding a message to a chat the user isn't in must fail`() {
-            val (admin1, admin2) = createVerifiedUsers(2)
-            val chat1Id = GroupChats.create(setOf(admin1.userId, admin2.userId))
-            val chat2Id = GroupChats.create(setOf(admin2.userId))
-            val messageId = Messages.message(admin1.userId, chat1Id)
-            assertEquals("InvalidChatId", executeForwardMessage(admin1.accessToken, chat2Id, messageId).__typename)
+            val (admin1Id, admin2Id) = createVerifiedUsers(2).map { it.userId }
+            val chat1Id = GroupChats.create(setOf(admin1Id, admin2Id))
+            val chat2Id = GroupChats.create(setOf(admin2Id))
+            val messageId = Messages.message(admin1Id, chat1Id)
+            assertEquals("InvalidChatId", executeForwardMessage(admin1Id, chat2Id, messageId))
         }
 
         @Test
         fun `Forwarding a non-existing message must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val actual = executeForwardMessage(admin.accessToken, chatId, messageId = -1).__typename
-            assertEquals("InvalidMessageId", actual)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            assertEquals("InvalidMessageId", executeForwardMessage(adminId, chatId, messageId = -1))
         }
 
         @Test
         fun `Using a non-existing context message must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
-            val messageId = Messages.message(admin.userId, chat1Id)
-            val actual = executeForwardMessage(admin.accessToken, chat2Id, messageId, contextMessageId = -1).__typename
-            assertEquals("InvalidMessageId", actual)
+            val adminId = createVerifiedUsers(1).first().userId
+            val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(adminId)) }
+            val messageId = Messages.message(adminId, chat1Id)
+            assertEquals("InvalidMessageId", executeForwardMessage(adminId, chat2Id, messageId, contextMessageId = -1))
         }
 
         @Test
         fun `Forwarding a message the user can't see must fail`() {
-            val (user1, user2) = createVerifiedUsers(2)
-            val privateChatId = PrivateChats.create(user1.userId, user2.userId)
-            val groupChatId = GroupChats.create(adminIdList = setOf(user1.userId), userIdList = setOf(user2.userId))
-            val messageId = Messages.message(user1.userId, privateChatId)
-            PrivateChatDeletions.create(privateChatId, user1.userId)
-            val actual = executeForwardMessage(user1.accessToken, groupChatId, messageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val privateChatId = PrivateChats.create(user1Id, user2Id)
+            val groupChatId = GroupChats.create(adminIdList = setOf(user1Id), userIdList = setOf(user2Id))
+            val messageId = Messages.message(user1Id, privateChatId)
+            PrivateChatDeletions.create(privateChatId, user1Id)
+            assertEquals("InvalidMessageId", executeForwardMessage(user1Id, groupChatId, messageId))
         }
 
         @Test
         fun `Using a message the user can't see as a context must fail`() {
-            val (user1, user2) = createVerifiedUsers(2)
-            val privateChatId = PrivateChats.create(user1.userId, user2.userId)
-            val groupChatId = GroupChats.create(adminIdList = setOf(user1.userId), userIdList = setOf(user2.userId))
-            val contextMessageId = Messages.message(user1.userId, privateChatId)
-            PrivateChatDeletions.create(privateChatId, user1.userId)
-            val messageId = Messages.message(user1.userId, privateChatId)
-            val actual = executeForwardMessage(user1.accessToken, groupChatId, messageId, contextMessageId).__typename
-            assertEquals("InvalidMessageId", actual)
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val privateChatId = PrivateChats.create(user1Id, user2Id)
+            val groupChatId = GroupChats.create(adminIdList = setOf(user1Id), userIdList = setOf(user2Id))
+            val contextMessageId = Messages.message(user1Id, privateChatId)
+            PrivateChatDeletions.create(privateChatId, user1Id)
+            val messageId = Messages.message(user1Id, privateChatId)
+            assertEquals("InvalidMessageId", executeForwardMessage(user1Id, groupChatId, messageId, contextMessageId))
         }
 
         @Test
         fun `Attempting to forward a message in the chat it's from must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val messageId = Messages.message(admin.userId, chatId)
-            val actual = executeForwardMessage(admin.accessToken, chatId, messageId).__typename
-            assertEquals("InvalidChatId", actual)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            val messageId = Messages.message(adminId, chatId)
+            assertEquals("InvalidChatId", executeForwardMessage(adminId, chatId, messageId))
         }
     }
 

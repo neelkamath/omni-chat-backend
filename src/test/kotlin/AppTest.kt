@@ -510,6 +510,7 @@ private object ForwardMessageResultDeserializer : JsonDeserializer<ForwardMessag
     override fun deserialize(parser: JsonParser, context: DeserializationContext): ForwardMessageResult {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out ForwardMessageResult> = when (val type = node["__typename"].asText()) {
+            "InvalidBroadcast" -> InvalidBroadcast::class
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")

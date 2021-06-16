@@ -125,7 +125,7 @@ fun forwardMessage(env: DataFetchingEnvironment): ForwardMessageResult? {
             chatId == GroupChatInviteMessages.read(messageId)
     if (isInvalidInvite || !isUserInChat(env.userId!!, chatId) || Messages.readChatId(messageId) == chatId)
         return InvalidChatId
-    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return InvalidBroadcast
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (!Messages.isValidContext(env.userId!!, chatId, contextMessageId)) return InvalidMessageId
     Messages.forward(env.userId!!, chatId, messageId, contextMessageId)

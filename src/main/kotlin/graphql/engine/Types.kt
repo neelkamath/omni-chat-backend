@@ -229,6 +229,7 @@ private fun readCreatePollMessageResult(obj: Any): String = when (obj) {
 }
 
 private fun readForwardMessageResult(obj: Any): String = when (obj) {
+    is InvalidBroadcast -> "InvalidBroadcast"
     is InvalidChatId -> "InvalidChatId"
     is InvalidMessageId -> "InvalidMessageId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
