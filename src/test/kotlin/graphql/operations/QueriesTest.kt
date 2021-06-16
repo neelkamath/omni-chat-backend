@@ -447,19 +447,18 @@ class QueriesTest {
             val token = executeRequestTokenSet(login)["accessToken"] as String
             val expected = mapOf(
                 "data" to mapOf(
-                    "readAccount" to mapOf("__typename" to "Account"),
+                    "readStars" to mapOf("__typename" to "StarredMessagesConnection"),
                 ),
             )
             val actual = readGraphQlHttpResponse(
                 """
-                query ReadAccount {
-                    readAccount {
+                query ReadStars {
+                    readStars {
                         __typename
                     }
                 }
                 """,
-                mapOf("login" to login),
-                token,
+                accessToken = token,
             )
             assertEquals(expected, actual)
         }

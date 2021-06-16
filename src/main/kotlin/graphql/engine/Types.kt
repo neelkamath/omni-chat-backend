@@ -165,7 +165,14 @@ private fun readCreateAccountResult(obj: Any): String = when (obj) {
 
 private fun readReadMessageResult(obj: Any): String = when (obj) {
     is InvalidMessageId -> "InvalidMessageId"
-    is Message -> "Message"
+    is TextMessage -> "TextMessage"
+    is ActionMessage -> "ActionMessage"
+    is PicMessage -> "PicMessage"
+    is PollMessage -> "PollMessage"
+    is AudioMessage -> "AudioMessage"
+    is GroupChatInviteMessage -> "GroupChatInviteMessage"
+    is DocMessage -> "DocMessage"
+    is VideoMessage -> "VideoMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

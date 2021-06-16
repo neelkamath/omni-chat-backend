@@ -430,7 +430,14 @@ private object ReadMessageResultDeserializer : JsonDeserializer<ReadMessageResul
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz: KClass<out ReadMessageResult> = when (val type = node["__typename"].asText()) {
             "InvalidMessageId" -> InvalidMessageId::class
-            "Message" -> Message::class
+            "TextMessage" -> TextMessage::class
+            "ActionMessage" -> ActionMessage::class
+            "PicMessage" -> PicMessage::class
+            "PollMessage" -> PollMessage::class
+            "AudioMessage" -> AudioMessage::class
+            "GroupChatInviteMessage" -> GroupChatInviteMessage::class
+            "DocMessage" -> DocMessage::class
+            "VideoMessage" -> VideoMessage::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

@@ -17,7 +17,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object PollMessages : Table() {
     override val tableName = "poll_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val question: Column<String> = varchar("title", MessageText.MAX_LENGTH)
+    private val question: Column<String> = varchar("question", MessageText.MAX_LENGTH)
 
     /** @see Messages.createPollMessage */
     fun create(messageId: Int, poll: PollInput) {

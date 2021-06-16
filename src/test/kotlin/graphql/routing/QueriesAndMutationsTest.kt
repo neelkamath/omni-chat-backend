@@ -49,16 +49,16 @@ class QueriesAndMutationsTest {
             val user = createVerifiedUsers(1).first()
             val response = readGraphQlHttpResponse(
                 """
-                query ReadAccount {
-                    readAccount {
-                        userId
+                query ReadStars {
+                    readStars {
+                        __typename
                     }
                 }
                 """,
                 accessToken = user.accessToken,
             )["data"] as Map<*, *>
-            val account = response["readAccount"] as Map<*, *>
-            assertEquals(user.userId, account["userId"])
+            val result = response["readStars"] as Map<*, *>
+            assertEquals(user.userId, result["__typename"])
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
@@ -66,8 +66,8 @@ class QueriesAndMutationsTest {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query ReadAccount {
-                            readAccount {
+                        query ReadStars {
+                            readStars {
                                 __typename
                             }
                         }
@@ -80,7 +80,7 @@ class QueriesAndMutationsTest {
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    val operationName = "ReadAccount".takeIf { mustSupplyOperationName }
+                    val operationName = "ReadStars".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }

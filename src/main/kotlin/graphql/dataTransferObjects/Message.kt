@@ -11,7 +11,7 @@ import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 import java.time.LocalDateTime
 
-sealed interface Message : ReadMessageResult {
+sealed interface Message {
     /** The [Messages.id]. */
     val id: Int
 
@@ -38,10 +38,6 @@ sealed interface Message : ReadMessageResult {
     }
 
     companion object {
-        /**
-         * Returns one of [TextMessage], [ActionMessage], [AudioMessage], [DocMessage], [GroupChatInviteMessage],
-         * [PicMessage], [PollMessage], and [VideoMessage] based on the [messageId]'s type.
-         */
         fun build(messageId: Int): Message = when (Messages.readType(messageId)) {
             MessageType.TEXT -> TextMessage(messageId)
             MessageType.ACTION -> ActionMessage(messageId)

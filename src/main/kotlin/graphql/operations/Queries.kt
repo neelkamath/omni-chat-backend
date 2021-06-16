@@ -72,7 +72,8 @@ fun readContacts(env: DataFetchingEnvironment): AccountsConnection {
 
 fun readMessage(env: DataFetchingEnvironment): ReadMessageResult {
     val messageId = env.getArgument<Int>("messageId")
-    return if (Messages.isVisible(env.userId, messageId)) Message.build(messageId) else InvalidMessageId
+    if (Messages.isVisible(env.userId, messageId)) return Message.build(messageId) as ReadMessageResult
+    return InvalidMessageId
 }
 
 fun requestTokenSet(env: DataFetchingEnvironment): RequestTokenSetResult {

@@ -1802,7 +1802,7 @@ class MutationsTest {
             val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.INVITABLE)
             val actual =
                 executeCreateGroupChatInviteMessage(admin.accessToken, chatId, invitedChatId = chatId).__typename
-            assertEquals("InvalidInvitedChat", actual)
+            assertEquals("InvalidChatId", actual)
         }
 
         @Test

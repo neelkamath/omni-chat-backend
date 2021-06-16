@@ -184,6 +184,8 @@ type Query {
     """
     The access token is short-lived. Once it expires, the user would have to log in again. This can be avoided by
     passing the `TokenSet.refreshToken` from `Query.requestTokenSet` as the `refreshToken` to request a new `TokenSet`.
+
+    The user will be unauthorized if the `refreshToken` is invalid.
     """
     refreshTokenSet(refreshToken: ID!): TokenSet!
 
@@ -1636,4 +1638,13 @@ union ReadOnlineStatusResult = OnlineStatus | InvalidUserId
 
 union SearchGroupChatUsersResult = AccountsConnection | InvalidChatId
 
-union ReadMessageResult = Message | InvalidMessageId
+union ReadMessageResult =
+    | TextMessage
+    | ActionMessage
+    | PicMessage
+    | PollMessage
+    | AudioMessage
+    | GroupChatInviteMessage
+    | VideoMessage
+    | DocMessage
+    | InvalidMessageId
