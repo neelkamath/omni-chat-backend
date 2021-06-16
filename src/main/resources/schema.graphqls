@@ -488,10 +488,9 @@ type Mutation {
     createActionMessage(chatId: Int!, message: ActionMessageInput!, contextMessageId: Int): CreateActionMessageResult
 
     """
-    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. If the `chatId` is a
-    broadcast chat, the user must be an admin to message. The user might want to give their message a context, such as
-    when replying to a message sent several messages ago. In this case, the `contextMessageId` is to be the ID of the
-    message being replied to.
+    Creates a `GroupChatInviteMessage` in the `chatId` inviting users to join the `invitedChatId`. The user might want
+    to give their message a context, such as when replying to a message sent several messages ago. In this case, the
+    `contextMessageId` is to be the ID of the message being replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     `chatId`, the user isn't in the `invitedChatId`, or the `chatId` is the same as the `invitedChatId`. An
@@ -1638,7 +1637,7 @@ union CreateTextMessageResult = InvalidChatId | InvalidMessageId | MustBeAdmin
 
 union CreateActionMessageResult = InvalidChatId | InvalidAction | InvalidMessageId
 
-union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId
+union CreateGroupChatInviteMessageResult = InvalidChatId | InvalidInvitedChat | InvalidMessageId | MustBeAdmin
 
 union CreatePollMessageResult = InvalidChatId | InvalidMessageId | InvalidPoll | MustBeAdmin
 

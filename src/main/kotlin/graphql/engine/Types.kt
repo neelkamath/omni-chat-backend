@@ -225,6 +225,7 @@ private fun readCreateGroupChatInviteMessageResult(obj: Any): String = when (obj
     is InvalidChatId -> "InvalidChatId"
     is InvalidInvitedChat -> "InvalidInvitedChat"
     is InvalidMessageId -> "InvalidMessageId"
+    is MustBeAdmin -> "MustBeAdmin"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

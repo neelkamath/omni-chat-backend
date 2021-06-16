@@ -6,6 +6,7 @@ object MustBeAdmin :
     RemoveGroupChatUsersResult,
     CreatePollMessageResult,
     CreateTextMessageResult,
+    CreateGroupChatInviteMessageResult,
     ForwardMessageResult {
 
     fun getPlaceholder() = Placeholder

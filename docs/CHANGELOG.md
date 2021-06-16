@@ -23,16 +23,19 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `union CreatePollMessageResult`
     - `union CreateTextMessageResult`
     - `union ForwardMessageResult`
-- Return a `type MustBeAdmin` instead of an authorization error from the following:
+    - `union CreateGroupChatInviteMessageResult`
+- Return a `type MustBeAdmin` instead of an HTTP status code of 401 from the following:
     - `Mutation.createPollMessage`
     - `Mutation.createTextMessage`
-    - `Mutation.forwardMessageResult`
+    - `Mutation.forwardMessage`
     - `Mutation.setBroadcast`
     - `Mutation.deleteGroupChatPic`
     - `Mutation.updateGroupChatDescription`
     - `Mutation.addGroupChatUsers`
     - `Mutation.updateGroupChatTitle`
     - `Mutation.makeGroupChatAdmins`
+    - `Mutation.createGroupChatInviteMessage`
+    - `Mutation.removeGroupChatUsers`
 - Return a `type RemoveGroupChatUsersResult` instead of a `type CannotLeaveChat` from `Mutation.removeGroupChatUsers`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
 - Rename the `title` field to `question` in `type Poll` and `input PollInput`.

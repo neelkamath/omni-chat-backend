@@ -357,7 +357,7 @@ fun createGroupChatInviteMessage(env: DataFetchingEnvironment): CreateGroupChatI
     val invitedChatId = env.getArgument<Int>("invitedChatId")
     if (!isUserInChat(env.userId!!, chatId) || !isUserInChat(env.userId!!, invitedChatId) || chatId == invitedChatId)
         return InvalidChatId
-    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) throw UnauthorizedException
+    if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return MustBeAdmin
     if (!GroupChats.isInvitable(invitedChatId)) return InvalidInvitedChat
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (!Messages.isValidContext(env.userId!!, chatId, contextMessageId)) return InvalidMessageId

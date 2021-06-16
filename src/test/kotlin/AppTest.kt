@@ -589,6 +589,7 @@ private object CreateGroupChatInviteMessageResultDeserializer : JsonDeserializer
             "InvalidChatId" -> InvalidChatId::class
             "InvalidMessageId" -> InvalidMessageId::class
             "InvalidInvitedChat" -> InvalidInvitedChat::class
+            "MustBeAdmin" -> MustBeAdmin::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
