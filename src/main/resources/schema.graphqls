@@ -349,8 +349,12 @@ type Mutation {
     """
     updateGroupChatTitle(chatId: Int!, title: GroupChatTitle!): MustBeAdmin
 
-    """An access token must be sent with this request. Only an admin can perform this operation."""
-    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): Placeholder!
+    """
+    `null` gets returned if the operation succeeded.
+
+    An access token must be sent with this request.
+    """
+    updateGroupChatDescription(chatId: Int!, description: GroupChatDescription!): MustBeAdmin
 
     """
     Nonexisting users, and users who are already in the chat will be ignored.

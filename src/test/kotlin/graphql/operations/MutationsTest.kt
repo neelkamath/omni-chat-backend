@@ -1184,28 +1184,33 @@ class MutationsTest {
     @Nested
     inner class UpdateGroupChatDescription {
         private fun executeUpdateGroupChatDescription(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             description: GroupChatDescription,
-        ): HttpStatusCode = executeGraphQlViaHttp(
-            """
-            mutation UpdateGroupChatDescription(${"$"}chatId: Int!, ${"$"}description: GroupChatDescription!) {
-                updateGroupChatDescription(chatId: ${"$"}chatId, description: ${"$"}description)
-            }
-            """,
-            mapOf("chatId" to chatId, "description" to description),
-            accessToken,
-        ).status()!!
+        ): String? {
+            val data = executeGraphQlViaEngine(
+                """
+                mutation UpdateGroupChatDescription(${"$"}chatId: Int!, ${"$"}description: GroupChatDescription!) {
+                    updateGroupChatDescription(chatId: ${"$"}chatId, description: ${"$"}description) {
+                        __typename
+                    }
+                }
+                """,
+                mapOf("chatId" to chatId, "description" to description),
+                userId,
+            ).data!!["updateGroupChatDescription"] as Map<*, *>?
+            return data?.get("__typename") as String?
+        }
 
         @Test
         fun `Only the admin must be allowed to update the description`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), setOf(user.userId))
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), setOf(userId))
             val original = GroupChats.readDescription(chatId)
             val new = GroupChatDescription("new")
-            assertEquals(HttpStatusCode.Unauthorized, executeUpdateGroupChatDescription(user.accessToken, chatId, new))
+            assertEquals("MustBeAdmin", executeUpdateGroupChatDescription(userId, chatId, new))
             assertEquals(original, GroupChats.readDescription(chatId))
-            assertEquals(HttpStatusCode.OK, executeUpdateGroupChatDescription(admin.accessToken, chatId, new))
+            assertNull(executeUpdateGroupChatDescription(adminId, chatId, new))
             assertEquals(new, GroupChats.readDescription(chatId))
         }
     }
