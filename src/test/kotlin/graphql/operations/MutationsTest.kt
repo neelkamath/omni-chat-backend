@@ -471,7 +471,7 @@ class MutationsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), setOf(userId), isBroadcast = true)
             assertNull(executeCreateTextMessage(adminId, chatId))
-            assertEquals("InvalidBroadcast", executeCreateTextMessage(userId, chatId))
+            assertEquals("MustBeAdmin", executeCreateTextMessage(userId, chatId))
         }
 
         @Test
@@ -573,7 +573,7 @@ class MutationsTest {
                 (1..2).map { GroupChats.create(setOf(adminId), setOf(userId), isBroadcast = true) }
             val messageId = Messages.message(adminId, chat1Id)
             assertNull(executeForwardMessage(adminId, chat2Id, messageId))
-            assertEquals("InvalidBroadcast", executeForwardMessage(userId, chat2Id, messageId))
+            assertEquals("MustBeAdmin", executeForwardMessage(userId, chat2Id, messageId))
         }
 
         @Test

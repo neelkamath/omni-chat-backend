@@ -829,8 +829,10 @@ class SpecComplianceTest {
             """
             query ReadMessage(${"$"}messageId: Int!) {
                 readMessage(messageId: ${"$"}messageId) {
-                    context {
-                        messageId
+                    ... on Message {
+                        context {
+                            messageId
+                        }
                     }
                 }
             }

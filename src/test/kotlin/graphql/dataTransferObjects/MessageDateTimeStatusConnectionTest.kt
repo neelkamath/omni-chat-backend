@@ -38,9 +38,11 @@ class MessageDateTimeStatusConnectionTest {
                 """
                 query ReadMessage(${"$"}messageId: Int!, ${"$"}first: Int, ${"$"}after: Cursor) {
                     readMessage(messageId: ${"$"}messageId) {
-                        statuses(first: ${"$"}first, after: ${"$"}after) {
-                            edges {
-                                cursor
+                        ... on Message {
+                            statuses(first: ${"$"}first, after: ${"$"}after) {
+                                edges {
+                                    cursor
+                                }
                             }
                         }
                     }

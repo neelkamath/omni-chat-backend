@@ -1,10 +1,11 @@
 package com.neelkamath.omniChatBackend.graphql.routing
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.tables.GroupChats
-import com.neelkamath.omniChatBackend.db.tables.create
+import com.neelkamath.omniChatBackend.DbExtension
+import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.graphql.engine.executeGraphQlViaEngine
+import com.neelkamath.omniChatBackend.main
+import com.neelkamath.omniChatBackend.testingObjectMapper
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
@@ -58,7 +59,7 @@ class QueriesAndMutationsTest {
                 accessToken = user.accessToken,
             )["data"] as Map<*, *>
             val result = response["readStars"] as Map<*, *>
-            assertEquals(user.userId, result["__typename"])
+            assertEquals("StarredMessagesConnection", result["__typename"])
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
@@ -100,8 +101,8 @@ class QueriesAndMutationsTest {
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {
             val response = executeGraphQlViaHttp(
                 """
-                query ReadAccount {
-                    readAccount {
+                query ReadStars {
+                    readStars {
                         __typename
                     }
                 }
@@ -113,18 +114,17 @@ class QueriesAndMutationsTest {
 
         @Test
         fun `An HTTP status code of 401 must be received when supplying the token of a user who lacks permissions`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
+            val accessToken = createVerifiedUsers(1).first().accessToken
             val response = executeGraphQlViaHttp(
                 """
-                mutation SetPublicity(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
-                    setPublicity(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
+                query RefreshTokenSet(${"$"}refreshToken: ID!) {
+                    refreshTokenSet(refreshToken: ${"$"}refreshToken) {
                         __typename
                     }
                 }
                 """,
-                mapOf("chatId" to chatId, "isInvitable" to true),
-                user.accessToken,
+                mapOf("refreshToken" to "invalid"),
+                accessToken,
             )
             assertEquals(HttpStatusCode.Unauthorized, response.status())
         }
