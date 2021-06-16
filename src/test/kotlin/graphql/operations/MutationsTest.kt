@@ -690,7 +690,7 @@ class MutationsTest {
         fun `A non-admin mustn't be allowed to update the broadcast status`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), setOf(userId))
-            assertEquals("CannotSetBroadcast", executeSetBroadcast(userId, chatId, isBroadcast = true))
+            assertEquals("MustBeAdmin", executeSetBroadcast(userId, chatId, isBroadcast = true))
         }
     }
 

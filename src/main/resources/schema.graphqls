@@ -395,12 +395,11 @@ type Mutation {
     createGroupChat(chat: GroupChatInput!): CreateGroupChatResult!
 
     """
-    Sets whether the `chatId` `isBroadcast`. `null` will be returned if the operation succeeded, and
-    `CannotSetBroadcast` will be returned if the user isn't an admin of the `chatId`.
+    Sets whether the `chatId` `isBroadcast`. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
-    setBroadcast(chatId: Int!, isBroadcast: Boolean!): CannotSetBroadcast
+    setBroadcast(chatId: Int!, isBroadcast: Boolean!): MustBeAdmin
 
     """
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the chat isn't a
@@ -887,7 +886,8 @@ type ActionableMessage {
     actions: [MessageText!]!
 }
 
-type CannotSetBroadcast {
+"""The user failed to perform the operation because they need to be the chat's admin."""
+type MustBeAdmin {
     placeholder: Placeholder!
 }
 
