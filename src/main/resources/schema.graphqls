@@ -414,9 +414,9 @@ type Mutation {
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the chat isn't a
     group chat or the chat is a public chat.
 
-    An access token must be sent with this request. The user must be an admin to perform this operation.
+    An access token must be sent with this request.
     """
-    setPublicity(chatId: Int!, isInvitable: Boolean!): InvalidChatId
+    setPublicity(chatId: Int!, isInvitable: Boolean!): SetPublicityResult
 
     """
     Joins the chat the `inviteCode` is for.
@@ -1663,3 +1663,5 @@ union ReadMessageResult =
     | InvalidMessageId
 
 union RemoveGroupChatUsersResult = CannotLeaveChat | MustBeAdmin
+
+union SetPublicityResult = InvalidChatId | MustBeAdmin

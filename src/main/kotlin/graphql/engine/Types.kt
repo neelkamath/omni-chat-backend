@@ -6,6 +6,7 @@ import graphql.schema.idl.TypeRuntimeWiring
 
 fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = builder
     .type("AccountData") { wireType(it, ::readAccountData) }
+    .type("SetPublicityResult") { wireType(it, ::readSetPublicityResult) }
     .type("Chat") { wireType(it, ::readChat) }
     .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
     .type("StarredMessage") { wireType(it, ::readStarredMessage) }
@@ -319,6 +320,12 @@ private fun readAccountData(obj: Any): String = when (obj) {
     is Account -> "Account"
     is BlockedAccount -> "BlockedAccount"
     is NewContact -> "NewContact"
+    else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
+}
+
+private fun readSetPublicityResult(obj: Any): String = when (obj) {
+    is MustBeAdmin -> "MustBeAdmin"
+    is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

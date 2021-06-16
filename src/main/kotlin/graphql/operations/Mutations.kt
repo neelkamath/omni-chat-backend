@@ -365,11 +365,11 @@ fun createGroupChatInviteMessage(env: DataFetchingEnvironment): CreateGroupChatI
     return null
 }
 
-fun setPublicity(env: DataFetchingEnvironment): InvalidChatId? {
+fun setPublicity(env: DataFetchingEnvironment): SetPublicityResult? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (PrivateChats.isExisting(chatId) || GroupChats.isExistingPublicChat(chatId)) return InvalidChatId
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     GroupChats.setPublicity(chatId, env.getArgument("isInvitable"))
     return null
 }

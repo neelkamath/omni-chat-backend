@@ -1851,22 +1851,14 @@ class MutationsTest {
         }
     }
 
-    private data class SetPublicityResponse(val statusCode: HttpStatusCode, val __typename: String?)
-
-    private data class SetPublicityResult(val data: Data) {
-        data class Data(val setPublicity: SetPublicity?) {
-            data class SetPublicity(val __typename: String?)
-        }
-    }
-
     @Nested
     inner class SetPublicity {
         private fun executeSetPublicity(
-            accessToken: String,
+            userId: Int,
             chatId: Int,
             isInvitable: Boolean,
-        ): SetPublicityResponse {
-            val response = executeGraphQlViaHttp(
+        ): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation SetPublicity(${"$"}chatId: Int!, ${"$"}isInvitable: Boolean!) {
                     setPublicity(chatId: ${"$"}chatId, isInvitable: ${"$"}isInvitable) {
@@ -1875,48 +1867,41 @@ class MutationsTest {
                 }
                 """,
                 mapOf("chatId" to chatId, "chatId" to chatId, "isInvitable" to isInvitable),
-                accessToken,
-            )
-            val type = response
-                .content
-                ?.let { testingObjectMapper.readValue<SetPublicityResult>(it).data.setPublicity?.__typename }
-            return SetPublicityResponse(response.status()!!, type)
+                userId,
+            ).data!!["setPublicity"] as Map<*, *>?
+            return data?.get("__typename") as String?
         }
 
         @Test
         fun `The publicity must get changed`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
             listOf(true, false).forEach { isInvitable ->
-                assertNull(executeSetPublicity(admin.accessToken, chatId, isInvitable).__typename)
+                assertNull(executeSetPublicity(adminId, chatId, isInvitable))
                 assertEquals(isInvitable, GroupChats.isInvitable(chatId))
             }
         }
 
         @Test
         fun `Attempting to set the publicity for a chat which isn't a group chat must fail`() {
-            val (user1, user2) = createVerifiedUsers(2)
-            val chatId = PrivateChats.create(user1.userId, user2.userId)
-            val actual = executeSetPublicity(user1.accessToken, chatId, isInvitable = false).__typename
-            assertEquals("InvalidChatId", actual)
+            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
+            val chatId = PrivateChats.create(user1Id, user2Id)
+            assertEquals("InvalidChatId", executeSetPublicity(user1Id, chatId, isInvitable = false))
         }
 
         @Test
         fun `Attempting to set the publicity of a public chat must fail`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
-            val actual = executeSetPublicity(admin.accessToken, chatId, isInvitable = false).__typename
-            assertEquals("InvalidChatId", actual)
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
+            assertEquals("InvalidChatId", executeSetPublicity(adminId, chatId, isInvitable = false))
         }
 
         @Test
         fun `Only admins must be allowed to update the publicity`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId))
-            val actual1 = executeSetPublicity(user.accessToken, chatId, isInvitable = false).statusCode
-            assertEquals(HttpStatusCode.Unauthorized, actual1)
-            val actual2 = executeSetPublicity(admin.accessToken, chatId, isInvitable = false).statusCode
-            assertEquals(HttpStatusCode.OK, actual2)
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
+            assertEquals("MustBeAdmin", executeSetPublicity(userId, chatId, isInvitable = false))
+            assertNull(executeSetPublicity(adminId, chatId, isInvitable = false))
         }
     }
 

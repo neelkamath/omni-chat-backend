@@ -9,6 +9,7 @@ object InvalidChatId :
     ChatAccountsSubscription,
     GroupChatMetadataSubscription,
     CreateTextMessageResult,
+    SetPublicityResult,
     ForwardMessageResult,
     SearchChatMessagesResult,
     ReadChatResult,

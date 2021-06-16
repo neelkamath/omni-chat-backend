@@ -31,6 +31,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(GroupChatMetadataSubscriptionDeserializer)
     .register(ChatsSubscriptionDeserializer)
     .register(AccountDataDeserializer)
+    .register(SetPublicityResultDeserializer)
     .register(MessageDeserializer)
     .register(StarredMessageDeserializer)
     .register(NewMessageDeserializer)
@@ -94,6 +95,18 @@ private object AccountDataDeserializer : JsonDeserializer<AccountData>() {
             "Account" -> Account::class
             "NewContact" -> NewContact::class
             "BlockedAccount" -> BlockedAccount::class
+            else -> throw IllegalArgumentException("$type didn't match a concrete class.")
+        }
+        return parser.codec.treeToValue(node, clazz.java)
+    }
+}
+
+private object SetPublicityResultDeserializer : JsonDeserializer<SetPublicityResult>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): SetPublicityResult {
+        val node = parser.codec.readTree<JsonNode>(parser)
+        val clazz = when (val type = node["__typename"].asText()) {
+            "MustBeAdmin" -> MustBeAdmin::class
+            "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

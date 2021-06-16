@@ -16,6 +16,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ReadMessageResult`
 - `type MustBeAdmin`
 - `type RemoveGroupChatUsersResult`
+- `union SetPublicityResult`
 
 ### Changed
 
@@ -36,6 +37,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `Mutation.makeGroupChatAdmins`
     - `Mutation.createGroupChatInviteMessage`
     - `Mutation.removeGroupChatUsers`
+    - `Mutation.setPublicity`
 - Return a `type RemoveGroupChatUsersResult` instead of a `type CannotLeaveChat` from `Mutation.removeGroupChatUsers`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.
 - Rename the `title` field to `question` in `type Poll` and `input PollInput`.
