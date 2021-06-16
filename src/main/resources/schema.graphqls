@@ -388,9 +388,9 @@ type Mutation {
     Makes every user in the `idList` an admin of the `chatId`. Nonexisting users, users who aren't in the chat, and
     users who are already admins, are ignored.
 
-    An access token must be sent with this request. Only an admin can perform this operation.
+    An access token must be sent with this request.
     """
-    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): Placeholder!
+    makeGroupChatAdmins(chatId: Int!, userIdList: [Int!]!): MustBeAdmin
 
     """
     Creates a group chat. Nonexisting users are ignored. The `chat` parameter's `GroupChatInput.userIdList` and

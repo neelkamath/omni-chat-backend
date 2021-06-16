@@ -1399,34 +1399,37 @@ class MutationsTest {
 
     @Nested
     inner class MakeGroupChatAdmins {
-        private fun executeMakeGroupChatAdmins(accessToken: String, chatId: Int, userIdList: List<Int>) =
-            executeGraphQlViaHttp(
+        private fun executeMakeGroupChatAdmins(userId: Int, chatId: Int, userIdList: List<Int>): String? {
+            val data = executeGraphQlViaEngine(
                 """
                 mutation MakeGroupChatAdmins(${"$"}chatId: Int!, ${"$"}userIdList: [Int!]!) {
-                    makeGroupChatAdmins(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList)
+                    makeGroupChatAdmins(chatId: ${"$"}chatId, userIdList: ${"$"}userIdList) {
+                        __typename
+                    }
                 }
                 """,
                 mapOf("chatId" to chatId, "userIdList" to userIdList),
-                accessToken,
-            ).status()!!
+                userId,
+            ).data!!["makeGroupChatAdmins"] as Map<*, *>?
+            return data?.get("__typename") as String?
+        }
 
         @Test
         fun `Only admins must be allowed to create admins`() {
-            val (admin, user1, user2) = createVerifiedUsers(3)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user1.userId, user2.userId))
-            val actual1 = executeMakeGroupChatAdmins(user1.accessToken, chatId, listOf(user2.userId))
-            assertEquals(HttpStatusCode.Unauthorized, actual1)
-            val actual2 = executeMakeGroupChatAdmins(admin.accessToken, chatId, listOf(user1.userId))
-            assertEquals(HttpStatusCode.OK, actual2)
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
+            val actual1 = executeMakeGroupChatAdmins(user1Id, chatId, listOf(user2Id))
+            assertEquals("MustBeAdmin", actual1)
+            executeMakeGroupChatAdmins(adminId, chatId, listOf(user1Id)).let(::assertNull)
         }
 
         @Test
         fun `Users must be made admins while ignoring non-existing users, users who aren't in the chat, and users who are already admins`() {
-            val (admin, user1, user2) = createVerifiedUsers(3)
-            val chatId = GroupChats.create(setOf(admin.userId), listOf(user1.userId))
-            val userIdList = listOf(admin.userId, user1.userId, user2.userId, -1)
-            assertEquals(HttpStatusCode.OK, executeMakeGroupChatAdmins(admin.accessToken, chatId, userIdList))
-            assertEquals(linkedHashSetOf(admin.userId, user1.userId), GroupChatUsers.readUserIdList(chatId))
+            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
+            val chatId = GroupChats.create(setOf(adminId), listOf(user1Id))
+            val userIdList = listOf(adminId, user1Id, user2Id, -1)
+            assertNull(executeMakeGroupChatAdmins(adminId, chatId, userIdList))
+            assertEquals(linkedHashSetOf(adminId, user1Id), GroupChatUsers.readUserIdList(chatId))
         }
     }
 

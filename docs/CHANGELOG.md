@@ -16,6 +16,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `union ReadMessageResult`
 - `type InvalidBroadcast`
 - `type MustBeAdmin`
+- `type RemoveGroupChatUsersResult`
 
 ### Changed
 
@@ -25,7 +26,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `Mutation.updateGroupChatDescription`
     - `Mutation.addGroupChatUsers`
     - `Mutation.updateGroupChatTitle`
-    - `Mutation.removeGroupChatUsers`
+    - `Mutation.makeGroupChatAdmins`
+- Return a `type RemoveGroupChatUsersResult` instead of a `type CannotLeaveChat` from `Mutation.removeGroupChatUsers`.
 - Add `type InvalidBroadcast` to `union CreateTextMessageResult` and `union ForwardMessageResult`.
 - Return a `type InvalidBroadcast` instead of an authorization error in `Mutation.createTextMessage` and `Mutation.forwardMessageResult`.
 - Return a `union ReadMessageResult` instead of a `interface Message` from `Query.readMessage`.

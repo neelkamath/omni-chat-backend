@@ -298,13 +298,13 @@ fun leaveGroupChat(env: DataFetchingEnvironment): LeaveGroupChatResult? {
     return null
 }
 
-fun makeGroupChatAdmins(env: DataFetchingEnvironment): Placeholder {
+fun makeGroupChatAdmins(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
-    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) throw UnauthorizedException
+    if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
     val userIdList = env.getArgument<List<Int>>("idList").filter { isUserInChat(it, chatId) }
     GroupChatUsers.makeAdmins(chatId, userIdList)
-    return Placeholder
+    return null
 }
 
 fun createPollMessage(env: DataFetchingEnvironment): CreatePollMessageResult? {
