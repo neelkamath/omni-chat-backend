@@ -58,7 +58,6 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("createActionMessage", ::createActionMessage)
     .dataFetcher("triggerAction", ::triggerAction)
     .dataFetcher("emailPasswordResetCode", ::emailPasswordResetCode)
-    .dataFetcher("createStatus", ::createStatus)
     .dataFetcher("unstar", ::unstar)
     .dataFetcher("createGroupChat", ::createGroupChat)
     .dataFetcher("setTyping", ::setTyping)

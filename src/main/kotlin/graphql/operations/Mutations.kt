@@ -56,19 +56,6 @@ fun createContact(env: DataFetchingEnvironment): Boolean {
     return if (Users.isExisting(userId)) Contacts.create(env.userId!!, userId) else false
 }
 
-fun createStatus(env: DataFetchingEnvironment): InvalidMessageId? {
-    env.verifyAuth()
-    val messageId = env.getArgument<Int>("messageId")
-    val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
-    if (MessageStatuses.isExisting(messageId, env.userId!!, status)) return null
-    try {
-        MessageStatuses.create(env.userId!!, messageId, status)
-    } catch (_: IllegalArgumentException) {
-        return InvalidMessageId
-    }
-    return null
-}
-
 fun unstar(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
     Stargazers.deleteUserStar(env.userId!!, env.getArgument("messageId"))

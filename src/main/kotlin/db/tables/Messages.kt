@@ -2,7 +2,10 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.*
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.routing.ActionMessageInput
+import com.neelkamath.omniChatBackend.graphql.routing.Cursor
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.graphql.routing.PollInput
 import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
@@ -27,7 +30,6 @@ private typealias Filter = Op<Boolean>?
  * @see GroupChatInviteMessages
  * @see PicMessages
  * @see Stargazers
- * @see MessageStatuses
  */
 object Messages : IntIdTable() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
@@ -423,13 +425,6 @@ object Messages : IntIdTable() {
 
     fun readSent(messageId: Int): LocalDateTime = transaction { select(Messages.id eq messageId).first()[sent] }
 
-    // Subtract 1 to exclude the sender.
-    fun readState(messageId: Int): MessageState = when (readUserIdList(readChatId(messageId)).size - 1L) {
-        MessageStatuses.countStatuses(messageId, MessageStatus.READ) -> MessageState.READ
-        MessageStatuses.countStatuses(messageId, MessageStatus.DELIVERED) -> MessageState.DELIVERED
-        else -> MessageState.SENT
-    }
-
     /** The ID of the chat which contains the [messageId]. */
     fun readChatId(messageId: Int): Int = transaction { select(Messages.id eq messageId).first()[chatId] }
 
@@ -440,7 +435,6 @@ object Messages : IntIdTable() {
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: Collection<Int>) {
-        MessageStatuses.delete(messageIdList)
         Stargazers.deleteStars(messageIdList)
         TextMessages.delete(messageIdList)
         ActionMessages.delete(messageIdList)
@@ -472,7 +466,6 @@ object Messages : IntIdTable() {
      * group chat, subscribers will also be notified via [chatMessagesNotifier].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
-        MessageStatuses.deleteUserChatStatuses(chatId, userId)
         deleteChatMessages(readMessageIdList(chatId, senderId eq userId))
         val update = UserChatMessagesRemoval(chatId, userId)
         messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
@@ -484,7 +477,6 @@ object Messages : IntIdTable() {
      * [messagesNotifier]. Nothing will happen if the [userId] doesn't exist.
      */
     fun deleteUserMessages(userId: Int) {
-        MessageStatuses.deleteUserStatuses(userId)
         val chatIdList = PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
         chatIdList.forEach { deleteUserChatMessages(it, userId) }
     }

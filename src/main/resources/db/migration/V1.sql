@@ -1,6 +1,5 @@
 CREATE
 EXTENSION pgcrypto;
-CREATE TYPE message_status AS ENUM ('delivered', 'read');
 CREATE TYPE message_type AS ENUM ('text', 'action', 'pic', 'audio', 'video', 'doc', 'poll', 'group_chat_invite');
 CREATE TYPE group_chat_publicity AS ENUM ('not_invitable', 'invitable', 'public');
 CREATE TABLE chats
@@ -126,14 +125,6 @@ CREATE TABLE stargazers
 (
     user_id    INTEGER NOT NULL REFERENCES users (id),
     message_id INTEGER NOT NULL REFERENCES messages (id)
-);
-CREATE TABLE message_statuses
-(
-    id         SERIAL PRIMARY KEY,
-    message_id INTEGER        NOT NULL REFERENCES messages (id),
-    status     message_status NOT NULL,
-    user_id    INTEGER        NOT NULL REFERENCES users (id),
-    date_time  TIMESTAMP      NOT NULL
 );
 CREATE TABLE typing_statuses
 (

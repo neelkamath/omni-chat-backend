@@ -29,10 +29,9 @@ object PrivateChatDeletions : IntIdTable() {
     /**
      * Deletes the [chatId] for the [userId].
      *
-     * Commonly deleted [Messages] and [MessageStatuses] are deleted. The user's older [PrivateChatDeletions] are
-     * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
-     * they've deleted it, the [chatId] is deleted from [PrivateChats], [PrivateChatDeletions] [Messages],
-     * [MessageStatuses], and [TypingStatuses].
+     * Commonly deleted [Messages] are deleted. The user's older [PrivateChatDeletions] are deleted. If both the users
+     * have deleted the [chatId], and there has been no activity in the [chatId] after they've deleted it, the [chatId]
+     * is deleted from [PrivateChats], [PrivateChatDeletions], [Messages], and [TypingStatuses].
      *
      * The [userId] will be notified of the [UnstarredChat] via [messagesNotifier].
      *
@@ -55,9 +54,9 @@ object PrivateChatDeletions : IntIdTable() {
     }
 
     /**
-     * Commonly deleted [Messages] and [MessageStatuses] are deleted. The user's older [PrivateChatDeletions] are
-     * deleted. If both the users have deleted the [chatId], and there has been no activity in the [chatId] after
-     * they've deleted it, the [chatId] is [PrivateChats.delete]d.
+     * Commonly deleted [Messages] are deleted. The user's older [PrivateChatDeletions] are deleted. If both the users
+     * have deleted the [chatId], and there has been no activity in the [chatId] after they've deleted it, the [chatId]
+     * is [PrivateChats.delete]d.
      */
     private fun deleteUnusedChatData(chatId: Int, userId: Int) {
         deleteCommonlyDeletedMessages(chatId)
@@ -74,7 +73,7 @@ object PrivateChatDeletions : IntIdTable() {
         return isDeleted(user1Id, chatId) && isDeleted(user2Id, chatId)
     }
 
-    /** Deletes [Messages] and [MessageStatuses] deleted by both users. */
+    /** Deletes [Messages] deleted by both users. */
     private fun deleteCommonlyDeletedMessages(chatId: Int) {
         readLastChatDeletion(chatId)?.let { Messages.deleteChatUntil(chatId, it) }
     }

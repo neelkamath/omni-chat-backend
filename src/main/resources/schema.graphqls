@@ -293,18 +293,6 @@ type Mutation {
     deleteGroupChatPic(chatId: Int!): MustBeAdmin
 
     """
-    Records that the user received or read the `messageId`. If the `status` is `MessageStatus.READ`, and there's no
-    `MessageStatus.DELIVERED` record, the delivery status will be created. Nothing will happen if the status was already
-    created.
-
-    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if either the message
-    doesn't exist in a chat the user is in or the message is the user's own.
-
-    An access token must be sent with this request.
-    """
-    createStatus(messageId: Int!, status: MessageStatus!): InvalidMessageId
-
-    """
     Updates the user's account. Only the non-null fields will be updated. None of the updates will take place if even
     one of the fields were invalid. If the user updates their email address to something other than their current
     address, they must be loged out because the current access token will be invalid until they verify their new email
@@ -1094,22 +1082,10 @@ type MessageContext {
     messageId: Int
 }
 
-type MessageDateTimeStatusConnection {
-    edges: [MessageDateTimeStatusEdge!]!
-    pageInfo: PageInfo!
-}
-
-type MessageDateTimeStatusEdge {
-    node: MessageDateTimeStatus!
-    cursor: Cursor!
-}
-
 interface Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1119,9 +1095,7 @@ interface Message {
 type TextMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1132,9 +1106,7 @@ type TextMessage implements Message {
 type ActionMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1145,9 +1117,7 @@ type ActionMessage implements Message {
 type PicMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1158,9 +1128,7 @@ type PicMessage implements Message {
 type PollMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1171,9 +1139,7 @@ type PollMessage implements Message {
 type AudioMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1183,9 +1149,7 @@ type AudioMessage implements Message {
 type GroupChatInviteMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1197,9 +1161,7 @@ type GroupChatInviteMessage implements Message {
 type DocMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1209,9 +1171,7 @@ type DocMessage implements Message {
 type VideoMessage implements Message {
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
@@ -1223,9 +1183,7 @@ interface StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1234,9 +1192,7 @@ type StarredTextMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     textMessage: MessageText!
@@ -1246,9 +1202,7 @@ type StarredActionMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     actionableMessage: ActionableMessage!
@@ -1258,9 +1212,7 @@ type StarredPicMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     caption: MessageText
@@ -1270,9 +1222,7 @@ type StarredPollMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     poll: Poll!
@@ -1282,9 +1232,7 @@ type StarredAudioMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1293,9 +1241,7 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
     """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
@@ -1306,9 +1252,7 @@ type StarredDocMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1317,9 +1261,7 @@ type StarredVideoMessage implements StarredMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     context: MessageContext!
     isForwarded: Boolean!
 }
@@ -1328,7 +1270,6 @@ interface NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1338,7 +1279,6 @@ type NewTextMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1349,7 +1289,6 @@ type NewActionMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1360,7 +1299,6 @@ type NewPicMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1371,7 +1309,6 @@ type NewPollMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1382,7 +1319,6 @@ type NewAudioMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1392,7 +1328,6 @@ type NewGroupChatInviteMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1404,7 +1339,6 @@ type NewDocMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
@@ -1414,40 +1348,17 @@ type NewVideoMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
-    state: MessageState!
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which has been starred, unstarred, delivered to a user, or read by a user."""
+"""An existing `messageId` in the `chatId` which has been starred or unstarred."""
 type UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    state: MessageState!
-    statuses(first: Int, after: Cursor): MessageDateTimeStatusConnection!
     """`false` if either the user hasn't starred this message or the message is being read anonymously."""
     hasStar: Boolean!
-}
-
-"""The `dateTime` the `user` created the `status`."""
-type MessageDateTimeStatus {
-    user: Account!
-    dateTime: DateTime!
-    status: MessageStatus!
-}
-
-enum MessageState {
-    """Each user in the chat hasn't had the message delivered to them yet."""
-    SENT
-    """Each user in the chat has had the message delivered to them but not everyone has read it yet."""
-    DELIVERED
-    """Each user in the chat has read the message."""
-    READ
-}
-
-enum MessageStatus {
-    DELIVERED, READ
 }
 
 enum GroupChatPublicity {

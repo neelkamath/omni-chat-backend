@@ -116,7 +116,7 @@ object GroupChats : Table() {
     }
 
     /**
-     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], [Messages], and [MessageStatuses].
+     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], and [Messages].
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      *

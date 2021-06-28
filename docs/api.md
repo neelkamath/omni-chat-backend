@@ -276,7 +276,6 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Mutation`
     - `star`
     - `deleteStar`
-    - `createStatus`
     - `createTextMessage`
     - `createActionMessage`
     - `createGroupChatInviteMessage`
