@@ -929,7 +929,7 @@ type AccountEdge {
     cursor: Cursor!
 }
 
-"""The user deleted the `chatId`."""
+"""Either the user deleted the `chatId` or the `chatId` got deleted because the other user deleted their account."""
 type DeletedPrivateChat {
     chatId: Int!
 }
