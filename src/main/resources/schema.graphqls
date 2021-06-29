@@ -1517,13 +1517,11 @@ type CannotLeaveChat {
     placeholder: Placeholder!
 }
 
-"""The `userId` in the `chatId` updated their `vote` on the `messageId`'s `option`."""
+"""The `chatId`'s `poll` `messageId` got updated."""
 type UpdatedPollMessage {
     chatId: Int!
     messageId: Int!
-    userId: Int!
-    option: MessageText!
-    vote: Boolean!
+    poll: Poll!
 }
 
 union SearchChatMessagesResult = MessageEdges | InvalidChatId
