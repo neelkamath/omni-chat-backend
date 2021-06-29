@@ -15,7 +15,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Return a `type ReadAccountResult` instead of a `type Account` from `Query.readAccount`.
+- Return a `union ReadAccountResult` instead of a `type Account` from `Query.readAccount`.
 - Remove the `lastOnline` field from `type OnlineStatus`.
 - Remove the `state` and `statuses` fields from the following:
     - `interface Message`
