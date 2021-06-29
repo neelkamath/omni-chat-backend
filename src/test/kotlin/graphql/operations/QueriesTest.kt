@@ -177,9 +177,7 @@ class QueriesTest {
 
     @Nested
     inner class ReadAccount {
-        @Test
-        fun `The specified user's account must be read`() {
-            val userId = createVerifiedUsers(1).first().userId
+        private fun executeReadAccount(userId: Int): String {
             val data = executeGraphQlViaEngine(
                 """
                 query ReadAccount(${"$"}userId: Int!) {
@@ -190,8 +188,18 @@ class QueriesTest {
                 """,
                 mapOf("userId" to userId),
             ).data!!["readAccount"] as Map<*, *>
-            assertEquals("Account", data["__typename"])
+            return data["__typename"] as String
         }
+
+        @Test
+        fun `The specified user's account must be read`() {
+            val userId = createVerifiedUsers(1).first().userId
+            assertEquals("Account", executeReadAccount(userId))
+        }
+
+        @Test
+        fun `Attempting to read a nonexisting user's details must fail`(): Unit =
+            assertEquals("InvalidUserId", executeReadAccount(-1))
     }
 
     private data class ReadChatResult(val __typename: String, val messages: Messages?) {

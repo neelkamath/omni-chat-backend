@@ -115,8 +115,8 @@ type Query {
     """
     searchMessages(query: String!, first: Int, after: Cursor): ChatMessagesConnection!
 
-    """Returns the specified user's account info."""
-    readAccount(userId: Int!): Account!
+    """Returns the specified user's account info, or an `InvalidUserId` if the specified `userId` doesn't exist."""
+    readAccount(userId: Int!): ReadAccountResult!
 
     """
     Returns the chats the user is in.
@@ -1580,3 +1580,5 @@ union ReadMessageResult =
 union RemoveGroupChatUsersResult = CannotLeaveChat | MustBeAdmin
 
 union SetPublicityResult = InvalidChatId | MustBeAdmin
+
+union ReadAccountResult = Account | InvalidUserId

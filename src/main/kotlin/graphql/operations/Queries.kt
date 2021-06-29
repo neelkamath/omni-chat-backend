@@ -29,7 +29,10 @@ fun readTypingUsers(env: DataFetchingEnvironment): List<TypingUsers> {
     return chatIdList.map(::TypingUsers)
 }
 
-fun readAccount(env: DataFetchingEnvironment): Account = Account(env.getArgument("userId"))
+fun readAccount(env: DataFetchingEnvironment): ReadAccountResult {
+    val userId = env.getArgument<Int>("userId")
+    return if (Users.isExisting(userId)) Account(userId) else InvalidUserId
+}
 
 fun readChat(env: DataFetchingEnvironment): ReadChatResult {
     val chatId = env.getArgument<Int>("id")
