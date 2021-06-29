@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "1.5.10"
+    kotlin("jvm") version "1.5.20"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
@@ -29,10 +29,10 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    val exposedVersion = "0.31.1"
-    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
+    implementation(platform("org.jetbrains.exposed:exposed-bom:0.32.1"))
+    implementation("org.jetbrains.exposed", "exposed-core")
+    implementation("org.jetbrains.exposed", "exposed-jdbc")
+    implementation("org.jetbrains.exposed", "exposed-java-time")
 }
 
 tasks {
