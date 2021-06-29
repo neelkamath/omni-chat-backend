@@ -20,6 +20,15 @@ class ManagerTest {
     @Nested
     inner class DeleteUser {
         @Test
+        fun `Deleting a user who has messages in a group chat they're no longer in must work`(): Unit = runBlocking {
+            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+            val chatId = GroupChats.create(listOf(adminId), listOf(userId))
+            Messages.message(userId, chatId)
+            GroupChatUsers.removeUsers(chatId, userId)
+            deleteUser(userId)
+        }
+
+        @Test
         fun `The other users must get notified of the deleted private chats`(): Unit = runBlocking {
             val (user1Id, user2Id, user3Id) = createVerifiedUsers(3).map { it.userId }
             val (chat1Id, chat2Id) = setOf(user2Id, user3Id).map { PrivateChats.create(user1Id, it) }

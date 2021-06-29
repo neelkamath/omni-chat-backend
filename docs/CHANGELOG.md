@@ -51,6 +51,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - `enum MessageState`
 - `enum MessageStatus`
 
+### Fixed
+
+- Fix `Mutation.deleteAccount` so that it doesn't crash when the user has messages in chats they're no longer in.
+
 ## [0.21.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.21.0) - 2021-06-16
 
 ### Added

@@ -476,10 +476,9 @@ object Messages : IntIdTable() {
      * Deletes all messages the [userId] created, and notifies subscribers of the [UserChatMessagesRemoval] via
      * [messagesNotifier]. Nothing will happen if the [userId] doesn't exist.
      */
-    fun deleteUserMessages(userId: Int) {
-        val chatIdList = PrivateChats.readIdList(userId) + GroupChatUsers.readChatIdList(userId)
-        chatIdList.forEach { deleteUserChatMessages(it, userId) }
-    }
+    fun deleteUserMessages(userId: Int): Unit = transaction {
+        select(senderId eq userId).distinctBy { chatId }.map { it[chatId] }
+    }.forEach { deleteUserChatMessages(it, userId) }
 
     /**
      * Deletes the [messageId] in the [chatId] from messages.
