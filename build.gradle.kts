@@ -29,10 +29,10 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    implementation(platform("org.jetbrains.exposed:exposed-bom:0.31.2"))
-    implementation("org.jetbrains.exposed", "exposed-core")
-    implementation("org.jetbrains.exposed", "exposed-jdbc")
-    implementation("org.jetbrains.exposed", "exposed-java-time")
+    val exposedVersion = "0.31.1"
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
 }
 
 tasks {
