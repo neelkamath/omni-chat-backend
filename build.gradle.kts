@@ -29,7 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    implementation(platform("org.jetbrains.exposed:exposed-bom:0.32.1"))
+    implementation(platform("org.jetbrains.exposed:exposed-bom:0.31.2"))
     implementation("org.jetbrains.exposed", "exposed-core")
     implementation("org.jetbrains.exposed", "exposed-jdbc")
     implementation("org.jetbrains.exposed", "exposed-java-time")
