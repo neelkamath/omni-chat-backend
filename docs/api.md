@@ -295,5 +295,7 @@ Since there are many operations, we've categorized each of them below. The same 
 
 ### Miscellaneous
 
+- Query
+    - `readAllowedEmailAddressDomains`
 - REST API
     - `/health-check`

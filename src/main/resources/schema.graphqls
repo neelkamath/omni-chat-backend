@@ -62,6 +62,12 @@ type Query {
     readMessage(messageId: Int!): ReadMessageResult!
 
     """
+    Returns the email address domains (e.g., `"gmail.com"`) the server allows accounts to get created with. An empty
+    list will get returned if there's no restriction on the domains.
+    """
+    readAllowedEmailAddressDomains: [String!]!
+
+    """
     Returns the user's starred messages.
 
     An access token must be sent with this request.

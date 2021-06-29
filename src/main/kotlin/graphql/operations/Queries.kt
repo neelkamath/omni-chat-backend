@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
+import com.neelkamath.omniChatBackend.allowedEmailAddressDomains
 import com.neelkamath.omniChatBackend.buildTokenSet
 import com.neelkamath.omniChatBackend.db.BackwardPagination
 import com.neelkamath.omniChatBackend.db.CursorType
@@ -232,3 +233,6 @@ fun searchPublicChats(env: DataFetchingEnvironment): GroupChatsConnection {
     val endCursor = GroupChats.readPublicChatsCursor(query, CursorType.END)
     return GroupChatsConnection(startCursor, endCursor, chatIdList, pagination)
 }
+
+fun readAllowedEmailAddressDomains(@Suppress("UNUSED_PARAMETER") env: DataFetchingEnvironment): List<String> =
+    allowedEmailAddressDomains

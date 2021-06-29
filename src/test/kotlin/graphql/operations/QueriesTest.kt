@@ -26,6 +26,24 @@ import kotlin.test.assertTrue
 @ExtendWith(DbExtension::class)
 class QueriesTest {
     @Nested
+    inner class ReadAllowedEmailAddressDomains {
+        private fun executeReadAllowedEmailAddressDomains(): List<String> {
+            val data = executeGraphQlViaEngine(
+                """
+                query ReadAllowedEmailAddressDomains {
+                    readAllowedEmailAddressDomains
+                }
+                """,
+            ).data!!["readAllowedEmailAddressDomains"] as List<*>
+            return data.map { it as String }
+        }
+
+        @Test
+        fun `The allowed email address domains must be retrieved`() =
+            assertEquals(listOf("example.com", "icloud.com", "gmail.com"), executeReadAllowedEmailAddressDomains())
+    }
+
+    @Nested
     inner class ReadOnlineStatus {
         private fun executeReadOnlineStatus(userId: Int): String {
             val data = executeGraphQlViaEngine(

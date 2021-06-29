@@ -38,7 +38,11 @@ fun createAccount(env: DataFetchingEnvironment): CreateAccountResult? {
     val account = env.parseArgument<AccountInput>("account")
     if (Users.isUsernameTaken(account.username)) return UsernameTaken
     if (Users.isEmailAddressTaken(account.emailAddress)) return EmailAddressTaken
-    if (!hasAllowedDomain(account.emailAddress)) return InvalidDomain
+    if (allowedEmailAddressDomains.isNotEmpty()
+        && account.emailAddress.substringAfter("@") !in allowedEmailAddressDomains
+    ) {
+        return InvalidDomain
+    }
     Users.create(account)
     emailEmailAddressVerification(account.emailAddress)
     return null

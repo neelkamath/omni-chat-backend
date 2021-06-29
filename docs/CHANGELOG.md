@@ -8,6 +8,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## 0.22.0
 
+### Added
+
+- `Query.readAllowedEmailAddressDomains`
+
 ### Changed
 
 - Remove the `lastOnline` field from `type OnlineStatus`.
