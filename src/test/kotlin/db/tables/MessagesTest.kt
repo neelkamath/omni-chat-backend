@@ -496,13 +496,11 @@ class MessagesTest {
         fun `Subscribers must be notified when every message the user sent is deleted`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) = (1..2).map {
-                val chatId = GroupChats.create(setOf(adminId), setOf(userId))
-                Messages.message(userId, chatId)
-                chatId
+                GroupChats.create(setOf(adminId), setOf(userId)).also { Messages.message(userId, it) }
             }
             awaitBrokering()
             val (chat1Subscriber, chat2Subscriber) =
-                (1..2).map { messagesNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber()) }
+                (1..2).map { messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             setOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->

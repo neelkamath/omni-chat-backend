@@ -477,7 +477,7 @@ object Messages : IntIdTable() {
      * [messagesNotifier]. Nothing will happen if the [userId] doesn't exist.
      */
     fun deleteUserMessages(userId: Int): Unit = transaction {
-        select(senderId eq userId).distinctBy { chatId }.map { it[chatId] }
+        select(senderId eq userId).withDistinct().map { it[chatId] }
     }.forEach { deleteUserChatMessages(it, userId) }
 
     /**
