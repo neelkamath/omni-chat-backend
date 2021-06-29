@@ -9,9 +9,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDateTime
 
 /** Neither usernames nor email addresses may be used more than once. Pics cannot exceed [Pic.ORIGINAL_MAX_BYTES]. */
 object Users : IntIdTable() {
@@ -30,7 +28,6 @@ object Users : IntIdTable() {
     private val firstName: Column<String> = varchar("first_name", MAX_NAME_LENGTH)
     private val lastName: Column<String> = varchar("last_name", MAX_NAME_LENGTH)
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
-    private val lastOnline: Column<LocalDateTime?> = datetime("last_online").nullable()
     private val bio: Column<String> = varchar("bio", Bio.MAX_LENGTH)
     private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
 
@@ -80,8 +77,6 @@ object Users : IntIdTable() {
 
     fun isOnline(userId: Int): Boolean = transaction { select(Users.id eq userId).first()[isOnline] }
 
-    fun readLastOnline(userId: Int): LocalDateTime? = transaction { select(Users.id eq userId).first()[lastOnline] }
-
     /**
      * Subscribers get notified via [onlineStatusesNotifier] and [chatOnlineStatusesNotifier] unless the [userId]'s
      * status was already [isOnline].
@@ -91,7 +86,6 @@ object Users : IntIdTable() {
         if (status == isOnline) return@transaction
         update({ Users.id eq userId }) {
             it[Users.isOnline] = isOnline
-            it[lastOnline] = LocalDateTime.now()
         }
         val update = OnlineStatus(userId)
         val subscribers = Contacts.readOwnerUserIdList(userId).plus(readChatSharers(userId)).map(::UserId)

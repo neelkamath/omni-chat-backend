@@ -24,7 +24,6 @@ CREATE TABLE users
     first_name                      VARCHAR(30)   NOT NULL,
     last_name                       VARCHAR(30)   NOT NULL,
     is_online                       BOOLEAN       NOT NULL,
-    last_online                     TIMESTAMP,
     bio                             VARCHAR(2500) NOT NULL,
     pic_id                          INTEGER REFERENCES pics (id)
 );

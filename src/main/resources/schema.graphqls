@@ -781,8 +781,6 @@ type TriggeredAction {
 type OnlineStatus {
     userId: Int!
     isOnline: Boolean!
-    """`null` if the `userId` has never set an online status."""
-    lastOnline: DateTime
 }
 
 """Whether the `userId` `isTyping` in the `chatId`."""

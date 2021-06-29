@@ -10,6 +10,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
+- Remove the `lastOnline` field from `type OnlineStatus`.
 - Remove the `state` and `statuses` fields from the following:
     - `interface Message`
     - `type TextMessage`
