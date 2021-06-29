@@ -26,6 +26,24 @@ import kotlin.test.assertTrue
 @ExtendWith(DbExtension::class)
 class QueriesTest {
     @Nested
+    inner class ReadAllowedEmailAddressDomains {
+        private fun executeReadAllowedEmailAddressDomains(): List<String> {
+            val data = executeGraphQlViaEngine(
+                """
+                query ReadAllowedEmailAddressDomains {
+                    readAllowedEmailAddressDomains
+                }
+                """,
+            ).data!!["readAllowedEmailAddressDomains"] as List<*>
+            return data.map { it as String }
+        }
+
+        @Test
+        fun `The allowed email address domains must be retrieved`() =
+            assertEquals(listOf("example.com", "icloud.com", "gmail.com"), executeReadAllowedEmailAddressDomains())
+    }
+
+    @Nested
     inner class ReadOnlineStatus {
         private fun executeReadOnlineStatus(userId: Int): String {
             val data = executeGraphQlViaEngine(
@@ -159,9 +177,7 @@ class QueriesTest {
 
     @Nested
     inner class ReadAccount {
-        @Test
-        fun `The specified user's account must be read`() {
-            val userId = createVerifiedUsers(1).first().userId
+        private fun executeReadAccount(userId: Int): String {
             val data = executeGraphQlViaEngine(
                 """
                 query ReadAccount(${"$"}userId: Int!) {
@@ -172,8 +188,18 @@ class QueriesTest {
                 """,
                 mapOf("userId" to userId),
             ).data!!["readAccount"] as Map<*, *>
-            assertEquals("Account", data["__typename"])
+            return data["__typename"] as String
         }
+
+        @Test
+        fun `The specified user's account must be read`() {
+            val userId = createVerifiedUsers(1).first().userId
+            assertEquals("Account", executeReadAccount(userId))
+        }
+
+        @Test
+        fun `Attempting to read a nonexisting user's details must fail`(): Unit =
+            assertEquals("InvalidUserId", executeReadAccount(-1))
     }
 
     private data class ReadChatResult(val __typename: String, val messages: Messages?) {

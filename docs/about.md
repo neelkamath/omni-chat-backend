@@ -53,10 +53,19 @@ Here are Omni Chat's features:
 - Users have automatic online statuses so that they needn’t manually set it throughout the day to a potentially incorrect status such as “at the gym”.
 - Private chats for conversations between two users.
 - Users can see who’s presently typing a message in the chat.
-- Users can see if another user is online, or when they were last online.
+- Users can see if another user is online but not when they were last online. We don't display when a user was last online for the following reasons:
+    - It can be a privacy concern.
+    - The status is incorrect at times because people may accidentally open the app for the following reasons:
+        - They open the app because they mistook it for another one (e.g., mistaking WhatsApp for the phone app).
+        - They opened the wrong app because they were in a hurry, and tapped an app icon next to the app they actually wanted to.
+        - They happened to have the app open when they unlocked their phone because they hadn't closed it before they last unlocked it. So, it looks like they were recently online but actually they just immediately went to another app.
+        - They opened it for a fraction of a second while finding a recent app (e.g., when a person swipes left or right along the bottom edge of the screen to quickly switch between open apps on an iPhone XR).
 - Chat messages can be searched.
 - When a private chat gets deleted by a user, the messages sent until then are no longer visible to them, and the chat is no longer retrieved when requesting their chats. However, the user they were chatting with still has the chat in the same state it was in before the user deleted it. If the other user sends a message to the user, it shows up as the first message in the user's chat.
-- Every message has the date and time it was sent, delivered, and read by each user.
+- Every message has the date and time it was sent but not when it was delivered or read by other users. We don't have read receipts for the following reasons:
+    - If someone needs to know if you saw their message, you should reply with a message like "OK". Otherwise, they'll keep wondering in the back of their minds whether you saw it, and then eventually check the chat (potentially multiple times) for a read receipt.
+    - Many times, people need time to reply either because they need to collect their thoughts or they were requested for some data which they'll get soon. Since some people get offended when they see that their question has been read without a reply, people tend to switch off the read receipts feature. However, switching off the read receipts feature just exacerbates the problem because the other person thinks that the user checks and ignores messages regularly.
+    - If you need to figure out how long it usually takes a person to reply, the time the message was sent is a more practical means of doing so.
 - Messages can be deleted.
 - Messages can be starred (this is similar to bookmarking a webpage).
 - Messages are formatted using GitHub Flavored Markdown. This allows the average user to easily bolden or italicize words, and technical users to format code snippets, etc. For example, writing "`**Announcement**: College is closed tomorrow`" gets displayed as "**Announcement**: College is closed tomorrow”.

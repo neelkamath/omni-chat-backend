@@ -38,7 +38,11 @@ fun createAccount(env: DataFetchingEnvironment): CreateAccountResult? {
     val account = env.parseArgument<AccountInput>("account")
     if (Users.isUsernameTaken(account.username)) return UsernameTaken
     if (Users.isEmailAddressTaken(account.emailAddress)) return EmailAddressTaken
-    if (!hasAllowedDomain(account.emailAddress)) return InvalidDomain
+    if (allowedEmailAddressDomains.isNotEmpty()
+        && account.emailAddress.substringAfter("@") !in allowedEmailAddressDomains
+    ) {
+        return InvalidDomain
+    }
     Users.create(account)
     emailEmailAddressVerification(account.emailAddress)
     return null
@@ -54,19 +58,6 @@ fun createContact(env: DataFetchingEnvironment): Boolean {
     env.verifyAuth()
     val userId = env.getArgument<Int>("id")
     return if (Users.isExisting(userId)) Contacts.create(env.userId!!, userId) else false
-}
-
-fun createStatus(env: DataFetchingEnvironment): InvalidMessageId? {
-    env.verifyAuth()
-    val messageId = env.getArgument<Int>("messageId")
-    val status = env.getArgument<String>("status").let(MessageStatus::valueOf)
-    if (MessageStatuses.isExisting(messageId, env.userId!!, status)) return null
-    try {
-        MessageStatuses.create(env.userId!!, messageId, status)
-    } catch (_: IllegalArgumentException) {
-        return InvalidMessageId
-    }
-    return null
 }
 
 fun unstar(env: DataFetchingEnvironment): Placeholder {

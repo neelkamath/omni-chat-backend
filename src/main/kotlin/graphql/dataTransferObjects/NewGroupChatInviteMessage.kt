@@ -1,12 +1,12 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
+import com.neelkamath.omniChatBackend.db.tables.GroupChatInviteMessages
 import com.neelkamath.omniChatBackend.db.tables.GroupChats
-import com.neelkamath.omniChatBackend.db.tables.Messages
 import java.util.*
 
 class NewGroupChatInviteMessage(override val id: Int) : MessagesSubscription, NewMessage, ChatMessagesSubscription {
     fun getInviteCode(): UUID? {
-        val chatId = Messages.readChatId(id)
+        val chatId = GroupChatInviteMessages.read(id)
         return GroupChats.readInviteCode(chatId)
     }
 }

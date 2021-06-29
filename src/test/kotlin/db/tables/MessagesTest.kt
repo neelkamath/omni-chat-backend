@@ -5,7 +5,10 @@ import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedMessage
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.NewTextMessage
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UserChatMessagesRemoval
-import com.neelkamath.omniChatBackend.graphql.routing.*
+import com.neelkamath.omniChatBackend.graphql.routing.ActionMessageInput
+import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
+import com.neelkamath.omniChatBackend.graphql.routing.MessageText
+import com.neelkamath.omniChatBackend.graphql.routing.PollInput
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
@@ -422,66 +425,6 @@ class MessagesTest {
     }
 
     @Nested
-    inner class ReadState {
-        private fun testPrivateChat(state: MessageState) {
-            val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
-            val chatId = PrivateChats.create(user1Id, user2Id)
-            val messageId = Messages.message(user1Id, chatId)
-            if (state == MessageState.DELIVERED) MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
-            if (state == MessageState.READ) MessageStatuses.create(user2Id, messageId, MessageStatus.READ)
-            assertEquals(state, Messages.readState(messageId))
-        }
-
-        @Test
-        fun `A message not delivered to every user in a private chat must have a 'SENT' status`(): Unit =
-            testPrivateChat(MessageState.SENT)
-
-        @Test
-        fun `A message not read by every user in a private chat must have a 'DELIVERED' status`(): Unit =
-            testPrivateChat(MessageState.DELIVERED)
-
-        @Test
-        fun `A message read by every user in a private chat must have a 'READ' status`(): Unit =
-            testPrivateChat(MessageState.READ)
-
-        private fun testGroupChat(state: MessageState) {
-            val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
-            val chatId = GroupChats.create(setOf(adminId), setOf(user1Id, user2Id))
-            val messageId = Messages.message(adminId, chatId)
-            when (state) {
-                MessageState.SENT -> MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
-                MessageState.DELIVERED -> {
-                    MessageStatuses.create(user1Id, messageId, MessageStatus.READ)
-                    MessageStatuses.create(user2Id, messageId, MessageStatus.DELIVERED)
-                }
-                MessageState.READ ->
-                    setOf(user1Id, user2Id).forEach { MessageStatuses.create(it, messageId, MessageStatus.READ) }
-            }
-            assertEquals(state, Messages.readState(messageId))
-        }
-
-        @Test
-        fun `A message not delivered to every user in a group chat must have a 'SENT' status`(): Unit =
-            testGroupChat(MessageState.SENT)
-
-        @Test
-        fun `A message not read by every user in a group chat must have a 'DELIVERED' status`(): Unit =
-            testGroupChat(MessageState.DELIVERED)
-
-        @Test
-        fun `A message read by every user in a group chat must have a 'READ' status`(): Unit =
-            testGroupChat(MessageState.READ)
-
-        @Test
-        fun `A message in a group chat with a single participant must have a 'READ' status`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId))
-            val messageId = Messages.message(adminId, chatId)
-            assertEquals(MessageState.READ, Messages.readState(messageId))
-        }
-    }
-
-    @Nested
     inner class DeleteChatMessages {
         @Test
         fun `Deleting a chat containing message contexts must be deleted successfully`() {
@@ -553,13 +496,11 @@ class MessagesTest {
         fun `Subscribers must be notified when every message the user sent is deleted`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) = (1..2).map {
-                val chatId = GroupChats.create(setOf(adminId), setOf(userId))
-                Messages.message(userId, chatId)
-                chatId
+                GroupChats.create(setOf(adminId), setOf(userId)).also { Messages.message(userId, it) }
             }
             awaitBrokering()
             val (chat1Subscriber, chat2Subscriber) =
-                (1..2).map { messagesNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber()) }
+                (1..2).map { messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber()) }
             Messages.deleteUserMessages(userId)
             awaitBrokering()
             setOf(chat1Subscriber, chat2Subscriber).forEach { subscriber ->

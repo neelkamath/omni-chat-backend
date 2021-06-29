@@ -125,14 +125,14 @@ fun readChatSharers(userId: Int): Set<Int> =
  * ## Group Chats
  *
  * - The [userId] will be removed from [GroupChats] they're in.
- * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers],
- *   [Messages], and [MessageStatuses].
+ * - If they're the last user in the group chat, the chat will be deleted from [GroupChats], [GroupChatUsers], and
+ *   [Messages].
  * - Clients will be [Notifier.unsubscribe]d via [chatsNotifier].
  *
  * ## Messages
  *
  * - Clients who have [Notifier.subscribe]d to [messagesNotifier]s will be notified of the [UserChatMessagesRemoval].
- * - Deletes all [Messages] and [MessageStatuses] the [userId] has sent.
+ * - Deletes all [Messages] the [userId] has sent.
  * - Clients will be [Notifier.unsubscribe]d via [messagesNotifier].
  *
  * ## Typing Statuses

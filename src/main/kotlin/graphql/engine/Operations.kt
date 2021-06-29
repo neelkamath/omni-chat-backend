@@ -29,6 +29,7 @@ private fun wireQuery(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Bui
     .dataFetcher("readBlockedUsers", ::readBlockedUsers)
     .dataFetcher("readGroupChat", ::readGroupChat)
     .dataFetcher("searchPublicChats", ::searchPublicChats)
+    .dataFetcher("readAllowedEmailAddressDomains", ::readAllowedEmailAddressDomains)
 
 private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.Builder = builder
     .dataFetcher("deleteAccount", ::deleteAccount)
@@ -58,7 +59,6 @@ private fun wireMutation(builder: TypeRuntimeWiring.Builder): TypeRuntimeWiring.
     .dataFetcher("createActionMessage", ::createActionMessage)
     .dataFetcher("triggerAction", ::triggerAction)
     .dataFetcher("emailPasswordResetCode", ::emailPasswordResetCode)
-    .dataFetcher("createStatus", ::createStatus)
     .dataFetcher("unstar", ::unstar)
     .dataFetcher("createGroupChat", ::createGroupChat)
     .dataFetcher("setTyping", ::setTyping)

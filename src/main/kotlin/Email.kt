@@ -1,15 +1,22 @@
 package com.neelkamath.omniChatBackend
 
 import com.neelkamath.omniChatBackend.db.tables.Users
+import java.lang.System.getenv
 import java.util.*
 import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 
+/**
+ * The email address domains (e.g., `"example.com"`) which are allowed by this Omni Chat instance. The list will be
+ * empty if there are no restrictions.
+ */
+val allowedEmailAddressDomains: List<String> = getenv("ALLOWED_EMAIL_DOMAINS").split(",")
+
 private val session: Session = run {
     val properties = Properties()
-    properties["mail.smtp.host"] = System.getenv("SMTP_HOST")
-    properties["mail.smtp.port"] = System.getenv("SMTP_TLS_PORT")
+    properties["mail.smtp.host"] = getenv("SMTP_HOST")
+    properties["mail.smtp.port"] = getenv("SMTP_TLS_PORT")
     properties["mail.smtp.starttls.enable"] = true
     properties["mail.smtp.auth"] = true
     Session.getInstance(properties, EmailAuthenticator)
@@ -17,7 +24,7 @@ private val session: Session = run {
 
 private object EmailAuthenticator : Authenticator() {
     override fun getPasswordAuthentication(): PasswordAuthentication =
-        PasswordAuthentication(System.getenv("SMTP_USERNAME"), System.getenv("SMTP_PASSWORD"))
+        PasswordAuthentication(getenv("SMTP_USERNAME"), getenv("SMTP_PASSWORD"))
 }
 
 /**
@@ -38,7 +45,7 @@ fun emailEmailAddressVerification(emailAddress: String) {
 }
 
 private fun emailEmailAddressVerification(emailAddress: String, code: Int) {
-    val name = System.getenv("APP_NAME")
+    val name = getenv("APP_NAME")
     email(
         emailAddress,
         subject = "Verify your $name account's email address",
@@ -48,7 +55,7 @@ private fun emailEmailAddressVerification(emailAddress: String, code: Int) {
 
 fun emailResetPassword(emailAddress: String) {
     val code = Users.readPasswordResetCode(emailAddress)
-    val name = System.getenv("APP_NAME")
+    val name = getenv("APP_NAME")
     email(
         emailAddress,
         subject = "Reset your $name account's password",
@@ -59,16 +66,9 @@ fun emailResetPassword(emailAddress: String) {
 /** Sends an email [to] the specified address having the [subject] and [body]. */
 private fun email(to: String, subject: String, body: String) {
     val message = MimeMessage(session)
-    message.setFrom(InternetAddress(System.getenv("SMTP_FROM")))
+    message.setFrom(InternetAddress(getenv("SMTP_FROM")))
     message.setRecipients(Message.RecipientType.TO, to)
     message.subject = subject
     message.setText(body)
     Transport.send(message)
-}
-
-/** Whether the [emailAddress]'s domain (e.g., `"example.com"`) is allowed by this Omni Chat instance. */
-fun hasAllowedDomain(emailAddress: String): Boolean {
-    val domains = System.getenv("ALLOWED_EMAIL_DOMAINS")
-    if (domains.isEmpty()) return true
-    return emailAddress.substringAfter("@") in domains.split(",")
 }

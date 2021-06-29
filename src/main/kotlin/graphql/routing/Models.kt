@@ -176,7 +176,3 @@ data class GraphQlResponse(val data: Map<String, Any?>? = null, val errors: List
 data class GraphQlResponseError(val message: String)
 
 enum class GroupChatPublicity { NOT_INVITABLE, INVITABLE, PUBLIC }
-
-enum class MessageState { SENT, DELIVERED, READ }
-
-enum class MessageStatus { DELIVERED, READ }

@@ -1,10 +1,10 @@
 plugins {
     application
-    kotlin("jvm") version "1.5.10"
+    kotlin("jvm") version "1.5.20"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-version = "0.21.0"
+version = "0.22.0"
 application.mainClass.set("io.ktor.server.netty.EngineMain")
 
 repositories { mavenCentral() }

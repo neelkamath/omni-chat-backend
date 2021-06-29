@@ -148,11 +148,10 @@ class GroupChatsTest {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
-            MessageStatuses.create(userId, messageId, MessageStatus.READ)
             TypingStatuses.update(chatId, adminId, isTyping = true)
             Stargazers.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
-            listOf(Chats, GroupChats, GroupChatUsers, Messages, MessageStatuses, Stargazers, TypingStatuses)
+            listOf(Chats, GroupChats, GroupChatUsers, Messages, Stargazers, TypingStatuses)
                 .forEach { assertEquals(0, it.count()) }
         }
     }

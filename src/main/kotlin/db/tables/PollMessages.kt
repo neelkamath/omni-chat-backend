@@ -1,7 +1,6 @@
 package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.*
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedPollMessage
 import com.neelkamath.omniChatBackend.graphql.routing.MessageText
 import com.neelkamath.omniChatBackend.graphql.routing.PollInput
@@ -39,14 +38,14 @@ object PollMessages : Table() {
      * Sets the [userId]'s vote on the [messageId]'s [option]. If [vote], a vote will be added if the [userId] hasn't
      * already added one. Otherwise, the [userId]'s vote will be removed if it exists.
      *
-     * Subscribers will be notified via [messagesNotifier] of the [UpdatedMessage]. If the [messageId] belongs to a
+     * Subscribers will be notified via [messagesNotifier] of the [UpdatedPollMessage]. If the [messageId] belongs to a
      * public group chat, then subscribers will also be notified via [chatMessagesNotifier].
      */
     fun setVote(userId: Int, messageId: Int, option: MessageText, vote: Boolean) {
         val optionId = PollMessageOptions.readOptionId(messageId, option)
         if (vote) PollMessageVotes.create(userId, optionId) else PollMessageVotes.deleteVote(userId, optionId)
         val chatId = Messages.readChatId(messageId)
-        val update = UpdatedPollMessage(userId, messageId, option, vote)
+        val update = UpdatedPollMessage(messageId)
         messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
         if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
     }
