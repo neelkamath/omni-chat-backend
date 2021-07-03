@@ -59,7 +59,11 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create v$VERSION rest-api.html -t v$VERSION $([[ $VERSION = 0* ]] && echo '-p')
+        run: |
+          gh release create v$VERSION rest-api.html \
+            -t v$VERSION \
+            -n "[Changelog](https://github.com/neelkamath/omni-chat-backend/blob/v$VERSION/docs/CHANGELOG.md)" \
+            $([[ $VERSION = 0* ]] && echo '-p')
   docker-hub-push:
     if: github.ref == 'refs/heads/master'
     needs: [ validate-example-docker-compose, lint-openapi-spec, test-server ]
