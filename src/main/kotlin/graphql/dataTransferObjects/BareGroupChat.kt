@@ -17,6 +17,8 @@ sealed interface BareGroupChat {
     /** The [Chats.id]. */
     val id: Int
 
+    fun getChatId(): Int = id
+
     fun getTitle(): GroupChatTitle = GroupChats.readTitle(id)
 
     fun getDescription(): GroupChatDescription = GroupChats.readDescription(id)

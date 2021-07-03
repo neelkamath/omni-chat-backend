@@ -1034,6 +1034,7 @@ type PageInfo {
 }
 
 interface BareGroupChat {
+    chatId: Int!
     title: GroupChatTitle!
     description: GroupChatDescription!
     """The ID of the `users` who are the admins. There will be at least one admin."""
@@ -1044,6 +1045,7 @@ interface BareGroupChat {
 }
 
 type GroupChatInfo implements BareGroupChat {
+    chatId: Int!
     title: GroupChatTitle!
     description: GroupChatDescription!
     adminIdList: [Int!]!
