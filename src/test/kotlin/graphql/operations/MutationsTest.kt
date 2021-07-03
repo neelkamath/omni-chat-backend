@@ -630,15 +630,15 @@ class MutationsTest {
         private fun executeBookmark(userId: Int, messageId: Int): String? {
             val data = executeGraphQlViaEngine(
                 """
-                mutation Bookmark(${"$"}messageId: Int!) {
-                    bookmark(messageId: ${"$"}messageId) {
+                mutation CreateBookmark(${"$"}messageId: Int!) {
+                    createBookmark(messageId: ${"$"}messageId) {
                         __typename
                     }
                 }
                 """,
                 mapOf("messageId" to messageId),
                 userId,
-            ).data!!["bookmark"] as Map<*, *>?
+            ).data!!["createBookmark"] as Map<*, *>?
             return data?.get("__typename") as String?
         }
 
