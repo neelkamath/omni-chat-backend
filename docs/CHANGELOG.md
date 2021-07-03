@@ -37,6 +37,13 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Rename `type StarredGroupChatInviteMessage` to `type BookmarkedGroupChatInviteMessage`.
 - Rename `type StarredDocMessage` to `type BookmarkedDocMessage`.
 - Rename `type StarredVideoMessage` to `type BookmarkedVideoMessage`.
+- Change the size for media uploads and downloads from 5 MiB to 3 MiB for the following:
+    - `/profile-pic`
+    - `/group-chat-pic`
+    - `/pic-message`
+    - `/audio-message`
+    - `/video-message`
+    - `/doc-message`
 
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 

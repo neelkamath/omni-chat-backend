@@ -165,7 +165,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /profile-pic:
-    description: A user's profile pic which doesn't exceed 5 MiB.
+    description: A user's profile pic which doesn't exceed 3 MiB.
     get:
       tags: [ profilePic ]
       description: Get the user's profile pic.
@@ -274,28 +274,28 @@ components:
           schema:
             $ref: '#/components/schemas/InvalidPicMessage'
     Audio:
-      description: An MP3/MP4 video not exceeding 5 MiB.
+      description: An MP3/MP4 video not exceeding 3 MiB.
       content:
         audio/mp3, audio/mp4:
           schema:
             type: string
             format: binary
     Video:
-      description: An MP4 video not exceeding 5 MiB.
+      description: An MP4 video not exceeding 3 MiB.
       content:
         video/mp4:
           schema:
             type: string
             format: binary
     Doc:
-      description: A document not exceeding 5 MiB.
+      description: A document not exceeding 3 MiB.
       content:
         '*/*':
           schema:
             type: string
             format: binary
     Pic:
-      description: A PNG or JPEG image not exceeding 5 MiB.
+      description: A PNG or JPEG image not exceeding 3 MiB.
       content:
         image/png, image/jpeg:
           schema:
@@ -309,7 +309,7 @@ components:
             type: string
             format: binary
     InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 5 MiB.
+      description: Pic wasn't a PNG or JPEG not exceeding 3 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
@@ -321,7 +321,7 @@ components:
             required: [ audio ]
             properties:
               audio:
-                description: An MP3/MP4 audio not exceeding 5 MiB.
+                description: An MP3/MP4 audio not exceeding 3 MiB.
                 type: string
                 format: binary
           encoding:
@@ -335,7 +335,7 @@ components:
             required: [ video ]
             properties:
               video:
-                description: An MP4 video not exceeding 5 MiB.
+                description: An MP4 video not exceeding 3 MiB.
                 type: string
                 format: binary
           encoding:
@@ -349,7 +349,7 @@ components:
             required: [ doc ]
             properties:
               doc:
-                description: A document not exceeding 5 MiB.
+                description: A document not exceeding 3 MiB.
                 type: string
                 format: binary
     CaptionedPic:
@@ -360,7 +360,7 @@ components:
             required: [ pic, chat-id ]
             properties:
               pic:
-                description: A PNG or JPEG image not exceeding 5 MiB.
+                description: A PNG or JPEG image not exceeding 3 MiB.
                 type: string
                 format: binary
               chat-id:
@@ -384,7 +384,7 @@ components:
             required: [ pic ]
             properties:
               pic:
-                description: A PNG or JPEG image not exceeding 5 MiB.
+                description: A PNG or JPEG image not exceeding 3 MiB.
                 type: string
                 format: binary
           encoding:

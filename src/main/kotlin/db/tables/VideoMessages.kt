@@ -32,7 +32,7 @@ data class Mp4(
     }
 
     companion object {
-        const val MAX_BYTES = 5 * 1024 * 1024
+        const val MAX_BYTES = 3 * 1024 * 1024
     }
 }
 

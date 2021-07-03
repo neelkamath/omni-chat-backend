@@ -12,8 +12,8 @@ data class Doc(val bytes: ByteArray) {
     }
 
     companion object {
-        /** Docs cannot exceed 5 MiB. */
-        const val MAX_BYTES = 5 * 1024 * 1024
+        /** Docs cannot exceed 3 MiB. */
+        const val MAX_BYTES = 3 * 1024 * 1024
     }
 
     @Generated

@@ -188,7 +188,7 @@ class PicMessageTest {
 
         @Test
         fun `Attempting to create a message with an invalid file size must fail`(): Unit =
-            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "5.6MB.jpg")
+            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "3.9MB.jpg")
 
         @Test
         fun `Attempting to create a message with an invalid caption must fail`(): Unit =
