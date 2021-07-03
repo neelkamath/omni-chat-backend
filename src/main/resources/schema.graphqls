@@ -489,10 +489,10 @@ type Mutation {
     to give their message a context, such as when replying to a message sent several messages ago. In this case, the
     `contextMessageId` is to be the ID of the message being replied to.
 
-    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    `chatId`, the user isn't in the `invitedChatId`, or the `chatId` is the same as the `invitedChatId`. An
-    `InvalidInvitedChat` will be returned if the `invitedChatId` isn't a group chat, the chat has turned off
-    invitations. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the user isn't in
+    the `chatId` or the user isn't in the `invitedChatId`. An `InvalidInvitedChat` will be returned if the
+    `invitedChatId` isn't a group chat, the chat has turned off invitations. An `InvalidMessageId` will be returned if
+    the `contextMessageId` doesn't exist.
 
     Users aren't allowed to create invite messages for chats they aren't in because there's no use case for it, and
     hackers could brute force joining many invitable chats in this manner. Users can, however, forward group chat
@@ -530,9 +530,7 @@ type Mutation {
     replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    `chatId`, the `messageId` is from the `chatId` (messages can't be forwarded in their own chats), or the `messageId`
-    is a group chat invite for the `chatId`. An `InvalidMessageId` will be returned if the `messageId` or
-    `contextMessageId` doesn't exist.
+    `chatId`. An `InvalidMessageId` will be returned if the `messageId` or `contextMessageId` doesn't exist.
 
     An access token must be sent with this request.
     """

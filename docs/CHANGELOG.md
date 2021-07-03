@@ -44,6 +44,9 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
     - `/audio-message`
     - `/video-message`
     - `/doc-message`
+- Allow creating an invitation for the chat itself using `Mutation.createGroupChatInviteMessage` instead of returning a `type InvalidChatId`.
+- Allow forwarding a message in the chat it's from using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
+- Allow forwarding a group chat invite in the chat it's for using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
 
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 

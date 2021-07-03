@@ -2,7 +2,6 @@ package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.MessageType
 import com.neelkamath.omniChatBackend.db.deleteUser
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.tables.*
@@ -111,10 +110,7 @@ fun forwardMessage(env: DataFetchingEnvironment): ForwardMessageResult? {
     val chatId = env.getArgument<Int>("chatId")
     val messageId = env.getArgument<Int>("messageId")
     if (!Messages.isVisible(env.userId!!, messageId)) return InvalidMessageId
-    val isInvalidInvite = Messages.readType(messageId) == MessageType.GROUP_CHAT_INVITE &&
-            chatId == GroupChatInviteMessages.read(messageId)
-    if (isInvalidInvite || !isUserInChat(env.userId!!, chatId) || Messages.readChatId(messageId) == chatId)
-        return InvalidChatId
+    if (!isUserInChat(env.userId!!, chatId)) return InvalidChatId
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return MustBeAdmin
     val contextMessageId = env.getArgument<Int?>("contextMessageId")
     if (!Messages.isValidContext(env.userId!!, chatId, contextMessageId)) return InvalidMessageId
@@ -345,8 +341,7 @@ fun createGroupChatInviteMessage(env: DataFetchingEnvironment): CreateGroupChatI
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     val invitedChatId = env.getArgument<Int>("invitedChatId")
-    if (!isUserInChat(env.userId!!, chatId) || !isUserInChat(env.userId!!, invitedChatId) || chatId == invitedChatId)
-        return InvalidChatId
+    if (!isUserInChat(env.userId!!, chatId) || !isUserInChat(env.userId!!, invitedChatId)) return InvalidChatId
     if (Messages.isInvalidBroadcast(env.userId!!, chatId)) return MustBeAdmin
     if (!GroupChats.isInvitable(invitedChatId)) return InvalidInvitedChat
     val contextMessageId = env.getArgument<Int?>("contextMessageId")

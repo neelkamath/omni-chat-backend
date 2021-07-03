@@ -491,15 +491,6 @@ class MutationsTest {
         }
 
         @Test
-        fun `Attempting to forward a group chat invite to the chat being invited to must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val (chat1Id, chat2Id) =
-                (1..2).map { GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
-            val messageId = Messages.message(adminId, chat1Id, invitedChatId = chat2Id)
-            assertEquals("InvalidChatId", executeForwardMessage(adminId, chat2Id, messageId))
-        }
-
-        @Test
         fun `Only admins must be allowed to forward messages to broadcast chats`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) =
@@ -575,14 +566,6 @@ class MutationsTest {
             PrivateChatDeletions.create(privateChatId, user1Id)
             val messageId = Messages.message(user1Id, privateChatId)
             assertEquals("InvalidMessageId", executeForwardMessage(user1Id, groupChatId, messageId, contextMessageId))
-        }
-
-        @Test
-        fun `Attempting to forward a message in the chat it's from must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId))
-            val messageId = Messages.message(adminId, chatId)
-            assertEquals("InvalidChatId", executeForwardMessage(adminId, chatId, messageId))
         }
     }
 
@@ -1677,13 +1660,6 @@ class MutationsTest {
                 userId,
             ).data!!["createGroupChatInviteMessage"] as Map<*, *>?
             return data?.get("__typename") as String?
-        }
-
-        @Test
-        fun `Attempting to create an invite message for the chat in the chat itself must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
-            assertEquals("InvalidChatId", executeCreateGroupChatInviteMessage(adminId, chatId, invitedChatId = chatId))
         }
 
         @Test
