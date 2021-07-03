@@ -529,7 +529,7 @@ type Mutation {
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     `chatId`, the `messageId` is from the `chatId` (messages can't be forwarded in their own chats), or the `messageId`
     is a group chat invite for the `chatId`. An `InvalidMessageId` will be returned if the `messageId` or
-    `contextMessageId` don't exist.
+    `contextMessageId` doesn't exist.
 
     An access token must be sent with this request.
     """
