@@ -14,18 +14,18 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 @ExtendWith(DbExtension::class)
-class StarredMessagesConnectionTest {
-    private data class ReadStarsResponse(val pageInfo: PageInfo) {
+class BookmarkedMessagesConnectionTest {
+    private data class ReadBookmarksResponse(val pageInfo: PageInfo) {
         data class PageInfo(val startCursor: Cursor?, val endCursor: Cursor?)
     }
 
     @Nested
     inner class GetPageInfo {
-        private fun getPageInfo(userId: Int): ReadStarsResponse.PageInfo {
+        private fun getPageInfo(userId: Int): ReadBookmarksResponse.PageInfo {
             val data = executeGraphQlViaEngine(
                 """
-                query ReadStars {
-                    readStars {
+                query ReadBookmarks {
+                    readBookmarks {
                         pageInfo {
                             startCursor
                             endCursor
@@ -34,8 +34,8 @@ class StarredMessagesConnectionTest {
                 }
                 """,
                 userId = userId,
-            ).data!!["readStars"] as Map<*, *>
-            return testingObjectMapper.convertValue<ReadStarsResponse>(data).pageInfo
+            ).data!!["readBookmarks"] as Map<*, *>
+            return testingObjectMapper.convertValue<ReadBookmarksResponse>(data).pageInfo
         }
 
         @Test
@@ -51,7 +51,7 @@ class StarredMessagesConnectionTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
+            Bookmarks.create(adminId, messageId)
             val (startCursor, endCursor) = getPageInfo(adminId)
             assertEquals(messageId, startCursor)
             assertEquals(messageId, endCursor)
@@ -62,7 +62,7 @@ class StarredMessagesConnectionTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map {
-                Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
+                Messages.message(adminId, chatId).also { Bookmarks.create(adminId, it) }
             }
             val (startCursor, endCursor) = getPageInfo(adminId)
             assertEquals(messageIdList[0], startCursor)

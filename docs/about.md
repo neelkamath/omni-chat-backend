@@ -67,7 +67,7 @@ Here are Omni Chat's features:
     - Many times, people need time to reply either because they need to collect their thoughts or they were requested for some data which they'll get soon. Since some people get offended when they see that their question has been read without a reply, people tend to switch off the read receipts feature. However, switching off the read receipts feature just exacerbates the problem because the other person thinks that the user checks and ignores messages regularly.
     - If you need to figure out how long it usually takes a person to reply, the time the message was sent is a more practical means of doing so.
 - Messages can be deleted.
-- Messages can be starred (this is similar to bookmarking a webpage).
+- Messages can be bookmarked.
 - Messages are formatted using GitHub Flavored Markdown. This allows the average user to easily bolden or italicize words, and technical users to format code snippets, etc. For example, writing "`**Announcement**: College is closed tomorrow`" gets displayed as "**Announcement**: College is closed tomorrow”.
 - Messages can be replied to in order to prevent context loss.
 - Users can be blocked and unblocked without them knowing.

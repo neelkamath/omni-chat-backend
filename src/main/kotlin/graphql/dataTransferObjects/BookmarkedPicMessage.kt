@@ -6,7 +6,7 @@ import com.neelkamath.omniChatBackend.db.tables.Messages
 import com.neelkamath.omniChatBackend.db.tables.PicMessages
 import com.neelkamath.omniChatBackend.graphql.routing.MessageText
 
-class StarredPicMessage(override val id: Int) : StarredMessage {
+class BookmarkedPicMessage(override val id: Int) : BookmarkedMessage {
     override val chatId: Lazy<Int> = lazy { Messages.readChatId(id) }
 
     fun getCaption(): MessageText? = PicMessages.readCaption(id)

@@ -57,7 +57,8 @@ type Query {
     returned.
 
     An access token must be sent with this request if the `messageId` isn't from a public chat. Sending an access token
-    for a public chat will return the message as viewed by the user (e.g., the message may be stated as being starred).
+    for a public chat will return the message as viewed by the user (e.g., the message may be stated as being
+    bookmarked).
     """
     readMessage(messageId: Int!): ReadMessageResult!
 
@@ -68,11 +69,11 @@ type Query {
     readAllowedEmailAddressDomains: [String!]!
 
     """
-    Returns the user's starred messages.
+    Returns the user's bookmarked messages.
 
     An access token must be sent with this request.
     """
-    readStars(first: Int, after: Cursor): StarredMessagesConnection!
+    readBookmarks(first: Int, after: Cursor): BookmarkedMessagesConnection!
 
     """
     Returns users blocked by this user.
@@ -101,7 +102,7 @@ type Query {
     A returned `InvalidChatId` indicates that the chat isn't public, and the user isn't in the chat.
 
     An access token must be sent with this request if the `chatId` isn't a public chat. Sending an access token for a
-    public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
+    public chat will return the chat as viewed by the user (e.g., messages they bookmarked will be stated as such).
     """
     searchChatMessages(chatId: Int!, query: String!, last: Int, before: Cursor): SearchChatMessagesResult!
 
@@ -129,7 +130,8 @@ type Query {
     An `InvalidChatId` will be returned if the user isn't in the chat, and the chat isn't public.
 
     An access token must be sent with this request if the chat being read isn't a public chat. Sending an access token
-    for a public chat will return the chat as viewed by the user (e.g., messages they starred will be stated as such).
+    for a public chat will return the chat as viewed by the user (e.g., messages they bookmarked will be stated as
+    such).
     """
     readChat(id: Int!): ReadChatResult!
 
@@ -155,7 +157,7 @@ type Query {
     Searches chats by case-insensitively `query`ing their titles.
 
     If an access token is sent with this request, the chats will be returned as viewed by the user (e.g., messages they
-    starred will be stated as such).
+    bookmarked will be stated as such).
     """
     searchPublicChats(query: String!, first: Int, after: Cursor): GroupChatsConnection!
 
@@ -251,20 +253,21 @@ type Mutation {
     resetPassword(emailAddress: String!, passwordResetCode: Int!, newPassword: Password!): ResetPasswordResult
 
     """
-    Stars the `messageId`. The user can star their own messages. Starring an already starred message will do nothing.
-    `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if the message doesn't
-    exist.
+    Bookmarks the `messageId`. The user can bookmark their own messages. Bookmaking an already bookmarked message will
+    do nothing. `null` will be returned if the operation succeeded. An `InvalidMessageId` will be returned if the
+    message doesn't exist.
 
     An access token must be sent with this request.
     """
-    star(messageId: Int!): InvalidMessageId
+    createBookmark(messageId: Int!): InvalidMessageId
 
     """
-    Unstars the `messageId`. Does nothing if either the message doesn't exist or the message wasn't starred.
+    Deletes the bookmark for the `messageId`. Does nothing if either the message doesn't exist or the message wasn't
+    bookmarked.
 
     An access token must be sent with this request.
     """
-    unstar(messageId: Int!): Placeholder!
+    deleteBookmark(messageId: Int!): Placeholder!
 
     """
     Sets the current user's status to `isOnline`.
@@ -361,8 +364,8 @@ type Mutation {
     """
     Removes the specified users from the `chatId` which may include admins including the user themself. Messages sent
     by, and polls voted on, by removed users will remain. Nonexisting users, and users who aren't in the chat will be
-    ignored. Every message a removed user had starred in the specified chat will be unstarred for them. `null` will be
-    returned if the operation succeeded.
+    ignored. Every message a removed user had bookmarked in the specified chat will have its bookmark deleted for them.
+    `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request. Only an admin can perform this operation.
     """
@@ -370,7 +373,7 @@ type Mutation {
 
     """
     Leaves the chat the user is in. Messages sent by, and polls voted on, by removed users will remain. Every message
-    the user has starred in the specified chat will be unstarred for them.
+    the user has bookmarked in the specified chat will have its bookmark deleted for them.
 
     Returns `null` if the operation succeeded. An `InvalidChatId` will be returned if the user isn't the specified chat.
 
@@ -434,7 +437,7 @@ type Mutation {
     joinPublicChat(chatId: Int!): InvalidChatId
 
     """
-    Deletes a private chat. Any messages the user starred in the chat will be unstarred.
+    Deletes a private chat. Any messages the user bookmarked in the chat will get unbookmarked.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat.
@@ -688,7 +691,7 @@ union MessagesSubscription =
     | TriggeredAction
     | DeletedMessage
     | UserChatMessagesRemoval
-    | UnstarredChat
+    | UnbookmarkedChat
 
 union ChatMessagesSubscription =
     | CreatedSubscription
@@ -706,8 +709,8 @@ union ChatMessagesSubscription =
     | UserChatMessagesRemoval
     | InvalidChatId
 
-"""Every message in the chat has been unstarred by the user."""
-type UnstarredChat {
+"""Every message in the chat has had its bookmark deleted by the user."""
+type UnbookmarkedChat {
     chatId: Int!
 }
 
@@ -1011,13 +1014,13 @@ type MessagesConnection {
     pageInfo: PageInfo!
 }
 
-type StarredMessagesConnection {
-    edges: [StarredMessageEdge!]!
+type BookmarkedMessagesConnection {
+    edges: [BookmarkedMessageEdge!]!
     pageInfo: PageInfo!
 }
 
-type StarredMessageEdge {
-    node: StarredMessage!
+type BookmarkedMessageEdge {
+    node: BookmarkedMessage!
     cursor: Cursor!
 }
 
@@ -1094,8 +1097,8 @@ interface Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
 }
 
 type TextMessage implements Message {
@@ -1104,8 +1107,8 @@ type TextMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
     textMessage: MessageText!
 }
 
@@ -1115,8 +1118,8 @@ type ActionMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
     actionableMessage: ActionableMessage!
 }
 
@@ -1126,8 +1129,8 @@ type PicMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
     caption: MessageText
 }
 
@@ -1137,8 +1140,8 @@ type PollMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
     poll: Poll!
 }
 
@@ -1148,8 +1151,8 @@ type AudioMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
 }
 
 type GroupChatInviteMessage implements Message {
@@ -1158,8 +1161,8 @@ type GroupChatInviteMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
     """`null` if either the chat no longer exists or the chat currently has invitations switched off."""
     inviteCode: Uuid
 }
@@ -1170,8 +1173,8 @@ type DocMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
 }
 
 type VideoMessage implements Message {
@@ -1180,12 +1183,12 @@ type VideoMessage implements Message {
     sent: DateTime!
     context: MessageContext!
     isForwarded: Boolean!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmarked: Boolean!
 }
 
-"""A message which is starred by the user."""
-interface StarredMessage {
+"""A message which is bookmarked by the user."""
+interface BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1194,7 +1197,7 @@ interface StarredMessage {
     isForwarded: Boolean!
 }
 
-type StarredTextMessage implements StarredMessage {
+type BookmarkedTextMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1204,7 +1207,7 @@ type StarredTextMessage implements StarredMessage {
     textMessage: MessageText!
 }
 
-type StarredActionMessage implements StarredMessage {
+type BookmarkedActionMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1214,7 +1217,7 @@ type StarredActionMessage implements StarredMessage {
     actionableMessage: ActionableMessage!
 }
 
-type StarredPicMessage implements StarredMessage {
+type BookmarkedPicMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1224,7 +1227,7 @@ type StarredPicMessage implements StarredMessage {
     caption: MessageText
 }
 
-type StarredPollMessage implements StarredMessage {
+type BookmarkedPollMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1234,7 +1237,7 @@ type StarredPollMessage implements StarredMessage {
     poll: Poll!
 }
 
-type StarredAudioMessage implements StarredMessage {
+type BookmarkedAudioMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1243,7 +1246,7 @@ type StarredAudioMessage implements StarredMessage {
     isForwarded: Boolean!
 }
 
-type StarredGroupChatInviteMessage implements StarredMessage {
+type BookmarkedGroupChatInviteMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1254,7 +1257,7 @@ type StarredGroupChatInviteMessage implements StarredMessage {
     inviteCode: Uuid
 }
 
-type StarredDocMessage implements StarredMessage {
+type BookmarkedDocMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1263,7 +1266,7 @@ type StarredDocMessage implements StarredMessage {
     isForwarded: Boolean!
 }
 
-type StarredVideoMessage implements StarredMessage {
+type BookmarkedVideoMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1359,12 +1362,12 @@ type NewVideoMessage implements NewMessage {
     isForwarded: Boolean!
 }
 
-"""An existing `messageId` in the `chatId` which has been starred or unstarred."""
+"""An existing `messageId` in the `chatId` which has been bookmarked or unbookmarked."""
 type UpdatedMessage {
     chatId: Int!
     messageId: Int!
-    """`false` if either the user hasn't starred this message or the message is being read anonymously."""
-    hasStar: Boolean!
+    """`false` if either the user hasn't bookmarked this message or the message is being read anonymously."""
+    isBookmakred: Boolean!
 }
 
 enum GroupChatPublicity {

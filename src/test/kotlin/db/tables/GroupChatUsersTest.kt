@@ -340,13 +340,13 @@ class GroupChatUsersTest {
         }
 
         @Test
-        fun `Messages the removed user had starred in the chat must be unstarred for them`(): Unit = runBlocking {
+        fun `Messages the removed user had bookmarked in the chat must be unbookmarked for them`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(userId, chatId)
-            Stargazers.create(userId, messageId)
+            Bookmarks.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, userId)
-            assertFalse(Stargazers.hasStar(userId, messageId))
+            assertFalse(Bookmarks.isBookmarked(userId, messageId))
         }
     }
 

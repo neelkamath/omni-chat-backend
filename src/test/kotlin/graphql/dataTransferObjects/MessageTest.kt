@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 
 @ExtendWith(DbExtension::class)
 class MessageTest {
-    private data class ReadMessageResponse(val hasStar: Boolean)
+    private data class ReadMessageResponse(val isBookmarked: Boolean)
 
     private fun readMessage(userId: Int?, messageId: Int, pagination: ForwardPagination? = null): ReadMessageResponse {
         val data = executeGraphQlViaEngine(
@@ -23,7 +23,7 @@ class MessageTest {
             query ReadMessage(${"$"}messageId: Int!) {
                 readMessage(messageId: ${"$"}messageId) {
                     ... on Message {
-                        hasStar
+                        isBookmarked
                     }
                 }
             }
@@ -35,21 +35,21 @@ class MessageTest {
     }
 
     @Nested
-    inner class GetHasStar {
-        private fun assertHasStar(hasStar: Boolean) {
+    inner class GetIsBookmarked {
+        private fun assertIsBookmarked(isBookmarked: Boolean) {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
-            val actual = readMessage(if (hasStar) adminId else null, messageId).hasStar
-            assertEquals(hasStar, actual)
+            Bookmarks.create(adminId, messageId)
+            val actual = readMessage(if (isBookmarked) adminId else null, messageId).isBookmarked
+            assertEquals(isBookmarked, actual)
         }
 
         @Test
-        fun `A starred message must be stated as such when the user requests it`(): Unit = assertHasStar(true)
+        fun `A bookmarked message must be stated as such when the user requests it`(): Unit = assertIsBookmarked(true)
 
         @Test
-        fun `A message starred by a user must not be starred when read by an anonymous user`(): Unit =
-            assertHasStar(false)
+        fun `A message bookmarked by a user must not be bookmarked when read by an anonymous user`(): Unit =
+            assertIsBookmarked(false)
     }
 }

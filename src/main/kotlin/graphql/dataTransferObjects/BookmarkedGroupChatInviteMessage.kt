@@ -5,7 +5,7 @@ import com.neelkamath.omniChatBackend.db.tables.GroupChats
 import com.neelkamath.omniChatBackend.db.tables.Messages
 import java.util.*
 
-class StarredGroupChatInviteMessage(override val id: Int) : StarredMessage {
+class BookmarkedGroupChatInviteMessage(override val id: Int) : BookmarkedMessage {
     override val chatId: Lazy<Int> = lazy { Messages.readChatId(id) }
 
     fun getInviteCode(): UUID? {

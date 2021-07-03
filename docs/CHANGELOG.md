@@ -11,6 +11,32 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ## Changed
 
 - Add the field `chatId` to `interface BareGroupChat` and `type GroupChatInfo`.
+- Rename `Query.readStars` to `Query.readBookmarks`.
+- Rename `Mutation.star` to `Mutation.createBookmark`.
+- Rename `Mutation.unstar` to `Mutation.deleteBookmark`.
+- Rename `type UnstarredChat` to `type UnbookmarkedChat`.
+- Rename `type StarredMessagesConnection` to `type BookmarkedMessagesConnection`.
+- Rename `type StarredMessageEdge` to `type BookmarkedMessageEdge`.
+- Rename the `hasStar` field to `isBookmarked` for the following:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `type UpdatedMessage`
+- Rename `interface StarredMessage` to `interface BookmarkedMessage`.
+- Rename `type StarredTextMessage` to `type BookmarkedTextMessage`.
+- Rename `type StarredActionMessage` to `type BookmarkedActionMessage`.
+- Rename `type StarredPicMessage` to `type BookmarkedPicMessage`.
+- Rename `type StarredPollMessage` to `type BookmarkedPollMessage`.
+- Rename `type StarredAudioMessage` to `type BookmarkedAudioMessage`.
+- Rename `type StarredGroupChatInviteMessage` to `type BookmarkedGroupChatInviteMessage`.
+- Rename `type StarredDocMessage` to `type BookmarkedDocMessage`.
+- Rename `type StarredVideoMessage` to `type BookmarkedVideoMessage`.
 
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 

@@ -46,13 +46,13 @@ class PrivateChatDeletionsTest {
         }
 
         @Test
-        fun `Deleting the chat must unstar messages for the user even if the chat still exists`() {
+        fun `Deleting the chat must unbookmark messages for the user even if the chat still exists`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
-            Stargazers.create(user1Id, messageId)
+            Bookmarks.create(user1Id, messageId)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertTrue(Stargazers.readMessageIdList(user1Id).isEmpty())
+            assertTrue(Bookmarks.readMessageIdList(user1Id).isEmpty())
         }
     }
 

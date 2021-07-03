@@ -270,12 +270,12 @@ Since there are many operations, we've categorized each of them below. The same 
 
 - `Query`
     - `readMessage`
-    - `readStars`
+    - `readBookmarks`
     - `searchChatMessages`
     - `searchMessages`
 - `Mutation`
-    - `star`
-    - `deleteStar`
+    - `createBookmark`
+    - `deleteBookmark`
     - `createTextMessage`
     - `createActionMessage`
     - `createGroupChatInviteMessage`

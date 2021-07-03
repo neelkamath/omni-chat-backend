@@ -10,7 +10,7 @@ fun Table.count(): Long = transaction { selectAll().count() }
 
 private val tables: Set<Table> = setOf(
     Contacts,
-    Stargazers,
+    Bookmarks,
     TextMessages,
     ActionMessageActions,
     ActionMessages,

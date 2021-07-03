@@ -29,7 +29,7 @@ private typealias Filter = Op<Boolean>?
  * @see PollMessages
  * @see GroupChatInviteMessages
  * @see PicMessages
- * @see Stargazers
+ * @see Bookmarks
  */
 object Messages : IntIdTable() {
     private val chatId: Column<Int> = integer("chat_id").references(Chats.id)
@@ -435,7 +435,7 @@ object Messages : IntIdTable() {
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
     private fun deleteChatMessages(messageIdList: Collection<Int>) {
-        Stargazers.deleteStars(messageIdList)
+        Bookmarks.deleteBookmarks(messageIdList)
         TextMessages.delete(messageIdList)
         ActionMessages.delete(messageIdList)
         PicMessages.delete(messageIdList)

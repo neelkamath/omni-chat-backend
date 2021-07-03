@@ -125,10 +125,10 @@ class PrivateChatsTest {
             val chatId = PrivateChats.create(user1Id, user2Id)
             TypingStatuses.update(chatId, user1Id, isTyping = true)
             val messageId = Messages.message(user2Id, chatId)
-            Stargazers.create(user1Id, messageId)
+            Bookmarks.create(user1Id, messageId)
             PrivateChatDeletions.create(chatId, user1Id)
             PrivateChats.delete(chatId)
-            listOf(Chats, Messages, PrivateChatDeletions, PrivateChats, Stargazers, TypingStatuses)
+            listOf(Chats, Messages, PrivateChatDeletions, PrivateChats, Bookmarks, TypingStatuses)
                 .forEach { assertEquals(0, it.count()) }
         }
     }

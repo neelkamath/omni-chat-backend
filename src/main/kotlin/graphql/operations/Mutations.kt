@@ -60,9 +60,9 @@ fun createContact(env: DataFetchingEnvironment): Boolean {
     return if (Users.isExisting(userId)) Contacts.create(env.userId!!, userId) else false
 }
 
-fun unstar(env: DataFetchingEnvironment): Placeholder {
+fun deleteBookmark(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    Stargazers.deleteUserStar(env.userId!!, env.getArgument("messageId"))
+    Bookmarks.deleteUserBookmark(env.userId!!, env.getArgument("messageId"))
     return Placeholder
 }
 
@@ -130,11 +130,11 @@ fun setBroadcast(env: DataFetchingEnvironment): MustBeAdmin? {
     return null
 }
 
-fun star(env: DataFetchingEnvironment): InvalidMessageId? {
+fun createBookmark(env: DataFetchingEnvironment): InvalidMessageId? {
     env.verifyAuth()
     val messageId = env.getArgument<Int>("messageId")
     if (!Messages.isVisible(env.userId!!, messageId)) return InvalidMessageId
-    Stargazers.create(env.userId!!, messageId)
+    Bookmarks.create(env.userId!!, messageId)
     return null
 }
 

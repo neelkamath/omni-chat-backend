@@ -3,7 +3,7 @@ package com.neelkamath.omniChatBackend.db.tables
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.db.*
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnbookmarkedChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedMessage
 import com.neelkamath.omniChatBackend.slice
 import com.neelkamath.omniChatBackend.toLinkedHashSet
@@ -20,11 +20,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
-class StargazersTest {
+class BookmarksTest {
     @Nested
     inner class Create {
         @Test
-        fun `Starring must only notify the stargazer`() {
+        fun `Creating a bookmark must only notify the user who bookmarked it`() {
             runBlocking {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
@@ -32,7 +32,7 @@ class StargazersTest {
                 awaitBrokering()
                 val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                     .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
-                Stargazers.create(user1Id, messageId)
+                Bookmarks.create(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
                 assertEquals(listOf(messageId), actual)
@@ -42,77 +42,77 @@ class StargazersTest {
     }
 
     /** The [adminId] of a group chat containing the [messageIdList] (sorted in ascending order). */
-    private data class StarredChat(val adminId: Int, val messageIdList: LinkedHashSet<Int>)
+    private data class BookmarkedChat(val adminId: Int, val messageIdList: LinkedHashSet<Int>)
 
-    /** Creates the number of [messages] in the [StarredChat.messageIdList]. */
-    private fun createStarredChat(messages: Int = 10): StarredChat {
+    /** Creates the number of [messages] in the [BookmarkedChat.messageIdList]. */
+    private fun createBookmarkedChat(messages: Int = 10): BookmarkedChat {
         val adminId = createVerifiedUsers(1).first().userId
         val chatId = GroupChats.create(setOf(adminId))
         repeat(messages) {
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
+            Bookmarks.create(adminId, messageId)
         }
-        return StarredChat(adminId, Stargazers.readMessageIdList(adminId))
+        return BookmarkedChat(adminId, Bookmarks.readMessageIdList(adminId))
     }
 
     @Nested
     inner class ReadMessageIdList {
         @Test
         fun `Every item must be retrieved if neither cursor nor limit get supplied`() {
-            val (adminId, messageIdList) = createStarredChat()
-            assertEquals(messageIdList, Stargazers.readMessageIdList(adminId))
+            val (adminId, messageIdList) = createBookmarkedChat()
+            assertEquals(messageIdList, Bookmarks.readMessageIdList(adminId))
         }
 
         @Test
         fun `The number of items specified by the limit must be returned from after the cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             val first = 3
             val index = 4
             val pagination = ForwardPagination(first, after = messageIdList.elementAt(index))
-            val actual = Stargazers.readMessageIdList(adminId, pagination)
+            val actual = Bookmarks.readMessageIdList(adminId, pagination)
             assertEquals(messageIdList.slice(index + 1..index + first), actual)
         }
 
         @Test
         fun `The number of items specified by the limit from the first item must be retrieved when there's no cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             val first = 3
-            val actual = Stargazers.readMessageIdList(adminId, ForwardPagination(first))
+            val actual = Bookmarks.readMessageIdList(adminId, ForwardPagination(first))
             assertEquals(messageIdList.take(first).toLinkedHashSet(), actual)
         }
 
         @Test
         fun `Every item after the cursor must be retrieved when there's no limit`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             val index = 4
             val pagination = ForwardPagination(after = messageIdList.elementAt(index))
-            val actual = Stargazers.readMessageIdList(adminId, pagination)
+            val actual = Bookmarks.readMessageIdList(adminId, pagination)
             assertEquals(messageIdList.drop(index + 1).toLinkedHashSet(), actual)
         }
 
         @Test
         fun `Zero items must be retrieved when using the last item's cursor`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             val pagination = ForwardPagination(after = messageIdList.last())
-            assertEquals(0, Stargazers.readMessageIdList(adminId, pagination).size)
+            assertEquals(0, Bookmarks.readMessageIdList(adminId, pagination).size)
         }
 
         @Test
         fun `Given items 1-10 where item 4 has been deleted, when requesting the first three items after item 2, then items 3, 5, and 6 must be retrieved`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             Messages.delete(messageIdList.elementAt(3))
             val expected = listOf(2, 4, 5).map(messageIdList::elementAt).toLinkedHashSet()
             val pagination = ForwardPagination(first = 3, after = messageIdList.elementAt(1))
-            assertEquals(expected, Stargazers.readMessageIdList(adminId, pagination))
+            assertEquals(expected, Bookmarks.readMessageIdList(adminId, pagination))
         }
 
         @Test
         fun `Using a deleted item's cursor must cause pagination to work as if the item still exists`() {
-            val (adminId, messageIdList) = createStarredChat()
+            val (adminId, messageIdList) = createBookmarkedChat()
             val index = 3
             val messageId = messageIdList.elementAt(index)
             Messages.delete(messageId)
-            val actual = Stargazers.readMessageIdList(adminId, ForwardPagination(after = messageId))
+            val actual = Bookmarks.readMessageIdList(adminId, ForwardPagination(after = messageId))
             assertEquals(messageIdList.drop(index + 1).toLinkedHashSet(), actual)
         }
     }
@@ -121,40 +121,40 @@ class StargazersTest {
     inner class ReadCursor {
         @Test
         fun `If there are zero items, the start and end cursors must be 'null'`() {
-            val (adminId) = createStarredChat(messages = 0)
-            assertNull(Stargazers.readCursor(adminId, CursorType.START))
-            assertNull(Stargazers.readCursor(adminId, CursorType.END))
+            val (adminId) = createBookmarkedChat(messages = 0)
+            assertNull(Bookmarks.readCursor(adminId, CursorType.START))
+            assertNull(Bookmarks.readCursor(adminId, CursorType.END))
         }
 
         @Test
         fun `If there's one item, the start and end cursors must be the only item`() {
-            val (adminId, messageIdList) = createStarredChat(messages = 1)
+            val (adminId, messageIdList) = createBookmarkedChat(messages = 1)
             val messageId = messageIdList.first()
-            assertEquals(messageId, Stargazers.readCursor(adminId, CursorType.START))
-            assertEquals(messageId, Stargazers.readCursor(adminId, CursorType.END))
+            assertEquals(messageId, Bookmarks.readCursor(adminId, CursorType.START))
+            assertEquals(messageId, Bookmarks.readCursor(adminId, CursorType.END))
         }
 
         @Test
         fun `The start and end cursors must point to the first and last items respectively`() {
-            val (adminId, messageIdList) = createStarredChat()
-            assertEquals(messageIdList.first(), Stargazers.readCursor(adminId, CursorType.START))
-            assertEquals(messageIdList.last(), Stargazers.readCursor(adminId, CursorType.END))
+            val (adminId, messageIdList) = createBookmarkedChat()
+            assertEquals(messageIdList.first(), Bookmarks.readCursor(adminId, CursorType.START))
+            assertEquals(messageIdList.last(), Bookmarks.readCursor(adminId, CursorType.END))
         }
     }
 
     @Nested
-    inner class DeleteStar {
+    inner class DeleteBookmark {
         @Test
-        fun `Deleting a message's stars must only notify its stargazers`() {
+        fun `Deleting a message's bookmarks must only notify users who have bookmarked it`() {
             runBlocking {
                 val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
                 val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
                 val messageId = Messages.message(adminId, chatId)
-                listOf(adminId, user1Id).forEach { Stargazers.create(it, messageId) }
+                listOf(adminId, user1Id).forEach { Bookmarks.create(it, messageId) }
                 awaitBrokering()
                 val (adminSubscriber, user1Subscriber, user2Subscriber) = listOf(adminId, user1Id, user2Id)
                     .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
-                Stargazers.deleteStar(messageId)
+                Bookmarks.deleteBookmark(messageId)
                 awaitBrokering()
                 listOf(adminSubscriber, user1Subscriber).forEach { subscriber ->
                     val actual = subscriber.values().map { (it as UpdatedMessage).getMessageId() }
@@ -166,18 +166,18 @@ class StargazersTest {
     }
 
     @Nested
-    inner class DeleteUserStar {
+    inner class DeleteUserBookmark {
         @Test
-        fun `Deleting a star must only notify the deleter`() {
+        fun `Deleting a bookmark must only notify the deleter`() {
             runBlocking {
                 val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
                 val chatId = PrivateChats.create(user1Id, user2Id)
                 val messageId = Messages.message(user1Id, chatId)
-                Stargazers.create(user1Id, messageId)
+                Bookmarks.create(user1Id, messageId)
                 awaitBrokering()
                 val (user1Subscriber, user2Subscriber) = listOf(user1Id, user2Id)
                     .map { messagesNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
-                Stargazers.deleteUserStar(user1Id, messageId)
+                Bookmarks.deleteUserBookmark(user1Id, messageId)
                 awaitBrokering()
                 val actual = user1Subscriber.values().map { (it as UpdatedMessage).getMessageId() }
                 assertEquals(listOf(messageId), actual)
@@ -186,14 +186,14 @@ class StargazersTest {
         }
 
         @Test
-        fun `Deleting a non-existing star mustn't cause anything to happen`() {
+        fun `Deleting a non-existing bookmark mustn't cause anything to happen`() {
             runBlocking {
                 val adminId = createVerifiedUsers(1).first().userId
                 val chatId = GroupChats.create(setOf(adminId))
                 val messageId = Messages.message(adminId, chatId)
                 awaitBrokering()
                 val subscriber = messagesNotifier.subscribe(UserId(adminId)).flowable.subscribeWith(TestSubscriber())
-                Stargazers.deleteUserStar(adminId, messageId)
+                Bookmarks.deleteUserBookmark(adminId, messageId)
                 awaitBrokering()
                 subscriber.assertNoValues()
             }
@@ -203,21 +203,21 @@ class StargazersTest {
     @Nested
     inner class DeleteUserChat {
         @Test
-        fun `Every message the user starred in the chat must be unstarred`(): Unit = runBlocking {
+        fun `Every message the user bookmarked in the chat must be unbookmarked`(): Unit = runBlocking {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(userId, messageId)
+            Bookmarks.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, userId)
-            assertTrue(Stargazers.readMessageIdList(userId).isEmpty())
+            assertTrue(Bookmarks.readMessageIdList(userId).isEmpty())
         }
 
         @Test
-        fun `Only the user must be notified of the unstarred messages`(): Unit = runBlocking {
+        fun `Only the user must be notified of the unbookmarked messages`(): Unit = runBlocking {
             val (adminId, user1Id, user2Id) = createVerifiedUsers(3).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(user1Id, user2Id))
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(user1Id, messageId)
+            Bookmarks.create(user1Id, messageId)
             awaitBrokering()
             val (user1Subscriber, user2Subscriber) =
                 listOf(user1Id, user2Id).map {
@@ -227,7 +227,7 @@ class StargazersTest {
                 }
             GroupChatUsers.removeUsers(chatId, user1Id)
             awaitBrokering()
-            val actual = user1Subscriber.values().map { (it as UnstarredChat).getChatId() }
+            val actual = user1Subscriber.values().map { (it as UnbookmarkedChat).getChatId() }
             assertEquals(listOf(chatId), actual)
             user2Subscriber.assertNoValues()
         }

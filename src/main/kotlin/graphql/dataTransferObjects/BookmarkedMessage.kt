@@ -5,7 +5,7 @@ package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 import com.neelkamath.omniChatBackend.db.tables.Messages
 import java.time.LocalDateTime
 
-sealed interface StarredMessage {
+sealed interface BookmarkedMessage {
     /** The [Messages.id]. */
     val id: Int
 

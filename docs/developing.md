@@ -112,12 +112,12 @@ class MyDto(
 ) {
     val startCursor = messageIdList.first()
 
-    fun getEdges(): List<StarredMessageEdge> = Stargazers.read(messageIdList)
+    fun getEdges(): List<BookmarkedMessageEdge> = Bookmarks.read(messageIdList)
 
     fun getData(): List<DataDto> = messageIdList.map(::DataDto)
 
     fun getHasNextPage(env: DataFetchingEnvironment): boolean =
-        Stargazers.readPageInfo(env.userId!!, messageIdList.lastOrNull(), pagination).hasNextPage
+        Bookmarks.readPageInfo(env.userId!!, messageIdList.lastOrNull(), pagination).hasNextPage
 }
 ```
 

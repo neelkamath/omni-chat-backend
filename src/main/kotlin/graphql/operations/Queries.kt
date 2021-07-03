@@ -136,11 +136,11 @@ fun searchChats(env: DataFetchingEnvironment): ChatsConnection {
     )
 }
 
-fun readStars(env: DataFetchingEnvironment): StarredMessagesConnection {
+fun readBookmarks(env: DataFetchingEnvironment): BookmarkedMessagesConnection {
     env.verifyAuth()
     val pagination = ForwardPagination(env.getArgument("first"), env.getArgument("after"))
-    val messageIdList = Stargazers.readMessageIdList(env.userId!!, pagination)
-    return StarredMessagesConnection(messageIdList, pagination)
+    val messageIdList = Bookmarks.readMessageIdList(env.userId!!, pagination)
+    return BookmarkedMessagesConnection(messageIdList, pagination)
 }
 
 fun searchGroupChatUsers(env: DataFetchingEnvironment): SearchGroupChatUsersResult {

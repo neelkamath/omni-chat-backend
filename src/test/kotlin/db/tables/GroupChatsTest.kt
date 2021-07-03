@@ -149,9 +149,9 @@ class GroupChatsTest {
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
             TypingStatuses.update(chatId, adminId, isTyping = true)
-            Stargazers.create(userId, messageId)
+            Bookmarks.create(userId, messageId)
             GroupChatUsers.removeUsers(chatId, adminId, userId)
-            listOf(Chats, GroupChats, GroupChatUsers, Messages, Stargazers, TypingStatuses)
+            listOf(Chats, GroupChats, GroupChatUsers, Messages, Bookmarks, TypingStatuses)
                 .forEach { assertEquals(0, it.count()) }
         }
     }

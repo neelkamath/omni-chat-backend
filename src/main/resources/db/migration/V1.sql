@@ -120,7 +120,7 @@ CREATE TABLE private_chat_deletions
     date_time TIMESTAMP NOT NULL,
     user_id   INTEGER   NOT NULL REFERENCES users (id)
 );
-CREATE TABLE stargazers
+CREATE TABLE bookmarks
 (
     user_id    INTEGER NOT NULL REFERENCES users (id),
     message_id INTEGER NOT NULL REFERENCES messages (id)

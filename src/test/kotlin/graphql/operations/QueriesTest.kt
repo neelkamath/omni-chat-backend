@@ -205,7 +205,7 @@ class QueriesTest {
     private data class ReadChatResult(val __typename: String, val messages: Messages?) {
         data class Messages(val edges: List<Edge>) {
             data class Edge(val node: Node) {
-                data class Node(val hasStar: Boolean)
+                data class Node(val isBookmarked: Boolean)
             }
         }
     }
@@ -220,7 +220,7 @@ class QueriesTest {
                         messages {
                             edges {
                                 node {
-                                    hasStar
+                                    isBookmarked
                                 }
                             }
                         }
@@ -242,10 +242,11 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
+            Bookmarks.create(adminId, messageId)
             val data =
                 executeGraphQlViaEngine(readChatQuery, mapOf("id" to chatId), adminId).data!!["readChat"] as Map<*, *>
-            testingObjectMapper.convertValue<ReadChatResult>(data).messages!!.edges[0].node.hasStar.let(::assertTrue)
+            val node = testingObjectMapper.convertValue<ReadChatResult>(data).messages!!.edges[0].node
+            assertTrue(node.isBookmarked)
         }
 
         @Test
@@ -473,13 +474,13 @@ class QueriesTest {
             val token = executeRequestTokenSet(login)["accessToken"] as String
             val expected = mapOf(
                 "data" to mapOf(
-                    "readStars" to mapOf("__typename" to "StarredMessagesConnection"),
+                    "readBookmarks" to mapOf("__typename" to "BookmarkedMessagesConnection"),
                 ),
             )
             val actual = readGraphQlHttpResponse(
                 """
-                query ReadStars {
-                    readStars {
+                query ReadBookmarks {
+                    readBookmarks {
                         __typename
                     }
                 }
@@ -534,7 +535,7 @@ class QueriesTest {
 
     private data class SearchChatMessagesResult(val __typename: String, val edges: List<Edge>?) {
         data class Edge(val node: Node) {
-            data class Node(val messageId: Int, val hasStar: Boolean)
+            data class Node(val messageId: Int, val isBookmarked: Boolean)
         }
     }
 
@@ -565,7 +566,7 @@ class QueriesTest {
                             edges {
                                 node {
                                     messageId
-                                    hasStar
+                                    isBookmarked
                                 }
                             }
                         }
@@ -611,8 +612,8 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
-            executeSearchChatMessages(adminId, chatId).edges!![0].node.hasStar.let(::assertTrue)
+            Bookmarks.create(adminId, messageId)
+            executeSearchChatMessages(adminId, chatId).edges!![0].node.isBookmarked.let(::assertTrue)
         }
     }
 
@@ -731,27 +732,27 @@ class QueriesTest {
         }
     }
 
-    private data class ReadStarsResult(val edges: List<Edge>) {
+    private data class ReadBookmarksResult(val edges: List<Edge>) {
         data class Edge(val node: Node) {
             data class Node(val messageId: Int)
         }
     }
 
     @Nested
-    inner class ReadStars {
+    inner class ReadBookmarks {
         @Test
         fun `Messages must be paginated`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageIdList = (1..10).map {
-                Messages.message(adminId, chatId).also { Stargazers.create(adminId, it) }
+                Messages.message(adminId, chatId).also { Bookmarks.create(adminId, it) }
             }
             val first = 3
             val index = 4
             val data = executeGraphQlViaEngine(
                 """
-                query ReadStars(${"$"}first: Int, ${"$"}after: Cursor) {
-                    readStars(first: ${"$"}first, after: ${"$"}after) {
+                query ReadBookmarks(${"$"}first: Int, ${"$"}after: Cursor) {
+                    readBookmarks(first: ${"$"}first, after: ${"$"}after) {
                         edges {
                             node {
                                 messageId
@@ -762,8 +763,8 @@ class QueriesTest {
                 """,
                 mapOf("first" to first, "after" to messageIdList[index].toString()),
                 adminId,
-            ).data!!["readStars"] as Map<*, *>
-            val actual = testingObjectMapper.convertValue<ReadStarsResult>(data).edges.map { it.node.messageId }
+            ).data!!["readBookmarks"] as Map<*, *>
+            val actual = testingObjectMapper.convertValue<ReadBookmarksResult>(data).edges.map { it.node.messageId }
             assertEquals(messageIdList.slice(index + 1..index + first), actual)
         }
     }
@@ -1111,7 +1112,7 @@ class QueriesTest {
         }
     }
 
-    private data class ReadMessageResult(val __typename: String, val hasStar: Boolean?)
+    private data class ReadMessageResult(val __typename: String, val isBookmarked: Boolean?)
 
     @Nested
     inner class ReadMessage {
@@ -1122,7 +1123,7 @@ class QueriesTest {
                     readMessage(messageId: ${"$"}messageId) {
                         __typename
                         ... on Message {
-                            hasStar
+                            isBookmarked
                         }
                     }
                 }
@@ -1138,9 +1139,12 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
-            assertEquals(ReadMessageResult("TextMessage", hasStar = true), executeReadMessage(adminId, messageId))
-            assertEquals(ReadMessageResult("TextMessage", hasStar = false), executeReadMessage(messageId = messageId))
+            Bookmarks.create(adminId, messageId)
+            assertEquals(ReadMessageResult("TextMessage", isBookmarked = true), executeReadMessage(adminId, messageId))
+            assertEquals(
+                ReadMessageResult("TextMessage", isBookmarked = false),
+                executeReadMessage(messageId = messageId)
+            )
         }
 
         @Test
@@ -1372,7 +1376,7 @@ class QueriesTest {
             data class Node(val chatId: Int, val messages: Messages) {
                 data class Messages(val edges: List<Edge>) {
                     data class Edge(val node: Node) {
-                        data class Node(val hasStar: Boolean)
+                        data class Node(val isBookmarked: Boolean)
                     }
                 }
             }
@@ -1396,7 +1400,7 @@ class QueriesTest {
                                 messages {
                                     edges {
                                         node {
-                                            hasStar
+                                            isBookmarked
                                         }
                                     }
                                 }
@@ -1438,9 +1442,8 @@ class QueriesTest {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
-            val hasStar = executeSearchPublicChats(adminId).edges[0].node.messages.edges.first().node.hasStar
-            assertTrue(hasStar)
+            Bookmarks.create(adminId, messageId)
+            executeSearchPublicChats(adminId).edges[0].node.messages.edges.first().node.isBookmarked.let(::assertTrue)
         }
     }
 }
