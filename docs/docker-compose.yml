@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   chat:
-    image: neelkamath/omni-chat-backend:0.22.0
+    image: neelkamath/omni-chat-backend:0.23.0
     entrypoint: /dockerize -wait tcp://db:5432 -wait tcp://message-broker:6379
     command: sh -c 'flyway migrate && java -server -jar omni-chat-backend.jar'
     networks: [ broker, db ]
