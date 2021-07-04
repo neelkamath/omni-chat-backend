@@ -48,7 +48,8 @@ private fun postPicMessage(route: Route): Unit = with(route) {
                 InvalidPicMessage(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )
 
-            Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            Messages.isInvalidBroadcast(call.userId!!, chatId) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidPicMessage(InvalidPicMessage.Reason.MUST_BE_ADMIN))
 
             else -> {
                 Messages.createPicMessage(call.userId!!, chatId, CaptionedPic(pic, caption), contextMessageId)

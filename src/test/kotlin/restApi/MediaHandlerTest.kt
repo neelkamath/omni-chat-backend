@@ -142,11 +142,12 @@ class MediaHandlerTest {
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
-            mapOf(admin to HttpStatusCode.NoContent, user to HttpStatusCode.Unauthorized).forEach {
-                val actual = postAudioMessage(it.key.accessToken, chatId, DummyFile("audio.mp3", 1)).status()
-                assertEquals(it.value, actual)
-                assertEquals(1, Messages.count())
-            }
+            val userStatus = postAudioMessage(user.accessToken, chatId, DummyFile("audio.mp3", 1)).status()
+            assertEquals(HttpStatusCode.BadRequest, userStatus)
+            assertEquals(0, Messages.count())
+            val adminStatus = postAudioMessage(admin.accessToken, chatId, DummyFile("audio.mp3", 1)).status()
+            assertEquals(HttpStatusCode.NoContent, adminStatus)
+            assertEquals(1, Messages.count())
         }
 
         @Test

@@ -10,6 +10,15 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## Changed
 
+- Improve error handling for HTTP POST `/pic-message`, HTTP POST `/audio-message`, HTTP POST `/video-message`, and HTTP POST `/doc-message`.
+
+    Previously, creating a message in a broadcast chat would cause an HTTP status code of 401 to be returned. Now, an HTTP status code of 400 is returned with the following `application/json` response body:
+
+    ```json
+    {
+      "reason": "MUST_BE_ADMIN"
+    }
+    ```
 - Add the field `chatId` to `interface BareGroupChat` and `type GroupChatInfo`.
 - Rename `Query.readStars` to `Query.readBookmarks`.
 - Rename `Mutation.star` to `Mutation.createBookmark`.

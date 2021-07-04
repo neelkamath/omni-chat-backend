@@ -460,7 +460,8 @@ type Mutation {
     to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist. A `MustBeAdmin` will be
+    returned if the `chatId` is a broadcast chat, and the user isn't an admin.
 
     An access token must be sent with this request.
     """
@@ -474,7 +475,8 @@ type Mutation {
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
     chat. An `InvalidAction` will be returned if either there were zero `actions` or the `actions` weren't unique. An
-    `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist. A `MustBeAdmin` will be returned if the
+    `chatId` is a broadcast chat, and the user isn't an admin.
 
     A frontend UI could display this message like a regular text message but with buttons below it. Action messages are
     meant for bots; human users shouldn't be able to create them. Only the creator of the action message will be
@@ -492,7 +494,8 @@ type Mutation {
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if either the user isn't in
     the `chatId` or the user isn't in the `invitedChatId`. An `InvalidInvitedChat` will be returned if the
     `invitedChatId` isn't a group chat, the chat has turned off invitations. An `InvalidMessageId` will be returned if
-    the `contextMessageId` doesn't exist.
+    the `contextMessageId` doesn't exist. A `MustBeAdmin` will be returned if the `chatId` is a broadcast chat, and the
+    user isn't an admin.
 
     Users aren't allowed to create invite messages for chats they aren't in because there's no use case for it, and
     hackers could brute force joining many invitable chats in this manner. Users can, however, forward group chat
@@ -518,7 +521,8 @@ type Mutation {
     to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist.
+    chat. An `InvalidMessageId` will be returned if the `contextMessageId` doesn't exist. A `MustBeAdmin` will be
+    returned if the `chatId` is a broadcast chat, and the user isn't an admin.
 
     An access token must be sent with this request.
     """
@@ -530,7 +534,8 @@ type Mutation {
     replied to.
 
     `null` will be returned if the operation succeeded. An `InvalidChatId` will be returned if the user isn't in the
-    `chatId`. An `InvalidMessageId` will be returned if the `messageId` or `contextMessageId` doesn't exist.
+    `chatId`. An `InvalidMessageId` will be returned if the `messageId` or `contextMessageId` doesn't exist. A
+    `MustBeAdmin` will be returned if the `chatId` is a broadcast chat, and the user isn't an admin.
 
     An access token must be sent with this request.
     """
