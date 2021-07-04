@@ -300,16 +300,17 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "NewTextMessage" -> NewTextMessage::class
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
-            "NewPollMessage" -> NewPollMessage::class
-            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
+            "NewPollMessage" -> NewPollMessage::class
             "NewVideoMessage" -> NewVideoMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "UpdatedMessage" -> UpdatedMessage::class
             "TriggeredAction" -> TriggeredAction::class
             "DeletedMessage" -> DeletedMessage::class
             "UserChatMessagesRemoval" -> UserChatMessagesRemoval::class
+            "UnbookmarkedChat" -> UnbookmarkedChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

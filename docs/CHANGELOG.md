@@ -60,6 +60,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 ### Fixed
 
 - Fix `Mutation.leaveGroupChat` and `Mutation.removeGroupChatUsers`. They used to crash if every user left the chat when there were group chat invitations for the chat in other chats.
+- Fix `Subscription.subscribeToMessages` not sending back `type UnbookmarkedChat`s.
 
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 

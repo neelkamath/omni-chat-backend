@@ -94,6 +94,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
     is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
+    is UnbookmarkedChat -> "UnbookmarkedChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
