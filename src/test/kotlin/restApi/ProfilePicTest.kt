@@ -83,6 +83,6 @@ class ProfilePicTest {
         fun `Uploading an invalid file type must fail`(): Unit = testBadRequest("76px×57px.webp")
 
         @Test
-        fun `Uploading an excessively large file must fail`(): Unit = testBadRequest("5.6MB.jpg")
+        fun `Uploading an excessively large file must fail`(): Unit = testBadRequest("3.9MB.jpg")
     }
 }

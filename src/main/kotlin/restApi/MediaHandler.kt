@@ -77,7 +77,8 @@ fun <T> postMediaMessage(
                 InvalidMediaMessage(InvalidMediaMessage.Reason.INVALID_CONTEXT_MESSAGE),
             )
 
-            Messages.isInvalidBroadcast(call.userId!!, chatId) -> call.respond(HttpStatusCode.Unauthorized)
+            Messages.isInvalidBroadcast(call.userId!!, chatId) ->
+                call.respond(HttpStatusCode.BadRequest, InvalidMediaMessage(InvalidMediaMessage.Reason.MUST_BE_ADMIN))
 
             else -> {
                 creator(call.userId!!, chatId, message, contextMessageId)

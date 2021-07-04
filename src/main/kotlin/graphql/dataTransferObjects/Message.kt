@@ -3,8 +3,8 @@
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
 import com.neelkamath.omniChatBackend.db.MessageType
+import com.neelkamath.omniChatBackend.db.tables.Bookmarks
 import com.neelkamath.omniChatBackend.db.tables.Messages
-import com.neelkamath.omniChatBackend.db.tables.Stargazers
 import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 import java.time.LocalDateTime
@@ -23,9 +23,9 @@ sealed interface Message {
 
     fun getIsForwarded(): Boolean = Messages.isForwarded(id)
 
-    fun getHasStar(env: DataFetchingEnvironment): Boolean {
+    fun getIsBookmarked(env: DataFetchingEnvironment): Boolean {
         val userId = env.userId
-        return if (userId == null) false else Stargazers.hasStar(userId, this.id)
+        return if (userId == null) false else Bookmarks.isBookmarked(userId, this.id)
     }
 
     companion object {

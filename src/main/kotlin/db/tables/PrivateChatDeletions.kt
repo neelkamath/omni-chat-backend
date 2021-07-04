@@ -5,7 +5,7 @@ import com.neelkamath.omniChatBackend.db.chatsNotifier
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.messagesNotifier
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedPrivateChat
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnbookmarkedChat
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -33,14 +33,14 @@ object PrivateChatDeletions : IntIdTable() {
      * have deleted the [chatId], and there has been no activity in the [chatId] after they've deleted it, the [chatId]
      * is deleted from [PrivateChats], [PrivateChatDeletions], [Messages], and [TypingStatuses].
      *
-     * The [userId] will be notified of the [UnstarredChat] via [messagesNotifier].
+     * The [userId] will be notified of the [UnbookmarkedChat] via [messagesNotifier].
      *
      * An [IllegalArgumentException] will be thrown if the [userId] isn't in the [chatId].
      */
     fun create(chatId: Int, userId: Int) {
         require(isUserInChat(userId, chatId)) { "The user (ID: $userId) isn't in the chat (ID: $chatId)." }
         insert(chatId, userId)
-        Stargazers.deleteUserChat(userId, chatId)
+        Bookmarks.deleteUserChat(userId, chatId)
         deleteUnusedChatData(chatId, userId)
         chatsNotifier.publish(DeletedPrivateChat(chatId), UserId(userId))
     }

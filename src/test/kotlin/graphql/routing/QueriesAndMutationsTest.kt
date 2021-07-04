@@ -50,16 +50,16 @@ class QueriesAndMutationsTest {
             val user = createVerifiedUsers(1).first()
             val response = readGraphQlHttpResponse(
                 """
-                query ReadStars {
-                    readStars {
+                query ReadBookmarks {
+                    readBookmarks {
                         __typename
                     }
                 }
                 """,
                 accessToken = user.accessToken,
             )["data"] as Map<*, *>
-            val result = response["readStars"] as Map<*, *>
-            assertEquals("StarredMessagesConnection", result["__typename"])
+            val result = response["readBookmarks"] as Map<*, *>
+            assertEquals("BookmarkedMessagesConnection", result["__typename"])
         }
 
         private fun testOperationName(mustSupplyOperationName: Boolean) {
@@ -67,8 +67,8 @@ class QueriesAndMutationsTest {
             val call = withTestApplication(Application::main) {
                 handleRequest(HttpMethod.Post, "query-or-mutation") {
                     val query = """
-                        query ReadStars {
-                            readStars {
+                        query ReadBookmarks {
+                            readBookmarks {
                                 __typename
                             }
                         }
@@ -81,7 +81,7 @@ class QueriesAndMutationsTest {
                     """
                     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    val operationName = "ReadStars".takeIf { mustSupplyOperationName }
+                    val operationName = "ReadBookmarks".takeIf { mustSupplyOperationName }
                     val body = GraphQlRequest(query, operationName = operationName)
                     setBody(testingObjectMapper.writeValueAsString(body))
                 }
@@ -101,8 +101,8 @@ class QueriesAndMutationsTest {
         fun `An HTTP status code of 401 must be received when supplying an invalid access token`() {
             val response = executeGraphQlViaHttp(
                 """
-                query ReadStars {
-                    readStars {
+                query ReadBookmarks {
+                    readBookmarks {
                         __typename
                     }
                 }

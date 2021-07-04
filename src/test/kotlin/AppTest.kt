@@ -33,7 +33,7 @@ val testingObjectMapper: ObjectMapper = objectMapper
     .register(AccountDataDeserializer)
     .register(SetPublicityResultDeserializer)
     .register(MessageDeserializer)
-    .register(StarredMessageDeserializer)
+    .register(BookmarkedMessageDeserializer)
     .register(NewMessageDeserializer)
     .register(UsernameDeserializer, UsernameSerializer)
     .register(NameDeserializer, NameSerializer)
@@ -169,18 +169,18 @@ private object ChatTypingStatusesSubscriptionDeserializer : JsonDeserializer<Cha
     }
 }
 
-private object StarredMessageDeserializer : JsonDeserializer<StarredMessage>() {
-    override fun deserialize(parser: JsonParser, context: DeserializationContext): StarredMessage {
+private object BookmarkedMessageDeserializer : JsonDeserializer<BookmarkedMessage>() {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext): BookmarkedMessage {
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz = when (val type = node["__typename"].asText()) {
-            "StarredTextMessage" -> StarredTextMessage::class
-            "StarredActionMessage" -> StarredActionMessage::class
-            "StarredPicMessage" -> StarredPicMessage::class
-            "StarredPollMessage" -> StarredPollMessage::class
-            "StarredAudioMessage" -> StarredAudioMessage::class
-            "StarredGroupChatInviteMessage" -> StarredGroupChatInviteMessage::class
-            "StarredDocMessage" -> StarredDocMessage::class
-            "StarredVideoMessage" -> StarredVideoMessage::class
+            "BookmarkedTextMessage" -> BookmarkedTextMessage::class
+            "BookmarkedActionMessage" -> BookmarkedActionMessage::class
+            "BookmarkedPicMessage" -> BookmarkedPicMessage::class
+            "BookmarkedPollMessage" -> BookmarkedPollMessage::class
+            "BookmarkedAudioMessage" -> BookmarkedAudioMessage::class
+            "BookmarkedGroupChatInviteMessage" -> BookmarkedGroupChatInviteMessage::class
+            "BookmarkedDocMessage" -> BookmarkedDocMessage::class
+            "BookmarkedVideoMessage" -> BookmarkedVideoMessage::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)
@@ -300,16 +300,17 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "NewTextMessage" -> NewTextMessage::class
             "NewActionMessage" -> NewActionMessage::class
             "NewPicMessage" -> NewPicMessage::class
-            "NewPollMessage" -> NewPollMessage::class
-            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
+            "NewPollMessage" -> NewPollMessage::class
             "NewVideoMessage" -> NewVideoMessage::class
+            "UpdatedPollMessage" -> UpdatedPollMessage::class
             "UpdatedMessage" -> UpdatedMessage::class
             "TriggeredAction" -> TriggeredAction::class
             "DeletedMessage" -> DeletedMessage::class
             "UserChatMessagesRemoval" -> UserChatMessagesRemoval::class
+            "UnbookmarkedChat" -> UnbookmarkedChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
         }
         return parser.codec.treeToValue(node, clazz.java)

@@ -144,16 +144,19 @@ class GroupChatsTest {
         }
 
         @Test
-        fun `Deleting a chat must wipe it from the DB`(): Unit = runBlocking {
-            val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
-            val chatId = GroupChats.create(setOf(adminId), listOf(userId))
-            val messageId = Messages.message(adminId, chatId)
-            TypingStatuses.update(chatId, adminId, isTyping = true)
-            Stargazers.create(userId, messageId)
-            GroupChatUsers.removeUsers(chatId, adminId, userId)
-            listOf(Chats, GroupChats, GroupChatUsers, Messages, Stargazers, TypingStatuses)
-                .forEach { assertEquals(0, it.count()) }
-        }
+        fun `Deleting a chat must wipe it from the DB including group chat invitations for it sent in other chats`(): Unit =
+            runBlocking {
+                val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
+                val groupChatId = GroupChats.create(setOf(adminId), listOf(userId))
+                val privateChatId = PrivateChats.create(adminId, userId)
+                val messageId = Messages.message(adminId, groupChatId)
+                Messages.message(adminId, privateChatId, invitedChatId = groupChatId)
+                TypingStatuses.update(groupChatId, adminId, isTyping = true)
+                Bookmarks.create(userId, messageId)
+                GroupChatUsers.removeUsers(groupChatId, adminId, userId)
+                listOf(GroupChats, GroupChatUsers, Messages, Bookmarks, TypingStatuses)
+                    .forEach { assertEquals(0, it.count()) }
+            }
     }
 
     @Nested

@@ -248,24 +248,24 @@ class MutationsTest {
     }
 
     @Nested
-    inner class Unstar {
+    inner class DeleteBookmark {
         @Test
-        fun `The message must get unstarred`() {
+        fun `The message must get unbookmarked`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            Stargazers.create(adminId, messageId)
+            Bookmarks.create(adminId, messageId)
             val errors = executeGraphQlViaEngine(
                 """
-                mutation Unstar(${"$"}messageId: Int!) {
-                    unstar(messageId: ${"$"}messageId)
+                mutation DeleteBookmark(${"$"}messageId: Int!) {
+                    deleteBookmark(messageId: ${"$"}messageId)
                 }
                 """,
                 mapOf("messageId" to messageId),
                 adminId,
             ).errors
             assertNull(errors)
-            assertEquals(0, Stargazers.count())
+            assertEquals(0, Bookmarks.count())
         }
     }
 
@@ -491,15 +491,6 @@ class MutationsTest {
         }
 
         @Test
-        fun `Attempting to forward a group chat invite to the chat being invited to must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val (chat1Id, chat2Id) =
-                (1..2).map { GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE) }
-            val messageId = Messages.message(adminId, chat1Id, invitedChatId = chat2Id)
-            assertEquals("InvalidChatId", executeForwardMessage(adminId, chat2Id, messageId))
-        }
-
-        @Test
         fun `Only admins must be allowed to forward messages to broadcast chats`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val (chat1Id, chat2Id) =
@@ -576,14 +567,6 @@ class MutationsTest {
             val messageId = Messages.message(user1Id, privateChatId)
             assertEquals("InvalidMessageId", executeForwardMessage(user1Id, groupChatId, messageId, contextMessageId))
         }
-
-        @Test
-        fun `Attempting to forward a message in the chat it's from must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId))
-            val messageId = Messages.message(adminId, chatId)
-            assertEquals("InvalidChatId", executeForwardMessage(adminId, chatId, messageId))
-        }
     }
 
     @Nested
@@ -626,48 +609,48 @@ class MutationsTest {
     }
 
     @Nested
-    inner class Star {
-        private fun executeStar(userId: Int, messageId: Int): String? {
+    inner class CreateBookmark {
+        private fun executeBookmark(userId: Int, messageId: Int): String? {
             val data = executeGraphQlViaEngine(
                 """
-                mutation Star(${"$"}messageId: Int!) {
-                    star(messageId: ${"$"}messageId) {
+                mutation CreateBookmark(${"$"}messageId: Int!) {
+                    createBookmark(messageId: ${"$"}messageId) {
                         __typename
                     }
                 }
                 """,
                 mapOf("messageId" to messageId),
                 userId,
-            ).data!!["star"] as Map<*, *>?
+            ).data!!["createBookmark"] as Map<*, *>?
             return data?.get("__typename") as String?
         }
 
         @Test
-        fun `The message must get starred`() {
+        fun `The message must get bookmarked`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertNull(executeStar(adminId, messageId))
-            assertTrue(Stargazers.hasStar(adminId, messageId))
+            assertNull(executeBookmark(adminId, messageId))
+            assertTrue(Bookmarks.isBookmarked(adminId, messageId))
         }
 
         @Test
-        fun `Attempting to star a message the user can't see must fail`() {
+        fun `Attempting to bookmark a message the user can't see must fail`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
             PrivateChatDeletions.create(chatId, user1Id)
-            assertEquals("InvalidMessageId", executeStar(user1Id, messageId))
-            assertFalse(Stargazers.hasStar(user1Id, chatId))
+            assertEquals("InvalidMessageId", executeBookmark(user1Id, messageId))
+            assertFalse(Bookmarks.isBookmarked(user1Id, chatId))
         }
 
         @Test
-        fun `Attempting to star a message from a chat the user isn't in must fail`() {
+        fun `Attempting to bookmark a message from a chat the user isn't in must fail`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId))
             val messageId = Messages.message(adminId, chatId)
-            assertEquals("InvalidMessageId", executeStar(userId, messageId))
-            assertFalse(Stargazers.hasStar(userId, messageId))
+            assertEquals("InvalidMessageId", executeBookmark(userId, messageId))
+            assertFalse(Bookmarks.isBookmarked(userId, messageId))
         }
     }
 
@@ -838,13 +821,13 @@ class MutationsTest {
         }
 
         @Test
-        fun `The chat must get deleted, and the user's starred messages from the chat must get deleted`() {
+        fun `The chat must get deleted, and the user's bookmarked messages from the chat must get deleted`() {
             val (user1Id, user2Id) = createVerifiedUsers(2).map { it.userId }
             val chatId = PrivateChats.create(user1Id, user2Id)
             val messageId = Messages.message(user1Id, chatId)
-            Stargazers.create(user1Id, messageId)
+            Bookmarks.create(user1Id, messageId)
             assertNull(executeDeletePrivateChat(user1Id, chatId))
-            assertEquals(0, Stargazers.count())
+            assertEquals(0, Bookmarks.count())
         }
 
         @Test
@@ -1215,13 +1198,13 @@ class MutationsTest {
         }
 
         @Test
-        fun `Only the removed user's stars must get deleted`() {
+        fun `Only the removed user's bookmarks must get deleted`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(adminId, chatId)
-            listOf(adminId, userId).forEach { Stargazers.create(it, messageId) }
+            listOf(adminId, userId).forEach { Bookmarks.create(it, messageId) }
             executeRemoveGroupChatUsers(adminId, chatId, listOf(userId)).let(::assertNull)
-            assertEquals(1, Stargazers.count())
+            assertEquals(1, Bookmarks.count())
         }
 
         @Test
@@ -1290,13 +1273,13 @@ class MutationsTest {
         }
 
         @Test
-        fun `The user must leave, and their stars must get deleted only for them`() {
+        fun `The user must leave, and their bookmarks must get deleted only for them`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), listOf(userId))
             val messageId = Messages.message(userId, chatId)
-            listOf(adminId, userId).forEach { Stargazers.create(it, messageId) }
+            listOf(adminId, userId).forEach { Bookmarks.create(it, messageId) }
             assertNull(executeLeaveGroupChat(userId, chatId))
-            assertEquals(1, Stargazers.count())
+            assertEquals(1, Bookmarks.count())
         }
 
         @Test
@@ -1677,13 +1660,6 @@ class MutationsTest {
                 userId,
             ).data!!["createGroupChatInviteMessage"] as Map<*, *>?
             return data?.get("__typename") as String?
-        }
-
-        @Test
-        fun `Attempting to create an invite message for the chat in the chat itself must fail`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.INVITABLE)
-            assertEquals("InvalidChatId", executeCreateGroupChatInviteMessage(adminId, chatId, invitedChatId = chatId))
         }
 
         @Test

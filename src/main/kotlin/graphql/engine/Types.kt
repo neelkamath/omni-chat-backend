@@ -9,7 +9,7 @@ fun wireGraphQlTypes(builder: RuntimeWiring.Builder): RuntimeWiring.Builder = bu
     .type("SetPublicityResult") { wireType(it, ::readSetPublicityResult) }
     .type("Chat") { wireType(it, ::readChat) }
     .type("BareGroupChat") { wireType(it, ::readBareGroupChat) }
-    .type("StarredMessage") { wireType(it, ::readStarredMessage) }
+    .type("BookmarkedMessage") { wireType(it, ::readBookmarkedMessage) }
     .type("NewMessage") { wireType(it, ::readNewMessage) }
     .type("Message") { wireType(it, ::readMessage) }
     .type("MessagesSubscription") { wireType(it, ::readMessagesSubscription) }
@@ -94,6 +94,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is TriggeredAction -> "TriggeredAction"
     is DeletedMessage -> "DeletedMessage"
     is UserChatMessagesRemoval -> "UserChatMessagesRemoval"
+    is UnbookmarkedChat -> "UnbookmarkedChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
@@ -355,15 +356,15 @@ private fun readMessage(obj: Any): String = when (obj) {
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 
-private fun readStarredMessage(obj: Any): String = when (obj) {
-    is StarredTextMessage -> "StarredTextMessage"
-    is StarredActionMessage -> "StarredActionMessage"
-    is StarredPicMessage -> "StarredPicMessage"
-    is StarredPollMessage -> "StarredPollMessage"
-    is StarredAudioMessage -> "StarredAudioMessage"
-    is StarredGroupChatInviteMessage -> "StarredGroupChatInviteMessage"
-    is StarredDocMessage -> "StarredDocMessage"
-    is StarredVideoMessage -> "StarredVideoMessage"
+private fun readBookmarkedMessage(obj: Any): String = when (obj) {
+    is BookmarkedTextMessage -> "BookmarkedTextMessage"
+    is BookmarkedActionMessage -> "BookmarkedActionMessage"
+    is BookmarkedPicMessage -> "BookmarkedPicMessage"
+    is BookmarkedPollMessage -> "BookmarkedPollMessage"
+    is BookmarkedAudioMessage -> "BookmarkedAudioMessage"
+    is BookmarkedGroupChatInviteMessage -> "BookmarkedGroupChatInviteMessage"
+    is BookmarkedDocMessage -> "BookmarkedDocMessage"
+    is BookmarkedVideoMessage -> "BookmarkedVideoMessage"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
 }
 

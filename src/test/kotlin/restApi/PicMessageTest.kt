@@ -83,11 +83,12 @@ class PicMessageTest {
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
-            mapOf(admin to HttpStatusCode.NoContent, user to HttpStatusCode.Unauthorized).forEach {
-                val actual = postPicMessage(it.key.accessToken, chatId, "76px×57px.jpg").status()
-                assertEquals(it.value, actual)
-                assertEquals(1, Messages.count())
-            }
+            val userStatus = postPicMessage(user.accessToken, chatId, "76px×57px.jpg").status()
+            assertEquals(HttpStatusCode.BadRequest, userStatus)
+            assertEquals(0, Messages.count())
+            val adminStatus = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
+            assertEquals(HttpStatusCode.NoContent, adminStatus)
+            assertEquals(1, Messages.count())
         }
 
         @Test
@@ -188,7 +189,7 @@ class PicMessageTest {
 
         @Test
         fun `Attempting to create a message with an invalid file size must fail`(): Unit =
-            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "5.6MB.jpg")
+            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "3.9MB.jpg")
 
         @Test
         fun `Attempting to create a message with an invalid caption must fail`(): Unit =

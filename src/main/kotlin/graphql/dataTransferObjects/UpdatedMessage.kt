@@ -2,8 +2,8 @@
 
 package com.neelkamath.omniChatBackend.graphql.dataTransferObjects
 
+import com.neelkamath.omniChatBackend.db.tables.Bookmarks
 import com.neelkamath.omniChatBackend.db.tables.Messages
-import com.neelkamath.omniChatBackend.db.tables.Stargazers
 import com.neelkamath.omniChatBackend.userId
 import graphql.schema.DataFetchingEnvironment
 
@@ -12,5 +12,5 @@ class UpdatedMessage(private val messageId: Int) : MessagesSubscription, ChatMes
 
     fun getMessageId(): Int = messageId
 
-    fun getHasStar(env: DataFetchingEnvironment): Boolean = Stargazers.hasStar(env.userId!!, messageId)
+    fun getIsBookmarked(env: DataFetchingEnvironment): Boolean = Bookmarks.isBookmarked(env.userId!!, messageId)
 }

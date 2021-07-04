@@ -2,7 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnstarredChat
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UnbookmarkedChat
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
 import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
@@ -123,7 +123,7 @@ object GroupChatUsers : Table() {
      * An [IllegalArgumentException] will be thrown if not [canUsersLeave].
      *
      * Subscribers in the chat (including the [userIdList]) will be notified of the [UpdatedGroupChat]s via
-     * [chatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnstarredChat] via
+     * [chatsNotifier] and [groupChatMetadataNotifier]. Removed users will be notified of the [UnbookmarkedChat] via
      * [messagesNotifier]. Clients who have subscribed to the [chatId] via [chatMessagesNotifier],
      * [chatOnlineStatusesNotifier], [chatAccountsNotifier], [groupChatMetadataNotifier], and
      * [chatTypingStatusesNotifier] will be unsubscribed if the chat gets deleted.
@@ -137,7 +137,7 @@ object GroupChatUsers : Table() {
         transaction {
             deleteWhere { (groupChatId eq chatId) and (userId inList removedIdList) }
         }
-        removedIdList.forEach { Stargazers.deleteUserChat(it, chatId) }
+        removedIdList.forEach { Bookmarks.deleteUserChat(it, chatId) }
         val update = UpdatedGroupChat(chatId, removedUserIdList = removedIdList)
         chatsNotifier.publish(update, originalIdList.map(::UserId))
         groupChatMetadataNotifier.publish(update, ChatId(chatId))

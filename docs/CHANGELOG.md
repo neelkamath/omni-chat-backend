@@ -6,6 +6,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## [0.23.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.23.0) - 2021-07-04
+
+## Changed
+
+- Improve error handling for HTTP POST `/pic-message`, HTTP POST `/audio-message`, HTTP POST `/video-message`, and HTTP POST `/doc-message`.
+
+    Previously, creating a message in a broadcast chat would cause an HTTP status code of 401 to be returned. Now, an HTTP status code of 400 is returned with the following `application/json` response body:
+
+    ```json
+    {
+      "reason": "MUST_BE_ADMIN"
+    }
+    ```
+- Add the field `chatId` to `interface BareGroupChat` and `type GroupChatInfo`.
+- Rename `Query.readStars` to `Query.readBookmarks`.
+- Rename `Mutation.star` to `Mutation.createBookmark`.
+- Rename `Mutation.unstar` to `Mutation.deleteBookmark`.
+- Rename `type UnstarredChat` to `type UnbookmarkedChat`.
+- Rename `type StarredMessagesConnection` to `type BookmarkedMessagesConnection`.
+- Rename `type StarredMessageEdge` to `type BookmarkedMessageEdge`.
+- Rename the `hasStar` field to `isBookmarked` for the following:
+    - `interface Message`
+    - `type TextMessage`
+    - `type ActionMessage`
+    - `type PicMessage`
+    - `type PollMessage`
+    - `type AudioMessage`
+    - `type GroupChatInviteMessage`
+    - `type DocMessage`
+    - `type VideoMessage`
+    - `type UpdatedMessage`
+- Rename `interface StarredMessage` to `interface BookmarkedMessage`.
+- Rename `type StarredTextMessage` to `type BookmarkedTextMessage`.
+- Rename `type StarredActionMessage` to `type BookmarkedActionMessage`.
+- Rename `type StarredPicMessage` to `type BookmarkedPicMessage`.
+- Rename `type StarredPollMessage` to `type BookmarkedPollMessage`.
+- Rename `type StarredAudioMessage` to `type BookmarkedAudioMessage`.
+- Rename `type StarredGroupChatInviteMessage` to `type BookmarkedGroupChatInviteMessage`.
+- Rename `type StarredDocMessage` to `type BookmarkedDocMessage`.
+- Rename `type StarredVideoMessage` to `type BookmarkedVideoMessage`.
+- Change the size for media uploads and downloads from 5 MiB to 3 MiB for the following:
+    - `/profile-pic`
+    - `/group-chat-pic`
+    - `/pic-message`
+    - `/audio-message`
+    - `/video-message`
+    - `/doc-message`
+- Allow creating an invitation for the chat itself using `Mutation.createGroupChatInviteMessage` instead of returning a `type InvalidChatId`.
+- Allow forwarding a message in the chat it's from using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
+- Allow forwarding a group chat invite in the chat it's for using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
+
+### Fixed
+
+- Fix `Mutation.leaveGroupChat` and `Mutation.removeGroupChatUsers`. They used to crash if every user left the chat when there were group chat invitations for the chat in other chats.
+- Fix `Subscription.subscribeToMessages` not sending back `type UnbookmarkedChat`s.
+
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 
 ### Added

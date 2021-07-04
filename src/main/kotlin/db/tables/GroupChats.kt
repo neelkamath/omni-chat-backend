@@ -116,7 +116,8 @@ object GroupChats : Table() {
     }
 
     /**
-     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], and [Messages].
+     * Deletes the [chatId] from [Chats], [GroupChats], [TypingStatuses], and [Messages]. [GroupChatInviteMessages] for
+     * the [chatId] which have been sent in other chats will also get deleted.
      *
      * An [IllegalArgumentException] will be thrown if the [chatId] has users in it.
      *
@@ -127,6 +128,7 @@ object GroupChats : Table() {
         require(userIdList.isEmpty()) { "The chat (ID: $chatId) is not empty (user IDs: $userIdList)." }
         TypingStatuses.deleteChat(chatId)
         Messages.deleteChat(chatId)
+        GroupChatInviteMessages.deleteChat(chatId)
         transaction {
             deleteWhere { GroupChats.id eq chatId }
         }

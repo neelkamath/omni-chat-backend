@@ -35,7 +35,7 @@ data class Audio(
     }
 
     companion object {
-        const val MAX_BYTES = 5 * 1024 * 1024
+        const val MAX_BYTES = 3 * 1024 * 1024
 
         /** Whether the [extension] is one of the supported audio types (i.e., MP3 and MP4). */
         fun isValidExtension(extension: String): Boolean =
@@ -93,7 +93,7 @@ data class Pic(
     }
 
     companion object {
-        const val ORIGINAL_MAX_BYTES = 5 * 1024 * 1024
+        const val ORIGINAL_MAX_BYTES = 3 * 1024 * 1024
         const val THUMBNAIL_MAX_BYTES = 100 * 100
 
         /**
