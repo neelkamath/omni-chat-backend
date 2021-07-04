@@ -1,5 +1,8 @@
 package com.neelkamath.omniChatBackend.db.tables
 
+import com.neelkamath.omniChatBackend.db.chatMessagesNotifier
+import com.neelkamath.omniChatBackend.db.messagesNotifier
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.DeletedMessage
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -22,7 +25,23 @@ object GroupChatInviteMessages : Table() {
     fun read(messageId: Int): Int =
         transaction { select(GroupChatInviteMessages.messageId eq messageId).first()[groupChatId] }
 
-    fun delete(messageIdList: Collection<Int>): Unit = transaction {
+    /** @see deleteChat */
+    fun deleteMessages(messageIdList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }
+    }
+
+    /**
+     * Deletes every invitation for the [chatId].
+     *
+     * Subscribers will be notified of the [DeletedMessage]s via [messagesNotifier]. If a message is from a public group
+     * chat, then subscribers will be notified via [chatMessagesNotifier] as well.
+     *
+     * @see deleteMessages
+     */
+    fun deleteChat(chatId: Int) {
+        val messageIdList = transaction {
+            select(groupChatId eq chatId).map { it[messageId] }
+        }
+        Messages.delete(messageIdList)
     }
 }

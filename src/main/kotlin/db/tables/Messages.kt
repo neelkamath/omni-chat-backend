@@ -434,7 +434,7 @@ object Messages : IntIdTable() {
         transaction { select(Messages.id eq messageId).first()[contextMessageId] }
 
     /** [Messages] with [contextMessageId]s of deleted messages will have their [contextMessageId] set to `null`. */
-    private fun deleteChatMessages(messageIdList: Collection<Int>) {
+    private fun deleteMessages(messageIdList: Collection<Int>) {
         Bookmarks.deleteBookmarks(messageIdList)
         TextMessages.delete(messageIdList)
         ActionMessages.delete(messageIdList)
@@ -443,21 +443,19 @@ object Messages : IntIdTable() {
         PollMessages.delete(messageIdList)
         DocMessages.delete(messageIdList)
         VideoMessages.delete(messageIdList)
-        GroupChatInviteMessages.delete(messageIdList)
+        GroupChatInviteMessages.deleteMessages(messageIdList)
         transaction {
             update({ contextMessageId inList messageIdList }) { it[contextMessageId] = null }
             deleteWhere { Messages.id inList messageIdList }
         }
     }
 
-    private fun deleteChatMessages(vararg messageIdList: Int): Unit = deleteChatMessages(messageIdList.toList())
-
     /** Deletes every message from the [chatId]. */
-    fun deleteChat(chatId: Int): Unit = deleteChatMessages(readMessageIdList(chatId))
+    fun deleteChat(chatId: Int): Unit = deleteMessages(readMessageIdList(chatId))
 
     /** Deletes all messages in the [chatId] [until] the specified [LocalDateTime]. */
     fun deleteChatUntil(chatId: Int, until: LocalDateTime): Unit =
-        deleteChatMessages(readMessageIdList(chatId, sent less until))
+        deleteMessages(readMessageIdList(chatId, sent less until))
 
     /**
      * Deletes all messages the [userId] created in the [chatId].
@@ -466,7 +464,7 @@ object Messages : IntIdTable() {
      * group chat, subscribers will also be notified via [chatMessagesNotifier].
      */
     fun deleteUserChatMessages(chatId: Int, userId: Int) {
-        deleteChatMessages(readMessageIdList(chatId, senderId eq userId))
+        deleteMessages(readMessageIdList(chatId, senderId eq userId))
         val update = UserChatMessagesRemoval(chatId, userId)
         messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
         if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
@@ -481,18 +479,22 @@ object Messages : IntIdTable() {
     }.forEach { deleteUserChatMessages(it, userId) }
 
     /**
-     * Deletes the [messageId] in the [chatId] from messages.
+     * Deletes the [messageIdList].
      *
-     * Subscribers will be notified of the [DeletedMessage] via [messagesNotifier]. If the [messageId] is from a public
-     * group chat, then subscribers will be notified via [chatMessagesNotifier] as well.
+     * Subscribers will be notified of the [DeletedMessage]s via [messagesNotifier]. If a message is from a public group
+     * chat, then subscribers will be notified via [chatMessagesNotifier] as well.
      */
-    fun delete(messageId: Int) {
-        val chatId = readChatId(messageId)
-        deleteChatMessages(messageId)
-        val update = DeletedMessage(chatId, messageId)
-        messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
-        if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
+    fun delete(messageIdList: Collection<Int>) {
+        messageIdList.forEach {
+            val chatId = readChatId(it)
+            val update = DeletedMessage(chatId, it)
+            messagesNotifier.publish(update, readUserIdList(chatId).map(::UserId))
+            if (GroupChats.isExistingPublicChat(chatId)) chatMessagesNotifier.publish(update, ChatId(chatId))
+        }
+        deleteMessages(messageIdList)
     }
+
+    fun delete(vararg messageIdList: Int): Unit = delete(messageIdList.toList())
 
     /** Whether there are messages in the [chatId] [from] the [LocalDateTime]. */
     fun isExistingFrom(chatId: Int, from: LocalDateTime): Boolean =

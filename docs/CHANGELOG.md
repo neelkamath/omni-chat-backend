@@ -48,6 +48,10 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Allow forwarding a message in the chat it's from using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
 - Allow forwarding a group chat invite in the chat it's for using `Mutation.forwardMessage` instead of returning a `type InvalidChatId`.
 
+### Fixed
+
+- Fix `Mutation.leaveGroupChat` and `Mutation.removeGroupChatUsers`. They used to crash if every user left the chat when there were group chat invitations for the chat in other chats.
+
 ## [0.22.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.22.0) - 2021-06-29
 
 ### Added
