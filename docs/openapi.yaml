@@ -198,11 +198,8 @@ paths:
   /group-chat-pic:
     get:
       tags: [ groupChatPic ]
-      description: Retrieves the group chat's pic. An access token needn't be sent if the chat is public. Otherwise,
-        the user must be a participant to view the pic.
+      description: Retrieves the group chat's pic.
       operationId: getGroupChatPic
-      security:
-        - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
         - $ref: '#/components/parameters/PicType'

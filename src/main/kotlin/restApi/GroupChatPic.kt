@@ -1,7 +1,6 @@
 package com.neelkamath.omniChatBackend.restApi
 
 import com.neelkamath.omniChatBackend.db.PicType
-import com.neelkamath.omniChatBackend.db.readUserIdList
 import com.neelkamath.omniChatBackend.db.tables.GroupChatUsers
 import com.neelkamath.omniChatBackend.db.tables.GroupChats
 import com.neelkamath.omniChatBackend.userId
@@ -13,7 +12,7 @@ import io.ktor.routing.*
 
 fun routeGroupChatPic(routing: Routing): Unit = with(routing) {
     route("group-chat-pic") {
-        authenticate(optional = true) { getGroupChatPic(this) }
+        getGroupChatPic(this)
         authenticate { patchGroupChatPic(this) }
     }
 }
@@ -22,15 +21,10 @@ private fun getGroupChatPic(route: Route): Unit = with(route) {
     get {
         val chatId = call.parameters["chat-id"]!!.toInt()
         val type = PicType.valueOf(call.parameters["pic-type"]!!)
-        val isAuthorizedParticipant = call.userId != null && call.userId in readUserIdList(chatId)
-        when {
-            !GroupChats.isExisting(chatId) -> call.respond(HttpStatusCode.BadRequest)
-            GroupChats.isExistingPublicChat(chatId) || isAuthorizedParticipant -> {
-                val pic = GroupChats.readPic(chatId, type)
-                if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic)
-            }
-            else -> call.respond(HttpStatusCode.Unauthorized)
-        }
+        if (GroupChats.isExisting(chatId)) {
+            val pic = GroupChats.readPic(chatId, type)
+            if (pic == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(pic)
+        } else call.respond(HttpStatusCode.BadRequest)
     }
 }
 

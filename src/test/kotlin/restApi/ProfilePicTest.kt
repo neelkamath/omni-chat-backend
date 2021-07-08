@@ -20,7 +20,7 @@ private fun getProfilePic(userId: Int, type: PicType): TestApplicationResponse =
     }
 
 private fun patchProfilePic(accessToken: String, filename: String): TestApplicationResponse =
-    uploadFile(accessToken, filename, readBytes(filename), HttpMethod.Patch, "profile-pic")
+    uploadFile(filename, readBytes(filename), HttpMethod.Patch, "profile-pic", accessToken = accessToken)
 
 @ExtendWith(DbExtension::class)
 class ProfilePicTest {

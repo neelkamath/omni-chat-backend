@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
-private fun getPicMessage(accessToken: String? = null, messageId: Int, type: PicType): TestApplicationResponse =
-    getFileMessage(accessToken, path = "pic-message", messageId, type)
+private fun getPicMessage(messageId: Int, type: PicType, accessToken: String? = null): TestApplicationResponse =
+    getFileMessage(path = "pic-message", messageId, type, accessToken)
 
 private fun postPicMessage(
     accessToken: String,
@@ -22,7 +22,6 @@ private fun postPicMessage(
     caption: String? = null,
     contextMessageId: Int? = null,
 ): TestApplicationResponse = uploadMultipart(
-    accessToken,
     HttpMethod.Post,
     "pic-message",
     listOfNotNull(
@@ -31,6 +30,7 @@ private fun postPicMessage(
         buildFormItem("context-message-id", contextMessageId.toString()).takeIf { contextMessageId != null },
         buildFormItem("caption", caption.toString()).takeIf { caption != null },
     ),
+    accessToken = accessToken,
 )
 
 @ExtendWith(DbExtension::class)
@@ -43,7 +43,7 @@ class PicMessageTest {
             val chatId = GroupChats.create(setOf(admin.userId))
             val pic = readPic("76px×57px.jpg")
             val messageId = Messages.message(admin.userId, chatId, CaptionedPic(pic, caption = null))
-            val response = getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)
+            val response = getPicMessage(messageId, PicType.ORIGINAL, admin.accessToken)
             assertEquals(HttpStatusCode.OK, response.status())
             assertContentEquals(pic.original, response.byteContent!!)
         }
@@ -51,7 +51,7 @@ class PicMessageTest {
         @Test
         fun `An HTTP status code of 401 must be returned when retrieving a non-existing message`() {
             val token = createVerifiedUsers(1).first().accessToken
-            assertEquals(HttpStatusCode.Unauthorized, getPicMessage(token, messageId = 1, PicType.ORIGINAL).status())
+            assertEquals(HttpStatusCode.Unauthorized, getPicMessage(messageId = 1, PicType.ORIGINAL).status(), token)
         }
 
         private fun createMessage(): Pair<String, Int> {
@@ -65,14 +65,14 @@ class PicMessageTest {
         @Test
         fun `The original image must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
-            val response = getPicMessage(accessToken, messageId, PicType.ORIGINAL).byteContent
+            val response = getPicMessage(messageId, PicType.ORIGINAL, accessToken).byteContent
             assertContentEquals(PicMessages.readPic(messageId, PicType.ORIGINAL), response)
         }
 
         @Test
         fun `The thumbnail must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
-            val response = getPicMessage(accessToken, messageId, PicType.THUMBNAIL).byteContent
+            val response = getPicMessage(messageId, PicType.THUMBNAIL, accessToken).byteContent
             assertContentEquals(PicMessages.readPic(messageId, PicType.THUMBNAIL), response)
         }
     }

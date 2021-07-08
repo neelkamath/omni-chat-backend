@@ -13,17 +13,15 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
-private fun getGroupChatPic(accessToken: String? = null, chatId: Int, type: PicType): TestApplicationResponse =
+private fun getGroupChatPic(chatId: Int, type: PicType): TestApplicationResponse =
     withTestApplication(Application::main) {
         val parameters = listOf("chat-id" to chatId.toString(), "pic-type" to type.toString()).formUrlEncode()
-        handleRequest(HttpMethod.Get, "group-chat-pic?$parameters") {
-            if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-        }.response
+        handleRequest(HttpMethod.Get, "group-chat-pic?$parameters").response
     }
 
 private fun patchGroupChatPic(accessToken: String, chatId: Int, filename: String): TestApplicationResponse {
     val parameters = listOf("chat-id" to chatId.toString()).formUrlEncode()
-    return uploadFile(accessToken, filename, readBytes(filename), HttpMethod.Patch, "group-chat-pic", parameters)
+    return uploadFile(filename, readBytes(filename), HttpMethod.Patch, "group-chat-pic", parameters, accessToken)
 }
 
 @ExtendWith(DbExtension::class)
@@ -72,20 +70,20 @@ class GroupChatPicTest {
     inner class GetGroupChatPic {
         @Test
         fun `A pic must be retrieved with an HTTP status code of 200`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
             val pic = readPic("76px×57px.jpg")
             GroupChats.updatePic(chatId, pic)
-            val response = getGroupChatPic(admin.accessToken, chatId, PicType.ORIGINAL)
+            val response = getGroupChatPic(chatId, PicType.ORIGINAL)
             assertEquals(HttpStatusCode.OK, response.status())
             assertContentEquals(pic.original, response.byteContent)
         }
 
         @Test
         fun `An HTTP status code of 204 must be received when reading a non-existing pic`() {
-            val admin = createVerifiedUsers(1).first()
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val status = getGroupChatPic(admin.accessToken, chatId, PicType.ORIGINAL).status()
+            val adminId = createVerifiedUsers(1).first().userId
+            val chatId = GroupChats.create(setOf(adminId))
+            val status = getGroupChatPic(chatId, PicType.ORIGINAL).status()
             assertEquals(HttpStatusCode.NoContent, status)
         }
 
@@ -113,30 +111,6 @@ class GroupChatPicTest {
             val (chatId, pic) = createGroupChat()
             val response = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).byteContent
             assertContentEquals(pic.thumbnail, response)
-        }
-
-        @Test
-        fun `The pic must be retrieved from a public chat sans access token`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
-            val status = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).status()
-            assertEquals(HttpStatusCode.NoContent, status)
-        }
-
-        @Test
-        fun `The pic must not be retrieved from a chat sans access token`() {
-            val adminId = createVerifiedUsers(1).first().userId
-            val chatId = GroupChats.create(setOf(adminId))
-            val status = getGroupChatPic(chatId = chatId, type = PicType.THUMBNAIL).status()
-            assertEquals(HttpStatusCode.Unauthorized, status)
-        }
-
-        @Test
-        fun `The pic must not be retrieved from a chat the user isn't in`() {
-            val (admin, user) = createVerifiedUsers(2)
-            val chatId = GroupChats.create(setOf(admin.userId))
-            val status = getGroupChatPic(user.accessToken, chatId, PicType.THUMBNAIL).status()
-            assertEquals(HttpStatusCode.Unauthorized, status)
         }
     }
 }

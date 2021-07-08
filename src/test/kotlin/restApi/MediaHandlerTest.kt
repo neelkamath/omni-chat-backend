@@ -23,10 +23,10 @@ data class DummyFile(val name: String, val bytes: Int) {
 }
 
 fun getFileMessage(
-    accessToken: String? = null,
     path: String,
     messageId: Int,
     picType: PicType? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     val parameters = listOf("message-id" to messageId.toString(), "pic-type" to picType?.toString())
         .filter { it.second != null }
@@ -37,14 +37,14 @@ fun getFileMessage(
 }
 
 fun uploadMultipart(
-    accessToken: String,
     method: HttpMethod,
     path: String,
     parts: List<PartData>,
     parameters: String? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
-        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         val boundary = "boundary"
         addHeader(
             HttpHeaders.ContentType,
@@ -76,22 +76,22 @@ fun buildFormItem(name: String, value: String): PartData.FormItem = PartData.For
 )
 
 fun uploadFile(
-    accessToken: String,
     filename: String,
     fileContent: ByteArray,
     method: HttpMethod,
     path: String,
     parameters: String? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse =
-    uploadMultipart(accessToken, method, path, listOf(buildFileItem(filename, fileContent)), parameters)
+    uploadMultipart(method, path, listOf(buildFileItem(filename, fileContent)), parameters, accessToken)
 
 fun uploadFile(
-    accessToken: String,
     dummy: DummyFile,
     method: HttpMethod,
     path: String,
     parameters: String? = null,
-): TestApplicationResponse = uploadFile(accessToken, dummy.name, dummy.file, method, path, parameters)
+    accessToken: String? = null,
+): TestApplicationResponse = uploadFile(dummy.name, dummy.file, method, path, parameters, accessToken)
 
 @ExtendWith(DbExtension::class)
 class MediaHandlerTest {
@@ -103,7 +103,7 @@ class MediaHandlerTest {
             val chatId = GroupChats.create(setOf(admin.userId))
             val audio = Audio(ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
-            val response = getAudioMessage(admin.accessToken, messageId)
+            val response = getAudioMessage(messageId, admin.accessToken)
             assertEquals(HttpStatusCode.OK, response.status())
             assertContentEquals(audio.bytes, response.byteContent)
         }
@@ -111,7 +111,7 @@ class MediaHandlerTest {
         @Test
         fun `An HTTP status code of 401 must be returned when retrieving a non-existing message`() {
             val token = createVerifiedUsers(1).first().accessToken
-            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(token, messageId = 1).status())
+            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(messageId = 1, token).status())
         }
 
         @Test
