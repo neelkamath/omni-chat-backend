@@ -8,7 +8,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ## [0.23.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.23.0) - 2021-07-04
 
-## Changed
+### Changed
 
 - Improve error handling for HTTP POST `/pic-message`, HTTP POST `/audio-message`, HTTP POST `/video-message`, and HTTP POST `/doc-message`.
 
