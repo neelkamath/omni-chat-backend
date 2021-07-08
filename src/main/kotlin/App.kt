@@ -60,12 +60,12 @@ fun Application.main() {
     }
     routing {
         routeHealthCheck(this)
-        routePicMessage(this)
+        routeImageMessage(this)
         routeAudioMessage(this)
         routeVideoMessage(this)
         routeDocMessage(this)
-        routeProfilePic(this)
-        routeGroupChatPic(this)
+        routeProfileImage(this)
+        routeGroupChatImage(this)
         routeGraphQlQueriesAndMutations(this)
         routeGraphQlSubscriptions(this)
     }

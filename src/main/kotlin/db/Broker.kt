@@ -278,12 +278,12 @@ val onlineStatusesNotifier = Notifier<OnlineStatusesSubscription, UserId>(Topic.
 val chatOnlineStatusesNotifier = Notifier<ChatOnlineStatusesSubscription, ChatId>(Topic.CHAT_ONLINE_STATUSES)
 
 /**
- * Notifies subscribers of the updated [userId] via [accountsNotifier] and [chatAccountsNotifier]. If [isProfilePic], an
- * [UpdatedProfilePic] will be sent, and an [UpdatedAccount] otherwise.
+ * Notifies subscribers of the updated [userId] via [accountsNotifier] and [chatAccountsNotifier]. If [isProfileImage], an
+ * [UpdatedProfileImage] will be sent, and an [UpdatedAccount] otherwise.
  */
-fun negotiateUserUpdate(userId: Int, isProfilePic: Boolean) {
+fun negotiateUserUpdate(userId: Int, isProfileImage: Boolean) {
     val subscribers = Contacts.readOwnerUserIdList(userId).plus(userId).plus(readChatSharers(userId)).map(::UserId)
-    val update = if (isProfilePic) UpdatedProfilePic(userId) else UpdatedAccount(userId)
+    val update = if (isProfileImage) UpdatedProfileImage(userId) else UpdatedAccount(userId)
     accountsNotifier.publish(update, subscribers)
     val chatIdList = GroupChatUsers.readChatIdList(userId).filter(GroupChats::isExistingPublicChat).map(::ChatId)
     chatAccountsNotifier.publish(update, chatIdList)

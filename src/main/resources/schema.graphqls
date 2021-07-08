@@ -97,7 +97,7 @@ type Query {
 
     """
     Case-insensitively `query`s text messages, poll message question and options, action message text and actions, and
-    pic message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
+    image message captions in the `chatId`. The returned `MessageEdge`s are chronologically ordered.
 
     A returned `InvalidChatId` indicates that the chat isn't public, and the user isn't in the chat.
 
@@ -108,7 +108,7 @@ type Query {
 
     """
     Case-insensitively `query`s every text message, poll message's question and options, action message's text and
-    actions, and pic message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be
+    actions, and image message's caption in every chat the user is in. Each item in the returned `ChatMessages` will be
     for a particular `ChatMessages.chat`, and have the `ChatMessages.messages` from the search results. Each chat's
     messages are chronologically ordered.
 
@@ -288,18 +288,18 @@ type Mutation {
     setTyping(chatId: Int!, isTyping: Boolean!): InvalidChatId
 
     """
-    Deletes the user's profile pic.
+    Deletes the user's profile image.
 
     An access token must be sent with this request.
     """
-    deleteProfilePic: Placeholder!
+    deleteProfileImage: Placeholder!
 
     """
-    Deletes the group chat's profile pic. `null` will be returned if the operation succeeded.
+    Deletes the group chat's profile image. `null` will be returned if the operation succeeded.
 
     An access token must be sent with this request.
     """
-    deleteGroupChatPic(chatId: Int!): MustBeAdmin
+    deleteGroupChatImage(chatId: Int!): MustBeAdmin
 
     """
     Updates the user's account. Only the non-null fields will be updated. None of the updates will take place if even
@@ -683,7 +683,7 @@ union MessagesSubscription =
     | CreatedSubscription
     | NewTextMessage
     | NewActionMessage
-    | NewPicMessage
+    | NewImageMessage
     | NewAudioMessage
     | NewGroupChatInviteMessage
     | NewDocMessage
@@ -700,7 +700,7 @@ union ChatMessagesSubscription =
     | CreatedSubscription
     | NewTextMessage
     | NewActionMessage
-    | NewPicMessage
+    | NewImageMessage
     | NewAudioMessage
     | NewGroupChatInviteMessage
     | NewDocMessage
@@ -734,7 +734,7 @@ union AccountsSubscription =
     | CreatedSubscription
     | NewContact
     | UpdatedAccount
-    | UpdatedProfilePic
+    | UpdatedProfileImage
     | DeletedContact
     | BlockedAccount
     | UnblockedAccount
@@ -743,7 +743,7 @@ union AccountsSubscription =
 union ChatAccountsSubscription =
     | CreatedSubscription
     | UpdatedAccount
-    | UpdatedProfilePic
+    | UpdatedProfileImage
     | DeletedAccount
     | InvalidChatId
 
@@ -752,8 +752,8 @@ type DeletedAccount {
     userId: Int!
 }
 
-"""The `userId` of the user who updated their profile pic."""
-type UpdatedProfilePic {
+"""The `userId` of the user who updated their profile image."""
+type UpdatedProfileImage {
     userId: Int!
 }
 
@@ -765,18 +765,18 @@ If the subscriber leaves the chat, they will receive an `UpdatedGroupChat` event
 union ChatsSubscription =
     | CreatedSubscription
     | GroupChatId
-    | UpdatedGroupChatPic
+    | UpdatedGroupChatImage
     | UpdatedGroupChat
     | DeletedPrivateChat
 
 union GroupChatMetadataSubscription =
     | CreatedSubscription
-    | UpdatedGroupChatPic
+    | UpdatedGroupChatImage
     | UpdatedGroupChat
     | InvalidChatId
 
-"""The `chatId` of the group chat whose pic was updated."""
-type UpdatedGroupChatPic {
+"""The `chatId` of the group chat whose image was updated."""
+type UpdatedGroupChatImage {
     chatId: Int!
 }
 
@@ -812,7 +812,7 @@ type GroupChatId {
     chatId: Int!
 }
 
-"""This will not be sent if the profile pic was updated."""
+"""This will not be sent if the profile image was updated."""
 type UpdatedAccount implements AccountData {
     userId: Int!
     username: Username!
@@ -824,7 +824,7 @@ type UpdatedAccount implements AccountData {
 
 """
 Null fields haven't been updated. If a non-null field hasn't been updated, its value will be the same as before. This
-will not be sent if the pic has been updated.
+will not be sent if the image has been updated.
 """
 type UpdatedGroupChat {
     chatId: Int!
@@ -1126,7 +1126,7 @@ type ActionMessage implements Message {
     actionableMessage: ActionableMessage!
 }
 
-type PicMessage implements Message {
+type ImageMessage implements Message {
     messageId: Int!
     sender: Account!
     sent: DateTime!
@@ -1220,7 +1220,7 @@ type BookmarkedActionMessage implements BookmarkedMessage {
     actionableMessage: ActionableMessage!
 }
 
-type BookmarkedPicMessage implements BookmarkedMessage {
+type BookmarkedImageMessage implements BookmarkedMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1307,7 +1307,7 @@ type NewActionMessage implements NewMessage {
     actionableMessage: ActionableMessage!
 }
 
-type NewPicMessage implements NewMessage {
+type NewImageMessage implements NewMessage {
     chatId: Int!
     messageId: Int!
     sender: Account!
@@ -1575,7 +1575,7 @@ union SearchGroupChatUsersResult = AccountsConnection | InvalidChatId
 union ReadMessageResult =
     | TextMessage
     | ActionMessage
-    | PicMessage
+    | ImageMessage
     | PollMessage
     | AudioMessage
     | GroupChatInviteMessage

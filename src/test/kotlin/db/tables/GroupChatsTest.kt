@@ -4,7 +4,7 @@ import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChatPic
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChatImage
 import com.neelkamath.omniChatBackend.graphql.routing.*
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -102,9 +102,9 @@ class GroupChatsTest {
     }
 
     @Nested
-    inner class UpdatePic {
+    inner class UpdateImage {
         @Test
-        fun `Updating the chat's pic must only notify subscribers and unauthenticated subscribers`(): Unit =
+        fun `Updating the chat's image must only notify subscribers and unauthenticated subscribers`(): Unit =
             runBlocking {
                 val (adminId, nonParticipantId) = createVerifiedUsers(2).map { it.userId }
                 val chatId = GroupChats.create(setOf(adminId), publicity = GroupChatPublicity.PUBLIC)
@@ -113,24 +113,24 @@ class GroupChatsTest {
                     .map { chatsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
                 val unauthenticatedSubscriber =
                     groupChatMetadataNotifier.subscribe(ChatId(chatId)).flowable.subscribeWith(TestSubscriber())
-                GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
+                GroupChats.updateImage(chatId, readImage("76px×57px.jpg"))
                 awaitBrokering()
-                val adminSubscriberValues = adminSubscriber.values().map { (it as UpdatedGroupChatPic).getChatId() }
+                val adminSubscriberValues = adminSubscriber.values().map { (it as UpdatedGroupChatImage).getChatId() }
                 assertEquals(listOf(chatId), adminSubscriberValues)
                 nonParticipantSubscriber.assertNoValues()
                 val unauthenticatedSubscriberValues =
-                    unauthenticatedSubscriber.values().map { (it as UpdatedGroupChatPic).getChatId() }
+                    unauthenticatedSubscriber.values().map { (it as UpdatedGroupChatImage).getChatId() }
                 assertEquals(listOf(chatId), unauthenticatedSubscriberValues)
 
             }
 
         @Test
-        fun `The pic must get deleted`() {
+        fun `The image must get deleted`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
-            GroupChats.updatePic(chatId, pic = null)
-            assertNull(GroupChats.readPic(chatId, PicType.ORIGINAL))
+            GroupChats.updateImage(chatId, readImage("76px×57px.jpg"))
+            GroupChats.updateImage(chatId, image = null)
+            assertNull(GroupChats.readImage(chatId, ImageType.ORIGINAL))
         }
     }
 

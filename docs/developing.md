@@ -138,10 +138,10 @@ We use `create` (e.g., `createAccount`), `read` (e.g., `readAccount`), `update` 
 
 ## Writing Tests
 
-- Pics must be actual images (e.g., [`76px×57px.jpg`](../src/test/resources/76px×57px.jpg)) because a thumbnail is generated upon upload, and the program will crash if dummy data is provided. Other file formats such as audio should use dummies such as `kotlin.ByteArray`s.
+- Images must be actual images (e.g., [`76px×57px.jpg`](../src/test/resources/76px×57px.jpg)) because a thumbnail is generated upon upload, and the program will crash if dummy data is provided. Other file formats such as audio should use dummies such as `kotlin.ByteArray`s.
 - These test cases must be implemented when testing [forward](ForwardPaginationTest.kt) and [backward](BackwardPaginationTest.kt) pagination.
 - The test source set must mirror the main source set. Files containing tests must be named using the format `<FILE>Test.kt` (e.g., `AppTest.kt` for `App.kt`). Files in the main source set which have testing utilities but no tests in the test source set must be named using the format `<FILE>Util.kt`. For example, [`DbUtil.kt`](src/test/kotlin/db/DbUtil.kt) is named `DbUtil.kt` instead of `DbTest.kt` because it contains testing utilities for `Db.kt` but no tests.
-- Test cases must be placed in classes named after the class getting tested (e.g., `class PicTest` for `class Pic`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
+- Test cases must be placed in classes named after the class getting tested (e.g., `class ImageTest` for `class Image`). Keep tests for top-level functions in a class named after the file (e.g., the top-level `fun myFun()` in `MyFile.kt` would have its tests placed in `class MyFileTest`).
 - Each function tested must have its test cases placed in a `@Nested inner class`. The name of this class must have its first letter capitalized, and `.`s replaced with `_`s. For example, `MyFun` for `fun myFun()`, `Expression_iLike` for `fun Expression<String>.iLike(pattern: String)`, `Init` for an `init`. Test cases must be placed in the `@Nested inner class` of the function getting tested (i.e., if you're testing a private function through its public interface, or testing a function via a convenience function, place the test cases in the class of the function actually getting tested).
 
 ## Diagram

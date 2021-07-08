@@ -42,11 +42,11 @@ fun Messages.message(
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: CaptionedPic,
+    message: CaptionedImage,
     contextMessageId: Int? = null,
     isForwarded: Boolean = false,
 ): Int {
-    createPicMessage(userId, chatId, message, contextMessageId, isForwarded)
+    createImageMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()
 }
 
@@ -204,13 +204,13 @@ class MessagesTest {
         }
 
         @Test
-        fun `Pic message captions must be searched case insensitively`() {
+        fun `Image message captions must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val pic = readPic("76px×57px.jpg")
-            val message1 = CaptionedPic(pic, caption = MessageText("Hi"))
+            val image = readImage("76px×57px.jpg")
+            val message1 = CaptionedImage(image, caption = MessageText("Hi"))
             val messageId = Messages.message(adminId, chatId, message1)
-            val message2 = CaptionedPic(pic, caption = MessageText("Bye"))
+            val message2 = CaptionedImage(image, caption = MessageText("Bye"))
             Messages.message(adminId, chatId, message2)
             assertEquals(linkedHashSetOf(messageId), Messages.searchGroupChat(chatId, "hi"))
         }

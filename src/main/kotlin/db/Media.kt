@@ -1,7 +1,7 @@
 package com.neelkamath.omniChatBackend.db
 
-import com.neelkamath.omniChatBackend.db.Pic.Companion.ORIGINAL_MAX_BYTES
-import com.neelkamath.omniChatBackend.db.Pic.Companion.THUMBNAIL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.ProcessedImage.Companion.ORIGINAL_MAX_BYTES
+import com.neelkamath.omniChatBackend.db.ProcessedImage.Companion.THUMBNAIL_MAX_BYTES
 import java.awt.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -35,7 +35,7 @@ data class Audio(
     }
 
     companion object {
-        const val MAX_BYTES = 3 * 1024 * 1024
+        const val MAX_BYTES = 3 * 1_024 * 1_024
 
         /** Whether the [extension] is one of the supported audio types (i.e., MP3 and MP4). */
         fun isValidExtension(extension: String): Boolean =
@@ -44,10 +44,10 @@ data class Audio(
 }
 
 /**
- * Throws an [IllegalArgumentException] if the [original] exceeds [Pic.ORIGINAL_MAX_BYTES], or the [thumbnail] exceeds
- * [Pic.THUMBNAIL_MAX_BYTES].
+ * Throws an [IllegalArgumentException] if the [original] exceeds [ProcessedImage.ORIGINAL_MAX_BYTES], or the
+ * [thumbnail] exceeds [ProcessedImage.THUMBNAIL_MAX_BYTES].
  */
-data class Pic(
+data class ProcessedImage(
     /** At most [ORIGINAL_MAX_BYTES]. */
     val original: ByteArray,
     /** At most [THUMBNAIL_MAX_BYTES]. */
@@ -63,7 +63,7 @@ data class Pic(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Pic
+        other as ProcessedImage
 
         if (!original.contentEquals(other.original)) return false
         if (!thumbnail.contentEquals(other.thumbnail)) return false
@@ -93,7 +93,7 @@ data class Pic(
     }
 
     companion object {
-        const val ORIGINAL_MAX_BYTES = 3 * 1024 * 1024
+        const val ORIGINAL_MAX_BYTES = 3 * 1_024 * 1_024
         const val THUMBNAIL_MAX_BYTES = 100 * 100
 
         /**
@@ -102,28 +102,28 @@ data class Pic(
          * An [IllegalArgumentException] will be thrown if either the [extension] isn't a supported [Type] or the
          * [original] is bigger than [ORIGINAL_MAX_BYTES].
          */
-        fun build(extension: String, original: ByteArray): Pic {
+        fun build(extension: String, original: ByteArray): ProcessedImage {
             val thumbnail = createThumbnail(Type.build(extension), original)
-            return Pic(original, thumbnail)
+            return ProcessedImage(original, thumbnail)
         }
     }
 }
 
-enum class PicType { ORIGINAL, THUMBNAIL }
+enum class ImageType { ORIGINAL, THUMBNAIL }
 
 /**
  * Creates an image no larger than 100px by 100px where each pixel is at most 1 byte. It uses 8-bit color. The created
  * image will have the same [type] as the original [bytes].
  */
-fun createThumbnail(type: Pic.Type, bytes: ByteArray): ByteArray {
-    val bufferedPic = bytes.inputStream().use(ImageIO::read)
-    if (bufferedPic.width <= 100 && bufferedPic.height <= 100) return bytes
-    val multiplier = 100.0 / listOf(bufferedPic.width, bufferedPic.height).maxOrNull()!!
-    val width = bufferedPic.width.times(multiplier).toInt()
-    val height = bufferedPic.height.times(multiplier).toInt()
-    val scaledPic = bufferedPic.getScaledInstance(width, height, Image.SCALE_SMOOTH)
+fun createThumbnail(type: ProcessedImage.Type, bytes: ByteArray): ByteArray {
+    val bufferedImage = bytes.inputStream().use(ImageIO::read)
+    if (bufferedImage.width <= 100 && bufferedImage.height <= 100) return bytes
+    val multiplier = 100.0 / listOf(bufferedImage.width, bufferedImage.height).maxOrNull()!!
+    val width = bufferedImage.width.times(multiplier).toInt()
+    val height = bufferedImage.height.times(multiplier).toInt()
+    val scaledImage = bufferedImage.getScaledInstance(width, height, Image.SCALE_SMOOTH)
     val bufferedThumbnail = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    bufferedThumbnail.createGraphics().drawImage(scaledPic, 0, 0, null)
+    bufferedThumbnail.createGraphics().drawImage(scaledImage, 0, 0, null)
     return ByteArrayOutputStream().use {
         ImageIO.write(bufferedThumbnail, type.toString(), it)
         it.toByteArray()

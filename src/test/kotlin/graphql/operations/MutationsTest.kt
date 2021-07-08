@@ -929,49 +929,49 @@ class MutationsTest {
     }
 
     @Nested
-    inner class DeleteProfilePic {
+    inner class DeleteProfileImage {
         @Test
-        fun `The user's profile pic must get deleted`() {
+        fun `The user's profile image must get deleted`() {
             val userId = createVerifiedUsers(1).first().userId
-            Users.updatePic(userId, readPic("76px×57px.jpg"))
+            Users.updateImage(userId, readImage("76px×57px.jpg"))
             executeGraphQlViaEngine(
                 """
-                mutation DeleteProfilePic {
-                    deleteProfilePic
+                mutation DeleteProfileImage {
+                    deleteProfileImage
                 }
                 """,
                 userId = userId,
             ).errors.let(::assertNull)
-            assertNull(Users.readPic(userId, PicType.THUMBNAIL))
+            assertNull(Users.readImage(userId, ImageType.THUMBNAIL))
         }
     }
 
     @Nested
-    inner class DeleteGroupChatPic {
-        private fun executeDeleteGroupChatPic(userId: Int, chatId: Int): String? {
+    inner class DeleteGroupChatImage {
+        private fun executeDeleteGroupChatImage(userId: Int, chatId: Int): String? {
             val data = executeGraphQlViaEngine(
                 """
-                mutation DeleteGroupChatPic(${"$"}chatId: Int!) {
-                    deleteGroupChatPic(chatId: ${"$"}chatId) {
+                mutation DeleteGroupChatImage(${"$"}chatId: Int!) {
+                    deleteGroupChatImage(chatId: ${"$"}chatId) {
                         __typename
                     }
                 }
                 """,
                 mapOf("chatId" to chatId),
                 userId,
-            ).data!!["deleteGroupChatPic"] as Map<*, *>?
+            ).data!!["deleteGroupChatImage"] as Map<*, *>?
             return data?.get("__typename") as String?
         }
 
         @Test
-        fun `Only the admin must be allowed to delete the pic`() {
+        fun `Only the admin must be allowed to delete the image`() {
             val (adminId, userId) = createVerifiedUsers(2).map { it.userId }
             val chatId = GroupChats.create(setOf(adminId), setOf(userId))
-            GroupChats.updatePic(chatId, readPic("76px×57px.jpg"))
-            assertEquals("MustBeAdmin", executeDeleteGroupChatPic(userId, chatId))
-            assertNotNull(GroupChats.readPic(chatId, PicType.THUMBNAIL))
-            assertNull(executeDeleteGroupChatPic(adminId, chatId))
-            assertNull(GroupChats.readPic(chatId, PicType.THUMBNAIL))
+            GroupChats.updateImage(chatId, readImage("76px×57px.jpg"))
+            assertEquals("MustBeAdmin", executeDeleteGroupChatImage(userId, chatId))
+            assertNotNull(GroupChats.readImage(chatId, ImageType.THUMBNAIL))
+            assertNull(executeDeleteGroupChatImage(adminId, chatId))
+            assertNull(GroupChats.readImage(chatId, ImageType.THUMBNAIL))
         }
     }
 

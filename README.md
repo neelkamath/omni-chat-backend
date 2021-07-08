@@ -18,7 +18,7 @@ Here are some notable projects built using the Omni Chat API. If you've built an
 
 ## Usage
 
-**Note**: Operations starting with `Query`, `Mutation`, and `Subscription` (e.g., `Query.readChat`) are from the GraphQL API. Operations starting with `/` (e.g., `/profile-pic`) are from the REST API.
+**Note**: Operations starting with `Query`, `Mutation`, and `Subscription` (e.g., `Query.readChat`) are from the GraphQL API. Operations starting with `/` (e.g., `/profile-image`) are from the REST API.
 
 - [Docs](docs/api.md)
     - Download the `rest-api.html` asset from a [release](https://github.com/neelkamath/omni-chat-backend/releases). It'll be referenced in the docs.

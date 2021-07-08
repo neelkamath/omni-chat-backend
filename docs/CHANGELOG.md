@@ -10,7 +10,17 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Stop requiring authentication for HTTP GET `/group-chat-pic`.
+- Rename `/pic-message` to `image-message`.
+- Rename `/profile-pic` to `/profile-image`.
+- Rename `/group-chat-pic` to `/group-chat-image`.
+- Rename `Mutation.deleteProfilePic` to `Mutation.deleteProfileImage`.
+- Rename `Mutation.deleteGroupChatPic` to `Mutation.deleteGroupChatImage`.
+- Rename `type UpdatedProfilePic` to `type UpdatedProfileImage`.
+- Rename `type UpdatedGroupChatPic` to `type UpdatedGroupChatImage`.
+- Rename `type PicMessage` to `type ImageMessage`.
+- Rename `type BookmarkedPicMessage` to `type BookmarkedImageMessage`.
+- Rename `type NewPicMessage` to `type NewImageMessage`.
+- Stop requiring authentication for HTTP GET `/group-chat-image`.
 
 ## [0.23.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.23.0) - 2021-07-04
 

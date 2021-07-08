@@ -1,4 +1,4 @@
-# Name `operationId`s using the format <<HTTP_METHOD><PATH>> (e.g., <patchProfilePic> for HTTP PATCH /profile-pic).
+# Name `operationId`s using the format <<HTTP_METHOD><PATH>> (e.g., <patchProfileImage> for HTTP PATCH /profile-image).
 openapi: 3.0.3
 info:
   version: 0.23.0
@@ -8,10 +8,11 @@ info:
 
     In this documentation, a _thumbnail_ refers to an image no bigger than 100px by 100px. These images are at most a
     few KiB. If the original image itself is within 100px by 100px, then the thumbnail will happen to be a copy of the
-    same image. When displaying a small scaled image (e.g., a profile pic) you should only render the thumbnail, and not
-    load the original, since the difference in quality is negligible. When showing a picture in a container larger than
-    100px (e.g., a pic message, an enlarged profile pic), you should load the original. You can also initially load the
-    thumbnail followed by the original for a medium-scaled image (e.g., the way searching images on Google works).
+    same image. When displaying a small scaled image (e.g., a profile image) you should only render the thumbnail, and
+    not load the original, since the difference in quality is negligible. When showing a image in a container larger
+    than 100px (e.g., a image message, an enlarged profile image), you should load the original. You can also initially
+    load the thumbnail followed by the original for a medium-scaled image (e.g., the way searching images on Google
+    works).
   contact:
     name: Neel Kamath
     url: https://github.com/neelkamath/omni-chat-backend
@@ -24,44 +25,44 @@ servers:
     description: This is the URL if you're running it locally. Otherwise, it's the URL you or someone else is running it
       on.
 tags:
-  - name: profilePic
-  - name: groupChatPic
-  - name: picMessage
+  - name: profileImage
+  - name: groupChatImage
+  - name: imageMessage
   - name: audioMessage
   - name: videoMessage
   - name: docMessage
   - name: status
 paths:
-  /pic-message:
-    description: Create and read pic chat messages.
+  /image-message:
+    description: Create and read image chat messages.
     get:
-      tags: [ picMessage ]
-      description: Reads the pic from a message. To get the caption, use the GraphQL API. You needn't pass an access
+      tags: [ imageMessage ]
+      description: Reads the image from a message. To get the caption, use the GraphQL API. You needn't pass an access
         token if the chat is public.
-      operationId: getPicMessage
+      operationId: getImageMessage
       security:
         - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/MessageId'
-        - $ref: '#/components/parameters/PicType'
+        - $ref: '#/components/parameters/ImageType'
       responses:
         '200':
-          $ref: '#/components/responses/Pic'
+          $ref: '#/components/responses/Image'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [ picMessage ]
-      description: Creates a pic message.
-      operationId: postPicMessage
+      tags: [ imageMessage ]
+      description: Creates a image message.
+      operationId: postImageMessage
       security:
         - bearerAuth: [ ]
       requestBody:
-        $ref: '#/components/requestBodies/CaptionedPic'
+        $ref: '#/components/requestBodies/CaptionedImage'
       responses:
         '204':
           description: Message created.
         '400':
-          $ref: '#/components/responses/InvalidPicMessage'
+          $ref: '#/components/responses/InvalidImageMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /audio-message:
@@ -131,8 +132,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /doc-message:
-    description: Create and read document chat messages. Doc messages are file messages of any type. Prefer pic, audio,
-      and video messages when possible.
+    description: Create and read document chat messages. Doc messages are file messages of any type. Prefer image
+      audio, and video messages when possible.
     get:
       tags: [ docMessage ]
       description: Reads a doc message. You needn't pass an access token if the chat is public.
@@ -164,65 +165,65 @@ paths:
           $ref: '#/components/responses/InvalidMediaMessage'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /profile-pic:
-    description: A user's profile pic which doesn't exceed 3 MiB.
+  /profile-image:
+    description: A user's profile image which doesn't exceed 3 MiB.
     get:
-      tags: [ profilePic ]
-      description: Get the user's profile pic.
-      operationId: getProfilePic
+      tags: [ profileImage ]
+      description: Get the user's profile image.
+      operationId: getProfileImage
       parameters:
         - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/PicType'
+        - $ref: '#/components/parameters/ImageType'
       responses:
         '200':
-          $ref: '#/components/responses/Pic'
+          $ref: '#/components/responses/Image'
         '204':
-          description: The user doesn't have a profile pic.
+          description: The user doesn't have a profile image.
         '400':
           description: The user doesn't exist.
     patch:
-      tags: [ profilePic ]
-      description: Update the user's profile pic.
-      operationId: patchProfilePic
+      tags: [ profileImage ]
+      description: Update the user's profile image.
+      operationId: patchProfileImage
       security:
         - bearerAuth: [ ]
       requestBody:
-        $ref: '#/components/requestBodies/Pic'
+        $ref: '#/components/requestBodies/Image'
       responses:
         '204':
-          description: Pic updated.
+          description: Image updated.
         '400':
-          $ref: '#/components/responses/InvalidPic'
+          $ref: '#/components/responses/InvalidImage'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /group-chat-pic:
+  /group-chat-image:
     get:
-      tags: [ groupChatPic ]
-      description: Retrieves the group chat's pic.
-      operationId: getGroupChatPic
+      tags: [ groupChatImage ]
+      description: Retrieves the group chat's image.
+      operationId: getGroupChatImage
       parameters:
         - $ref: '#/components/parameters/ChatId'
-        - $ref: '#/components/parameters/PicType'
+        - $ref: '#/components/parameters/ImageType'
       responses:
         '200':
-          $ref: '#/components/responses/Pic'
+          $ref: '#/components/responses/Image'
         '204':
-          description: The chat doesn't have a pic.
+          description: The chat doesn't have a image.
         '400':
           description: Invalid chat ID.
     patch:
-      tags: [ groupChatPic ]
-      description: Update the group chat's pic. The user must be an admin of the chat.
-      operationId: patchGroupChatPic
+      tags: [ groupChatImage ]
+      description: Update the group chat's image. The user must be an admin of the chat.
+      operationId: patchGroupChatImage
       security:
         - bearerAuth: [ ]
       parameters:
         - $ref: '#/components/parameters/ChatId'
       requestBody:
-        $ref: '#/components/requestBodies/Pic'
+        $ref: '#/components/requestBodies/Image'
       responses:
         '204':
-          description: Pic updated.
+          description: Image updated.
         '400':
           description: The file had an invalid type or size.
         '401':
@@ -246,7 +247,7 @@ components:
             indicates that the chat is a broadcast chat, and the user isn't an admin.
           type: string
           enum: [ USER_NOT_IN_CHAT, INVALID_FILE, INVALID_CONTEXT_MESSAGE, MUST_BE_ADMIN ]
-    InvalidPicMessage:
+    InvalidImageMessage:
       type: object
       properties:
         reason:
@@ -266,12 +267,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InvalidMediaMessage'
-    InvalidPicMessage:
+    InvalidImageMessage:
       description: Couldn't create message.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InvalidPicMessage'
+            $ref: '#/components/schemas/InvalidImageMessage'
     Audio:
       description: An MP3/MP4 video not exceeding 3 MiB.
       content:
@@ -293,7 +294,7 @@ components:
           schema:
             type: string
             format: binary
-    Pic:
+    Image:
       description: A PNG or JPEG image not exceeding 3 MiB.
       content:
         image/png, image/jpeg:
@@ -307,8 +308,8 @@ components:
           schema:
             type: string
             format: binary
-    InvalidPic:
-      description: Pic wasn't a PNG or JPEG not exceeding 3 MiB.
+    InvalidImage:
+      description: Image wasn't a PNG or JPEG not exceeding 3 MiB.
     Unauthorized:
       description: Invalid or missing auth token.
   requestBodies:
@@ -324,7 +325,7 @@ components:
                 type: string
                 format: binary
           encoding:
-            pic:
+            image:
               contentType: audio/mp3, audio/mp4
     VideoMessage:
       content:
@@ -338,7 +339,7 @@ components:
                 type: string
                 format: binary
           encoding:
-            pic:
+            image:
               contentType: video/mp4
     DocMessage:
       content:
@@ -351,14 +352,14 @@ components:
                 description: A document not exceeding 3 MiB.
                 type: string
                 format: binary
-    CaptionedPic:
+    CaptionedImage:
       content:
         multipart/form-data:
           schema:
             type: object
-            required: [ pic, chat-id ]
+            required: [ image, chat-id ]
             properties:
-              pic:
+              image:
                 description: A PNG or JPEG image not exceeding 3 MiB.
                 type: string
                 format: binary
@@ -371,34 +372,34 @@ components:
                 type: integer
               caption:
                 type: string
-                description: The pic's caption. Must be a valid `scalar MessageText` (refer to the GraphQL schema).
+                description: The image's caption. Must be a valid `scalar MessageText` (refer to the GraphQL schema).
           encoding:
-            pic:
+            image:
               contentType: image/png, image/jpeg
-    Pic:
+    Image:
       content:
         multipart/form-data:
           schema:
             type: object
-            required: [ pic ]
+            required: [ image ]
             properties:
-              pic:
+              image:
                 description: A PNG or JPEG image not exceeding 3 MiB.
                 type: string
                 format: binary
           encoding:
-            pic:
+            image:
               contentType: image/png, image/jpeg
   parameters:
     UserId:
       name: user-id
       in: query
-      description: The ID of the user the pic is to be retrieved from.
+      description: The ID of the user the image is to be retrieved from.
       required: true
       schema:
         type: integer
-    PicType:
-      name: pic-type
+    ImageType:
+      name: image-type
       in: query
       description: Whether to retrieve the original or the thumbnail.
       required: true

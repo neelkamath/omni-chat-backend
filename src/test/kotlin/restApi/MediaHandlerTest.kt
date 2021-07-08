@@ -3,7 +3,7 @@ package com.neelkamath.omniChatBackend.restApi
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
 import com.neelkamath.omniChatBackend.db.Audio
-import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.ImageType
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
-/** Creates a [file] which doesn't get saved to the filesystem. An example [name] is `"pic.png"`. */
+/** Creates a [file] which doesn't get saved to the filesystem. An example [name] is `"image.png"`. */
 data class DummyFile(val name: String, val bytes: Int) {
     val file = ByteArray(bytes)
 }
@@ -25,10 +25,10 @@ data class DummyFile(val name: String, val bytes: Int) {
 fun getFileMessage(
     path: String,
     messageId: Int,
-    picType: PicType? = null,
+    imageType: ImageType? = null,
     accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
-    val parameters = listOf("message-id" to messageId.toString(), "pic-type" to picType?.toString())
+    val parameters = listOf("message-id" to messageId.toString(), "image-type" to imageType?.toString())
         .filter { it.second != null }
         .formUrlEncode()
     handleRequest(HttpMethod.Get, "$path?$parameters") {

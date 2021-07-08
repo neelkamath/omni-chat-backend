@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 
-/** Neither usernames nor email addresses may be used more than once. Pics cannot exceed [Pic.ORIGINAL_MAX_BYTES]. */
+/** Neither usernames nor email addresses may be used more than once. Images cannot exceed [ProcessedImage.ORIGINAL_MAX_BYTES]. */
 object Users : IntIdTable() {
     /** Names and usernames cannot exceed 30 characters. */
     const val MAX_NAME_LENGTH = 30
@@ -29,13 +29,13 @@ object Users : IntIdTable() {
     private val lastName: Column<String> = varchar("last_name", MAX_NAME_LENGTH)
     private val isOnline: Column<Boolean> = bool("is_online").clientDefault { false }
     private val bio: Column<String> = varchar("bio", Bio.MAX_LENGTH)
-    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
+    private val imageId: Column<Int?> = integer("image_id").references(Images.id).nullable()
 
     /**
      * @see isUsernameTaken
      * @see isEmailAddressTaken
      * @see setOnlineStatus
-     * @see updatePic
+     * @see updateImage
      */
     fun create(account: AccountInput): Unit = transaction {
         insert {
@@ -123,7 +123,7 @@ object Users : IntIdTable() {
                 update.bio?.let { statement[bio] = it.value }
             }
         }
-        negotiateUserUpdate(userId, isProfilePic = false)
+        negotiateUserUpdate(userId, isProfileImage = false)
     }
 
     /** If the [emailAddress] differs from the [userId]'s current one, it'll be marked as unverified. */
@@ -136,15 +136,15 @@ object Users : IntIdTable() {
             }
     }
 
-    /** Deletes the [pic] if it's `null`. Calls [negotiateUserUpdate]. */
-    fun updatePic(userId: Int, pic: Pic?) {
+    /** Deletes the [image] if it's `null`. Calls [negotiateUserUpdate]. */
+    fun updateImage(userId: Int, image: ProcessedImage?) {
         transaction {
             val op = Users.id eq userId
-            update({ op }) { it[picId] = null }
-            val picId = select(op).first()[picId]
-            update({ op }) { it[this.picId] = Pics.update(picId, pic) }
+            update({ op }) { it[imageId] = null }
+            val imageId = select(op).first()[imageId]
+            update({ op }) { it[this.imageId] = Images.update(imageId, image) }
         }
-        negotiateUserUpdate(userId, isProfilePic = true)
+        negotiateUserUpdate(userId, isProfileImage = true)
     }
 
     /**
@@ -207,8 +207,8 @@ object Users : IntIdTable() {
     fun readId(username: Username): Int =
         transaction { select(Users.username eq username.value).first()[Users.id].value }
 
-    fun readPic(userId: Int, type: PicType): ByteArray? {
-        val picId = transaction { select(Users.id eq userId).first()[picId] } ?: return null
-        return Pics.read(picId, type)
+    fun readImage(userId: Int, type: ImageType): ByteArray? {
+        val imageId = transaction { select(Users.id eq userId).first()[imageId] } ?: return null
+        return Images.read(imageId, type)
     }
 }

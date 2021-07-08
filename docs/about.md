@@ -75,11 +75,11 @@ Here are Omni Chat's features:
     - Text
     - Actions (i.e., buttons which trigger third-party server-side code such as ordering food via a bot)
     - Audio
-    - Pictures
+    - Images
     - Polls
     - Videos
     - Group chat invites
-    - Docs (i.e., any file type)
+    - Documents (i.e., any file type)
 - Group chats (e.g., a school class’s chat) have the following features:
     - Multiple admins.
     - If a user is added to a chat, or are added back to a chat after leaving it, they'll be able to see the entire chat's history. This ensures that new participants don't miss older messages.

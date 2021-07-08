@@ -132,7 +132,7 @@ private object MessageDeserializer : JsonDeserializer<Message>() {
         val clazz = when (val type = node["__typename"].asText()) {
             "TextMessage" -> TextMessage::class
             "ActionMessage" -> ActionMessage::class
-            "PicMessage" -> PicMessage::class
+            "ImageMessage" -> ImageMessage::class
             "PollMessage" -> PollMessage::class
             "AudioMessage" -> AudioMessage::class
             "GroupChatInviteMessage" -> GroupChatInviteMessage::class
@@ -175,7 +175,7 @@ private object BookmarkedMessageDeserializer : JsonDeserializer<BookmarkedMessag
         val clazz = when (val type = node["__typename"].asText()) {
             "BookmarkedTextMessage" -> BookmarkedTextMessage::class
             "BookmarkedActionMessage" -> BookmarkedActionMessage::class
-            "BookmarkedPicMessage" -> BookmarkedPicMessage::class
+            "BookmarkedImageMessage" -> BookmarkedImageMessage::class
             "BookmarkedPollMessage" -> BookmarkedPollMessage::class
             "BookmarkedAudioMessage" -> BookmarkedAudioMessage::class
             "BookmarkedGroupChatInviteMessage" -> BookmarkedGroupChatInviteMessage::class
@@ -218,7 +218,7 @@ private object ChatsSubscriptionDeserializer : JsonDeserializer<ChatsSubscriptio
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
             "GroupChatId" -> GroupChatId::class
-            "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
+            "UpdatedGroupChatImage" -> UpdatedGroupChatImage::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
             "DeletedPrivateChat" -> DeletedPrivateChat::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
@@ -232,7 +232,7 @@ private object GroupChatMetadataSubscriptionDeserializer : JsonDeserializer<Grou
         val node = parser.codec.readTree<JsonNode>(parser)
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
-            "UpdatedGroupChatPic" -> UpdatedGroupChatPic::class
+            "UpdatedGroupChatImage" -> UpdatedGroupChatImage::class
             "UpdatedGroupChat" -> UpdatedGroupChat::class
             "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
@@ -248,7 +248,7 @@ private object AccountsSubscriptionDeserializer : JsonDeserializer<AccountsSubsc
             "CreatedSubscription" -> CreatedSubscription::class
             "NewContact" -> NewContact::class
             "UpdatedAccount" -> UpdatedAccount::class
-            "UpdatedProfilePic" -> UpdatedProfilePic::class
+            "UpdatedProfileImage" -> UpdatedProfileImage::class
             "DeletedContact" -> DeletedContact::class
             "BlockedAccount" -> BlockedAccount::class
             "UnblockedAccount" -> UnblockedAccount::class
@@ -265,7 +265,7 @@ private object ChatAccountsSubscriptionDeserializer : JsonDeserializer<ChatAccou
         val clazz = when (val type = node["__typename"].asText()) {
             "CreatedSubscription" -> CreatedSubscription::class
             "UpdatedAccount" -> UpdatedAccount::class
-            "UpdatedProfilePic" -> UpdatedProfilePic::class
+            "UpdatedProfileImage" -> UpdatedProfileImage::class
             "DeletedAccount" -> DeletedAccount::class
             "InvalidChatId" -> InvalidChatId::class
             else -> throw IllegalArgumentException("$type didn't match a concrete class.")
@@ -280,7 +280,7 @@ private object NewMessageDeserializer : JsonDeserializer<NewMessage>() {
         val clazz: KClass<out NewMessage> = when (val type = node["__typename"].asText()) {
             "NewTextMessage" -> NewTextMessage::class
             "NewActionMessage" -> NewActionMessage::class
-            "NewPicMessage" -> NewPicMessage::class
+            "NewImageMessage" -> NewImageMessage::class
             "NewPollMessage" -> NewPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
@@ -299,7 +299,7 @@ private object MessagesSubscriptionDeserializer : JsonDeserializer<MessagesSubsc
             "CreatedSubscription" -> CreatedSubscription::class
             "NewTextMessage" -> NewTextMessage::class
             "NewActionMessage" -> NewActionMessage::class
-            "NewPicMessage" -> NewPicMessage::class
+            "NewImageMessage" -> NewImageMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
             "NewGroupChatInviteMessage" -> NewGroupChatInviteMessage::class
             "NewDocMessage" -> NewDocMessage::class
@@ -324,7 +324,7 @@ private object ChatMessagesSubscriptionDeserializer : JsonDeserializer<ChatMessa
             "CreatedSubscription" -> CreatedSubscription::class
             "NewTextMessage" -> NewTextMessage::class
             "NewActionMessage" -> NewActionMessage::class
-            "NewPicMessage" -> NewPicMessage::class
+            "NewImageMessage" -> NewImageMessage::class
             "NewPollMessage" -> NewPollMessage::class
             "UpdatedPollMessage" -> UpdatedPollMessage::class
             "NewAudioMessage" -> NewAudioMessage::class
@@ -472,7 +472,7 @@ private object ReadMessageResultDeserializer : JsonDeserializer<ReadMessageResul
             "InvalidMessageId" -> InvalidMessageId::class
             "TextMessage" -> TextMessage::class
             "ActionMessage" -> ActionMessage::class
-            "PicMessage" -> PicMessage::class
+            "ImageMessage" -> ImageMessage::class
             "PollMessage" -> PollMessage::class
             "AudioMessage" -> AudioMessage::class
             "GroupChatInviteMessage" -> GroupChatInviteMessage::class

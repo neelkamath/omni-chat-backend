@@ -1,8 +1,8 @@
 package com.neelkamath.omniChatBackend.restApi
 
 import com.neelkamath.omniChatBackend.db.Audio
-import com.neelkamath.omniChatBackend.db.Pic
-import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.ImageType
+import com.neelkamath.omniChatBackend.db.ProcessedImage
 import com.neelkamath.omniChatBackend.db.isUserInChat
 import com.neelkamath.omniChatBackend.db.tables.Doc
 import com.neelkamath.omniChatBackend.db.tables.Messages
@@ -41,15 +41,17 @@ data class TypedFile(val extension: String, val bytes: ByteArray) {
     }
 }
 
-/** The `picType` argument passed to the [bytesReader] will be `null` if no `pic-type` query parameter was passed. */
+/**
+ * The `imageType` argument passed to the [bytesReader] will be `null` if no `image-type` query parameter was passed.
+ */
 inline fun getMediaMessage(
     route: Route,
-    crossinline bytesReader: (messageId: Int, picType: PicType?) -> ByteArray,
+    crossinline bytesReader: (messageId: Int, imageType: ImageType?) -> ByteArray,
 ): Unit = with(route) {
     get {
         val messageId = call.parameters["message-id"]!!.toInt()
-        val picType = call.parameters["pic-type"]?.let(PicType::valueOf)
-        if (Messages.isVisible(call.userId, messageId)) call.respondBytes(bytesReader(messageId, picType))
+        val imageType = call.parameters["image-type"]?.let(ImageType::valueOf)
+        if (Messages.isVisible(call.userId, messageId)) call.respondBytes(bytesReader(messageId, imageType))
         else call.respond(HttpStatusCode.Unauthorized)
     }
 }
@@ -118,12 +120,12 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? 
 
 /**
  * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
- * the [Pic] is invalid.
+ * the [ProcessedImage] is invalid.
  */
-suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartPic(): Pic? {
+suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartImage(): ProcessedImage? {
     val (extension, bytes) = readMultipartFile()
     return try {
-        Pic.build(extension, bytes)
+        ProcessedImage.build(extension, bytes)
     } catch (_: IllegalArgumentException) {
         null
     }

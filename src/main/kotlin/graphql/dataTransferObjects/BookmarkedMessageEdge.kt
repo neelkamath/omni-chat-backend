@@ -12,7 +12,7 @@ class BookmarkedMessageEdge(private val messageId: Int) {
     fun getNode(): BookmarkedMessage = when (Messages.readType(messageId)) {
         MessageType.VIDEO -> BookmarkedVideoMessage(messageId)
         MessageType.POLL -> BookmarkedPollMessage(messageId)
-        MessageType.PIC -> BookmarkedPicMessage(messageId)
+        MessageType.IMAGE -> BookmarkedImageMessage(messageId)
         MessageType.GROUP_CHAT_INVITE -> BookmarkedGroupChatInviteMessage(messageId)
         MessageType.DOC -> BookmarkedDocMessage(messageId)
         MessageType.AUDIO -> BookmarkedAudioMessage(messageId)

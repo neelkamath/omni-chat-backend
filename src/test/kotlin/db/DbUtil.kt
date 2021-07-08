@@ -14,7 +14,7 @@ private val tables: Set<Table> = setOf(
     TextMessages,
     ActionMessageActions,
     ActionMessages,
-    PicMessages,
+    ImageMessages,
     AudioMessages,
     VideoMessages,
     DocMessages,
@@ -31,7 +31,7 @@ private val tables: Set<Table> = setOf(
     Chats,
     BlockedUsers,
     Users,
-    Pics,
+    Images,
 )
 
 /** Deletes every row from every table created. */

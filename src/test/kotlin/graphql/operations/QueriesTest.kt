@@ -912,11 +912,11 @@ class QueriesTest {
                             chatId,
                             ActionMessageInput(MessageText("Text"), listOf(MessageText(it), MessageText("No"))),
                         ),
-                        // Testing pic message captions.
+                        // Testing image message captions.
                         Messages.message(
                             adminId,
                             chatId,
-                            CaptionedPic(readPic("76px×57px.jpg"), caption = MessageText(it)),
+                            CaptionedImage(readImage("76px×57px.jpg"), caption = MessageText(it)),
                         ),
                         // Testing messages which cannot be searched.
                         Messages.message(adminId, chatId, Audio(ByteArray(1))),
