@@ -17,4 +17,5 @@ Here's how to migrate from the previous version (0.22.0) to this version (0.23.0
 
 1. Since the new version is backwards-incompatible, the previous version's instances must be stopped before running the new version.
 1. Wipe the DB because the schema changed.
+1. Update the [environment variables](env.md) because they've changed.
 1. Run the `neelkamath/omni-chat-backend:0.23.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat-backend).
