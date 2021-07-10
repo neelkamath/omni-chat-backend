@@ -9,8 +9,7 @@ FROM adoptopenjdk:11-jre-hotspot
 WORKDIR /app
 COPY --from=builder /home/gradle/project/build/libs/*.jar omni-chat-backend.jar
 COPY src/main/resources/db/migration/ .
-RUN curl -s \
-        https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/7.0.4/flyway-commandline-7.0.4-linux-x64.tar.gz \
+RUN curl -s https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/7.0.4/flyway-commandline-7.0.4-linux-x64.tar.gz \
     | tar xvz \
     && ln -s `pwd`/flyway-7.0.4/flyway /usr/local/bin
 EXPOSE 80
