@@ -15,11 +15,12 @@ import org.redisson.Redisson
 import org.redisson.api.RedissonClient
 import org.redisson.codec.JsonJacksonCodec
 import org.redisson.config.Config
+import java.lang.System.getenv
 import java.util.concurrent.atomic.AtomicInteger
 
 private val redisson: RedissonClient = Redisson.create(
     Config().apply {
-        useSingleServer().address = System.getenv("REDIS_URL")
+        useSingleServer().address = "redis://${getenv("REDIS_URL")}"
         codec = JsonJacksonCodec(objectMapper)
     }
 )

@@ -21,7 +21,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_URL: db:5432
-      REDIS_URL: redis://message-broker:6379
+      REDIS_URL: message-broker:6379
       SMTP_HOST: ${SMTP_HOST}
       SMTP_TLS_PORT: ${SMTP_TLS_PORT}
       SMTP_FROM: ${SMTP_FROM}
