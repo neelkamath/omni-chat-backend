@@ -8,9 +8,105 @@ import java.io.ByteArrayOutputStream
 import javax.annotation.processing.Generated
 import javax.imageio.ImageIO
 
-/** Throws an [IllegalArgumentException] if the [bytes] exceeds [Audio.MAX_BYTES]. */
-data class Audio(
-    /** At most [Audio.MAX_BYTES]. */
+/** A filename (e.g., `"image.png"`) which is at most 255 characters. */
+typealias Filename = String
+
+/** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [VideoFile.MAX_BYTES]. */
+data class VideoFile(
+    val filename: Filename,
+    /** At most [VideoFile.MAX_BYTES]. */
+    val bytes: ByteArray,
+) {
+    init {
+        require(bytes.size <= MAX_BYTES) { "The video mustn't exceed $MAX_BYTES bytes." }
+    }
+
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as VideoFile
+
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+
+    companion object {
+        const val MAX_BYTES = 3 * 1_024 * 1_024
+    }
+}
+
+/** An [IllegalArgumentException] will be thrown if the [bytes] exceeds [DocFile.MAX_BYTES]. */
+data class DocFile(val filename: Filename, val bytes: ByteArray) {
+    init {
+        require(bytes.size <= MAX_BYTES) { "The doc cannot exceed $MAX_BYTES bytes." }
+    }
+
+    companion object {
+        /** Docs cannot exceed 3 MiB. */
+        const val MAX_BYTES = 3 * 1_024 * 1_024
+    }
+
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as DocFile
+
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        return bytes.contentHashCode()
+    }
+}
+
+/** Throws an [IllegalArgumentException] if the [bytes] exceeds [ImageFile.MAX_BYTES]. */
+data class ImageFile(val filename: Filename, val bytes: ByteArray) {
+    init {
+        require(bytes.size <= MAX_BYTES) { "The image mustn't exceed $MAX_BYTES bytes." }
+    }
+
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ImageFile
+
+        if (filename != other.filename) return false
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        var result = filename.hashCode()
+        result = 31 * result + bytes.contentHashCode()
+        return result
+    }
+
+    companion object {
+        const val MAX_BYTES = 3 * 1_024 * 1_024
+    }
+}
+
+/** Throws an [IllegalArgumentException] if the [bytes] exceeds [AudioFile.MAX_BYTES]. */
+data class AudioFile(
+    val filename: Filename,
+    /** At most [AudioFile.MAX_BYTES]. */
     val bytes: ByteArray,
 ) {
     init {
@@ -22,7 +118,7 @@ data class Audio(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Audio
+        other as AudioFile
 
         if (!bytes.contentEquals(other.bytes)) return false
 
@@ -48,6 +144,7 @@ data class Audio(
  * [thumbnail] exceeds [ProcessedImage.THUMBNAIL_MAX_BYTES].
  */
 data class ProcessedImage(
+    val filename: Filename,
     /** At most [ORIGINAL_MAX_BYTES]. */
     val original: ByteArray,
     /** At most [THUMBNAIL_MAX_BYTES]. */
@@ -102,9 +199,10 @@ data class ProcessedImage(
          * An [IllegalArgumentException] will be thrown if either the [extension] isn't a supported [Type] or the
          * [original] is bigger than [ORIGINAL_MAX_BYTES].
          */
-        fun build(extension: String, original: ByteArray): ProcessedImage {
-            val thumbnail = createThumbnail(Type.build(extension), original)
-            return ProcessedImage(original, thumbnail)
+        fun build(filename: Filename, original: ByteArray): ProcessedImage {
+            val type = Type.build(filename.substringAfterLast("."))
+            val thumbnail = createThumbnail(type, original)
+            return ProcessedImage(filename, original, thumbnail)
         }
     }
 }

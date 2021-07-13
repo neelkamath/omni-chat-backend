@@ -9,6 +9,7 @@ CREATE TABLE chats
 CREATE TABLE images
 (
     id        SERIAL PRIMARY KEY,
+    filename  VARCHAR(255),
     original  BYTEA NOT NULL,
     thumbnail BYTEA NOT NULL
 );
@@ -56,24 +57,28 @@ CREATE TABLE text_messages
 CREATE TABLE image_messages
 (
     message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
+    filename   VARCHAR(255),
     original   BYTEA   NOT NULL,
     thumbnail  BYTEA   NOT NULL,
     caption    VARCHAR(10000)
 );
 CREATE TABLE audio_messages
 (
-    message_id INTEGER    NOT NULL UNIQUE REFERENCES messages (id),
-    audio      BYTEA      NOT NULL
+    message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE video_messages
 (
     message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
-    video      BYTEA   NOT NULL
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE doc_messages
 (
     message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
-    doc        BYTEA   NOT NULL
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE group_chat_invite_messages
 (
@@ -127,8 +132,8 @@ CREATE TABLE bookmarks
 );
 CREATE TABLE typing_statuses
 (
-    chat_id   INTEGER NOT NULL REFERENCES chats (id),
-    user_id   INTEGER NOT NULL REFERENCES users (id)
+    chat_id INTEGER NOT NULL REFERENCES chats (id),
+    user_id INTEGER NOT NULL REFERENCES users (id)
 );
 CREATE TABLE action_messages
 (

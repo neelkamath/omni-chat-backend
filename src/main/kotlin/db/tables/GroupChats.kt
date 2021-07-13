@@ -110,7 +110,7 @@ object GroupChats : Table() {
     }
 
     /** Returns the group chat's image (`null` if there's no image). */
-    fun readImage(chatId: Int, type: ImageType): ByteArray? {
+    fun readImage(chatId: Int, type: ImageType): ImageFile? {
         val imageId = transaction { select(GroupChats.id eq chatId).first()[imageId] } ?: return null
         return Images.read(imageId, type)
     }

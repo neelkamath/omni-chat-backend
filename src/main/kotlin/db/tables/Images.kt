@@ -1,7 +1,9 @@
 package com.neelkamath.omniChatBackend.db.tables
 
-import com.neelkamath.omniChatBackend.db.ProcessedImage
+import com.neelkamath.omniChatBackend.db.Filename
+import com.neelkamath.omniChatBackend.db.ImageFile
 import com.neelkamath.omniChatBackend.db.ImageType
+import com.neelkamath.omniChatBackend.db.ProcessedImage
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -13,23 +15,26 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * @see ImageMessages
  */
 object Images : IntIdTable() {
+    private val filename: Column<Filename> = varchar("filename", 255)
     private val original: Column<ByteArray> = binary("original", ProcessedImage.ORIGINAL_MAX_BYTES)
     private val thumbnail: Column<ByteArray> = binary("thumbnail", ProcessedImage.THUMBNAIL_MAX_BYTES)
 
     /** Returns the ID of the image. */
     fun create(image: ProcessedImage): Int = transaction {
         insertAndGetId {
+            it[this.filename] = image.filename
             it[original] = image.original
             it[thumbnail] = image.thumbnail
         }.value
     }
 
-    fun read(imageId: Int, type: ImageType): ByteArray = transaction {
+    fun read(imageId: Int, type: ImageType): ImageFile = transaction {
         val image = select(Images.id eq imageId).first()
-        when (type) {
+        val bytes = when (type) {
             ImageType.ORIGINAL -> image[original]
             ImageType.THUMBNAIL -> image[thumbnail]
         }
+        ImageFile(image[filename], bytes)
     }
 
     /**

@@ -7,9 +7,9 @@ import com.neelkamath.omniChatBackend.readImage
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @ExtendWith(DbExtension::class)
 class ImagesTest {
@@ -20,8 +20,8 @@ class ImagesTest {
             val imageId = Images.create(readImage("76px×57px.jpg"))
             val newImage = readImage("76px×57px.png")
             assertEquals(imageId, Images.update(imageId, newImage))
-            val actual = Images.read(imageId, ImageType.THUMBNAIL)
-            assertTrue(newImage.thumbnail.contentEquals(actual))
+            val actual = Images.read(imageId, ImageType.THUMBNAIL).bytes
+            assertContentEquals(newImage.thumbnail, actual)
         }
 
         @Test
@@ -35,8 +35,8 @@ class ImagesTest {
         fun `If only a image is supplied, then the image must be created, and its ID must be returned`() {
             val image = readImage("76px×57px.jpg")
             val imageId = Images.update(imageId = null, image)!!
-            val actual = Images.read(imageId, ImageType.THUMBNAIL)
-            assertTrue(image.thumbnail.contentEquals(actual))
+            val actual = Images.read(imageId, ImageType.THUMBNAIL).bytes
+            assertContentEquals(image.thumbnail, actual)
         }
 
         @Test

@@ -155,7 +155,7 @@ object Messages : IntIdTable() {
     fun createAudioMessage(
         userId: Int,
         chatId: Int,
-        message: Audio,
+        message: AudioFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
@@ -174,7 +174,7 @@ object Messages : IntIdTable() {
     fun createVideoMessage(
         userId: Int,
         chatId: Int,
-        message: Mp4,
+        message: VideoFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
@@ -193,7 +193,7 @@ object Messages : IntIdTable() {
     fun createDocMessage(
         userId: Int,
         chatId: Int,
-        message: Doc,
+        message: DocFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->

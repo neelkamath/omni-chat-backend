@@ -31,7 +31,7 @@ fun Messages.message(
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: Audio,
+    message: AudioFile,
     contextMessageId: Int? = null,
     isForwarded: Boolean = false,
 ): Int {
@@ -182,7 +182,7 @@ class MessagesTest {
             val chatId = GroupChats.create(setOf(adminId))
             val query = "matched"
             val messageIdList = (1..10).map {
-                val message = Audio(ByteArray(1))
+                val message = AudioFile("audio.mp3", ByteArray(1))
                 Messages.message(adminId, chatId, message)
                 Messages.message(adminId, chatId, MessageText(query))
             }
@@ -251,7 +251,7 @@ class MessagesTest {
         fun `Messages which don't contain text mustn't be returned`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            Messages.message(adminId, chatId, Audio(ByteArray(1)))
+            Messages.message(adminId, chatId, AudioFile("audio.mp3", ByteArray(1)))
             assertTrue(Messages.searchGroupChat(chatId, query = "").isEmpty())
         }
 

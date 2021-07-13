@@ -5,7 +5,7 @@ import java.lang.ClassLoader.getSystemClassLoader
 
 /** Reads the [filename] from the filesystem. */
 fun readImage(filename: String): ProcessedImage =
-    ProcessedImage.build(filename.substringAfterLast("."), readBytes(filename))
+    ProcessedImage.build(filename, readBytes(filename))
 
 /** Reads the [filename]'s bytes from the filesystem. */
 fun readBytes(filename: String): ByteArray =

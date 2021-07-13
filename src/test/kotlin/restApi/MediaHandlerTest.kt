@@ -2,7 +2,7 @@ package com.neelkamath.omniChatBackend.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.Audio
+import com.neelkamath.omniChatBackend.db.AudioFile
 import com.neelkamath.omniChatBackend.db.ImageType
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.tables.*
@@ -101,7 +101,7 @@ class MediaHandlerTest {
         fun `A message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId, admin.accessToken)
             assertEquals(HttpStatusCode.OK, response.status())
@@ -118,7 +118,7 @@ class MediaHandlerTest {
         fun `The message must be read from a public chat sans access token`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
             assertEquals(HttpStatusCode.OK, response.status())
@@ -129,7 +129,7 @@ class MediaHandlerTest {
         fun `An access token must be required to read a message which isn't from a public chat`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
             assertEquals(HttpStatusCode.Unauthorized, response.status())
@@ -226,6 +226,6 @@ class MediaHandlerTest {
 
         @Test
         fun `Attempting to create a message with an invalid file size must fail`(): Unit =
-            assertInvalidFile(DummyFile("audio.mp3", Audio.MAX_BYTES + 1))
+            assertInvalidFile(DummyFile("audio.mp3", AudioFile.MAX_BYTES + 1))
     }
 }

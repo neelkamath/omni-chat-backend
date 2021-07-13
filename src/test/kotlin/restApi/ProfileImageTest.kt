@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 private fun getProfileImage(userId: Int, type: ImageType): TestApplicationResponse =
     withTestApplication(Application::main) {
@@ -50,16 +49,18 @@ class ProfileImageTest {
         fun `Requesting the original image must return the original`() {
             val userId = createVerifiedUsers(1).first().userId
             Users.updateImage(userId, readImage("1008px×756px.jpg"))
-            val response = getProfileImage(userId, ImageType.ORIGINAL).byteContent
-            assertContentEquals(Users.readImage(userId, ImageType.ORIGINAL), response)
+            val expected = Users.readImage(userId, ImageType.ORIGINAL)!!.bytes
+            val actual = getProfileImage(userId, ImageType.ORIGINAL).byteContent
+            assertContentEquals(expected, actual)
         }
 
         @Test
         fun `Requesting the thumbnail must return the thumbnail`() {
             val userId = createVerifiedUsers(1).first().userId
             Users.updateImage(userId, readImage("1008px×756px.jpg"))
-            val response = getProfileImage(userId, ImageType.THUMBNAIL).byteContent!!
-            assertContentEquals(Users.readImage(userId, ImageType.THUMBNAIL), response)
+            val expected = Users.readImage(userId, ImageType.THUMBNAIL)!!.bytes
+            val actual = getProfileImage(userId, ImageType.THUMBNAIL).byteContent!!
+            assertContentEquals(expected, actual)
         }
     }
 
@@ -70,8 +71,8 @@ class ProfileImageTest {
             val user = createVerifiedUsers(1).first()
             val filename = "76px×57px.jpg"
             assertEquals(HttpStatusCode.NoContent, patchProfileImage(user.accessToken, filename).status())
-            val actual = Users.readImage(user.userId, ImageType.ORIGINAL)
-            assertTrue(readImage(filename).original.contentEquals(actual))
+            val actual = Users.readImage(user.userId, ImageType.ORIGINAL)!!.bytes
+            assertContentEquals(readImage(filename).original, actual)
         }
 
         private fun testBadRequest(filename: String) {

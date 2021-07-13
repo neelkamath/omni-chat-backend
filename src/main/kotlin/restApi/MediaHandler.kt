@@ -1,12 +1,7 @@
 package com.neelkamath.omniChatBackend.restApi
 
-import com.neelkamath.omniChatBackend.db.Audio
-import com.neelkamath.omniChatBackend.db.ImageType
-import com.neelkamath.omniChatBackend.db.ProcessedImage
-import com.neelkamath.omniChatBackend.db.isUserInChat
-import com.neelkamath.omniChatBackend.db.tables.Doc
+import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.db.tables.Messages
-import com.neelkamath.omniChatBackend.db.tables.Mp4
 import com.neelkamath.omniChatBackend.userId
 import io.ktor.application.*
 import io.ktor.http.*
@@ -16,10 +11,17 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
 import java.io.File
+import java.util.UUID.randomUUID
 import javax.annotation.processing.Generated
 
-/** The [bytes] are the file's contents. An example [extension] is `"mp4"`. */
-data class TypedFile(val extension: String, val bytes: ByteArray) {
+fun buildFile(filename: Filename, bytes: ByteArray): File =
+    File.createTempFile("$filename-${randomUUID()}", File(filename).extension).apply { writeBytes(bytes) }
+
+/** The [bytes] are the file's contents. */
+data class TypedFile(val filename: Filename, val bytes: ByteArray) {
+    /** The file's extension (excluding the dot), or an empty [String] if it doesn't have one. */
+    val extension = File(filename).extension
+
     @Generated
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -27,7 +29,7 @@ data class TypedFile(val extension: String, val bytes: ByteArray) {
 
         other as TypedFile
 
-        if (extension != other.extension) return false
+        if (filename != other.filename) return false
         if (!bytes.contentEquals(other.bytes)) return false
 
         return true
@@ -35,7 +37,29 @@ data class TypedFile(val extension: String, val bytes: ByteArray) {
 
     @Generated
     override fun hashCode(): Int {
-        var result = extension.hashCode()
+        var result = filename.hashCode()
+        result = 31 * result + bytes.contentHashCode()
+        return result
+    }
+}
+
+data class MediaFile(val filename: Filename, val bytes: ByteArray) {
+    @Generated
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MediaFile
+
+        if (filename != other.filename) return false
+        if (!bytes.contentEquals(other.bytes)) return false
+
+        return true
+    }
+
+    @Generated
+    override fun hashCode(): Int {
+        var result = filename.hashCode()
         result = 31 * result + bytes.contentHashCode()
         return result
     }
@@ -46,12 +70,13 @@ data class TypedFile(val extension: String, val bytes: ByteArray) {
  */
 inline fun getMediaMessage(
     route: Route,
-    crossinline bytesReader: (messageId: Int, imageType: ImageType?) -> ByteArray,
+    crossinline bytesReader: (messageId: Int, imageType: ImageType?) -> MediaFile,
 ): Unit = with(route) {
     get {
         val messageId = call.parameters["message-id"]!!.toInt()
         val imageType = call.parameters["image-type"]?.let(ImageType::valueOf)
-        if (Messages.isVisible(call.userId, messageId)) call.respondBytes(bytesReader(messageId, imageType))
+        val (filename, bytes) = bytesReader(messageId, imageType)
+        if (Messages.isVisible(call.userId, messageId)) call.respondFile(buildFile(filename, bytes))
         else call.respond(HttpStatusCode.Unauthorized)
     }
 }
@@ -92,30 +117,31 @@ fun <T> postMediaMessage(
 
 /**
  * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
- * the [Mp4] is invalid.
+ * the [VideoFile] is invalid.
  */
-suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartMp4(): Mp4? {
-    val (extension, bytes) = readMultipartFile()
-    return if (extension.lowercase() != "mp4" || bytes.size > Mp4.MAX_BYTES) null else Mp4(bytes)
+suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartMp4(): VideoFile? {
+    val file = readMultipartFile()
+    if (file.extension.lowercase() != "mp4" || file.bytes.size > VideoFile.MAX_BYTES) return null
+    return VideoFile(file.filename, file.bytes)
 }
 
 /**
  * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
- * the [Doc] is invalid.
+ * the [DocFile] is invalid.
  */
-suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartDoc(): Doc? {
-    val (_, bytes) = readMultipartFile()
-    return if (bytes.size > Doc.MAX_BYTES) null else Doc(bytes)
+suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartDoc(): DocFile? {
+    val (filename, bytes) = readMultipartFile()
+    return if (bytes.size > DocFile.MAX_BYTES) null else DocFile(filename, bytes)
 }
 
 /**
  * Receives a multipart request with only one part, where the part is a [PartData.FileItem]. `null` will be returned if
- * the [Audio] is invalid.
+ * the [AudioFile] is invalid.
  */
-suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? {
-    val (extension, bytes) = readMultipartFile()
-    if (!Audio.isValidExtension(extension) || bytes.size > Audio.MAX_BYTES) return null
-    return Audio(bytes)
+suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): AudioFile? {
+    val file = readMultipartFile()
+    if (!AudioFile.isValidExtension(file.extension) || file.bytes.size > AudioFile.MAX_BYTES) return null
+    return AudioFile(file.filename, file.bytes)
 }
 
 /**
@@ -123,9 +149,9 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartAudio(): Audio? 
  * the [ProcessedImage] is invalid.
  */
 suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartImage(): ProcessedImage? {
-    val (extension, bytes) = readMultipartFile()
+    val (filename, bytes) = readMultipartFile()
     return try {
-        ProcessedImage.build(extension, bytes)
+        ProcessedImage.build(filename, bytes)
     } catch (_: IllegalArgumentException) {
         null
     }
@@ -134,8 +160,8 @@ suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartImage(): Process
 /** Receives a multipart request with only one part, where the part is a [PartData.FileItem]. */
 private suspend fun PipelineContext<Unit, ApplicationCall>.readMultipartFile(): TypedFile {
     val part = call.receiveMultipart().readPart()!! as PartData.FileItem
-    val extension = File(part.originalFileName!!).extension
+    val filename = part.originalFileName!!
     val bytes = part.streamProvider().use { it.readBytes() }
     part.dispose()
-    return TypedFile(extension, bytes)
+    return TypedFile(filename, bytes)
 }

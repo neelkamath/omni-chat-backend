@@ -7,6 +7,17 @@ import org.junit.jupiter.api.Nested
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
+
+class VideoFileTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An exception must be thrown if the video is too big`() {
+            assertFailsWith<IllegalArgumentException> { VideoFile("video.mp4", ByteArray(VideoFile.MAX_BYTES + 1)) }
+        }
+    }
+}
 
 class ImageTest {
     @Nested
@@ -15,7 +26,7 @@ class ImageTest {
         fun `Passing an excessively large original image must cause an exception to be thrown`() {
             assertFailsWith<IllegalArgumentException> {
                 ProcessedImage.build(
-                    "png",
+                    "image.png",
                     ByteArray(ProcessedImage.ORIGINAL_MAX_BYTES + 1)
                 )
             }
@@ -25,6 +36,7 @@ class ImageTest {
         fun `Passing an excessively large thumbnail must cause an exception to be thrown`() {
             assertFailsWith<IllegalArgumentException> {
                 ProcessedImage(
+                    "image.png",
                     ByteArray(1),
                     ByteArray(ProcessedImage.THUMBNAIL_MAX_BYTES + 1)
                 )
@@ -46,13 +58,32 @@ class ImageTest {
     inner class Companion_build {
         @Test
         fun `Passing a supported extension must work`() {
-            ProcessedImage.build("jpg", readImage("76px×57px.jpg").original)
+            val filename = "76px×57px.jpg"
+            ProcessedImage.build(filename, readImage(filename).original)
         }
 
         @Test
         fun `Passing an unsupported extension mustn't work`() {
-            assertFailsWith<IllegalArgumentException> { ProcessedImage.build("webp", readBytes("76px×57px.webp")) }
+            val filename = "76px×57px.webp"
+            assertFailsWith<IllegalArgumentException> { ProcessedImage.build(filename, readBytes(filename)) }
         }
+    }
+}
+
+class AudioFileTest {
+    @Nested
+    inner class Init {
+        @Test
+        fun `An excessively large audio file must cause an exception to be thrown`() {
+            assertFailsWith<IllegalArgumentException> { AudioFile("audio.mp3", ByteArray(AudioFile.MAX_BYTES + 1)) }
+        }
+    }
+
+    @Suppress("ClassName")
+    @Nested
+    inner class Companion_isValidExtension {
+        @Test
+        fun `Extensions must be matched case-insensitively`(): Unit = assertTrue(AudioFile.isValidExtension("mP3"))
     }
 }
 

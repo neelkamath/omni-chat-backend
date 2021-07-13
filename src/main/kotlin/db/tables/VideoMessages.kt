@@ -1,57 +1,31 @@
 package com.neelkamath.omniChatBackend.db.tables
 
+import com.neelkamath.omniChatBackend.db.Filename
+import com.neelkamath.omniChatBackend.db.VideoFile
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import javax.annotation.processing.Generated
-
-/** An MP4 video. Throws an [IllegalArgumentException] if the [bytes] exceeds [Mp4.MAX_BYTES]. */
-data class Mp4(
-    /** At most [Mp4.MAX_BYTES]. */
-    val bytes: ByteArray,
-) {
-    init {
-        require(bytes.size <= MAX_BYTES) { "The video mustn't exceed $MAX_BYTES bytes." }
-    }
-
-    @Generated
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Mp4
-
-        if (!bytes.contentEquals(other.bytes)) return false
-
-        return true
-    }
-
-    @Generated
-    override fun hashCode(): Int {
-        return bytes.contentHashCode()
-    }
-
-    companion object {
-        const val MAX_BYTES = 3 * 1_024 * 1_024
-    }
-}
 
 /** @see Messages */
 object VideoMessages : Table() {
     override val tableName = "video_messages"
     private val messageId: Column<Int> = integer("message_id").uniqueIndex().references(Messages.id)
-    private val video: Column<ByteArray> = binary("video", Mp4.MAX_BYTES)
+    private val filename: Column<Filename> = varchar("filename", 255)
+    private val bytes: Column<ByteArray> = binary("bytes", VideoFile.MAX_BYTES)
 
     /** @see Messages.createVideoMessage */
-    fun create(messageId: Int, video: Mp4): Unit = transaction {
+    fun create(messageId: Int, file: VideoFile): Unit = transaction {
         insert {
             it[this.messageId] = messageId
-            it[this.video] = video.bytes
+            it[this.filename] = file.filename
+            it[this.bytes] = file.bytes
         }
     }
 
-    fun read(messageId: Int): Mp4 =
-        transaction { select(VideoMessages.messageId eq messageId).first()[video].let(::Mp4) }
+    fun read(messageId: Int): VideoFile {
+        val row = transaction { select(VideoMessages.messageId eq messageId).first() }
+        return VideoFile(row[filename], row[bytes])
+    }
 
     fun delete(messageIdList: Collection<Int>): Unit = transaction {
         deleteWhere { messageId inList messageIdList }

@@ -15,7 +15,6 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
-import java.io.File
 
 fun routeImageMessage(routing: Routing): Unit = with(routing) {
     route("image-message") {
@@ -25,7 +24,10 @@ fun routeImageMessage(routing: Routing): Unit = with(routing) {
 }
 
 private fun getImageMessage(route: Route): Unit = with(route) {
-    getMediaMessage(this) { messageId, imageType -> ImageMessages.readImage(messageId, imageType!!) }
+    getMediaMessage(this) { messageId, imageType ->
+        val (filename, bytes) = ImageMessages.readImage(messageId, imageType!!)
+        MediaFile(filename, bytes)
+    }
 }
 
 private fun postImageMessage(route: Route): Unit = with(route) {
@@ -103,10 +105,9 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.readImageMessageReque
 
 /** Returns `null` if the [ProcessedImage] is invalid. */
 private fun readImage(part: PartData.FileItem): ProcessedImage? {
-    val extension = File(part.originalFileName!!).extension
     val bytes = part.streamProvider().use { it.readBytes() }
     return try {
-        ProcessedImage.build(extension, bytes)
+        ProcessedImage.build(part.originalFileName!!, bytes)
     } catch (exception: IllegalArgumentException) {
         null
     }

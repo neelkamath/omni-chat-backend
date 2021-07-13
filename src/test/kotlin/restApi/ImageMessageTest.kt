@@ -70,14 +70,14 @@ class ImageMessageTest {
         fun `The original image must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
             val response = getImageMessage(messageId, ImageType.ORIGINAL, accessToken).byteContent
-            assertContentEquals(ImageMessages.readImage(messageId, ImageType.ORIGINAL), response)
+            assertContentEquals(ImageMessages.readImage(messageId, ImageType.ORIGINAL).bytes, response)
         }
 
         @Test
         fun `The thumbnail must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
             val response = getImageMessage(messageId, ImageType.THUMBNAIL, accessToken).byteContent
-            assertContentEquals(ImageMessages.readImage(messageId, ImageType.THUMBNAIL), response)
+            assertContentEquals(ImageMessages.readImage(messageId, ImageType.THUMBNAIL).bytes, response)
         }
     }
 

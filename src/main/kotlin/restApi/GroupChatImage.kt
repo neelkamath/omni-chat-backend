@@ -22,8 +22,9 @@ private fun getGroupChatImage(route: Route): Unit = with(route) {
         val chatId = call.parameters["chat-id"]!!.toInt()
         val type = ImageType.valueOf(call.parameters["image-type"]!!)
         if (GroupChats.isExisting(chatId)) {
-            val image = GroupChats.readImage(chatId, type)
-            if (image == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(image)
+            val file = GroupChats.readImage(chatId, type)
+            if (file == null) call.respond(HttpStatusCode.NoContent)
+            else call.respondFile(buildFile(file.filename, file.bytes))
         } else call.respond(HttpStatusCode.BadRequest)
     }
 }

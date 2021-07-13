@@ -11,7 +11,10 @@ import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 private fun getGroupChatImage(chatId: Int, type: ImageType): TestApplicationResponse =
     withTestApplication(Application::main) {
@@ -35,10 +38,10 @@ class GroupChatImageTest {
             val filename = "76px×57px.jpg"
             val image = readImage(filename)
             assertEquals(HttpStatusCode.NoContent, patchGroupChatImage(admin.accessToken, chatId, filename).status())
-            val original = GroupChats.readImage(chatId, ImageType.ORIGINAL)
-            assertTrue(image.original.contentEquals(original))
-            val thumbnail = GroupChats.readImage(chatId, ImageType.THUMBNAIL)
-            assertTrue(image.thumbnail.contentEquals(thumbnail))
+            val original = GroupChats.readImage(chatId, ImageType.ORIGINAL)!!.bytes
+            assertContentEquals(image.original, original)
+            val thumbnail = GroupChats.readImage(chatId, ImageType.THUMBNAIL)!!.bytes
+            assertContentEquals(image.thumbnail, thumbnail)
         }
 
         private fun testBadRequest(filename: String) {

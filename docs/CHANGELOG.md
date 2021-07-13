@@ -22,6 +22,15 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Rename `type NewPicMessage` to `type NewImageMessage`.
 - Stop requiring authentication for HTTP GET `/group-chat-image`.
 
+### Fixed
+
+- HTTP GET `/profile-image`
+- HTTP GET `/group-chat-image`
+- HTTP GET `/image-image`
+- HTTP GET `/audio-image`
+- HTTP GET `/video-image`
+- HTTP GET `/doc-image`
+
 ## [0.23.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.23.0) - 2021-07-04
 
 ### Changed

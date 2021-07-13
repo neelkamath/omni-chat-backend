@@ -22,8 +22,9 @@ private fun getProfileImage(route: Route): Unit = with(route) {
         val type = ImageType.valueOf(call.parameters["image-type"]!!)
         if (!Users.isExisting(userId)) call.respond(HttpStatusCode.BadRequest)
         else {
-            val image = Users.readImage(userId, type)
-            if (image == null) call.respond(HttpStatusCode.NoContent) else call.respondBytes(image)
+            val file = Users.readImage(userId, type)
+            if (file == null) call.respond(HttpStatusCode.NoContent)
+            else call.respondFile(buildFile(file.filename, file.bytes))
         }
     }
 }

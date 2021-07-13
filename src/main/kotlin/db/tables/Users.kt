@@ -207,7 +207,7 @@ object Users : IntIdTable() {
     fun readId(username: Username): Int =
         transaction { select(Users.username eq username.value).first()[Users.id].value }
 
-    fun readImage(userId: Int, type: ImageType): ByteArray? {
+    fun readImage(userId: Int, type: ImageType): ImageFile? {
         val imageId = transaction { select(Users.id eq userId).first()[imageId] } ?: return null
         return Images.read(imageId, type)
     }
