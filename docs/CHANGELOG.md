@@ -10,7 +10,8 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 
 ### Changed
 
-- Rename `/pic-message` to `image-message`.
+- Rename the `pic-type` parameter in HTTP GET `/image-message`, HTTP GET `/profile-image`, and HTTP GET `/group-chat-image` to `image-type`.
+- Rename `/pic-message` to `/image-message`.
 - Rename `/profile-pic` to `/profile-image`.
 - Rename `/group-chat-pic` to `/group-chat-image`.
 - Rename `Mutation.deleteProfilePic` to `Mutation.deleteProfileImage`.
