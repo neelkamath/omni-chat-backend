@@ -75,9 +75,10 @@ inline fun getMediaMessage(
     get {
         val messageId = call.parameters["message-id"]!!.toInt()
         val imageType = call.parameters["image-type"]?.let(ImageType::valueOf)
-        val (filename, bytes) = bytesReader(messageId, imageType)
-        if (Messages.isVisible(call.userId, messageId)) call.respondFile(buildFile(filename, bytes))
-        else call.respond(HttpStatusCode.Unauthorized)
+        if (Messages.isVisible(call.userId, messageId)) {
+            val (filename, bytes) = bytesReader(messageId, imageType)
+            call.respondFile(buildFile(filename, bytes))
+        } else call.respond(HttpStatusCode.Unauthorized)
     }
 }
 
