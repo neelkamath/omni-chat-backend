@@ -24,7 +24,7 @@ private fun getProfileImage(route: Route): Unit = with(route) {
         else {
             val file = Users.readImage(userId, type)
             if (file == null) call.respond(HttpStatusCode.NoContent)
-            else call.respondFile(buildFile(file.filename, file.bytes))
+            else respondDownloadableFile(file.filename, file.bytes, FileDisposition.INLINE)
         }
     }
 }

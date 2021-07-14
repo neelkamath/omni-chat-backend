@@ -1,5 +1,5 @@
 # Name `operationId`s using the format <<HTTP_METHOD><PATH>> (e.g., <patchProfileImage> for HTTP PATCH /profile-image).
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   version: 0.23.0
   title: Omni Chat
@@ -275,6 +275,12 @@ components:
             $ref: '#/components/schemas/InvalidImageMessage'
     Audio:
       description: An MP3/MP4 video not exceeding 3 MiB.
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+            description: Provides the filename, and specifies that the audio is to be displayed inline.
+            example: inline; filename="audio.mp3"
       content:
         audio/mp3, audio/mp4:
           schema:
@@ -282,6 +288,12 @@ components:
             format: binary
     Video:
       description: An MP4 video not exceeding 3 MiB.
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+            description: Provides the filename, and specifies that the video is to be displayed inline.
+            example: inline; filename="video.mp4"
       content:
         video/mp4:
           schema:
@@ -289,6 +301,13 @@ components:
             format: binary
     Doc:
       description: A document not exceeding 3 MiB.
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+            description: Provides the filename, and specifies that the doc is to be downloaded for viewing when the user
+              requests it.
+            example: attachment; filename="doc.pdf"
       content:
         '*/*':
           schema:
@@ -296,6 +315,12 @@ components:
             format: binary
     Image:
       description: A PNG or JPEG image not exceeding 3 MiB.
+      headers:
+        Content-Disposition:
+          schema:
+            type: string
+            description: Provides the filename, and specifies that the image is to be displayed inline.
+            example: inline; filename="image.png"
       content:
         image/png, image/jpeg:
           schema:

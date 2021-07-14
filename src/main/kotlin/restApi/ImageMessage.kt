@@ -24,7 +24,7 @@ fun routeImageMessage(routing: Routing): Unit = with(routing) {
 }
 
 private fun getImageMessage(route: Route): Unit = with(route) {
-    getMediaMessage(this) { messageId, imageType ->
+    getMediaMessage(this, FileDisposition.INLINE) { messageId, imageType ->
         val (filename, bytes) = ImageMessages.readImage(messageId, imageType!!)
         MediaFile(filename, bytes)
     }

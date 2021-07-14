@@ -137,7 +137,7 @@ class SubscriptionsTest {
                 Contacts.create(user.userId, contact.userId)
                 awaitBrokering()
                 assertEquals("NewContact", parseFrameData<EventData>(incoming).__typename)
-                assertNull(incoming.poll())
+                assertNull(incoming.tryReceive())
             }
         }
     }

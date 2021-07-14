@@ -11,11 +11,29 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.util.pipeline.*
 import java.io.File
-import java.util.UUID.randomUUID
 import javax.annotation.processing.Generated
 
-fun buildFile(filename: Filename, bytes: ByteArray): File =
-    File.createTempFile("$filename-${randomUUID()}", File(filename).extension).apply { writeBytes(bytes) }
+enum class FileDisposition {
+    /** Indicates [ContentDisposition.Inline]. */
+    INLINE,
+
+    /** Indicates [ContentDisposition.Attachment]. */
+    ATTACHMENT,
+}
+
+suspend fun PipelineContext<*, ApplicationCall>.respondDownloadableFile(
+    filename: Filename,
+    bytes: ByteArray,
+    disposition: FileDisposition,
+) {
+    val contentDisposition = when (disposition) {
+        FileDisposition.ATTACHMENT -> ContentDisposition.Attachment
+        FileDisposition.INLINE -> ContentDisposition.Inline
+    }.withParameter(ContentDisposition.Parameters.FileName, filename).toString()
+    call.response.header(HttpHeaders.ContentDisposition, contentDisposition)
+    call.response.headers.append(HttpHeaders.AccessControlExposeHeaders, HttpHeaders.ContentDisposition)
+    call.respondBytes(bytes)
+}
 
 /** The [bytes] are the file's contents. */
 data class TypedFile(val filename: Filename, val bytes: ByteArray) {
@@ -70,6 +88,7 @@ data class MediaFile(val filename: Filename, val bytes: ByteArray) {
  */
 inline fun getMediaMessage(
     route: Route,
+    disposition: FileDisposition,
     crossinline bytesReader: (messageId: Int, imageType: ImageType?) -> MediaFile,
 ): Unit = with(route) {
     get {
@@ -77,7 +96,7 @@ inline fun getMediaMessage(
         val imageType = call.parameters["image-type"]?.let(ImageType::valueOf)
         if (Messages.isVisible(call.userId, messageId)) {
             val (filename, bytes) = bytesReader(messageId, imageType)
-            call.respondFile(buildFile(filename, bytes))
+            respondDownloadableFile(filename, bytes, disposition)
         } else call.respond(HttpStatusCode.Unauthorized)
     }
 }
