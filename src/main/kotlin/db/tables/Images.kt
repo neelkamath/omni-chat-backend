@@ -50,6 +50,7 @@ object Images : IntIdTable() {
         imageId != null && image != null -> {
             transaction {
                 update({ Images.id eq imageId }) {
+                    it[filename] = image.filename
                     it[original] = image.original
                     it[thumbnail] = image.thumbnail
                 }

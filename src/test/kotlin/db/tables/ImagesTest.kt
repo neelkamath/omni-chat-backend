@@ -2,6 +2,7 @@ package com.neelkamath.omniChatBackend.db.tables
 
 import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.db.ImageType
+import com.neelkamath.omniChatBackend.db.ProcessedImage
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.readImage
 import org.junit.jupiter.api.Nested
@@ -15,13 +16,19 @@ import kotlin.test.assertNull
 class ImagesTest {
     @Nested
     inner class Update {
+        private fun testImage(expected: ProcessedImage, imageId: Int) {
+            val (filename, bytes) = Images.read(imageId, ImageType.THUMBNAIL)
+            assertEquals(expected.filename, filename)
+            assertContentEquals(expected.thumbnail, bytes)
+            assertContentEquals(expected.original, Images.read(imageId, ImageType.ORIGINAL).bytes)
+        }
+
         @Test
         fun `If an ID and image are supplied, then the image must be updated, and the ID must be returned`() {
             val imageId = Images.create(readImage("76px×57px.jpg"))
             val newImage = readImage("76px×57px.png")
             assertEquals(imageId, Images.update(imageId, newImage))
-            val actual = Images.read(imageId, ImageType.THUMBNAIL).bytes
-            assertContentEquals(newImage.thumbnail, actual)
+            testImage(newImage, imageId)
         }
 
         @Test
@@ -35,8 +42,7 @@ class ImagesTest {
         fun `If only a image is supplied, then the image must be created, and its ID must be returned`() {
             val image = readImage("76px×57px.jpg")
             val imageId = Images.update(imageId = null, image)!!
-            val actual = Images.read(imageId, ImageType.THUMBNAIL).bytes
-            assertContentEquals(image.thumbnail, actual)
+            testImage(image, imageId)
         }
 
         @Test
