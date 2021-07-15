@@ -4,7 +4,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-version = "0.23.0"
+version = "0.24.0"
 application.mainClass.set("io.ktor.server.netty.EngineMain")
 
 repositories { mavenCentral() }

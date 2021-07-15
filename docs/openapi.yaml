@@ -1,7 +1,7 @@
 # Name `operationId`s using the format <<HTTP_METHOD><PATH>> (e.g., <patchProfileImage> for HTTP PATCH /profile-image).
 openapi: 3.1.0
 info:
-  version: 0.23.0
+  version: 0.24.0
   title: Omni Chat
   description: |
     Functionality supplementary to the GraphQL API such as uploading and downloading images.
