@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 typealias SubscriptionCallback = suspend (incoming: ReceiveChannel<Frame>) -> Unit
 
@@ -137,7 +137,7 @@ class SubscriptionsTest {
                 Contacts.create(user.userId, contact.userId)
                 awaitBrokering()
                 assertEquals("NewContact", parseFrameData<EventData>(incoming).__typename)
-                assertNull(incoming.tryReceive())
+                assertTrue(incoming.tryReceive().isFailure)
             }
         }
     }
