@@ -6,9 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The entire project (i.e., the GraphQL API, REST API, and server) uses the same version number. Major and minor versions get based off of the API (i.e., the GraphQL and REST APIs). For example, if the server has a backward incompatible change such as a DB schema update, but the APIs haven't changed, then only the patch number gets bumped. Another example is if the GraphQL API hasn't changed, but the format of the HTTP request used to send the GraphQL document has changed, then the major version gets bumped.
 
+## [0.24.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.24.0) - 2021-07-15
+
+### Changed
+
+- Rename the `pic-type` parameter to `image-type` in HTTP GET `/image-message`, HTTP GET `/profile-image`, and HTTP GET `/group-chat-image`.
+- Rename `/pic-message` to `/image-message`.
+- Rename `/profile-pic` to `/profile-image`.
+- Rename `/group-chat-pic` to `/group-chat-image`.
+- Rename `Mutation.deleteProfilePic` to `Mutation.deleteProfileImage`.
+- Rename `Mutation.deleteGroupChatPic` to `Mutation.deleteGroupChatImage`.
+- Rename `type UpdatedProfilePic` to `type UpdatedProfileImage`.
+- Rename `type UpdatedGroupChatPic` to `type UpdatedGroupChatImage`.
+- Rename `type PicMessage` to `type ImageMessage`.
+- Rename `type BookmarkedPicMessage` to `type BookmarkedImageMessage`.
+- Rename `type NewPicMessage` to `type NewImageMessage`.
+- Remove authentication for HTTP GET `/group-chat-image`.
+
+### Fixed
+
+- Fix media downloads by sending back the send back the `Content-Disposition` header with the filename so that the browser downloads the file with the correct media type. The following operations have been fixed:
+    - HTTP GET `/profile-image`
+    - HTTP GET `/group-chat-image`
+    - HTTP GET `/image-message`
+    - HTTP GET `/audio-message`
+    - HTTP GET `/video-message`
+    - HTTP GET `/doc-message`
+
 ## [0.23.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.23.0) - 2021-07-04
 
-## Changed
+### Changed
 
 - Improve error handling for HTTP POST `/pic-message`, HTTP POST `/audio-message`, HTTP POST `/video-message`, and HTTP POST `/doc-message`.
 

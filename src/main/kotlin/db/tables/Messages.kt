@@ -28,7 +28,7 @@ private typealias Filter = Op<Boolean>?
  * @see DocMessages
  * @see PollMessages
  * @see GroupChatInviteMessages
- * @see PicMessages
+ * @see ImageMessages
  * @see Bookmarks
  */
 object Messages : IntIdTable() {
@@ -114,14 +114,14 @@ object Messages : IntIdTable() {
      *
      * @see forward
      */
-    fun createPicMessage(
+    fun createImageMessage(
         userId: Int,
         chatId: Int,
-        message: CaptionedPic,
+        message: CaptionedImage,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
-    ): Unit = create(userId, chatId, MessageType.PIC, contextMessageId, isForwarded) { messageId ->
-        PicMessages.create(messageId, message)
+    ): Unit = create(userId, chatId, MessageType.IMAGE, contextMessageId, isForwarded) { messageId ->
+        ImageMessages.create(messageId, message)
     }
 
     /**
@@ -155,7 +155,7 @@ object Messages : IntIdTable() {
     fun createAudioMessage(
         userId: Int,
         chatId: Int,
-        message: Audio,
+        message: AudioFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.AUDIO, contextMessageId, isForwarded) { messageId ->
@@ -174,7 +174,7 @@ object Messages : IntIdTable() {
     fun createVideoMessage(
         userId: Int,
         chatId: Int,
-        message: Mp4,
+        message: VideoFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.VIDEO, contextMessageId, isForwarded) { messageId ->
@@ -193,7 +193,7 @@ object Messages : IntIdTable() {
     fun createDocMessage(
         userId: Int,
         chatId: Int,
-        message: Doc,
+        message: DocFile,
         contextMessageId: Int?,
         isForwarded: Boolean = false,
     ): Unit = create(userId, chatId, MessageType.DOC, contextMessageId, isForwarded) { messageId ->
@@ -228,7 +228,7 @@ object Messages : IntIdTable() {
      *
      * @see createTextMessage
      * @see createActionMessage
-     * @see createPicMessage
+     * @see createImageMessage
      * @see createGroupChatInviteMessage
      * @see createAudioMessage
      * @see createVideoMessage
@@ -268,7 +268,7 @@ object Messages : IntIdTable() {
             MessageType.AUDIO -> NewAudioMessage(row[id].value)
             MessageType.DOC -> NewDocMessage(row[id].value)
             MessageType.GROUP_CHAT_INVITE -> NewGroupChatInviteMessage(row[id].value)
-            MessageType.PIC -> NewPicMessage(row[id].value)
+            MessageType.IMAGE -> NewImageMessage(row[id].value)
             MessageType.POLL -> NewPollMessage(row[id].value)
             MessageType.VIDEO -> NewVideoMessage(row[id].value)
         }
@@ -278,7 +278,7 @@ object Messages : IntIdTable() {
 
     /**
      * Forwards the [messageId] to the [chatId] by calling one of [createTextMessage], [createActionMessage],
-     * [createPicMessage], [createGroupChatInviteMessage], [createAudioMessage], [createVideoMessage],
+     * [createImageMessage], [createGroupChatInviteMessage], [createAudioMessage], [createVideoMessage],
      * [createDocMessage], or [createPollMessage].
      */
     fun forward(userId: Int, chatId: Int, messageId: Int, contextMessageId: Int?): Unit = when (readType(messageId)) {
@@ -291,8 +291,14 @@ object Messages : IntIdTable() {
             createActionMessage(userId, chatId, message, contextMessageId, isForwarded = true)
         }
 
-        MessageType.PIC ->
-            createPicMessage(userId, chatId, PicMessages.readCaptionedPic(messageId), contextMessageId, isForwarded = true)
+        MessageType.IMAGE ->
+            createImageMessage(
+                userId,
+                chatId,
+                ImageMessages.readCaptionedImage(messageId),
+                contextMessageId,
+                isForwarded = true
+            )
 
         MessageType.GROUP_CHAT_INVITE -> createGroupChatInviteMessage(
             userId,
@@ -360,8 +366,8 @@ object Messages : IntIdTable() {
                     ActionMessages.readText(messageId).value.contains(query, ignoreCase = true) ||
                             ActionMessageActions.read(messageId).any { it.value.contains(query, ignoreCase = true) }
                 }
-                MessageType.PIC ->
-                    PicMessages.readCaption(messageId)?.value?.contains(query, ignoreCase = true) ?: false
+                MessageType.IMAGE ->
+                    ImageMessages.readCaption(messageId)?.value?.contains(query, ignoreCase = true) ?: false
                 MessageType.POLL -> {
                     PollMessages.readQuestion(messageId).value.contains(query, ignoreCase = true) ||
                             PollMessageOptions.readOptions(messageId).any {
@@ -438,7 +444,7 @@ object Messages : IntIdTable() {
         Bookmarks.deleteBookmarks(messageIdList)
         TextMessages.delete(messageIdList)
         ActionMessages.delete(messageIdList)
-        PicMessages.delete(messageIdList)
+        ImageMessages.delete(messageIdList)
         AudioMessages.delete(messageIdList)
         PollMessages.delete(messageIdList)
         DocMessages.delete(messageIdList)

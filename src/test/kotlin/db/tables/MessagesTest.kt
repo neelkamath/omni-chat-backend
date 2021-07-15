@@ -31,7 +31,7 @@ fun Messages.message(
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: Audio,
+    message: AudioFile,
     contextMessageId: Int? = null,
     isForwarded: Boolean = false,
 ): Int {
@@ -42,11 +42,11 @@ fun Messages.message(
 fun Messages.message(
     userId: Int,
     chatId: Int,
-    message: CaptionedPic,
+    message: CaptionedImage,
     contextMessageId: Int? = null,
     isForwarded: Boolean = false,
 ): Int {
-    createPicMessage(userId, chatId, message, contextMessageId, isForwarded)
+    createImageMessage(userId, chatId, message, contextMessageId, isForwarded)
     return readIdList(chatId).last()
 }
 
@@ -182,7 +182,7 @@ class MessagesTest {
             val chatId = GroupChats.create(setOf(adminId))
             val query = "matched"
             val messageIdList = (1..10).map {
-                val message = Audio(ByteArray(1))
+                val message = AudioFile("audio.mp3", ByteArray(1))
                 Messages.message(adminId, chatId, message)
                 Messages.message(adminId, chatId, MessageText(query))
             }
@@ -204,13 +204,13 @@ class MessagesTest {
         }
 
         @Test
-        fun `Pic message captions must be searched case insensitively`() {
+        fun `Image message captions must be searched case insensitively`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            val pic = readPic("76px×57px.jpg")
-            val message1 = CaptionedPic(pic, caption = MessageText("Hi"))
+            val image = readImage("76px×57px.jpg")
+            val message1 = CaptionedImage(image, caption = MessageText("Hi"))
             val messageId = Messages.message(adminId, chatId, message1)
-            val message2 = CaptionedPic(pic, caption = MessageText("Bye"))
+            val message2 = CaptionedImage(image, caption = MessageText("Bye"))
             Messages.message(adminId, chatId, message2)
             assertEquals(linkedHashSetOf(messageId), Messages.searchGroupChat(chatId, "hi"))
         }
@@ -251,7 +251,7 @@ class MessagesTest {
         fun `Messages which don't contain text mustn't be returned`() {
             val adminId = createVerifiedUsers(1).first().userId
             val chatId = GroupChats.create(setOf(adminId))
-            Messages.message(adminId, chatId, Audio(ByteArray(1)))
+            Messages.message(adminId, chatId, AudioFile("audio.mp3", ByteArray(1)))
             assertTrue(Messages.searchGroupChat(chatId, query = "").isEmpty())
         }
 

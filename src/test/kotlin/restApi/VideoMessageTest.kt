@@ -20,7 +20,7 @@ private fun postVideoMessage(
     val parameters = listOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
         .filter { it.second != null }
         .formUrlEncode()
-    return uploadFile(accessToken, dummy, HttpMethod.Post, "video-message", parameters)
+    return uploadFile(dummy, HttpMethod.Post, "video-message", parameters, accessToken)
 }
 
 @ExtendWith(DbExtension::class)

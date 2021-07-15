@@ -4,9 +4,9 @@ import com.neelkamath.omniChatBackend.DbExtension
 import com.neelkamath.omniChatBackend.createVerifiedUsers
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.OnlineStatus
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedProfilePic
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedProfileImage
 import com.neelkamath.omniChatBackend.graphql.routing.*
-import com.neelkamath.omniChatBackend.readPic
+import com.neelkamath.omniChatBackend.readImage
 import com.neelkamath.omniChatBackend.toLinkedHashSet
 import io.reactivex.rxjava3.subscribers.TestSubscriber
 import kotlinx.coroutines.runBlocking
@@ -176,14 +176,14 @@ class UsersTest {
     }
 
     @Nested
-    inner class UpdatePic {
+    inner class UpdateImage {
         @Test
-        fun `Updating the pic must notify subscribers`(): Unit = runBlocking {
+        fun `Updating the image must notify subscribers`(): Unit = runBlocking {
             val userId = createVerifiedUsers(1).first().userId
             val subscriber = accountsNotifier.subscribe(UserId(userId)).flowable.subscribeWith(TestSubscriber())
-            Users.updatePic(userId, readPic("76px×57px.jpg"))
+            Users.updateImage(userId, readImage("76px×57px.jpg"))
             awaitBrokering()
-            val actual = subscriber.values().map { (it as UpdatedProfilePic).getUserId() }
+            val actual = subscriber.values().map { (it as UpdatedProfileImage).getUserId() }
             assertEquals(listOf(userId), actual)
         }
     }

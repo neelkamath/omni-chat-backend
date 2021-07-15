@@ -1,17 +1,17 @@
 plugins {
     application
-    kotlin("jvm") version "1.5.20"
+    kotlin("jvm") version "1.5.21"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-version = "0.23.0"
+version = "0.24.0"
 application.mainClass.set("io.ktor.server.netty.EngineMain")
 
 repositories { mavenCentral() }
 
 dependencies {
     implementation("com.graphql-java:graphql-java:16.2")
-    implementation("org.redisson:redisson:3.15.0")
+    implementation("org.redisson:redisson:3.16.0")
     implementation("org.postgresql:postgresql:42.2.2")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.1")
@@ -20,7 +20,7 @@ dependencies {
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test-junit5"))
 
-    val ktorVersion = "1.5.4"
+    val ktorVersion = "1.6.1"
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-jackson:$ktorVersion")
@@ -29,7 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 
-    val exposedVersion = "0.31.1"
+    val exposedVersion = "0.32.1"
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
@@ -46,7 +46,7 @@ tasks {
         manifest { attributes(mapOf("Main-Class" to application.mainClass)) }
     }
     register("printVersion") { println(project.version) }
-    val jvmTarget = "11"
+    val jvmTarget = "16"
     compileKotlin { kotlinOptions.jvmTarget = jvmTarget }
     compileTestKotlin { kotlinOptions.jvmTarget = jvmTarget }
 }

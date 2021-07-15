@@ -3,7 +3,7 @@ package com.neelkamath.omniChatBackend.db.tables
 import com.neelkamath.omniChatBackend.db.*
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.GroupChatId
 import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChat
-import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChatPic
+import com.neelkamath.omniChatBackend.graphql.dataTransferObjects.UpdatedGroupChatImage
 import com.neelkamath.omniChatBackend.graphql.routing.*
 import com.neelkamath.omniChatBackend.toLinkedHashSet
 import org.jetbrains.exposed.sql.*
@@ -15,7 +15,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 /**
- * The chat's pic cannot exceed [Pic.ORIGINAL_MAX_BYTES].
+ * The chat's image cannot exceed [ProcessedImage.ORIGINAL_MAX_BYTES].
  *
  * @see GroupChatUsers
  * @see Messages
@@ -25,7 +25,7 @@ object GroupChats : Table() {
     val id: Column<Int> = integer("id").uniqueIndex().references(Chats.id)
     private val title: Column<String> = varchar("title", GroupChatTitle.MAX_LENGTH)
     private val description: Column<String> = varchar("description", GroupChatDescription.MAX_LENGTH)
-    private val picId: Column<Int?> = integer("pic_id").references(Pics.id).nullable()
+    private val imageId: Column<Int?> = integer("image_id").references(Images.id).nullable()
     private val isBroadcast: Column<Boolean> = bool("is_broadcast")
     private val publicity: Column<GroupChatPublicity> = customEnumeration(
         name = "publicity",
@@ -94,25 +94,25 @@ object GroupChats : Table() {
     }
 
     /**
-     * Deletes the [pic] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and
+     * Deletes the [image] if it's `null`. Notifies subscribers of the [UpdatedGroupChat] via [chatsNotifier] and
      * [groupChatMetadataNotifier].
      */
-    fun updatePic(chatId: Int, pic: Pic?) {
+    fun updateImage(chatId: Int, image: ProcessedImage?) {
         transaction {
-            // If the pic is to be deleted, its reference must be cleared before we can delete the referenced data.
-            if (pic == null) update({ GroupChats.id eq chatId }) { it[picId] = null }
-            val picId = select(GroupChats.id eq chatId).first()[picId]
-            update({ GroupChats.id eq chatId }) { it[this.picId] = Pics.update(picId, pic) }
+            // If the image is to be deleted, its reference must be cleared before we can delete the referenced data.
+            if (image == null) update({ GroupChats.id eq chatId }) { it[imageId] = null }
+            val imageId = select(GroupChats.id eq chatId).first()[imageId]
+            update({ GroupChats.id eq chatId }) { it[this.imageId] = Images.update(imageId, image) }
         }
-        val update = UpdatedGroupChatPic(chatId)
+        val update = UpdatedGroupChatImage(chatId)
         chatsNotifier.publish(update, GroupChatUsers.readUserIdList(chatId).map(::UserId))
         groupChatMetadataNotifier.publish(update, ChatId(chatId))
     }
 
-    /** Returns the group chat's pic (`null` if there's no pic). */
-    fun readPic(chatId: Int, type: PicType): ByteArray? {
-        val picId = transaction { select(GroupChats.id eq chatId).first()[picId] } ?: return null
-        return Pics.read(picId, type)
+    /** Returns the group chat's image (`null` if there's no image). */
+    fun readImage(chatId: Int, type: ImageType): ImageFile? {
+        val imageId = transaction { select(GroupChats.id eq chatId).first()[imageId] } ?: return null
+        return Images.read(imageId, type)
     }
 
     /**

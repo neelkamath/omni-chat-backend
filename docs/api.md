@@ -173,7 +173,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `resetPassword`
     - `setOnline`
     - `setTyping`
-    - `deleteProfilePic`
+    - `deleteProfileImage`
     - `updateAccount`
     - `createAccount`
     - `emailEmailAddressVerification`
@@ -181,7 +181,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Subscription`
     - `subscribeToAccounts`
 - REST API
-    - `/profile-pic`
+    - `/profile-image`
 
 ### Other Users
 
@@ -199,7 +199,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `subscribeToAccounts`
     - `subscribeToChatAccounts`
 - REST API
-    - `/profile-pic`
+    - `/profile-image`
 
 ### Blocked Users
 
@@ -212,7 +212,7 @@ Since there are many operations, we've categorized each of them below. The same 
 - `Subscription`
     - `subscribeToAccounts`
 - REST API
-    - `/profile-pic`
+    - `/profile-image`
 
 ### Contacts
 
@@ -227,7 +227,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `subscribeToOnlineStatuses`
     - `subscribeToAccounts`
 - REST API
-    - `/profile-pic`
+    - `/profile-image`
 
 ### Chats
 
@@ -240,7 +240,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `readOnlineStatus`
     - `searchGroupChatUsers`
 - `Mutation`
-    - `deleteGroupChatPic`
+    - `deleteGroupChatImage`
     - `updateGroupChatTitle`
     - `updateGroupChatDescription`
     - `addGroupChatUsers`
@@ -264,7 +264,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `subscribeToAccounts`
     - `subscribeToChatAccounts`
 - REST API
-    - `/group-chat-pic`
+    - `/group-chat-image`
 
 ### Messages
 
@@ -288,7 +288,7 @@ Since there are many operations, we've categorized each of them below. The same 
     - `subscribeToMessages`
     - `subscribeToChatMessages`
 - REST API
-    - `/pic-message`
+    - `/image-message`
     - `/audio-message`
     - `/video-message`
     - `/doc-message`

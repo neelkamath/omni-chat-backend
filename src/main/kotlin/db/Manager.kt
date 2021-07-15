@@ -34,7 +34,7 @@ data class ForwardPagination(val first: Int? = null, val after: Cursor? = null) 
 
 data class BackwardPagination(val last: Int? = null, val before: Cursor? = null) : Pagination()
 
-enum class MessageType { TEXT, ACTION, PIC, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
+enum class MessageType { TEXT, ACTION, IMAGE, AUDIO, VIDEO, DOC, POLL, GROUP_CHAT_INVITE }
 
 enum class CursorType {
     /** First item's cursor. */

@@ -1,16 +1,17 @@
 CREATE
 EXTENSION pgcrypto;
-CREATE TYPE message_type AS ENUM ('text', 'action', 'pic', 'audio', 'video', 'doc', 'poll', 'group_chat_invite');
+CREATE TYPE message_type AS ENUM ('text', 'action', 'image', 'audio', 'video', 'doc', 'poll', 'group_chat_invite');
 CREATE TYPE group_chat_publicity AS ENUM ('not_invitable', 'invitable', 'public');
 CREATE TABLE chats
 (
     id SERIAL PRIMARY KEY
 );
-CREATE TABLE pics
+CREATE TABLE images
 (
     id        SERIAL PRIMARY KEY,
-    original  BYTEA    NOT NULL,
-    thumbnail BYTEA    NOT NULL
+    filename  VARCHAR(255),
+    original  BYTEA NOT NULL,
+    thumbnail BYTEA NOT NULL
 );
 CREATE TABLE users
 (
@@ -25,14 +26,14 @@ CREATE TABLE users
     last_name                       VARCHAR(30)   NOT NULL,
     is_online                       BOOLEAN       NOT NULL,
     bio                             VARCHAR(2500) NOT NULL,
-    pic_id                          INTEGER REFERENCES pics (id)
+    image_id                        INTEGER REFERENCES images (id)
 );
 CREATE TABLE group_chats
 (
     id           INTEGER              NOT NULL UNIQUE REFERENCES chats (id),
     title        VARCHAR(70)          NOT NULL,
     description  VARCHAR(1000)        NOT NULL,
-    pic_id       INTEGER REFERENCES pics (id),
+    image_id     INTEGER REFERENCES images (id),
     is_broadcast BOOLEAN              NOT NULL,
     publicity    group_chat_publicity NOT NULL,
     invite_code  UUID UNIQUE
@@ -53,27 +54,31 @@ CREATE TABLE text_messages
     message_id INTEGER        NOT NULL UNIQUE REFERENCES messages (id),
     text       VARCHAR(10000) NOT NULL
 );
-CREATE TABLE pic_messages
+CREATE TABLE image_messages
 (
-    message_id INTEGER  NOT NULL UNIQUE REFERENCES messages (id),
-    original   BYTEA    NOT NULL,
-    thumbnail  BYTEA    NOT NULL,
+    message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
+    filename   VARCHAR(255),
+    original   BYTEA   NOT NULL,
+    thumbnail  BYTEA   NOT NULL,
     caption    VARCHAR(10000)
 );
 CREATE TABLE audio_messages
 (
-    message_id INTEGER    NOT NULL UNIQUE REFERENCES messages (id),
-    audio      BYTEA      NOT NULL
+    message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE video_messages
 (
     message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
-    video      BYTEA   NOT NULL
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE doc_messages
 (
     message_id INTEGER NOT NULL UNIQUE REFERENCES messages (id),
-    doc        BYTEA   NOT NULL
+    filename   VARCHAR(255),
+    bytes      BYTEA   NOT NULL
 );
 CREATE TABLE group_chat_invite_messages
 (
@@ -127,8 +132,8 @@ CREATE TABLE bookmarks
 );
 CREATE TABLE typing_statuses
 (
-    chat_id   INTEGER NOT NULL REFERENCES chats (id),
-    user_id   INTEGER NOT NULL REFERENCES users (id)
+    chat_id INTEGER NOT NULL REFERENCES chats (id),
+    user_id INTEGER NOT NULL REFERENCES users (id)
 );
 CREATE TABLE action_messages
 (

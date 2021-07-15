@@ -65,7 +65,7 @@ private fun readChatMessagesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is NewTextMessage -> "NewTextMessage"
     is NewActionMessage -> "NewActionMessage"
-    is NewPicMessage -> "NewPicMessage"
+    is NewImageMessage -> "NewImageMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
     is NewDocMessage -> "NewDocMessage"
@@ -83,7 +83,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is NewTextMessage -> "NewTextMessage"
     is NewActionMessage -> "NewActionMessage"
-    is NewPicMessage -> "NewPicMessage"
+    is NewImageMessage -> "NewImageMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"
     is NewDocMessage -> "NewDocMessage"
@@ -101,7 +101,7 @@ private fun readMessagesSubscription(obj: Any): String = when (obj) {
 private fun readChatsSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is GroupChatId -> "GroupChatId"
-    is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
+    is UpdatedGroupChatImage -> "UpdatedGroupChatImage"
     is UpdatedGroupChat -> "UpdatedGroupChat"
     is DeletedPrivateChat -> "DeletedPrivateChat"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -109,7 +109,7 @@ private fun readChatsSubscription(obj: Any): String = when (obj) {
 
 private fun readGroupChatMetadataSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
-    is UpdatedGroupChatPic -> "UpdatedGroupChatPic"
+    is UpdatedGroupChatImage -> "UpdatedGroupChatImage"
     is UpdatedGroupChat -> "UpdatedGroupChat"
     is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -183,7 +183,7 @@ private fun readReadMessageResult(obj: Any): String = when (obj) {
     is InvalidMessageId -> "InvalidMessageId"
     is TextMessage -> "TextMessage"
     is ActionMessage -> "ActionMessage"
-    is PicMessage -> "PicMessage"
+    is ImageMessage -> "ImageMessage"
     is PollMessage -> "PollMessage"
     is AudioMessage -> "AudioMessage"
     is GroupChatInviteMessage -> "GroupChatInviteMessage"
@@ -308,7 +308,7 @@ private fun readAccountsSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is NewContact -> "NewContact"
     is UpdatedAccount -> "UpdatedAccount"
-    is UpdatedProfilePic -> "UpdatedProfilePic"
+    is UpdatedProfileImage -> "UpdatedProfileImage"
     is DeletedContact -> "DeletedContact"
     is BlockedAccount -> "BlockedAccount"
     is UnblockedAccount -> "UnblockedAccount"
@@ -319,7 +319,7 @@ private fun readAccountsSubscription(obj: Any): String = when (obj) {
 private fun readChatAccountsSubscription(obj: Any): String = when (obj) {
     is CreatedSubscription -> "CreatedSubscription"
     is UpdatedAccount -> "UpdatedAccount"
-    is UpdatedProfilePic -> "UpdatedProfilePic"
+    is UpdatedProfileImage -> "UpdatedProfileImage"
     is DeletedAccount -> "DeletedAccount"
     is InvalidChatId -> "InvalidChatId"
     else -> throw IllegalArgumentException("$obj didn't map to a concrete type.")
@@ -347,7 +347,7 @@ private fun readBareGroupChat(obj: Any): String = when (obj) {
 private fun readMessage(obj: Any): String = when (obj) {
     is TextMessage -> "TextMessage"
     is ActionMessage -> "ActionMessage"
-    is PicMessage -> "PicMessage"
+    is ImageMessage -> "ImageMessage"
     is PollMessage -> "PollMessage"
     is AudioMessage -> "AudioMessage"
     is GroupChatInviteMessage -> "GroupChatInviteMessage"
@@ -359,7 +359,7 @@ private fun readMessage(obj: Any): String = when (obj) {
 private fun readBookmarkedMessage(obj: Any): String = when (obj) {
     is BookmarkedTextMessage -> "BookmarkedTextMessage"
     is BookmarkedActionMessage -> "BookmarkedActionMessage"
-    is BookmarkedPicMessage -> "BookmarkedPicMessage"
+    is BookmarkedImageMessage -> "BookmarkedImageMessage"
     is BookmarkedPollMessage -> "BookmarkedPollMessage"
     is BookmarkedAudioMessage -> "BookmarkedAudioMessage"
     is BookmarkedGroupChatInviteMessage -> "BookmarkedGroupChatInviteMessage"
@@ -371,7 +371,7 @@ private fun readBookmarkedMessage(obj: Any): String = when (obj) {
 private fun readNewMessage(obj: Any): String = when (obj) {
     is NewTextMessage -> "NewTextMessage"
     is NewActionMessage -> "NewActionMessage"
-    is NewPicMessage -> "NewPicMessage"
+    is NewImageMessage -> "NewImageMessage"
     is NewPollMessage -> "NewPollMessage"
     is NewAudioMessage -> "NewAudioMessage"
     is NewGroupChatInviteMessage -> "NewGroupChatInviteMessage"

@@ -59,7 +59,7 @@ class BrokerTest {
                     groupChatSharerSubscriber,
                 ) = setOf(userId, contactOwnerId, deletedPrivateChatSharer, privateChatSharer, groupChatSharer)
                     .map { accountsNotifier.subscribe(UserId(it)).flowable.subscribeWith(TestSubscriber()) }
-                negotiateUserUpdate(userId, isProfilePic = false)
+                negotiateUserUpdate(userId, isProfileImage = false)
                 awaitBrokering()
                 deletedPrivateChatSharerSubscriber.assertNoValues()
                 setOf(

@@ -8,7 +8,10 @@ import io.ktor.routing.*
 fun routeVideoMessage(routing: Routing): Unit = with(routing) {
     route("video-message") {
         authenticate(optional = true) {
-            getMediaMessage(this) { messageId, _ -> VideoMessages.read(messageId).bytes }
+            getMediaMessage(this, FileDisposition.INLINE) { messageId, _ ->
+                val (filename, bytes) = VideoMessages.read(messageId)
+                MediaFile(filename, bytes)
+            }
         }
         authenticate {
             postMediaMessage(this, { readMultipartMp4() }) { userId, chatId, message, contextMessageId ->

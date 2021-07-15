@@ -2,7 +2,7 @@ package com.neelkamath.omniChatBackend.graphql.operations
 
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.Audio
+import com.neelkamath.omniChatBackend.db.AudioFile
 import com.neelkamath.omniChatBackend.db.BackwardPagination
 import com.neelkamath.omniChatBackend.db.ForwardPagination
 import com.neelkamath.omniChatBackend.db.deleteUser
@@ -912,14 +912,14 @@ class QueriesTest {
                             chatId,
                             ActionMessageInput(MessageText("Text"), listOf(MessageText(it), MessageText("No"))),
                         ),
-                        // Testing pic message captions.
+                        // Testing image message captions.
                         Messages.message(
                             adminId,
                             chatId,
-                            CaptionedPic(readPic("76px×57px.jpg"), caption = MessageText(it)),
+                            CaptionedImage(readImage("76px×57px.jpg"), caption = MessageText(it)),
                         ),
                         // Testing messages which cannot be searched.
-                        Messages.message(adminId, chatId, Audio(ByteArray(1))),
+                        Messages.message(adminId, chatId, AudioFile("audio.mp3", ByteArray(1))),
                     )
                 }[0]
                 .dropLast(1)

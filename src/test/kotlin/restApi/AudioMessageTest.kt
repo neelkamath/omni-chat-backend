@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.assertEquals
 
-fun getAudioMessage(accessToken: String? = null, messageId: Int): TestApplicationResponse =
-    getFileMessage(accessToken, path = "audio-message", messageId)
+fun getAudioMessage(messageId: Int, accessToken: String? = null): TestApplicationResponse =
+    getFileMessage(path = "audio-message", messageId, accessToken = accessToken)
 
 fun postAudioMessage(
     accessToken: String,
@@ -23,7 +23,7 @@ fun postAudioMessage(
     val parameters = setOf("chat-id" to chatId.toString(), "context-message-id" to contextMessageId?.toString())
         .filter { it.second != null }
         .formUrlEncode()
-    return uploadFile(accessToken, dummy, HttpMethod.Post, "audio-message", parameters)
+    return uploadFile(dummy, HttpMethod.Post, "audio-message", parameters, accessToken)
 }
 
 @ExtendWith(DbExtension::class)

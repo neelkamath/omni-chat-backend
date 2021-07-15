@@ -2,7 +2,7 @@ package com.neelkamath.omniChatBackend.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.ImageType
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.routing.MessageText
@@ -12,81 +12,85 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
-private fun getPicMessage(accessToken: String? = null, messageId: Int, type: PicType): TestApplicationResponse =
-    getFileMessage(accessToken, path = "pic-message", messageId, type)
+private fun getImageMessage(messageId: Int, type: ImageType, accessToken: String? = null): TestApplicationResponse =
+    getFileMessage(path = "image-message", messageId, type, accessToken)
 
-private fun postPicMessage(
+private fun postImageMessage(
     accessToken: String,
     chatId: Int,
     filename: String,
     caption: String? = null,
     contextMessageId: Int? = null,
 ): TestApplicationResponse = uploadMultipart(
-    accessToken,
     HttpMethod.Post,
-    "pic-message",
+    "image-message",
     listOfNotNull(
         buildFileItem(filename, readBytes(filename)),
         buildFormItem("chat-id", chatId.toString()),
         buildFormItem("context-message-id", contextMessageId.toString()).takeIf { contextMessageId != null },
         buildFormItem("caption", caption.toString()).takeIf { caption != null },
     ),
+    accessToken = accessToken,
 )
 
 @ExtendWith(DbExtension::class)
-class PicMessageTest {
+class ImageMessageTest {
     @Nested
-    inner class GetPicMessage {
+    inner class GetImageMessage {
         @Test
-        fun `A pic message must be read with an HTTP status code of 200`() {
+        fun `An image message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val pic = readPic("76px×57px.jpg")
-            val messageId = Messages.message(admin.userId, chatId, CaptionedPic(pic, caption = null))
-            val response = getPicMessage(admin.accessToken, messageId, PicType.ORIGINAL)
+            val image = readImage("76px×57px.jpg")
+            val messageId = Messages.message(admin.userId, chatId, CaptionedImage(image, caption = null))
+            val response = getImageMessage(messageId, ImageType.ORIGINAL, admin.accessToken)
             assertEquals(HttpStatusCode.OK, response.status())
-            assertContentEquals(pic.original, response.byteContent!!)
+            assertContentEquals(image.original, response.byteContent!!)
         }
 
         @Test
         fun `An HTTP status code of 401 must be returned when retrieving a non-existing message`() {
             val token = createVerifiedUsers(1).first().accessToken
-            assertEquals(HttpStatusCode.Unauthorized, getPicMessage(token, messageId = 1, PicType.ORIGINAL).status())
+            assertEquals(
+                HttpStatusCode.Unauthorized,
+                getImageMessage(messageId = 1, ImageType.ORIGINAL).status(),
+                token
+            )
         }
 
         private fun createMessage(): Pair<String, Int> {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val pic = CaptionedPic(readPic("1008px×756px.jpg"), caption = null)
-            val messageId = Messages.message(admin.userId, chatId, pic)
+            val image = CaptionedImage(readImage("1008px×756px.jpg"), caption = null)
+            val messageId = Messages.message(admin.userId, chatId, image)
             return admin.accessToken to messageId
         }
 
         @Test
         fun `The original image must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
-            val response = getPicMessage(accessToken, messageId, PicType.ORIGINAL).byteContent
-            assertContentEquals(PicMessages.readPic(messageId, PicType.ORIGINAL), response)
+            val response = getImageMessage(messageId, ImageType.ORIGINAL, accessToken).byteContent
+            assertContentEquals(ImageMessages.readImage(messageId, ImageType.ORIGINAL).bytes, response)
         }
 
         @Test
         fun `The thumbnail must be sent when requested`() {
             val (accessToken, messageId) = createMessage()
-            val response = getPicMessage(accessToken, messageId, PicType.THUMBNAIL).byteContent
-            assertContentEquals(PicMessages.readPic(messageId, PicType.THUMBNAIL), response)
+            val response = getImageMessage(messageId, ImageType.THUMBNAIL, accessToken).byteContent
+            assertContentEquals(ImageMessages.readImage(messageId, ImageType.THUMBNAIL).bytes, response)
         }
     }
 
     @Nested
-    inner class PostPicMessage {
+    inner class PostImageMessage {
         @Test
         fun `Only admins must be allowed to message in broadcast chats`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId), listOf(user.userId), isBroadcast = true)
-            val userStatus = postPicMessage(user.accessToken, chatId, "76px×57px.jpg").status()
+            val userStatus = postImageMessage(user.accessToken, chatId, "76px×57px.jpg").status()
             assertEquals(HttpStatusCode.BadRequest, userStatus)
             assertEquals(0, Messages.count())
-            val adminStatus = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
+            val adminStatus = postImageMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
             assertEquals(HttpStatusCode.NoContent, adminStatus)
             assertEquals(1, Messages.count())
         }
@@ -95,7 +99,7 @@ class PicMessageTest {
         fun `The message must get created sans context`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val actual = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
+            val actual = postImageMessage(admin.accessToken, chatId, "76px×57px.jpg").status()
             assertEquals(HttpStatusCode.NoContent, actual)
             val messageId = Messages.readIdList(chatId).first()
             assertFalse(Messages.hasContext(messageId))
@@ -107,8 +111,9 @@ class PicMessageTest {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
             val contextMessageId = Messages.message(admin.userId, chatId)
-            val actual = postPicMessage(admin.accessToken, chatId, "76px×57px.jpg", contextMessageId = contextMessageId)
-                .status()
+            val actual =
+                postImageMessage(admin.accessToken, chatId, "76px×57px.jpg", contextMessageId = contextMessageId)
+                    .status()
             assertEquals(HttpStatusCode.NoContent, actual)
             val messageId = Messages.readIdList(chatId).last()
             assertTrue(Messages.hasContext(messageId))
@@ -119,10 +124,10 @@ class PicMessageTest {
         fun `Attempting to create a message in a chat the user isn't in must fail`() {
             val (admin, user) = createVerifiedUsers(2)
             val chatId = GroupChats.create(setOf(admin.userId))
-            val response = postPicMessage(user.accessToken, chatId, "76px×57px.jpg")
+            val response = postImageMessage(user.accessToken, chatId, "76px×57px.jpg")
             assertEquals(HttpStatusCode.BadRequest, response.status())
-            val reason = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason
-            assertEquals(InvalidPicMessage.Reason.USER_NOT_IN_CHAT, reason)
+            val reason = testingObjectMapper.readValue<InvalidImageMessage>(response.content!!).reason
+            assertEquals(InvalidImageMessage.Reason.USER_NOT_IN_CHAT, reason)
             assertEquals(0, Messages.count())
         }
 
@@ -131,14 +136,14 @@ class PicMessageTest {
             val admin = createVerifiedUsers(1).first()
             val (chat1Id, chat2Id) = (1..2).map { GroupChats.create(setOf(admin.userId)) }
             val contextMessageId = Messages.message(admin.userId, chat1Id)
-            val response = postPicMessage(
+            val response = postImageMessage(
                 admin.accessToken,
                 chat2Id, "76px×57px.jpg",
                 contextMessageId = contextMessageId,
             )
             assertEquals(HttpStatusCode.BadRequest, response.status())
-            val reason = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason
-            assertEquals(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE, reason)
+            val reason = testingObjectMapper.readValue<InvalidImageMessage>(response.content!!).reason
+            assertEquals(InvalidImageMessage.Reason.INVALID_CONTEXT_MESSAGE, reason)
             assertEquals(1, Messages.count())
         }
 
@@ -149,10 +154,10 @@ class PicMessageTest {
             val contextMessageId = Messages.message(user1.userId, chatId)
             PrivateChatDeletions.create(chatId, user1.userId)
             val response =
-                postPicMessage(user1.accessToken, chatId, "76px×57px.jpg", contextMessageId = contextMessageId)
+                postImageMessage(user1.accessToken, chatId, "76px×57px.jpg", contextMessageId = contextMessageId)
             assertEquals(HttpStatusCode.BadRequest, response.status())
-            val reason = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason
-            assertEquals(InvalidPicMessage.Reason.INVALID_CONTEXT_MESSAGE, reason)
+            val reason = testingObjectMapper.readValue<InvalidImageMessage>(response.content!!).reason
+            assertEquals(InvalidImageMessage.Reason.INVALID_CONTEXT_MESSAGE, reason)
             assertEquals(1, Messages.count())
         }
 
@@ -162,37 +167,37 @@ class PicMessageTest {
             val chatId = GroupChats.create(setOf(admin.userId))
             val filename = "76px×57px.jpg"
             val caption = MessageText("c")
-            val actual = postPicMessage(admin.accessToken, chatId, filename, caption.value).status()
+            val actual = postImageMessage(admin.accessToken, chatId, filename, caption.value).status()
             assertEquals(HttpStatusCode.NoContent, actual)
             val messageId = Messages.readIdList(chatId).last()
-            val expected = CaptionedPic(readPic(filename), caption)
-            assertEquals(expected, PicMessages.readCaptionedPic(messageId))
+            val expected = CaptionedImage(readImage(filename), caption)
+            assertEquals(expected, ImageMessages.readCaptionedImage(messageId))
         }
 
-        private fun assertInvalidPicMessage(
-            reason: InvalidPicMessage.Reason,
+        private fun assertInvalidImageMessage(
+            reason: InvalidImageMessage.Reason,
             filename: String,
             caption: String? = null,
         ) {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val response = postPicMessage(admin.accessToken, chatId, filename, caption)
+            val response = postImageMessage(admin.accessToken, chatId, filename, caption)
             assertEquals(HttpStatusCode.BadRequest, response.status())
-            val actual = testingObjectMapper.readValue<InvalidPicMessage>(response.content!!).reason
+            val actual = testingObjectMapper.readValue<InvalidImageMessage>(response.content!!).reason
             assertEquals(reason, actual)
             assertEquals(0, Messages.count())
         }
 
         @Test
         fun `Attempting to create a message with an invalid file type must fail`(): Unit =
-            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "76px×57px.webp")
+            assertInvalidImageMessage(InvalidImageMessage.Reason.INVALID_FILE, "76px×57px.webp")
 
         @Test
         fun `Attempting to create a message with an invalid file size must fail`(): Unit =
-            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_FILE, "3.9MB.jpg")
+            assertInvalidImageMessage(InvalidImageMessage.Reason.INVALID_FILE, "3.9MB.jpg")
 
         @Test
         fun `Attempting to create a message with an invalid caption must fail`(): Unit =
-            assertInvalidPicMessage(InvalidPicMessage.Reason.INVALID_CAPTION, "76px×57px.jpg", caption = "")
+            assertInvalidImageMessage(InvalidImageMessage.Reason.INVALID_CAPTION, "76px×57px.jpg", caption = "")
     }
 }

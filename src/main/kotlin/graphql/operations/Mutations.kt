@@ -200,17 +200,17 @@ fun updateAccount(env: DataFetchingEnvironment): UpdateAccountResult? {
     return null
 }
 
-fun deleteProfilePic(env: DataFetchingEnvironment): Placeholder {
+fun deleteProfileImage(env: DataFetchingEnvironment): Placeholder {
     env.verifyAuth()
-    Users.updatePic(env.userId!!, pic = null)
+    Users.updateImage(env.userId!!, image = null)
     return Placeholder
 }
 
-fun deleteGroupChatPic(env: DataFetchingEnvironment): MustBeAdmin? {
+fun deleteGroupChatImage(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
-    GroupChats.updatePic(chatId, pic = null)
+    GroupChats.updateImage(chatId, image = null)
     return null
 }
 

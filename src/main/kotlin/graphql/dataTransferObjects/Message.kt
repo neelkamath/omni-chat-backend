@@ -35,7 +35,7 @@ sealed interface Message {
             MessageType.AUDIO -> AudioMessage(messageId)
             MessageType.DOC -> DocMessage(messageId)
             MessageType.GROUP_CHAT_INVITE -> GroupChatInviteMessage(messageId)
-            MessageType.PIC -> PicMessage(messageId)
+            MessageType.IMAGE -> ImageMessage(messageId)
             MessageType.POLL -> PollMessage(messageId)
             MessageType.VIDEO -> VideoMessage(messageId)
         }

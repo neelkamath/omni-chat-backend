@@ -2,8 +2,8 @@ package com.neelkamath.omniChatBackend.restApi
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.neelkamath.omniChatBackend.*
-import com.neelkamath.omniChatBackend.db.Audio
-import com.neelkamath.omniChatBackend.db.PicType
+import com.neelkamath.omniChatBackend.db.AudioFile
+import com.neelkamath.omniChatBackend.db.ImageType
 import com.neelkamath.omniChatBackend.db.count
 import com.neelkamath.omniChatBackend.db.tables.*
 import com.neelkamath.omniChatBackend.graphql.routing.GroupChatPublicity
@@ -17,18 +17,18 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.*
 
-/** Creates a [file] which doesn't get saved to the filesystem. An example [name] is `"pic.png"`. */
+/** Creates a [file] which doesn't get saved to the filesystem. An example [name] is `"image.png"`. */
 data class DummyFile(val name: String, val bytes: Int) {
     val file = ByteArray(bytes)
 }
 
 fun getFileMessage(
-    accessToken: String? = null,
     path: String,
     messageId: Int,
-    picType: PicType? = null,
+    imageType: ImageType? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
-    val parameters = listOf("message-id" to messageId.toString(), "pic-type" to picType?.toString())
+    val parameters = listOf("message-id" to messageId.toString(), "image-type" to imageType?.toString())
         .filter { it.second != null }
         .formUrlEncode()
     handleRequest(HttpMethod.Get, "$path?$parameters") {
@@ -37,14 +37,14 @@ fun getFileMessage(
 }
 
 fun uploadMultipart(
-    accessToken: String,
     method: HttpMethod,
     path: String,
     parts: List<PartData>,
     parameters: String? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse = withTestApplication(Application::main) {
     handleRequest(method, if (parameters == null) path else "$path?$parameters") {
-        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+        if (accessToken != null) addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
         val boundary = "boundary"
         addHeader(
             HttpHeaders.ContentType,
@@ -76,22 +76,22 @@ fun buildFormItem(name: String, value: String): PartData.FormItem = PartData.For
 )
 
 fun uploadFile(
-    accessToken: String,
     filename: String,
     fileContent: ByteArray,
     method: HttpMethod,
     path: String,
     parameters: String? = null,
+    accessToken: String? = null,
 ): TestApplicationResponse =
-    uploadMultipart(accessToken, method, path, listOf(buildFileItem(filename, fileContent)), parameters)
+    uploadMultipart(method, path, listOf(buildFileItem(filename, fileContent)), parameters, accessToken)
 
 fun uploadFile(
-    accessToken: String,
     dummy: DummyFile,
     method: HttpMethod,
     path: String,
     parameters: String? = null,
-): TestApplicationResponse = uploadFile(accessToken, dummy.name, dummy.file, method, path, parameters)
+    accessToken: String? = null,
+): TestApplicationResponse = uploadFile(dummy.name, dummy.file, method, path, parameters, accessToken)
 
 @ExtendWith(DbExtension::class)
 class MediaHandlerTest {
@@ -101,9 +101,9 @@ class MediaHandlerTest {
         fun `A message must be read with an HTTP status code of 200`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
-            val response = getAudioMessage(admin.accessToken, messageId)
+            val response = getAudioMessage(messageId, admin.accessToken)
             assertEquals(HttpStatusCode.OK, response.status())
             assertContentEquals(audio.bytes, response.byteContent)
         }
@@ -111,14 +111,14 @@ class MediaHandlerTest {
         @Test
         fun `An HTTP status code of 401 must be returned when retrieving a non-existing message`() {
             val token = createVerifiedUsers(1).first().accessToken
-            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(token, messageId = 1).status())
+            assertEquals(HttpStatusCode.Unauthorized, getAudioMessage(messageId = 1, token).status())
         }
 
         @Test
         fun `The message must be read from a public chat sans access token`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId), publicity = GroupChatPublicity.PUBLIC)
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
             assertEquals(HttpStatusCode.OK, response.status())
@@ -129,7 +129,7 @@ class MediaHandlerTest {
         fun `An access token must be required to read a message which isn't from a public chat`() {
             val admin = createVerifiedUsers(1).first()
             val chatId = GroupChats.create(setOf(admin.userId))
-            val audio = Audio(ByteArray(1))
+            val audio = AudioFile("audio.mp3", ByteArray(1))
             val messageId = Messages.message(admin.userId, chatId, audio)
             val response = getAudioMessage(messageId = messageId)
             assertEquals(HttpStatusCode.Unauthorized, response.status())
@@ -226,6 +226,6 @@ class MediaHandlerTest {
 
         @Test
         fun `Attempting to create a message with an invalid file size must fail`(): Unit =
-            assertInvalidFile(DummyFile("audio.mp3", Audio.MAX_BYTES + 1))
+            assertInvalidFile(DummyFile("audio.mp3", AudioFile.MAX_BYTES + 1))
     }
 }
