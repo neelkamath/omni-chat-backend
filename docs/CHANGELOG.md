@@ -13,6 +13,7 @@ The entire project (i.e., the GraphQL API, REST API, and server) uses the same v
 - Fix the production `docker-compose.yml`.
 - Fix the documentation for running the application in production.
 - Fix the REST API docs.
+- Fix `Mutation.makeGroupChatAdmins`.
 
 ## [0.24.0](https://github.com/neelkamath/omni-chat-backend/releases/tag/v0.24.0) - 2021-07-15
 

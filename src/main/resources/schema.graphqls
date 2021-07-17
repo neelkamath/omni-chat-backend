@@ -382,7 +382,7 @@ type Mutation {
     leaveGroupChat(chatId: Int!): LeaveGroupChatResult
 
     """
-    Makes every user in the `idList` an admin of the `chatId`. Nonexisting users, users who aren't in the chat, and
+    Makes every user in the `userIdList` an admin of the `chatId`. Nonexisting users, users who aren't in the chat, and
     users who are already admins, are ignored.
 
     An access token must be sent with this request.
