@@ -288,7 +288,7 @@ fun makeGroupChatAdmins(env: DataFetchingEnvironment): MustBeAdmin? {
     env.verifyAuth()
     val chatId = env.getArgument<Int>("chatId")
     if (!GroupChatUsers.isAdmin(env.userId!!, chatId)) return MustBeAdmin
-    val userIdList = env.getArgument<List<Int>>("idList").filter { isUserInChat(it, chatId) }
+    val userIdList = env.getArgument<List<Int>>("userIdList").filter { isUserInChat(it, chatId) }
     GroupChatUsers.makeAdmins(chatId, userIdList)
     return null
 }
