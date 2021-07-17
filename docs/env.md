@@ -11,11 +11,11 @@ You can run Omni Chat either by [using Docker Compose](docker-compose.md) or [in
 |No|`POSTGRES_DB`|DB name (e.g., `my_db`).|
 |No|`POSTGRES_USER`|Superuser's username.|
 |Yes|`POSTGRES_PASSWORD`|Superuser's password.|
-|No|`POSTGRES_URL`|For example, the URL would be `db:5432` if the hostname and port were `db` and `5432` respectively.|
+|No|`POSTGRES_URL`|For example, the URL would be `db:5432` if the hostname and port were `db` and `5432` respectively. Another example is `34.134.106.184:5432`.|
 |No|`FLYWAY_URL`|Set it to `jdbc:postgresql://<POSTGRES_URL>/<POSTGRES_DB>`, where `<POSTGRES_URL>` and `<POSTGRES_DB>` have the values of the aforementioned variables with the same names.|
-|No|`FLYWAY_USER`|Set it to the value of the aforementioned variable with the same name.|
-|No|`FLYWAY_PASSWORD`|Set it to the value of the aforementioned variable with the same name.|
-|No|`REDIS_URL`|For example, the URL would be `message-broker:6379` if the hostname and port were `message-broker` and `6379` respectively.|
+|No|`FLYWAY_USER`|Set it to the value of the `POSTGRES_USER` key.|
+|No|`FLYWAY_PASSWORD`|Set it to the value of the `POSTGRES_PASSWORD` key.|
+|No|`REDIS_URL`|For example, the URL would be `message-broker:6379` if the hostname and port were `message-broker` and `6379` respectively. Another example is `10.130.16.235:6379`.|
 |Yes|`ALLOWED_EMAIL_DOMAINS`|Since Omni Chat can be deployed by anyone, a company might want to use it for internal communications, and hence disallow non-employees from using their instance. This can be achieved by specifying which email address domains (i.e., the part of the email address after the `@`) are allowed during sign-ups. If you don't have this use case, simply leaving the value blank for this key will allow every email address domain to be used. Otherwise, set the value to a comma-separated list of email address domains (e.g., `example.com,gmail.com`).|
 |Yes|`SMTP_HOST`|The hostname of your email service provider (e.g., `smtp.gmail.com` for Gmail).|
 |Yes|`SMTP_TLS_PORT`|The TLS port your email service provider runs on (e.g., `587` for Gmail).|
