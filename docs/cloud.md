@@ -13,6 +13,6 @@ This is the recommended method to run the server in the cloud. For example, you 
 
 ### Migrating
 
-Here's how to migrate from the previous version (0.25.0) to this version (0.25.0):
+Here's how to migrate from the previous version (0.24.0) to this version (0.25.0):
 
 1. Run the `neelkamath/omni-chat-backend:0.25.0` [Docker Hub image](https://hub.docker.com/repository/docker/neelkamath/omni-chat-backend).
